@@ -18,31 +18,10 @@
         <link rel="stylesheet" href="css/style.css">
     </head>
     <body>
-        <!-- Header / Navigation Bar -->
-        <nav class="navbar">
-            <a href="index.jsp" class="brand-logo">
-                <div class="brand-icon">
-                    <i class="fa-solid fa-trophy"></i>
-                </div>
-                <span>TOUR<span class="highlight">MA</span></span>
-            </a>
-            
-            <ul class="nav-links">
-                <li><a href="index.jsp" class="nav-link active"><i class="fa-solid fa-house"></i> Trang Chủ</a></li>
-                <li><a href="tournaments.jsp" class="nav-link"><i class="fa-solid fa-sitemap"></i> Giải Đấu</a></li>
-                <li><a href="series.jsp" class="nav-link"><i class="fa-solid fa-layer-group"></i> Series Mùa Giải</a></li>
-                <li><a href="leaderboard.jsp" class="nav-link"><i class="fa-solid fa-chart-line"></i> BXH Series</a></li>
-            </ul>
-            
-            <div class="nav-actions">
-                <a href="create-tournament.jsp" class="btn btn-mint">
-                    <i class="fa-solid fa-plus"></i> Tạo Giải Đơn Lẻ
-                </a>
-                <a href="create-series.jsp" class="btn btn-gold-outline">
-                    <i class="fa-solid fa-folder-plus"></i> Tạo Series
-                </a>
-            </div>
-        </nav>
+        <!-- Header / Navigation Bar Component -->
+        <jsp:include page="common/component/header.jsp">
+            <jsp:param name="active" value="home"/>
+        </jsp:include>
 
         <!-- Main Content Area -->
         <main class="container">
@@ -70,7 +49,7 @@
                         </div>
                         <h3>Khởi Tạo Giải Đấu Đơn Lẻ</h3>
                         <p>Dán danh sách đội bóng, chọn thể thức (Single Elimination, Round Robin) và tự động tạo sơ đồ thi đấu ngay lập tức.</p>
-                        <a href="create-tournament.jsp" class="btn btn-mint" style="width: 100%;">
+                        <a href="common/create-tournament.jsp" class="btn btn-mint" style="width: 100%;">
                             Tạo Giải Đấu Ngay <i class="fa-solid fa-arrow-right"></i>
                         </a>
                     </div>
@@ -82,7 +61,7 @@
                         </div>
                         <h3>Khởi Tạo Series Mùa Giải</h3>
                         <p>Tạo chuỗi giải đấu gồm nhiều giải con. Tự động quy đổi điểm thưởng Series hoặc tính điểm biến thiên FIFA Elo.</p>
-                        <a href="create-series.jsp" class="btn btn-gold-outline" style="width: 100%;">
+                        <a href="common/create-series.jsp" class="btn btn-gold-outline" style="width: 100%;">
                             Cấu Hình Series <i class="fa-solid fa-arrow-right"></i>
                         </a>
                     </div>

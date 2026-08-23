@@ -1,0 +1,232 @@
+/* ==========================================================================
+   TOURMA - TOURNAMENT CREATION PAGE DEDICATED STYLESHEET (create-tournament.css)
+   Scaled down to ~67% ratio for high-density modern UI
+   ========================================================================== */
+
+/* Layout & Card Wrapper */
+.form-container-box {
+  background: var(--bg-card-surface, #181d29);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 14px);
+  padding: 1.75rem 2rem; /* Reduced from 2.5rem */
+  margin-top: 1.25rem;
+  margin-bottom: 3rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  max-width: 580px; /* Compact container matching 67% screenshot */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.form-header-title {
+  font-size: 1.3rem; /* Reduced from 1.8rem */
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.form-section {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.form-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-white, #f8fafc);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Form Controls & Groups */
+.form-group {
+  margin-bottom: 1.15rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.85rem; /* Scaled down */
+  font-weight: 600;
+  color: var(--text-white, #f8fafc);
+  margin-bottom: 0.4rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.55rem 0.85rem; /* Scaled down padding */
+  font-family: var(--font-family, 'Lexend', sans-serif);
+  font-size: 0.85rem; /* Scaled down font */
+  background: var(--bg-dark-obsidian, #0b0d12);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-white, #f8fafc);
+  outline: none;
+  transition: var(--transition-fast, 0.18s ease);
+}
+
+.form-control:focus {
+  border-color: var(--mint-primary, #2dd4bf);
+  box-shadow: 0 0 10px rgba(45, 212, 191, 0.2);
+}
+
+/* Radio & Checkbox Card Grid */
+.radio-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.radio-card {
+  position: relative;
+  background: var(--bg-dark-charcoal, #12161f);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-md, 10px);
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  transition: var(--transition-fast, 0.18s ease);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.radio-card:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: var(--bg-card-hover, #202736);
+}
+
+.radio-card input[type="radio"],
+.radio-card input[type="checkbox"] {
+  margin-top: 0.15rem;
+  accent-color: var(--mint-primary, #2dd4bf);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.radio-card-content h5 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.radio-card-content p {
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.35;
+}
+
+.radio-card.active {
+  border-color: var(--mint-primary, #2dd4bf);
+  background: rgba(45, 212, 191, 0.08);
+}
+
+/* Dual Panel: Textarea + Live Preview Table */
+.team-input-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.team-textarea {
+  min-height: 200px;
+  resize: vertical;
+  line-height: 1.5;
+  font-family: monospace, var(--font-family);
+  font-size: 0.85rem;
+}
+
+.live-preview-box {
+  background: var(--bg-dark-obsidian, #0b0d12);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-md, 10px);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.preview-table-wrapper {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.preview-table th, .preview-table td {
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.preview-table th {
+  color: var(--text-muted, #94a3b8);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  background: var(--bg-dark-obsidian, #0b0d12);
+}
+
+.seed-badge-preview {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: var(--gold-primary, #fbbf24);
+  font-weight: 800;
+  border-radius: 4px;
+  font-size: 0.72rem;
+}
+
+/* Stage Configuration Cards */
+.stage-config-card {
+  background: var(--bg-dark-charcoal, #12161f);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-md, 10px);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stage-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.stage-badge {
+  background: var(--mint-primary, #2dd4bf);
+  color: var(--bg-dark-obsidian, #0b0d12);
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 868px) {
+  .team-input-panel-grid {
+    grid-template-columns: 1fr;
+  }
+}

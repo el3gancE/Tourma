@@ -1,9 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
-         version="3.1">
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
     
+    <!-- 1. Create Tournament Servlet -->
+    <servlet>
+        <servlet-name>CreateTournamentServlet</servlet-name>
+        <servlet-class>controller.CreateTournamentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CreateTournamentServlet</servlet-name>
+        <url-pattern>/create-tournament</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>CreateTournamentServlet</servlet-name>
+        <url-pattern>/create-tournament.jsp</url-pattern>
+    </servlet-mapping>
+
+    <!-- 2. Create Series Servlet -->
+    <servlet>
+        <servlet-name>CreateSeriesServlet</servlet-name>
+        <servlet-class>controller.CreateSeriesServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CreateSeriesServlet</servlet-name>
+        <url-pattern>/create-series</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>CreateSeriesServlet</servlet-name>
+        <url-pattern>/create-series.jsp</url-pattern>
+    </servlet-mapping>
+
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
         <welcome-file>index.html</welcome-file>
