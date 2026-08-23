@@ -1,0 +1,170 @@
+/* ==========================================================================
+   TOURMA - MATCH NODE CARD COMPONENT TEMPLATE
+   ========================================================================== */
+
+.match-card {
+  width: 240px;
+  background: #121722;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.match-card.pending {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.match-card.completed {
+  border-color: rgba(45, 212, 191, 0.2);
+}
+
+/* Match Card Header */
+.match-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0 2px 4px 2px;
+}
+
+.match-card-header .match-id {
+  color: var(--gold-primary, #fbbf24); /* Yellow Gold */
+  letter-spacing: 0.02em;
+}
+
+.match-card-header .match-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.match-card-header .match-status.completed {
+  color: var(--mint-primary, #2dd4bf); /* Mint Green */
+}
+
+.match-card-header .match-status.pending {
+  color: var(--text-dim, #64748b); /* Muted Slate */
+}
+
+/* Team Slot Item */
+.team-slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #181e2c;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+  transition: var(--transition-fast, 0.2s cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.team-slot.winner {
+  border-color: var(--mint-primary, #2dd4bf); /* Mint Green Glowing Border */
+  box-shadow: 0 0 12px rgba(45, 212, 191, 0.25);
+  background: rgba(45, 212, 191, 0.06);
+}
+
+.team-slot.winner .team-name {
+  color: var(--mint-primary, #2dd4bf); /* Mint Green Text for Winner */
+  font-weight: 700;
+}
+
+.team-slot-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.team-seed-badge {
+  width: 24px;
+  height: 24px;
+  background: #090d16;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--gold-primary, #fbbf24); /* Gold Number */
+  flex-shrink: 0;
+}
+
+.team-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.team-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-white, #f8fafc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-rank-sub {
+  font-size: 0.7rem;
+  color: var(--text-dim, #64748b);
+  font-weight: 400;
+}
+
+.score-box {
+  width: 32px;
+  height: 32px;
+  background: #0d111a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-white, #f8fafc);
+  flex-shrink: 0;
+}
+
+.team-slot.winner .score-box {
+  border-color: rgba(45, 212, 191, 0.4);
+  color: #ffffff;
+}
+
+/* Round & Group Headers */
+.round-header-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.round-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-white, #f8fafc);
+}
+
+.round-count-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--mint-primary, #2dd4bf);
+}
+
+.group-title-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(45, 212, 191, 0.08);
+  border: 1px solid rgba(45, 212, 191, 0.2);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--mint-primary, #2dd4bf);
+  margin-bottom: 8px;
+  letter-spacing: 0.03em;
+}
