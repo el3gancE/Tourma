@@ -25,7 +25,7 @@ CREATE TABLE series (
     id VARCHAR(50) PRIMARY KEY,
     name NVARCHAR(255) NOT NULL,
     ranking_model VARCHAR(50) NOT NULL DEFAULT 'ROLLING_WINDOW' CHECK (ranking_model IN ('ROLLING_WINDOW', 'FIFA_ELO')),
-    phase_size INT DEFAULT 10, -- Số lượng giải tích lũy trong 1 Phase (Ví dụ: 10 giải = 1 Phase; 1-10 là Phase 1, 11-20 là Phase 2)
+    phase_size INT DEFAULT 10, -- Độ rộng cửa sổ trượt W (Ví dụ: W = 10 giải; 1-10 là Phase 1, 11-20 là Phase 2)
     current_phase INT DEFAULT 1, -- Phase hiện tại của Series
     initial_points INT DEFAULT 0, -- Điểm khởi đầu cho Rolling Window (0 điểm)
     initial_elo FLOAT DEFAULT 1000.0, -- Điểm Elo khởi điểm cho FIFA Elo (1000 điểm)
@@ -52,7 +52,7 @@ CREATE TABLE tournaments (
     tournament_type VARCHAR(20) NOT NULL DEFAULT 'SINGLE_STAGE' CHECK (tournament_type IN ('SINGLE_STAGE', 'MULTI_STAGE')),
     series_event_type VARCHAR(20) DEFAULT 'NONE' CHECK (series_event_type IN ('QUALIFIER', 'MAIN', 'NONE')), -- QUALIFIER (I=25), MAIN (I=45), NONE
     tier_name VARCHAR(10) NULL CHECK (tier_name IN ('S', 'A', 'B', 'C', 'D')), -- Tier cố định cho Rolling Series: S, A, B, C, D (NULL nếu là Giải đơn lẻ)
-    tournament_index_in_series INT DEFAULT 1, -- Thứ tự giải trong Series (e.g. Giải thứ 1, 2, ... 12)
+    tournament_index_in_series INT DEFAULT 1, -- Thứ tự giải trong Series (e.g. Giải thứ 1, 2, ... 11, 12)
     phase_number INT DEFAULT 1, -- Phase tương ứng (e.g. Giải thứ 12 -> Phase 2)
     max_teams_per_group INT DEFAULT 4, -- Số đội tối đa mỗi bảng
     advancing_seats_count INT DEFAULT 16, -- Tổng số vé đi tiếp sang Stage sau
@@ -150,24 +150,24 @@ CREATE TABLE matches (
     FOREIGN KEY (next_match_id) REFERENCES matches(id)
 );
 
--- 9. BẢNG SERIES_STANDINGS (BẢNG XẾP HẠNG SERIES TÍCH LŨY TỔNG & THEO PHASE & NHÓM)
+-- 9. BẢNG SERIES_STANDINGS (BẢNG XẾP HẠNG SERIES TÍCH LŨY CỬA SỔ TRƯỢT & THEO PHASE)
 CREATE TABLE series_standings (
     id VARCHAR(50) PRIMARY KEY,
     series_id VARCHAR(50) NOT NULL,
-    phase_number INT DEFAULT 1, -- Phase tương ứng (Phase 1, Phase 2...)
+    phase_number INT DEFAULT 1, -- Phase chốt xếp hạng hiện tại (Phase 1, Phase 2...)
     normalized_team_name NVARCHAR(255) NOT NULL,
     partner_participant_id VARCHAR(50) NULL,
     group_name NVARCHAR(100) DEFAULT 'General', -- Dùng cho BXH Riêng từng Nhóm
-    total_rolling_points INT DEFAULT 0, -- Điểm Rolling tích lũy trong Phase
+    total_rolling_points INT DEFAULT 0, -- Điểm Rolling trượt tích lũy trong W giải gần nhất
     current_elo FLOAT DEFAULT 1000.0, -- Điểm Elo FIFA
-    rank_overall INT DEFAULT 0, -- Thứ hạng trên BXH Phase
+    rank_overall INT DEFAULT 0, -- Thứ hạng trên BXH Series
     rank_in_group INT DEFAULT 0, -- Thứ hạng trên BXH Riêng từng Nhóm
     updated_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (series_id) REFERENCES series(id) ON DELETE CASCADE,
     FOREIGN KEY (partner_participant_id) REFERENCES partner_participants(id)
 );
 
--- 10. BẢNG SERIES_TOURNAMENT_HISTORY (LỊCH SỬ ĐIỂM SỐ TỪNG GIẢI THUỘC SERIES)
+-- 10. BẢNG SERIES_TOURNAMENT_HISTORY (LỊCH SỬ ĐIỂM SỐ VÀ TRỪ ĐIỂM TRƯỢT TỪNG GIẢI)
 CREATE TABLE series_tournament_history (
     id VARCHAR(50) PRIMARY KEY,
     series_id VARCHAR(50) NOT NULL,
@@ -175,7 +175,8 @@ CREATE TABLE series_tournament_history (
     phase_number INT DEFAULT 1,
     normalized_team_name NVARCHAR(255) NOT NULL,
     tournament_rank INT NOT NULL,
-    points_earned INT DEFAULT 0,
+    points_earned INT DEFAULT 0, -- Điểm cộng được từ giải đấu này
+    points_deducted INT DEFAULT 0, -- Điểm bị trượt trừ đi của Giải thứ (k - W) khi k > W
     elo_change FLOAT DEFAULT 0.0,
     completed_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (series_id) REFERENCES series(id) ON DELETE CASCADE,

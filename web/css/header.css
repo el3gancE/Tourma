@@ -1,0 +1,95 @@
+/* ==========================================================================
+   TOURMA - COMPACT & CENTERED HEADER STYLESHEET (header.css)
+   Scaled down with 100% mathematically centered menu links
+   ========================================================================== */
+
+/* Navbar Container - Grid Centering Layout */
+.navbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* Logo Left, Nav Links Center, Right Spacer */
+  align-items: center;
+  padding: 0.45rem 5%;
+  background: rgba(18, 22, 31, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Brand Logo - Left Aligned */
+.brand-logo {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-white, #f8fafc);
+}
+
+.brand-icon {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--mint-primary, #2dd4bf), var(--gold-primary, #fbbf24));
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg-dark-obsidian, #0b0d12);
+  font-size: 0.8rem;
+  box-shadow: 0 0 10px rgba(45, 212, 191, 0.2);
+}
+
+.brand-logo span.highlight {
+  background: linear-gradient(135deg, var(--mint-glow, #00f5d4), var(--gold-primary, #fbbf24));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Nav Links Menu - Perfectly Centered */
+.nav-links {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  list-style: none;
+}
+
+.nav-link {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted, #94a3b8);
+  transition: var(--transition-fast, 0.18s ease);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm, 6px);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--text-white, #f8fafc);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-link.active {
+  color: var(--mint-primary, #2dd4bf);
+  font-weight: 600;
+}
+
+/* Right Spacer / Actions */
+.nav-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-actions .btn {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm, 6px);
+}
