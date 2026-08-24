@@ -1,0 +1,61 @@
+==============================================================================
+  TOURMA - MASTER PROJECT SPECIFICATION & BUSINESS RULES MEMORANDUM
+  Project: NetBeans Java Web (Jakarta EE 10 / Tomcat 10+ / MS SQL Server)
+==============================================================================
+
+[1. FONTS & UI/UX DESIGN SYSTEM]
+- Font Family: Google Font "Lexend" (font-family: 'Lexend', sans-serif) for 100% of UI.
+- Color Tokens:
+  * Dark Obsidian / Charcoal Background: #0b0d12, #12161f, #181d29
+  * Text Colors: White #f8fafc, Muted #94a3b8
+  * Primary Mint Accent: #2dd4bf, #00f5d4 (Main buttons, winner highlight, active tab)
+  * Secondary Gold Accent: #fbbf24, #f59e0b (Series, seed badges, match code, secondary buttons)
+- UI Scale: Compact high-density dashboard (14px rem base, equivalent to 67% browser zoom).
+- CRITICAL TEXT RULE: REMOVE ALL EXPLANATION TEXT IN PARENTHESES (...) FROM ALL LABELS, TITLES, BUTTONS AND VIEWS ALWAYS!
+
+[2. NAVIGATION & DIRECTORY STRUCTURE]
+- Centered Header Navbar (100% centered via CSS Grid: grid-template-columns: 1fr auto 1fr):
+  1. Trang Chủ (index.jsp)
+  2. Tạo Giải Đấu (common/create-tournament.jsp)
+  3. Tạo Chuỗi Giải (common/create-series.jsp)
+  4. Giải Đấu Của Tôi (common/my-tournaments.jsp)
+  5. Chuỗi Giải Của Tôi (common/my-series.jsp)
+- Clean Directory Architecture:
+  All View JSP files are placed strictly inside web/common/ (e.g. web/common/create-tournament.jsp, web/common/configure-tournament-format.jsp, web/common/create-series.jsp).
+  No duplicate wrapper JSP files in the root web/ folder.
+
+[3. CORE BUSINESS RULES & ALGORITHMS]
+- BR-01 (Dynamic Floating Team Count): No static initial team count required upfront. Total team count N is dynamically calculated from lines pasted into the Textarea Live Parser.
+- BR-02 (Textarea Live Parser): Pasting team names (1 line per team). Autodetects seed numbers if prefixed (e.g. "1. Hà Nội FC"). Autodetects duplicate names. Option to randomize seeds.
+- BR-03 (Multi-Stage Original Seeding): Original Seed Number stays with the team across ALL stages (Stage 1 -> Stage N).
+- BR-04 (BYE Placement): If N != 2^k in knockout formats (SE/DE), BYE slots are automatically assigned to top-seeded teams (BYE = 2^(ceil(log2 N)) - N).
+- BR-05 (Custom W-D-L Points): In Round Robin and Group Stage formats, customizable points for Win (win_points, default 3), Draw (draw_points, default 1), Loss (loss_points, default 0).
+- BR-14 (Legs / Meeting Count): In Round Robin and Group Stage formats, customizable legs_count for number of times teams play each other (min 1, max 10, default 1).
+- BR-06 (Swiss 3-Win / 3-Loss & Sequential Lock): Swiss System rule: 3 wins (target_wins=3) -> Advance; 3 losses (elimination_losses=3) -> Eliminated. Round R+1 matches only generate after ALL Round R matches finish 100%.
+- BR-07 (Group Stage Wildcards): Surplus wildcard formula: Q = floor(N_adv / G), R = N_adv mod G. R groups get Q+1 qualified teams, remaining get Q teams.
+- BR-08 (Group Protection): Teams from the same group are placed in opposite knockout halves (1A vs 2B, 1B vs 2A) so they can only meet again in the Grand Final.
+- BR-09 (Sliding Window Deduction): Rolling Series point deduction algorithm: When tournament index k > W (with phase_size window W=10), system adds points from Tournament k AND AUTOMATICALLY DEDUCTS points from Tournament (k - W). Rolling standings always calculate total points earned in the latest W tournaments.
+- BR-10 (Fixed Tier Set): Rolling Series tournament Tier classification is fixed to 5 levels: S, A, B, C, D.
+- BR-11 (Initial Score Rules): Rolling Window initial score = 0 points; FIFA Elo initial score = 1000.0 Elo.
+- BR-12 (FIFA Elo Partner Groups): Each participant assigned to a partner group (group_name). System outputs both Overall Standings and Group-Specific Standings (I_qualifier=25, I_main=45).
+- BR-13 (Qualifier-to-Main Pipeline): Top K teams from Qualifier tournament auto-pushed into Main Event participant list ("Tournament inside Tournament").
+
+[4. SDS COMPONENT & DUAL VIEW ARCHITECTURE]
+- Match Card Node Component (web/common/component/match-card-node.jsp & web/css/template.css):
+  Unified 100% reusable match card fragment used across ALL formats (Single Elimination, Double Elimination, Round Robin, Swiss System, Group Stage).
+- Dual View Modes (tournament-bracket.jsp):
+  1. Bracket Tree View Mode (Cây nhánh đấu)
+  2. Normal List View Mode (Danh sách trận thường)
+  Both view modes reuse the exact same match-card-node.jsp component fragment 100%.
+- Decoupled Algorithm Layer:
+  Each format has its dedicated Algorithm Service & DAO (SingleEliminationService, DoubleEliminationService, RoundRobinService, SwissSystemService, GroupStageService, RollingWindowService, FifaEloService).
+
+[5. STANDALONE TOURNAMENT 6-SCREEN PIPELINE]
+  Screen 1: Basic Info (create-tournament.jsp - Name & Description)
+  Screen 2: Single-Stage Format Setup (configure-tournament-format.jsp - Single Elim, Double Elim, Round Robin & W-D-L points)
+  Screen 3: Team Input & Live Parser (configure-tournament-teams.jsp - Textarea & Seed preview)
+  Screen 4: Match Bracket & Live Score Updates (tournament-bracket.jsp - Shared Match Card Node)
+  Screen 5: Stage Transition (tournament-stage-transition.jsp - Multi-Stage cross-group protection)
+  Screen 6: Summary & Champion Crown (tournament-summary.jsp)
+
+==============================================================================

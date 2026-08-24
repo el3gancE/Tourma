@@ -75,6 +75,7 @@ CREATE TABLE tournament_stages (
     win_points INT DEFAULT 3, -- Tùy chỉnh điểm cho 1 trận Thắng (Group Stage & Round Robin, e.g. 3 điểm)
     draw_points INT DEFAULT 1, -- Tùy chỉnh điểm cho 1 trận Hòa (Group Stage & Round Robin, e.g. 1 điểm)
     loss_points INT DEFAULT 0, -- Tùy chỉnh điểm cho 1 trận Thua (Group Stage & Round Robin, e.g. 0 điểm)
+    legs_count INT DEFAULT 1 CHECK (legs_count BETWEEN 1 AND 10), -- Số lần gặp nhau (Lượt đi / Lượt về, min 1, max 10)
     status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ONGOING', 'COMPLETED')),
     created_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE

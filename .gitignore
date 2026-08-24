@@ -1,1 +1,27 @@
+# ============================================================================
+# TOURMA - GIT IGNORE CONFIGURATION FOR NETBEANS JAVA WEB PROJECT
+# Git chỉ theo dõi Source Code (src/), Web Resources (web/), DDL & Docs.
+# Bỏ qua các file cấu hình NetBeans máy cá nhân, Build outputs & Temp files.
+# ============================================================================
+
+# 1. NetBeans Project Properties & Machine-Specific Files
+nbproject/private/
+nbproject/project.properties
+nbproject/project.xml
+nbproject/
+
+# 2. NetBeans Staging, Build Outputs & Distribution Packages
 /build/
+/dist/
+*.war
+*.ear
+*.class
+
+# 3. Temporary & OS Specific Files
+.netbeans_automatic_build
+.netbeans_update_resources
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak

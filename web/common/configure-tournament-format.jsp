@@ -51,6 +51,7 @@
                 </h1>
 
                 <form id="configureFormatForm" action="${pageContext.request.contextPath}/common/configure-tournament-teams.jsp" method="GET">
+                    <input type="hidden" name="id" value="${param.id}">
                     <input type="hidden" id="selectedFormat" name="format" value="SINGLE_ELIMINATION">
 
                     <!-- 1. CHỌN THỂ THỨC THI ĐẤU -->
@@ -70,12 +71,12 @@
                         </div>
                     </div>
 
-                    <!-- 2. CẤU HÌNH ĐIỂM THẮNG - HÒA - THUA (Chỉ hiển thị khi chọn Round Robin) -->
+                    <!-- 2. CẤU HÌNH ĐIỂM THẮNG - HÒA - THUA VÀ SỐ LẦN GẶP NHAU (Hiển thị khi chọn Round Robin) -->
                     <div id="wdlPointsPanel" style="display: none; background: var(--bg-dark-obsidian); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; margin-top: 1rem; margin-bottom: 1.25rem;">
                         <div class="section-label-uppercase" style="margin-bottom: 0.6rem; color: var(--gold-primary);">
-                            <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG ĐIỂM TRẬN ĐẤU
+                            <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG ĐIỂM & SỐ LẦN GẶP NHAU
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem;">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem;">
                             <div>
                                 <label class="form-label" style="font-size: 0.75rem; color: var(--text-muted);">Điểm Thắng</label>
                                 <input type="number" name="winPoints" class="form-control" value="3" min="0" max="10">
@@ -87,6 +88,10 @@
                             <div>
                                 <label class="form-label" style="font-size: 0.75rem; color: var(--text-muted);">Điểm Thua</label>
                                 <input type="number" name="lossPoints" class="form-control" value="0" min="0" max="10">
+                            </div>
+                            <div>
+                                <label class="form-label" style="font-size: 0.75rem; color: var(--text-muted);">Số Lần Gặp Nhau</label>
+                                <input type="number" name="legsCount" class="form-control" value="1" min="1" max="10">
                             </div>
                         </div>
                     </div>

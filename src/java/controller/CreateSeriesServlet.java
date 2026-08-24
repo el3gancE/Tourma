@@ -1,5 +1,6 @@
 package controller;
 
+import dao.SeriesDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -7,9 +8,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
+import model.Series;
 
 /**
  * Controller Servlet for Series Creation (Rolling Window & FIFA Elo Rating)
+ * Immediately inserts the new Series record into SQL Server database.
  * Uses Jakarta EE 10 (jakarta.servlet.*) for Apache Tomcat 10+ compatibility.
  */
 @WebServlet(name = "CreateSeriesServlet", urlPatterns = {"/create-series", "/create-series.jsp"})
@@ -43,6 +46,10 @@ public class CreateSeriesServlet extends HttpServlet {
                 return;
             }
 
+            if (rankingModel == null || rankingModel.trim().isEmpty()) {
+                rankingModel = "ROLLING_WINDOW";
+            }
+
             int phaseSize = 10;
             if (phaseSizeStr != null && !phaseSizeStr.trim().isEmpty()) {
                 try { phaseSize = Integer.parseInt(phaseSizeStr); } catch (Exception ignored) {}
@@ -56,15 +63,30 @@ public class CreateSeriesServlet extends HttpServlet {
             // 2. Generate Unique Series ID
             String seriesId = "S_" + UUID.randomUUID().toString().substring(0, 8);
 
-            // Log / Debug output
-            System.out.println("=== SERIES CREATED ===");
-            System.out.println("ID: " + seriesId);
-            System.out.println("Name: " + name);
-            System.out.println("Model: " + rankingModel);
-            System.out.println("Phase Size: " + phaseSize);
+            // 3. Create Series Entity & Save to Database
+            Series s = new Series();
+            s.setId(seriesId);
+            s.setName(name.trim());
+            s.setRankingModel(rankingModel);
+            s.setPhaseSize(phaseSize);
+            s.setCurrentPhase(1);
+            s.setInitialPoints(0);
+            s.setInitialElo(initialElo);
+            s.setStatus("ACTIVE");
 
-            // 3. Redirect to Series Dashboard or My Series List
-            response.sendRedirect(request.getContextPath() + "/my-series.jsp?createdId=" + seriesId);
+            SeriesDAO dao = new SeriesDAO();
+            boolean inserted = dao.insertSeries(s);
+
+            if (inserted) {
+                System.out.println("=== SERIES SAVED TO DB ===");
+                System.out.println("ID: " + seriesId);
+                System.out.println("Name: " + name);
+            } else {
+                System.err.println("Failed to insert series into database: " + seriesId);
+            }
+
+            // 4. Redirect to My Series List
+            response.sendRedirect(request.getContextPath() + "/my-series");
 
         } catch (Exception e) {
             e.printStackTrace();

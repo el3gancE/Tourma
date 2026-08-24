@@ -36,17 +36,17 @@
             </a>
         </li>
 
-        <!-- 4. Giải Đấu Của Tôi -->
+        <!-- 4. Giải Đấu Của Tôi (Calls Servlet /my-tournaments to query DB) -->
         <li>
-            <a href="${pageContext.request.contextPath}/common/my-tournaments.jsp"
+            <a href="${pageContext.request.contextPath}/my-tournaments"
                 class="nav-link ${param.active == 'my-tournaments' ? 'active' : ''}">
                 <i class="fa-solid fa-sitemap"></i> Giải Đấu Của Tôi
             </a>
         </li>
 
-        <!-- 5. Chuỗi Giải Của Tôi -->
+        <!-- 5. Chuỗi Giải Của Tôi (Calls Servlet /my-series to query DB) -->
         <li>
-            <a href="${pageContext.request.contextPath}/common/my-series.jsp"
+            <a href="${pageContext.request.contextPath}/my-series"
                 class="nav-link ${param.active == 'my-series' ? 'active' : ''}">
                 <i class="fa-solid fa-layer-group"></i> Chuỗi Giải Của Tôi
             </a>
