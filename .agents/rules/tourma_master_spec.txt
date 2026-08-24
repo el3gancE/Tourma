@@ -30,6 +30,7 @@
 - BR-03 (Multi-Stage Original Seeding): Original Seed Number stays with the team across ALL stages (Stage 1 -> Stage N).
 - BR-04 (BYE Placement): If N != 2^k in knockout formats (SE/DE), BYE slots are automatically assigned to top-seeded teams (BYE = 2^(ceil(log2 N)) - N).
 - BR-05 (Custom W-D-L Points): In Round Robin and Group Stage formats, customizable points for Win (win_points, default 3), Draw (draw_points, default 1), Loss (loss_points, default 0).
+- BR-14 (Legs / Meeting Count): In Round Robin and Group Stage formats, customizable legs_count for number of times teams play each other (min 1, max 10, default 1).
 - BR-06 (Swiss 3-Win / 3-Loss & Sequential Lock): Swiss System rule: 3 wins (target_wins=3) -> Advance; 3 losses (elimination_losses=3) -> Eliminated. Round R+1 matches only generate after ALL Round R matches finish 100%.
 - BR-07 (Group Stage Wildcards): Surplus wildcard formula: Q = floor(N_adv / G), R = N_adv mod G. R groups get Q+1 qualified teams, remaining get Q teams.
 - BR-08 (Group Protection): Teams from the same group are placed in opposite knockout halves (1A vs 2B, 1B vs 2A) so they can only meet again in the Grand Final.

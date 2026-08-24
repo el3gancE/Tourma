@@ -32,6 +32,34 @@
         <url-pattern>/create-series.jsp</url-pattern>
     </servlet-mapping>
 
+    <!-- 3. My Tournaments Servlet -->
+    <servlet>
+        <servlet-name>MyTournamentsServlet</servlet-name>
+        <servlet-class>controller.MyTournamentsServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MyTournamentsServlet</servlet-name>
+        <url-pattern>/my-tournaments</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>MyTournamentsServlet</servlet-name>
+        <url-pattern>/my-tournaments.jsp</url-pattern>
+    </servlet-mapping>
+
+    <!-- 4. My Series Servlet -->
+    <servlet>
+        <servlet-name>MySeriesServlet</servlet-name>
+        <servlet-class>controller.MySeriesServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MySeriesServlet</servlet-name>
+        <url-pattern>/my-series</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>MySeriesServlet</servlet-name>
+        <url-pattern>/my-series.jsp</url-pattern>
+    </servlet-mapping>
+
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
         <welcome-file>index.html</welcome-file>
