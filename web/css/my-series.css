@@ -1,0 +1,192 @@
+/* ==========================================================================
+   TOURMA - MY SERIES DEDICATED STYLESHEET (my-series.css)
+   Font: Lexend
+   Scaled down to ~67% ratio for high-density modern UI
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
+
+/* Font Lexend Enforcement */
+body, button, input, select, textarea, .series-card-title, .filter-pill-btn {
+  font-family: 'Lexend', sans-serif !important;
+}
+
+/* Page Top Header Bar */
+.page-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Toolbar & Filters */
+.toolbar-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  background: var(--bg-dark-charcoal, #12161f);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md, 10px);
+  padding: 0.6rem 1rem;
+}
+
+.filter-pills-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-pill-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted, #94a3b8);
+  padding: 0.35rem 0.85rem;
+  border-radius: 50px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast, 0.18s ease);
+}
+
+.filter-pill-btn:hover {
+  color: var(--text-white, #f8fafc);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.filter-pill-btn.active {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: var(--gold-primary, #fbbf24);
+  color: var(--gold-primary, #fbbf24);
+}
+
+/* Search Box */
+.search-input-box {
+  position: relative;
+  min-width: 220px;
+}
+
+.search-input-box input {
+  padding-left: 2.2rem;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+  font-size: 0.82rem;
+}
+
+.search-input-box i {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.8rem;
+}
+
+/* Series Cards Grid */
+.series-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.15rem;
+  margin-bottom: 3rem;
+}
+
+.series-card {
+  background: var(--bg-card-surface, #181d29);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: var(--transition-fast, 0.18s ease);
+  position: relative;
+}
+
+.series-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(251, 191, 36, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.series-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+
+.series-model-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.18rem 0.55rem;
+  border-radius: 4px;
+}
+
+.series-model-badge.rolling {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--gold-primary, #fbbf24);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.series-model-badge.elo {
+  background: rgba(45, 212, 191, 0.12);
+  color: var(--mint-primary, #2dd4bf);
+  border: 1px solid rgba(45, 212, 191, 0.25);
+}
+
+.phase-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.18rem 0.55rem;
+  border-radius: 50px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-white, #f8fafc);
+  border: 1px solid var(--border-color);
+}
+
+.series-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  line-height: 1.35;
+}
+
+.series-card-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.series-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Empty State Box */
+.empty-state-box {
+  background: var(--bg-card-surface, #181d29);
+  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-lg, 12px);
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
