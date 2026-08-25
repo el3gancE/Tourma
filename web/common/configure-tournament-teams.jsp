@@ -36,20 +36,17 @@
             <jsp:param name="active" value="create-tournament"/>
         </jsp:include>
 
-        <main class="container" style="max-width: 1200px;">
-            <div class="tournament-layout-wrapper">
-                <!-- Include Shared Tournament Sidebar Component -->
-                <jsp:include page="/common/component/sidebar.jsp">
-                    <jsp:param name="activeStep" value="teams"/>
-                    <jsp:param name="id" value="${param.id}"/>
-                </jsp:include>
+        <!-- Include Shared Tournament Sidebar Component -->
+        <jsp:include page="/common/component/sidebar.jsp">
+            <jsp:param name="activeStep" value="teams"/>
+            <jsp:param name="id" value="${param.id}"/>
+        </jsp:include>
 
-                <!-- Main Content Area -->
-                <div class="tournament-main-content">
-                    <!-- CENTERED MAIN TITLE -->
-                    <h1 class="page-main-title" style="margin-top: 0;">
-                        Quản lý danh sách đội
-                    </h1>
+        <main class="container has-sidebar">
+            <!-- CENTERED MAIN TITLE -->
+            <h1 class="page-main-title" style="margin-top: 0;">
+                Quản lý danh sách đội
+            </h1>
 
                     <form id="configureTeamsForm" action="${pageContext.request.contextPath}/save-teams" method="POST" onsubmit="return prepareFormSubmission(event)">
                         <input type="hidden" name="id" value="${param.id}">
@@ -152,8 +149,6 @@
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
         </main>
 
         <script>

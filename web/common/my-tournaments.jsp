@@ -103,9 +103,14 @@
 
                                 <div class="tourney-card-footer">
                                     <span class="text-muted" style="font-size: 0.72rem;">ID: ${t.id}</span>
-                                    <a href="${pageContext.request.contextPath}/tournament-bracket.jsp?id=${t.id}" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
-                                        Xem Sơ Đồ ➔
-                                    </a>
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${t.id}" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                            <i class="fa-solid fa-sliders"></i> Chi Tiết
+                                        </a>
+                                        <a href="${pageContext.request.contextPath}/tournament-bracket.jsp?id=${t.id}" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                            Xem Sơ Đồ ➔
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </c:forEach>
