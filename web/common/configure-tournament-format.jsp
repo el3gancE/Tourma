@@ -25,55 +25,29 @@
             <jsp:param name="active" value="create-tournament"/>
         </jsp:include>
 
-        <main class="container" style="max-width: 680px;">
-            
-            <!-- Top Stage Model Toggle Bar -->
-            <div class="stage-toggle-bar">
-                <button type="button" class="stage-toggle-btn">
-                    <i class="fa-solid fa-layer-group"></i> Multi-Stage
-                </button>
-                <button type="button" class="stage-toggle-btn active">
-                    <i class="fa-solid fa-trophy text-mint"></i> Single Stage
-                </button>
-            </div>
+        <main class="container" style="max-width: 1100px;">
+            <div class="tournament-layout-wrapper">
+                <!-- Include Tournament Sidebar Component -->
+                <jsp:include page="/common/component/sidebar.jsp">
+                    <jsp:param name="activeStep" value="format"/>
+                    <jsp:param name="id" value="${param.id}"/>
+                </jsp:include>
 
-            <!-- Main Config Card Box -->
-            <div class="form-container-box" style="margin-top: 0;">
-                
-                <!-- Stage Badge -->
-                <div style="margin-bottom: 0.6rem;">
-                    <span class="stage-badge" style="font-size: 0.72rem; padding: 0.2rem 0.65rem;">SINGLE STAGE</span>
-                </div>
-
-                <!-- Main Card Title -->
-                <h1 class="form-header-title" style="font-size: 1.4rem; margin-bottom: 1.25rem;">
-                    Giai đoạn thi đấu duy nhất <i class="fa-solid fa-trophy text-gold"></i>
-                </h1>
-
-                <form id="configureFormatForm" action="${pageContext.request.contextPath}/common/configure-tournament-teams.jsp" method="GET">
-                    <input type="hidden" name="id" value="${param.id}">
-                    <input type="hidden" id="selectedFormat" name="format" value="SINGLE_ELIMINATION">
-
-                    <!-- 1. CHỌN THỂ THỨC THI ĐẤU -->
-                    <div class="form-group">
-                        <div class="section-label-uppercase">CHỌN THỂ THỨC THI ĐẤU</div>
-                        
-                        <div class="format-pill-grid">
-                            <button type="button" class="format-pill-btn active" id="pillSingleElim" onclick="selectFormat('SINGLE_ELIMINATION')">
-                                Single Elimination
-                            </button>
-                            <button type="button" class="format-pill-btn" id="pillDoubleElim" onclick="selectFormat('DOUBLE_ELIMINATION')">
-                                Double Elimination
-                            </button>
-                            <button type="button" class="format-pill-btn" id="pillRoundRobin" onclick="selectFormat('ROUND_ROBIN')">
-                                Round Robin
-                            </button>
-                        </div>
+                <!-- Main Content Area -->
+                <div class="tournament-main-content">
+                    <!-- Top Stage Model Toggle Bar -->
+                    <div class="stage-toggle-bar">
+                        <button type="button" class="stage-toggle-btn">
+                            <i class="fa-solid fa-layer-group"></i> Multi-Stage
+                        </button>
+                        <button type="button" class="stage-toggle-btn active">
+                            <i class="fa-solid fa-trophy text-mint"></i> Single Stage
+                        </button>
                     </div>
 
-                    <!-- 2. CẤU HÌNH ĐIỂM THẮNG - HÒA - THUA VÀ SỐ LẦN GẶP NHAU (Hiển thị khi chọn Round Robin) -->
-                    <div id="wdlPointsPanel" style="display: none; background: var(--bg-dark-obsidian); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; margin-top: 1rem; margin-bottom: 1.25rem;">
-                        <div class="section-label-uppercase" style="margin-bottom: 0.6rem; color: var(--gold-primary);">
+                    <!-- Main Config Card Box -->
+                    <div class="form-container-box" style="margin-top: 0;">
+                        
                             <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG ĐIỂM & SỐ LẦN GẶP NHAU
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem;">
