@@ -36,121 +36,119 @@
             <jsp:param name="active" value="create-tournament"/>
         </jsp:include>
 
-        <main class="container" style="max-width: 1100px;">
-            <div style="margin-top: 1.25rem;">
-                <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${param.id}" class="text-muted" style="font-size: 0.8rem;">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại Bước 2: Thể Thức
-                </a>
-            </div>
+        <!-- Include Shared Tournament Sidebar Component -->
+        <jsp:include page="/common/component/sidebar.jsp">
+            <jsp:param name="activeStep" value="teams"/>
+            <jsp:param name="id" value="${param.id}"/>
+        </jsp:include>
 
+        <main class="container has-sidebar">
             <!-- CENTERED MAIN TITLE -->
-            <h1 class="page-main-title">
+            <h1 class="page-main-title" style="margin-top: 0;">
                 Quản lý danh sách đội
             </h1>
 
-            <form id="configureTeamsForm" action="${pageContext.request.contextPath}/save-teams" method="POST" onsubmit="return prepareFormSubmission(event)">
-                <input type="hidden" name="id" value="${param.id}">
-                <input type="hidden" name="format" value="${param.format}">
-                <input type="hidden" id="finalTeamsInput" name="teamListRaw" value="">
+                    <form id="configureTeamsForm" action="${pageContext.request.contextPath}/save-teams" method="POST" onsubmit="return prepareFormSubmission(event)">
+                        <input type="hidden" name="id" value="${param.id}">
+                        <input type="hidden" name="format" value="${param.format}">
+                        <input type="hidden" id="finalTeamsInput" name="teamListRaw" value="">
 
-                <!-- 2 INDEPENDENT STANDALONE CARDS SIDE-BY-SIDE -->
-                <div class="dual-card-container">
-                    
-                    <!-- LEFT STANDALONE CARD: THÊM ĐỘI BÊN NÀY -->
-                    <div class="standalone-card">
-                        <div>
-                            <div class="standalone-card-header">
-                                <h3 class="standalone-card-title text-mint">
-                                    <i class="fa-solid fa-circle-plus"></i> Thêm Đội
-                                </h3>
-                                <span class="text-muted" style="font-size: 0.75rem;">Ô Nhập Liệu</span>
-                            </div>
-
-                            <!-- INNER DARK BOX FOR TEXTAREA -->
-                            <div class="inner-dark-box">
-                                <textarea id="teamTextarea" class="team-textarea-box" 
-                                          placeholder="Dán danh sách tên các đội bóng vào đây:&#10;1. Hà Nội FC&#10;2. Saigon Heat&#10;3. Hải Phòng FC&#10;4. SHB Đà Nẵng&#10;5. Becamex Bình Dương&#10;6. Thép Xanh Nam Định&#10;7. Hoàng Anh Gia Lai&#10;8. Đông Á Thanh Hóa" 
-                                          oninput="handleTextareaTyping()" onkeyup="handleTextareaTyping()" onchange="handleTextareaTyping()"></textarea>
-
-                                <!-- Live Parser Summary Bar -->
-                                <div class="parser-summary-bar">
-                                    <div class="parser-count-badge">
-                                        <i class="fa-solid fa-calculator"></i> Số Đội Đang Nhập: <span id="inputCountDisplay">0</span> Đội
+                        <!-- 2 INDEPENDENT STANDALONE CARDS SIDE-BY-SIDE -->
+                        <div class="dual-card-container">
+                            
+                            <!-- LEFT STANDALONE CARD: THÊM ĐỘI BÊN NÀY -->
+                            <div class="standalone-card">
+                                <div class="card-header-flex">
+                                    <div class="card-title-bold">
+                                        <i class="fa-solid fa-plus-circle text-mint"></i> Thêm Đội
                                     </div>
-                                    <div id="warningBadge" class="parser-warning-badge" style="display: none;">
-                                        <i class="fa-solid fa-triangle-exclamation"></i> Trùng tên đội
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                        Nhập mỗi đội 1 dòng
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- ADD TEAMS BUTTON -->
-                        <button type="button" id="btnAddTeams" class="btn btn-mint" style="width: 100%; font-weight: 700; padding: 0.75rem 1rem; cursor: pointer;" onclick="addTeamsFromInput(); return false;">
-                            <i class="fa-solid fa-plus"></i> Thêm Đội ➔
-                        </button>
-                    </div>
+                                <!-- INNER DARK BOX FOR TEXTAREA -->
+                                <div class="inner-dark-box">
+                                    <textarea id="teamTextarea" class="team-input-textarea" placeholder="Nhập tên đội bóng ở đây...&#10;Đội A&#10;Đội B&#10;Đội C" oninput="handleTextareaTyping()"></textarea>
+                                </div>
 
-                    <!-- RIGHT STANDALONE CARD: QUẢN LÝ BÊN NÀY -->
-                    <div class="standalone-card">
-                        <div>
-                            <div class="standalone-card-header">
-                                <h3 class="standalone-card-title text-gold">
-                                    <i class="fa-solid fa-list-check"></i> Quản Lý
-                                </h3>
-                                <div style="display: flex; gap: 0.4rem;">
-                                    <button type="button" class="btn-shuffle-sm" onclick="shuffleCurrentTeams(); return false;">
-                                        <i class="fa-solid fa-shuffle"></i> Xáo Trộn
-                                    </button>
-                                    <button type="button" class="btn-delete-sm" onclick="deleteSelectedTeams(); return false;">
-                                        <i class="fa-solid fa-trash"></i> Xóa Đội Chọn
+                                <!-- BOTTOM BAR FOR LEFT CARD -->
+                                <div class="card-bottom-bar">
+                                    <div class="team-counter">
+                                        Đã nhập: <span id="inputCountDisplay" class="count-badge">0</span> đội
+                                    </div>
+
+                                    <div id="warningBadge" class="warning-badge" style="display: none;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Có tên trùng
+                                    </div>
+
+                                    <button type="button" class="btn-add-teams" onclick="addTeamsFromInput()">
+                                        + Thêm Đội ➔
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- INNER DARK BOX FOR DRAG TABLE -->
-                            <div class="inner-dark-box">
-                                <div class="drag-table-container">
-                                    <table class="drag-table">
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 80px; text-align: center;">Hạt Giống</th>
-                                                <th style="width: 40px; text-align: center;">
-                                                    <i class="fa-solid fa-up-down-left-right"></i>
-                                                </th>
-                                                <th>Tên Đội Bóng</th>
-                                                <th style="width: 40px; text-align: center;">
-                                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" style="accent-color: var(--mint-primary); cursor: pointer;">
-                                                </th>
-                                                <th style="width: 40px; text-align: center;">Xóa</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="seedTableBody">
-                                            <tr>
-                                                <td colspan="5" class="text-muted" style="text-align: center; padding: 2.5rem 0;">
-                                                    Chưa có đội bóng nào. Nhập danh sách ở bên trái và bấm Thêm Đội.
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                            <!-- RIGHT STANDALONE CARD: QUẢN LÝ BÊN NÀY -->
+                            <div class="standalone-card">
+                                <div class="card-header-flex">
+                                    <div class="card-title-bold">
+                                        <i class="fa-solid fa-list-ol text-gold"></i> Quản Lý
+                                        <span id="managedCountDisplay" class="count-badge-gold">0</span>
+                                    </div>
+                                    
+                                    <div class="table-actions">
+                                        <button type="button" class="btn-shuffle-sm" onclick="shuffleCurrentTeams(); return false;">
+                                            <i class="fa-solid fa-shuffle"></i> Xáo Trộn
+                                        </button>
+                                        <button type="button" class="btn-delete-sm" onclick="deleteSelectedTeams(); return false;">
+                                            <i class="fa-solid fa-trash"></i> Xóa Đội Chọn
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- INNER DARK BOX FOR DRAG TABLE -->
+                                <div class="inner-dark-box">
+                                    <div class="drag-table-container">
+                                        <table class="drag-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 80px; text-align: center;">Hạt Giống</th>
+                                                    <th style="width: 40px; text-align: center;">
+                                                        <i class="fa-solid fa-up-down-left-right"></i>
+                                                    </th>
+                                                    <th>Tên Đội Bóng</th>
+                                                    <th style="width: 40px; text-align: center;">
+                                                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" style="accent-color: var(--mint-primary); cursor: pointer;">
+                                                    </th>
+                                                    <th style="width: 40px; text-align: center;">Xóa</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="seedTableBody">
+                                                <tr>
+                                                    <td colspan="5" class="text-muted" style="text-align: center; padding: 2.5rem 0;">
+                                                        Chưa có đội bóng nào. Nhập danh sách ở bên trái và bấm Thêm Đội.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div style="font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 0.5rem;">
+                                    <i class="fa-solid fa-hand-pointer text-mint"></i> Kéo thả từng hàng để thay đổi thứ tự Hạt Giống
                                 </div>
                             </div>
+
                         </div>
 
-                        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: right;">
-                            <i class="fa-solid fa-hand-pointer text-mint"></i> Kéo thả từng hàng để thay đổi thứ tự Hạt Giống
+                        <!-- BOTTOM CENTERED ACTION BUTTONS -->
+                        <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; margin-bottom: 2.5rem;">
+                            <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${param.id}" class="btn btn-secondary">Quay Lại</a>
+                            <button type="submit" class="btn btn-mint" style="padding-left: 2rem; padding-right: 2rem;">
+                                SINH SƠ ĐỒ THI ĐẤU ➔
+                            </button>
                         </div>
-                    </div>
-
-                </div>
-
-                <!-- BOTTOM CENTERED ACTION BUTTONS -->
-                <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; margin-bottom: 2.5rem;">
-                    <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${param.id}" class="btn btn-secondary">Quay Lại</a>
-                    <button type="submit" class="btn btn-mint" style="padding-left: 2rem; padding-right: 2rem;">
-                        SINH SƠ ĐỒ THI ĐẤU ➔
-                    </button>
-                </div>
-            </form>
+                    </form>
         </main>
 
         <script>

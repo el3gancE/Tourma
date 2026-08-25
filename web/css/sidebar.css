@@ -1,0 +1,147 @@
+/* ============================================================================
+   TOURMA - FIXED LEFT NAVIGATION SIDEBAR (MATCHING USER REFERENCE UI)
+   ============================================================================ */
+
+/* Full Height Fixed Left Sidebar */
+.app-left-sidebar {
+    position: fixed;
+    top: 56px; /* Below navigation header */
+    left: 0;
+    bottom: 0;
+    width: 240px;
+    background-color: #0b0e14;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 1.1rem 0.85rem;
+    overflow-y: auto;
+    z-index: 99;
+    font-family: 'Lexend', sans-serif !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Page Layout Shift when Sidebar is Active */
+.has-sidebar {
+    margin-left: 240px !important;
+    width: calc(100% - 240px) !important;
+    max-width: none !important;
+    padding: 1.5rem 2.5rem !important;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Sidebar Top Header / Brand Badge */
+.sidebar-brand-box {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sidebar-brand-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 0.4rem;
+}
+
+.sidebar-series-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    background-color: rgba(0, 255, 136, 0.08);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 50px;
+    color: #2dd4bf;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+/* Sidebar Section Headers */
+.sidebar-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #2dd4bf; /* Mint green header */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    padding-left: 0.4rem;
+}
+
+/* Sub-tournament pill badge inside sidebar */
+.sidebar-subtourney-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    background-color: #141a26;
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    border-radius: 6px;
+    color: #2dd4bf;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+}
+
+/* Navigation List & Links */
+.sidebar-menu-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sidebar-menu-item {
+    width: 100%;
+}
+
+.sidebar-menu-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    color: #a0aec0;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.sidebar-menu-link:hover {
+    background-color: #161c28;
+    color: #ffffff;
+}
+
+.sidebar-menu-link .menu-icon {
+    width: 18px;
+    text-align: center;
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+/* Active Highlighted State (Matching Screenshot 1) */
+.sidebar-menu-link.active {
+    background-color: #0a1f1f; /* Dark teal container */
+    border: 1px solid #2dd4bf;  /* Mint border */
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(45, 212, 191, 0.2);
+}
+
+.sidebar-menu-link.active .menu-icon {
+    color: #2dd4bf;
+    opacity: 1;
+}
+
+.sidebar-menu-link.active .active-thunder-icon {
+    color: #2dd4bf;
+}
