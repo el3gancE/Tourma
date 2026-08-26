@@ -81,6 +81,39 @@ body, button, input, select, textarea, .form-header-title, .section-label-upperc
   box-shadow: 0 0 10px rgba(45, 212, 191, 0.2);
 }
 
+/* Locked Format State */
+.badge-format-locked {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: 50px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.65rem;
+  vertical-align: middle;
+}
+
+.format-pill-btn.locked {
+  opacity: 0.55;
+  cursor: not-allowed !important;
+}
+
+.format-pill-btn.locked:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: var(--bg-dark-obsidian, #0b0d12);
+}
+
+.format-pill-btn.locked.active {
+  opacity: 1;
+  border-color: var(--mint-primary, #2dd4bf);
+  color: var(--mint-primary, #2dd4bf);
+  background: rgba(45, 212, 191, 0.08);
+}
+
 /* Section Uppercase Labels */
 .section-label-uppercase {
   font-family: 'Lexend', sans-serif;

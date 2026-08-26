@@ -3,12 +3,21 @@
    Font: Lexend | High-Density Dark Theme & Figma-style Drag-to-Pan Engine
    ============================================================================ */
 
-/* Outer Viewport Container Box */
-.bracket-viewport-container {
+/* Outer Viewport Frame (Holds floating controls and scrollable canvas) */
+.bracket-viewport-frame {
     position: relative;
     width: 100%;
     height: calc(100vh - 220px);
     min-height: 460px;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+/* Scrollable Viewport Container Box */
+.bracket-viewport-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
     background: #0b0d12;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 14px;
@@ -31,29 +40,31 @@
     display: inline-flex;
     align-items: flex-start;
     gap: 2rem;
-    padding: 2.25rem;
+    padding: 3.5rem 2.25rem 2.25rem 2.25rem;
     min-width: max-content;
     min-height: max-content;
     transform-origin: 0 0;
     transition: transform 0.15s ease-out;
 }
 
-/* Floating Zoom & Pan Control Toolbar */
+/* Floating Zoom Toolbar (Always Fixed at Top-Right of Viewport Frame, never moves during scroll) */
 .bracket-zoom-toolbar {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
-    z-index: 20;
-    background: rgba(24, 29, 41, 0.88);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    top: 0.85rem;
+    right: 1.25rem;
+    z-index: 50;
+    background: rgba(24, 29, 41, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 10px;
     padding: 0.35rem 0.6rem;
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(45, 212, 191, 0.15);
+    pointer-events: auto;
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
 }
 
 .btn-zoom {
@@ -92,9 +103,9 @@
 /* Bottom Left Drag Hint Badge */
 .bracket-drag-hint {
     position: absolute;
-    bottom: 1rem;
-    left: 1rem;
-    z-index: 20;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    z-index: 50;
     background: rgba(24, 29, 41, 0.82);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -107,4 +118,5 @@
     align-items: center;
     gap: 0.4rem;
     pointer-events: none;
+    width: fit-content;
 }

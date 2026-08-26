@@ -1,7 +1,7 @@
 /**
  * TOURMA - LIST VIEW MATCH CARD ALGORITHM (match-card.js)
  * Handles rendering match list items (#1, #2 match headers + accent bar, 2 separate score boxes, DONE/PENDING status).
- * Clicking anywhere on the card opens the score modal.
+ * Unconfirmed and BYE matches cannot be clicked to edit.
  */
 
 (function () {
@@ -17,74 +17,99 @@
             if (!data) return null;
 
             var matchId = data.matchId || data.id || '1';
-            var matchNum = data.matchNumber || matchId.toString().replace(/[^0-9]/g, '') || '1';
-            var matchHeaderLabel = '#' + matchNum;
+            var matchNum = data.matchNumber || null;
 
             var status = (data.status || 'PENDING').toLowerCase();
             var isDone = (status === 'completed' || status === 'done');
             var statusClass = isDone ? 'done' : 'pending';
             var statusLabel = isDone ? 'DONE' : 'PENDING';
 
-            var t1 = data.team1 || { name: 'Đội 1', seed: '1', score: '' };
-            var t2 = data.team2 || { name: 'Đội 2', seed: '2', score: '' };
+            var defaultT1Name = data.team1Placeholder || (matchNum ? ('W #' + (Number(matchNum) * 2 - 1)) : '');
+            var defaultT2Name = data.team2Placeholder || (matchNum ? ('W #' + (Number(matchNum) * 2)) : '');
 
-            var seed1 = (t1.seed || '1').toString().replace('#', '');
-            var seed2 = (t2.seed || '2').toString().replace('#', '');
+            var t1 = data.team1 || {};
+            var t2 = data.team2 || {};
 
-            var t1ScoreDisp = (isDone && t1.score !== undefined && t1.score !== null && t1.score !== '') ? t1.score : '';
-            var t2ScoreDisp = (isDone && t2.score !== undefined && t2.score !== null && t2.score !== '') ? t2.score : '';
+            var t1Name = t1.name || defaultT1Name;
+            var t2Name = t2.name || defaultT2Name;
+
+            var isT1Placeholder = !t1.name || t1Name.startsWith('W #') || t1Name.startsWith('L #');
+            var isT2Placeholder = !t2.name || t2Name.startsWith('W #') || t2Name.startsWith('L #');
+
+            var isT1Bye = (t1Name === 'BYE' || t1.isBye === true);
+            var isT2Bye = (t2Name === 'BYE' || t2.isBye === true);
+            var hasBye = isT1Bye || isT2Bye;
+
+            var matchHeaderLabel = (matchNum && !hasBye) ? ('#' + matchNum) : '';
+
+            // Only matches with 2 real confirmed teams and NOT BYE are clickable
+            var isPlayable = !isT1Placeholder && !isT2Placeholder && !hasBye;
+
+            var seed1 = isT1Bye ? '' : (t1.seed || '').toString().replace('#', '');
+            var seed2 = isT2Bye ? '' : (t2.seed || '').toString().replace('#', '');
+
+            var t1ScoreDisp = (isDone && !hasBye && t1.score !== undefined && t1.score !== null && t1.score !== '') ? t1.score : '';
+            var t2ScoreDisp = (isDone && !hasBye && t2.score !== undefined && t2.score !== null && t2.score !== '') ? t2.score : '';
 
             var isT1Winner = data.winnerId === 'team1' || (isDone && Number(t1.score) > Number(t2.score));
             var isT2Winner = data.winnerId === 'team2' || (isDone && Number(t2.score) > Number(t1.score));
 
             var card = document.createElement('div');
-            card.className = 'match-card-item';
+            card.className = 'match-card-item' + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-match-item' : '');
             card.dataset.matchId = matchId;
             card.dataset.status = isDone ? 'COMPLETED' : 'SCHEDULED';
 
+            var t1Class = 'match-team-side team-left ' + (isT1Winner ? 'winner ' : '') + (isT1Placeholder ? 'placeholder ' : '') + (isT1Bye ? 'bye-team ' : '');
+            var t2Class = 'match-team-side team-right ' + (isT2Winner ? 'winner ' : '') + (isT2Placeholder ? 'placeholder ' : '') + (isT2Bye ? 'bye-team ' : '');
+
+            var seed1Html = (isT1Bye || !seed1) ? '<span class="match-list-seed bye-seed"></span>' : ('<span class="match-list-seed">' + seed1 + '</span>');
+            var seed2Html = (isT2Bye || !seed2) ? '<span class="match-list-seed bye-seed"></span>' : ('<span class="match-list-seed">' + seed2 + '</span>');
+
             card.innerHTML =
                 '<div class="match-card-meta">' +
-                    '<div class="match-card-accent-bar"></div>' +
+                    '<div class="match-card-accent-bar"' + (hasBye ? ' style="background: #475569; box-shadow: none;"' : '') + '></div>' +
                     '<span class="match-card-id">' + matchHeaderLabel + '</span>' +
                 '</div>' +
 
                 '<div class="match-card-versus">' +
-                    '<!-- Far Left Seed Badge -->' +
-                    '<span class="match-list-seed">' + seed1 + '</span>' +
+                    seed1Html +
 
-                    '<div class="match-team-side team-left ' + (isT1Winner ? 'winner' : '') + '">' +
-                        '<span class="match-list-name" title="' + t1.name + '">' + t1.name + '</span>' +
+                    '<div class="' + t1Class + '">' +
+                        '<span class="match-list-name" title="' + t1Name + '">' + t1Name + '</span>' +
                     '</div>' +
 
-                    '<!-- Two Separate Score Boxes (Identical styling for winner and loser) -->' +
+                    '<!-- Two Separate Score Boxes -->' +
                     '<div class="match-score-container">' +
                         '<span class="match-score-single-box">' + t1ScoreDisp + '</span>' +
                         '<span class="match-score-dash">-</span>' +
                         '<span class="match-score-single-box">' + t2ScoreDisp + '</span>' +
                     '</div>' +
 
-                    '<div class="match-team-side team-right ' + (isT2Winner ? 'winner' : '') + '">' +
-                        '<span class="match-list-name" title="' + t2.name + '">' + t2.name + '</span>' +
+                    '<div class="' + t2Class + '">' +
+                        '<span class="match-list-name" title="' + t2Name + '">' + t2Name + '</span>' +
                     '</div>' +
 
-                    '<!-- Far Right Seed Badge -->' +
-                    '<span class="match-list-seed">' + seed2 + '</span>' +
+                    seed2Html +
                 '</div>' +
 
                 '<div class="match-card-actions">' +
-                    '<span class="match-list-status ' + statusClass + '">' + statusLabel + '</span>' +
+                    (hasBye ? '' : ('<span class="match-list-status ' + statusClass + '">' + statusLabel + '</span>')) +
                 '</div>';
 
-            // Attach Click Handler to Entire Card
+            // Attach Click Handler to Entire Card (Only if playable)
             card.addEventListener('click', function () {
+                if (!isPlayable) {
+                    return; // Prevent clicking unconfirmed / BYE matches
+                }
+
                 if (window.TourmaScoreModal && typeof window.TourmaScoreModal.open === 'function') {
                     window.TourmaScoreModal.open({
                         matchId: matchId,
                         roundName: 'Trận ' + matchHeaderLabel,
-                        team1Name: t1.name,
+                        team1Name: t1Name,
                         team1Seed: seed1,
                         team1Score: t1ScoreDisp,
-                        team2Name: t2.name,
+                        team2Name: t2Name,
                         team2Seed: seed2,
                         team2Score: t2ScoreDisp,
                         winnerId: isT1Winner ? 'team1' : (isT2Winner ? 'team2' : null),
@@ -106,21 +131,18 @@
         if (card) {
             var isDone = detail.status === 'COMPLETED' || detail.status === 'DONE';
 
-            // Update score boxes (keep styling clean and identical)
             var scores = card.querySelectorAll('.match-score-single-box');
             if (scores.length >= 2) {
                 scores[0].innerText = (detail.team1Score !== undefined && detail.team1Score !== null) ? detail.team1Score : '';
                 scores[1].innerText = (detail.team2Score !== undefined && detail.team2Score !== null) ? detail.team2Score : '';
             }
 
-            // Highlight winner team name only
             var teamLeft = card.querySelector('.team-left');
             if (teamLeft) teamLeft.classList.toggle('winner', detail.winner === 'team1');
 
             var teamRight = card.querySelector('.team-right');
             if (teamRight) teamRight.classList.toggle('winner', detail.winner === 'team2');
 
-            // Update Status Badge
             var statusBadge = card.querySelector('.match-list-status');
             if (statusBadge) {
                 statusBadge.className = 'match-list-status ' + (isDone ? 'done' : 'pending');

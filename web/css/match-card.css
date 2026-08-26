@@ -28,6 +28,8 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 12px rgba(45, 212, 191, 0.15);
 }
 
+
+
 /* Left Section: Colored Accent Bar + Match Number (#1, #2, #3...) */
 .match-card-meta {
     display: flex;
@@ -82,6 +84,10 @@
     flex-shrink: 0;
 }
 
+.match-list-seed.bye-seed {
+    visibility: hidden;
+}
+
 /* Team Names */
 .match-team-side {
     display: flex;
@@ -107,6 +113,20 @@
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color 0.15s ease;
+}
+
+/* Unconfirmed / Placeholder Team Name */
+.match-team-side.placeholder .match-list-name {
+    color: #64748b;
+    font-style: italic;
+}
+
+/* BYE Team Name Styling (Dimmed, Italic) */
+.match-team-side.bye-team .match-list-name {
+    color: #64748b;
+    font-style: italic;
+    opacity: 0.4;
+    letter-spacing: 0.05em;
 }
 
 /* Winner Team Name Highlight (Mint) */

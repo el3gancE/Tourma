@@ -90,6 +90,30 @@
                     container.scrollTop = scrollTop - (touchY - touchStartY);
                 }
             }, { passive: true });
+
+            // SCROLL EVENT: Smoothly fade out zoom toolbar when scrolling down vertically
+            var zoomToolbar = document.querySelector('.bracket-zoom-toolbar');
+            if (zoomToolbar) {
+                container.addEventListener('scroll', function () {
+                    var sTop = container.scrollTop;
+                    var fadeThreshold = 75; // Complete fade out threshold in pixels
+
+                    if (sTop <= 4) {
+                        zoomToolbar.style.opacity = '1';
+                        zoomToolbar.style.pointerEvents = 'auto';
+                        zoomToolbar.style.transform = 'translateY(0)';
+                    } else if (sTop >= fadeThreshold) {
+                        zoomToolbar.style.opacity = '0';
+                        zoomToolbar.style.pointerEvents = 'none';
+                        zoomToolbar.style.transform = 'translateY(-8px)';
+                    } else {
+                        var progress = sTop / fadeThreshold;
+                        zoomToolbar.style.opacity = (1 - progress).toFixed(2);
+                        zoomToolbar.style.pointerEvents = (progress > 0.6) ? 'none' : 'auto';
+                        zoomToolbar.style.transform = 'translateY(' + (-8 * progress).toFixed(1) + 'px)';
+                    }
+                }, { passive: true });
+            }
         },
 
         /**
