@@ -1,170 +1,90 @@
-/* ==========================================================================
-   TOURMA - MATCH NODE CARD COMPONENT TEMPLATE
-   ========================================================================== */
+/* ============================================================================
+   TOURMA - REUSABLE UI COMPONENTS SHOWCASE TEMPLATE (template.css)
+   Font: Lexend | High-Density Dark Theme (#181d29 Surface & #0b0d12 Obsidian)
+   ============================================================================ */
 
-.match-card {
-  width: 240px;
-  background: #121722;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
+
+body, button, input, select, textarea, h1, h2, h3, h4 {
+    font-family: 'Lexend', sans-serif !important;
 }
 
-.match-card.pending {
-  border-color: rgba(255, 255, 255, 0.06);
+/* Template Page Header Bar */
+.template-hero-bar {
+    background: #181d29;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
-.match-card.completed {
-  border-color: rgba(45, 212, 191, 0.2);
+.template-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.3rem;
 }
 
-/* Match Card Header */
-.match-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0 2px 4px 2px;
+.template-subtitle {
+    color: #94a3b8;
+    font-size: 0.84rem;
 }
 
-.match-card-header .match-id {
-  color: var(--gold-primary, #fbbf24); /* Yellow Gold */
-  letter-spacing: 0.02em;
+/* Component Showcase Sections */
+.template-section {
+    margin-bottom: 2.5rem;
 }
 
-.match-card-header .match-status {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+.template-section-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #2dd4bf;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.match-card-header .match-status.completed {
-  color: var(--mint-primary, #2dd4bf); /* Mint Green */
+/* Bracket Grid Showcase Container */
+.template-bracket-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+    background: #0b0d12;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.5rem;
 }
 
-.match-card-header .match-status.pending {
-  color: var(--text-dim, #64748b); /* Muted Slate */
+.bracket-column-box {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-/* Team Slot Item */
-.team-slot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #181e2c;
-  border: 1.5px solid transparent;
-  border-radius: 8px;
-  padding: 6px 10px;
-  transition: var(--transition-fast, 0.2s cubic-bezier(0.4, 0, 0.2, 1));
+.bracket-col-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #fbbf24;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+    padding-left: 0.2rem;
 }
 
-.team-slot.winner {
-  border-color: var(--mint-primary, #2dd4bf); /* Mint Green Glowing Border */
-  box-shadow: 0 0 12px rgba(45, 212, 191, 0.25);
-  background: rgba(45, 212, 191, 0.06);
-}
-
-.team-slot.winner .team-name {
-  color: var(--mint-primary, #2dd4bf); /* Mint Green Text for Winner */
-  font-weight: 700;
-}
-
-.team-slot-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  overflow: hidden;
-}
-
-.team-seed-badge {
-  width: 24px;
-  height: 24px;
-  background: #090d16;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--gold-primary, #fbbf24); /* Gold Number */
-  flex-shrink: 0;
-}
-
-.team-info {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.team-name {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-white, #f8fafc);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.team-rank-sub {
-  font-size: 0.7rem;
-  color: var(--text-dim, #64748b);
-  font-weight: 400;
-}
-
-.score-box {
-  width: 32px;
-  height: 32px;
-  background: #0d111a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--text-white, #f8fafc);
-  flex-shrink: 0;
-}
-
-.team-slot.winner .score-box {
-  border-color: rgba(45, 212, 191, 0.4);
-  color: #ffffff;
-}
-
-/* Round & Group Headers */
-.round-header-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.round-title {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--text-white, #f8fafc);
-}
-
-.round-count-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--mint-primary, #2dd4bf);
-}
-
-.group-title-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  background: rgba(45, 212, 191, 0.08);
-  border: 1px solid rgba(45, 212, 191, 0.2);
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--mint-primary, #2dd4bf);
-  margin-bottom: 8px;
-  letter-spacing: 0.03em;
+/* Match List Showcase Container */
+.template-match-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
 }
