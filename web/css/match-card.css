@@ -1,0 +1,205 @@
+/* ============================================================================
+   TOURMA - MATCH CARD LIST VIEW DESIGN SYSTEM (match-card.css)
+   Font: Lexend | Compact Horizontal Dark Theme (#181d29 & #0b0d12)
+   ============================================================================ */
+
+/* List View Match Card Container - Fixed Pixel-Perfect Columns */
+.match-card-item {
+    width: 100%;
+    background: #181d29;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 0.4rem 0.85rem;
+    display: grid;
+    grid-template-columns: 50px 1fr 105px;
+    gap: 0.75rem;
+    align-items: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    transition: all 0.18s ease-in-out;
+    margin-bottom: 0.45rem;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.match-card-item:hover {
+    border-color: #2dd4bf;
+    transform: translateX(3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 12px rgba(45, 212, 191, 0.15);
+}
+
+/* Left Section: Colored Accent Bar + Match Number (#1, #2, #3...) */
+.match-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 50px;
+}
+
+.match-card-accent-bar {
+    width: 4px;
+    height: 22px;
+    background: #2dd4bf;
+    border-radius: 4px;
+    box-shadow: 0 0 8px rgba(45, 212, 191, 0.35);
+    flex-shrink: 0;
+}
+
+.match-card-id {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 0.03em;
+}
+
+/* Center Section: Versus Display Grid (Mathematical 5-Column Alignment) */
+.match-card-versus {
+    background: #0b0d12;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 0.3rem 0.65rem;
+    display: grid;
+    grid-template-columns: 22px 1fr auto 1fr 22px;
+    gap: 0.5rem;
+    align-items: center;
+    overflow: hidden;
+    width: 100%;
+}
+
+/* Far Outer Corner Seed Badges (22px x 22px) */
+.match-list-seed {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: #1f2533;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fbbf24;
+    font-size: 0.7rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Team Names */
+.match-team-side {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.match-team-side.team-left {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.match-team-side.team-right {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.match-list-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.match-team-side.winner .match-list-name {
+    color: #2dd4bf !important;
+    font-weight: 800;
+}
+
+/* Two Separate Score Boxes (Team 1 Box & Team 2 Box) */
+.match-score-container {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+}
+
+.match-score-single-box {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: #141a26;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s ease;
+}
+
+.match-score-single-box.winner {
+    background: #2dd4bf;
+    color: #0b0d12;
+    border-color: #2dd4bf;
+    box-shadow: 0 0 10px rgba(45, 212, 191, 0.35);
+}
+
+.match-score-dash {
+    color: #64748b;
+    font-weight: 800;
+    font-size: 0.75rem;
+}
+
+/* Right Section: Fixed Width Action Column (105px) */
+.match-card-actions {
+    width: 105px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.match-list-status {
+    width: 58px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 0.12rem 0;
+    border-radius: 50px;
+    text-transform: uppercase;
+    text-align: center;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.match-list-status.done {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.match-list-status.pending {
+    background: rgba(100, 116, 139, 0.15);
+    color: #64748b;
+    border: 1px solid rgba(100, 116, 139, 0.25);
+}
+
+.btn-edit-match-list {
+    background: rgba(45, 212, 191, 0.12);
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    border-radius: 6px;
+    padding: 0.3rem 0.55rem;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.btn-edit-match-list:hover {
+    background: #2dd4bf;
+    color: #0b0d12;
+    box-shadow: 0 3px 10px rgba(45, 212, 191, 0.3);
+}

@@ -51,5 +51,13 @@
                 <i class="fa-solid fa-layer-group"></i> Chuỗi Giải Của Tôi
             </a>
         </li>
+
+        <!-- 6. Template UI Showcase -->
+        <li>
+            <a href="${pageContext.request.contextPath}/common/template.jsp"
+                class="nav-link ${param.active == 'template' ? 'active' : ''}">
+                <i class="fa-solid fa-palette"></i> Template UI
+            </a>
+        </li>
     </ul>
 </nav>
