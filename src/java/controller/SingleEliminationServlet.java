@@ -28,26 +28,26 @@ public class SingleEliminationServlet extends HttpServlet {
             throws ServletException, IOException {
         
         String idParam = request.getParameter("id");
-        int tournamentId = 1; // Default demo ID
-        if (idParam != null && !idParam.trim().isEmpty()) {
-            try {
-                tournamentId = Integer.parseInt(idParam);
-            } catch (NumberFormatException e) {
-                tournamentId = 1;
-            }
+        String tournamentId = (idParam != null && !idParam.trim().isEmpty()) ? idParam : "demo";
+
+        int intTourneyId = 1;
+        try {
+            intTourneyId = Integer.parseInt(tournamentId);
+        } catch (NumberFormatException e) {
+            intTourneyId = 1;
         }
 
-        // Fetch tournament details
+        // Fetch tournament details from DB
         Tournament tournament = tournamentDAO.getTournamentById(tournamentId);
         if (tournament == null) {
             tournament = new Tournament();
             tournament.setId(tournamentId);
-            tournament.setTournamentName("Giải Đấu Vô Địch Loại Trực Tiếp (Single Elimination)");
+            tournament.setName("Giải Đấu Vô Địch Loại Trực Tiếp");
             tournament.setFormat("SINGLE_ELIMINATION");
         }
 
         // Fetch bracket rounds map
-        Map<Integer, List<Match>> roundMap = singleEliminationDAO.getBracketRounds(tournamentId);
+        Map<Integer, List<Match>> roundMap = singleEliminationDAO.getBracketRounds(intTourneyId);
 
         request.setAttribute("tournament", tournament);
         request.setAttribute("roundMap", roundMap);
