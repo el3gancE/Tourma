@@ -1,0 +1,110 @@
+/* ============================================================================
+   TOURMA - REUSABLE BRACKET VIEWPORT CANVAS (bracket-viewport.css)
+   Font: Lexend | High-Density Dark Theme & Figma-style Drag-to-Pan Engine
+   ============================================================================ */
+
+/* Outer Viewport Container Box */
+.bracket-viewport-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 220px);
+    min-height: 460px;
+    background: #0b0d12;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    overflow: auto;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: 'Lexend', sans-serif !important;
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 212, 191, 0.25) rgba(11, 13, 18, 0.8);
+}
+
+.bracket-viewport-container.grabbing {
+    cursor: grabbing !important;
+}
+
+/* Inner Canvas Content Wrapper */
+.bracket-viewport-canvas {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 2rem;
+    padding: 2.25rem;
+    min-width: max-content;
+    min-height: max-content;
+    transform-origin: 0 0;
+    transition: transform 0.15s ease-out;
+}
+
+/* Floating Zoom & Pan Control Toolbar */
+.bracket-zoom-toolbar {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 20;
+    background: rgba(24, 29, 41, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 0.35rem 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.btn-zoom {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.btn-zoom:hover {
+    background: #2dd4bf;
+    color: #0b0d12;
+    border-color: #2dd4bf;
+    box-shadow: 0 0 10px rgba(45, 212, 191, 0.3);
+}
+
+.zoom-level-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #2dd4bf;
+    min-width: 42px;
+    text-align: center;
+    padding: 0 0.2rem;
+}
+
+/* Bottom Left Drag Hint Badge */
+.bracket-drag-hint {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 20;
+    background: rgba(24, 29, 41, 0.82);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    pointer-events: none;
+}

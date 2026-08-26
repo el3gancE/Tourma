@@ -18,6 +18,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/template.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
@@ -44,83 +45,105 @@
                         <i class="fa-solid fa-palette text-gold"></i> Thư Viện Template UI Component
                     </h1>
                     <p class="template-subtitle">
-                        Mẫu linh kiện giao diện Match Card (Bracket & List View) và Pop Up Edit Tỷ Số. Click vào bất kỳ thẻ trận đấu nào để dùng thử Pop up!
+                        Mẫu linh kiện giao diện Match Card (Bracket & List View), Pop Up Edit Tỷ Số và Khung Khái Quát Viewport Kéo Thả.
                     </p>
                 </div>
             </div>
 
-            <!-- SECTION 1: MATCH CARD DẠNG BRACKET -->
+            <!-- SECTION 1: MATCH CARD DẠNG BRACKET TRONG KHUNG VIEWPORT KÉO THẢ -->
             <section class="template-section">
                 <h2 class="template-section-title">
-                    <i class="fa-solid fa-diagram-project"></i> 1. Match Card Dạng Bracket (Tree Node Component)
+                    <i class="fa-solid fa-up-down-left-right"></i> 1. Khung Viewport Sơ Đồ Cây Kéo Thả (Bracket Viewport Canvas)
                 </h2>
                 
-                <div class="template-bracket-grid">
-                    <!-- Column 1: Vòng Tứ Kết -->
-                    <div class="bracket-column-box">
-                        <div class="bracket-col-title">Vòng Tứ Kết</div>
-                        
-                        <jsp:include page="/common/component/bracket-card.jsp">
-                            <jsp:param name="matchId" value="1"/>
-                            <jsp:param name="matchNumber" value="1"/>
-                            <jsp:param name="team1Name" value="Hà Nội FC"/>
-                            <jsp:param name="team1Seed" value="1"/>
-                            <jsp:param name="team1Score" value="3"/>
-                            <jsp:param name="team2Name" value="Hải Phòng FC"/>
-                            <jsp:param name="team2Seed" value="8"/>
-                            <jsp:param name="team2Score" value="1"/>
-                            <jsp:param name="winner" value="team1"/>
-                            <jsp:param name="status" value="done"/>
-                        </jsp:include>
-
-                        <jsp:include page="/common/component/bracket-card.jsp">
-                            <jsp:param name="matchId" value="2"/>
-                            <jsp:param name="matchNumber" value="2"/>
-                            <jsp:param name="team1Name" value="Saigon Heat"/>
-                            <jsp:param name="team1Seed" value="4"/>
-                            <jsp:param name="team1Score" value="0"/>
-                            <jsp:param name="team2Name" value="SHB Đà Nẵng"/>
-                            <jsp:param name="team2Seed" value="5"/>
-                            <jsp:param name="team2Score" value="2"/>
-                            <jsp:param name="winner" value="team2"/>
-                            <jsp:param name="status" value="done"/>
-                        </jsp:include>
+                <div id="bracketViewportContainer" class="bracket-viewport-container">
+                    <!-- Zoom Toolbar -->
+                    <div class="bracket-zoom-toolbar">
+                        <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomOut()" title="Thu nhỏ (-)">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <span id="zoomLevelBadge" class="zoom-level-badge">100%</span>
+                        <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomIn()" title="Phóng to (+)">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.resetZoom()" title="Reset (100%)">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
                     </div>
 
-                    <!-- Column 2: Vòng Bán Kết -->
-                    <div class="bracket-column-box">
-                        <div class="bracket-col-title">Vòng Bán Kết</div>
-                        
-                        <jsp:include page="/common/component/bracket-card.jsp">
-                            <jsp:param name="matchId" value="3"/>
-                            <jsp:param name="matchNumber" value="3"/>
-                            <jsp:param name="team1Name" value="Hà Nội FC"/>
-                            <jsp:param name="team1Seed" value="1"/>
-                            <jsp:param name="team1Score" value="2"/>
-                            <jsp:param name="team2Name" value="SHB Đà Nẵng"/>
-                            <jsp:param name="team2Seed" value="5"/>
-                            <jsp:param name="team2Score" value="1"/>
-                            <jsp:param name="winner" value="team1"/>
-                            <jsp:param name="status" value="done"/>
-                        </jsp:include>
+                    <!-- Drag Hint -->
+                    <div class="bracket-drag-hint">
+                        <i class="fa-solid fa-hand-pointer text-mint"></i> Nhấn giữ chuột và kéo để di chuyển sơ đồ
                     </div>
 
-                    <!-- Column 3: Chung Kết -->
-                    <div class="bracket-column-box">
-                        <div class="bracket-col-title">Chung Kết</div>
-                        
-                        <jsp:include page="/common/component/bracket-card.jsp">
-                            <jsp:param name="matchId" value="4"/>
-                            <jsp:param name="matchNumber" value="4"/>
-                            <jsp:param name="team1Name" value="W #3"/>
-                            <jsp:param name="team1Seed" value="1"/>
-                            <jsp:param name="team1Score" value="0"/>
-                            <jsp:param name="team2Name" value="L #2"/>
-                            <jsp:param name="team2Seed" value="2"/>
-                            <jsp:param name="team2Score" value="0"/>
-                            <jsp:param name="winner" value="none"/>
-                            <jsp:param name="status" value="pending"/>
-                        </jsp:include>
+                    <!-- Inner Expandable Canvas -->
+                    <div id="bracketViewportCanvas" class="bracket-viewport-canvas">
+                        <!-- Column 1: Vòng Tứ Kết -->
+                        <div class="bracket-column-box">
+                            <div class="bracket-col-title">Vòng Tứ Kết</div>
+                            
+                            <jsp:include page="/common/component/bracket-card.jsp">
+                                <jsp:param name="matchId" value="1"/>
+                                <jsp:param name="matchNumber" value="1"/>
+                                <jsp:param name="team1Name" value="Hà Nội FC"/>
+                                <jsp:param name="team1Seed" value="1"/>
+                                <jsp:param name="team1Score" value="3"/>
+                                <jsp:param name="team2Name" value="Hải Phòng FC"/>
+                                <jsp:param name="team2Seed" value="8"/>
+                                <jsp:param name="team2Score" value="1"/>
+                                <jsp:param name="winner" value="team1"/>
+                                <jsp:param name="status" value="done"/>
+                            </jsp:include>
+
+                            <jsp:include page="/common/component/bracket-card.jsp">
+                                <jsp:param name="matchId" value="2"/>
+                                <jsp:param name="matchNumber" value="2"/>
+                                <jsp:param name="team1Name" value="Saigon Heat"/>
+                                <jsp:param name="team1Seed" value="4"/>
+                                <jsp:param name="team1Score" value="0"/>
+                                <jsp:param name="team2Name" value="SHB Đà Nẵng"/>
+                                <jsp:param name="team2Seed" value="5"/>
+                                <jsp:param name="team2Score" value="2"/>
+                                <jsp:param name="winner" value="team2"/>
+                                <jsp:param name="status" value="done"/>
+                            </jsp:include>
+                        </div>
+
+                        <!-- Column 2: Vòng Bán Kết -->
+                        <div class="bracket-column-box">
+                            <div class="bracket-col-title">Vòng Bán Kết</div>
+                            
+                            <jsp:include page="/common/component/bracket-card.jsp">
+                                <jsp:param name="matchId" value="3"/>
+                                <jsp:param name="matchNumber" value="3"/>
+                                <jsp:param name="team1Name" value="Hà Nội FC"/>
+                                <jsp:param name="team1Seed" value="1"/>
+                                <jsp:param name="team1Score" value="2"/>
+                                <jsp:param name="team2Name" value="SHB Đà Nẵng"/>
+                                <jsp:param name="team2Seed" value="5"/>
+                                <jsp:param name="team2Score" value="1"/>
+                                <jsp:param name="winner" value="team1"/>
+                                <jsp:param name="status" value="done"/>
+                            </jsp:include>
+                        </div>
+
+                        <!-- Column 3: Chung Kết -->
+                        <div class="bracket-column-box">
+                            <div class="bracket-col-title">Chung Kết</div>
+                            
+                            <jsp:include page="/common/component/bracket-card.jsp">
+                                <jsp:param name="matchId" value="4"/>
+                                <jsp:param name="matchNumber" value="4"/>
+                                <jsp:param name="team1Name" value="W #3"/>
+                                <jsp:param name="team1Seed" value="1"/>
+                                <jsp:param name="team1Score" value="0"/>
+                                <jsp:param name="team2Name" value="L #2"/>
+                                <jsp:param name="team2Seed" value="2"/>
+                                <jsp:param name="team2Score" value="0"/>
+                                <jsp:param name="winner" value="none"/>
+                                <jsp:param name="status" value="pending"/>
+                            </jsp:include>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -177,5 +200,7 @@
 
         <!-- Include Shared Score Edit Popup Component -->
         <jsp:include page="/common/component/popup.jsp"/>
+
+        <script src="${pageContext.request.contextPath}/js/bracket-viewport.js"></script>
     </body>
 </html>
