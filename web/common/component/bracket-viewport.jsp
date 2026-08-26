@@ -22,11 +22,6 @@
         </button>
     </div>
 
-    <!-- Drag Hint Badge -->
-    <div class="bracket-drag-hint">
-        <i class="fa-solid fa-hand-pointer text-mint"></i> Nhấn giữ chuột và kéo để di chuyển sơ đồ
-    </div>
-
     <!-- Inner Expandable Viewport Canvas Wrapper (Content injected inside) -->
     <div id="bracketViewportCanvas" class="bracket-viewport-canvas">
         <jsp:doBody/>

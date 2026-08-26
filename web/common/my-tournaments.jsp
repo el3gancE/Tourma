@@ -107,7 +107,7 @@
                                         <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${t.id}" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
                                             <i class="fa-solid fa-sliders"></i> Chi Tiết
                                         </a>
-                                        <a href="${pageContext.request.contextPath}/tournament-bracket.jsp?id=${t.id}" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                        <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
                                             Xem Sơ Đồ ➔
                                         </a>
                                     </div>

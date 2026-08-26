@@ -1,29 +1,28 @@
 /* ==========================================================================
    TOURMA - CONFIGURE TOURNAMENT TEAMS DEDICATED STYLESHEET
-   Font: Lexend
-   Scaled down to ~67% ratio for high-density modern UI
+   Font: Lexend | Scaled Dark Modern UI (#181d29 Surface & #0b0d12 Inner Box)
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
 
 /* Font Lexend Enforcement */
-body, button, input, select, textarea, .form-header-title, .section-label-uppercase {
+body, button, input, select, textarea, .page-main-title, .team-panel-title {
   font-family: 'Lexend', sans-serif !important;
 }
 
 /* Page Main Centered Title */
 .page-main-title {
   text-align: center;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 800;
   color: #ffffff;
   margin-top: 0;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
   letter-spacing: -0.02em;
 }
 
-/* 2 Independent Standalone Cards Container Grid */
-.dual-card-container {
+/* 2-Column Grid Workspace (Matching Figma Perfectly) */
+.team-mgmt-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
@@ -31,289 +30,275 @@ body, button, input, select, textarea, .form-header-title, .section-label-upperc
 }
 
 @media (max-width: 900px) {
-  .dual-card-container {
+  .team-mgmt-grid {
     grid-template-columns: 1fr;
   }
 }
 
-/* Standalone Card Box (Outer frame) */
-.standalone-card {
-  background: var(--bg-card-surface, #181d29);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
-  border-radius: 16px;
+/* Team Panel Card Container (Fixed Height Frame with Internal Scrolling) */
+.team-panel-card {
+  background: #181d29;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  min-height: 480px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  height: 520px;
+  max-height: 520px;
+  overflow: hidden;
 }
 
-.card-header-flex {
+.team-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.85rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
-.card-title-bold {
-  font-size: 1.1rem;
+.team-panel-title {
+  font-size: 1.05rem;
   font-weight: 700;
   color: #ffffff;
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
-.table-actions {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
+.count-badge {
+  background: rgba(45, 212, 191, 0.12);
+  color: #2dd4bf;
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  border-radius: 50px;
+  padding: 0.18rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
-/* Inner Dark Box (Obsidian inner dark box) */
-.inner-dark-box {
-  background: var(--bg-dark-obsidian, #0b0d12);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
+/* Left Column: Bulk Input Container */
+.bulk-input-container {
+  background: #0b0d12;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.75rem;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-/* Team Textarea Input Box */
-.team-input-textarea, .team-textarea-box {
+.team-textarea-input {
   width: 100%;
+  height: 100%;
   flex: 1;
-  min-height: 280px;
+  min-height: 0;
   background: transparent;
   border: none;
-  color: var(--text-white, #f8fafc);
+  color: #f8fafc;
   font-family: 'Lexend', sans-serif !important;
   font-size: 0.88rem;
   line-height: 1.65;
   resize: none;
   outline: none;
+  overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: rgba(45, 212, 191, 0.3) rgba(11, 13, 18, 0.8);
 }
 
-.team-input-textarea::placeholder, .team-textarea-box::placeholder {
+.team-textarea-input::placeholder {
   color: #64748b;
 }
 
-/* Bottom Bar For Card Left */
-.card-bottom-bar {
+.input-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Right Column: Manage Toolbar */
+.manage-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.manage-toolbar-left, .manage-toolbar-right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 0.85rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 0.5rem;
 }
 
-.team-counter {
-  font-size: 0.82rem;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.count-badge {
-  color: #2dd4bf;
-  font-weight: 800;
-}
-
-.count-badge-gold {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  border-radius: 50px;
-  padding: 0.1rem 0.55rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-left: 0.4rem;
-}
-
-.warning-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  padding: 0.2rem 0.65rem;
-  border-radius: 50px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.btn-add-teams {
-  background: var(--mint-primary, #2dd4bf);
-  color: #0b0d12;
-  border: none;
-  border-radius: 8px;
-  padding: 0.55rem 1.1rem;
-  font-family: 'Lexend', sans-serif !important;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.25);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.btn-add-teams:hover {
-  background: #00f5d4;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(45, 212, 191, 0.4);
-}
-
-/* Draggable Table Styles */
-.drag-table-container {
+/* Table Scroll Container (Fixed 100% inside Card with Mint Scrollbar) */
+.table-container {
+  background: #0b0d12;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
   flex: 1;
-  max-height: 330px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-scroll-wrapper {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: rgba(45, 212, 191, 0.3) rgba(11, 13, 18, 0.8);
 }
 
-.drag-table {
+/* Custom Mint Webkit Scrollbar */
+.table-scroll-wrapper::-webkit-scrollbar,
+.team-textarea-input::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-track,
+.team-textarea-input::-webkit-scrollbar-track {
+  background: #0b0d12;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb,
+.team-textarea-input::-webkit-scrollbar-thumb {
+  background: rgba(45, 212, 191, 0.3);
+  border-radius: 4px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb:hover,
+.team-textarea-input::-webkit-scrollbar-thumb:hover {
+  background: #2dd4bf;
+}
+
+/* Table Styling */
+table.table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.84rem;
 }
 
-.drag-table th {
+table.table th {
   position: sticky;
   top: 0;
   background: #0b0d12;
-  color: var(--text-muted, #94a3b8);
+  color: #94a3b8;
   font-weight: 700;
   text-transform: uppercase;
   font-size: 0.72rem;
   letter-spacing: 0.05em;
   padding: 0.6rem 0.65rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   z-index: 2;
 }
 
-.drag-table td {
-  padding: 0.55rem 0.65rem;
+table.table td {
+  padding: 0.45rem 0.65rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  color: var(--text-white, #f8fafc);
+  color: #f8fafc;
   vertical-align: middle;
 }
 
-.drag-row {
-  cursor: grab;
-  user-select: none;
+/* Team Table Row & Dragging */
+.team-table-row {
   transition: background 0.15s ease;
 }
 
-.drag-row:hover {
+.team-table-row:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 
-.drag-row:active {
-  cursor: grabbing;
-}
-
-.drag-row.dragging {
+.team-table-row.dragging {
   opacity: 0.4;
   background: rgba(45, 212, 191, 0.15) !important;
 }
 
-.drag-row.drag-over {
-  border-top: 2px solid var(--mint-primary, #2dd4bf);
-}
-
-.drag-handle {
-  color: var(--text-muted, #94a3b8);
-  cursor: grab;
-  padding: 0.2rem;
-}
-
-/* Seed Number Box (Gold seed number inside dark box) */
-.seed-number-box {
+/* Seed Badge (No.) */
+.seed-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   background: #1f2533;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
+  border-radius: 5px;
   color: #fbbf24;
   font-family: 'Lexend', sans-serif !important;
   font-weight: 800;
-  font-size: 0.84rem;
-  line-height: 1;
-}
-
-/* Action Buttons */
-.btn-shuffle-sm {
-  background: rgba(251, 191, 36, 0.12);
-  color: var(--gold-primary, #fbbf24);
-  border: 1px solid rgba(251, 191, 36, 0.25);
-  border-radius: 6px;
-  padding: 0.35rem 0.75rem;
   font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-fast, 0.18s ease);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
 }
 
-.btn-shuffle-sm:hover {
-  background: #fbbf24;
-  color: #0b0d12;
-}
-
-.btn-delete-sm {
-  background: rgba(239, 68, 68, 0.12);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 6px;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-fast, 0.18s ease);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.btn-delete-sm:hover {
-  background: #ef4444;
+/* Borderless Team Name Input (Clean inline text) */
+.team-name-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  padding: 0.25rem 0.2rem;
   color: #ffffff;
+  font-family: 'Lexend', sans-serif !important;
+  font-size: 0.88rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.15s ease;
 }
 
-/* Delete row button (X) */
+.team-name-input:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
+.team-name-input:focus {
+  border-bottom-color: #2dd4bf;
+  background: rgba(45, 212, 191, 0.05);
+}
+
+/* Drag Handle & Delete Button */
+.drag-handle {
+  color: #64748b;
+  cursor: grab;
+  padding: 0.2rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
 .btn-delete-row {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
   color: #fca5a5;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   transition: all 0.15s ease;
 }
 
 .btn-delete-row:hover {
   background: #ef4444;
   color: #ffffff;
+}
+
+/* Checkbox Styling */
+.team-select-cb, #selectAllCheckbox {
+  cursor: pointer;
+  accent-color: #2dd4bf;
 }

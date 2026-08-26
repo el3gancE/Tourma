@@ -11,12 +11,14 @@
     border-radius: 10px;
     padding: 0.4rem 0.85rem;
     display: grid;
-    grid-template-columns: 50px 1fr 105px;
+    grid-template-columns: 50px 1fr 65px;
     gap: 0.75rem;
     align-items: center;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
     transition: all 0.18s ease-in-out;
     margin-bottom: 0.45rem;
+    cursor: pointer;
+    user-select: none;
     font-family: 'Lexend', sans-serif !important;
 }
 
@@ -25,6 +27,8 @@
     transform: translateX(3px);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 12px rgba(45, 212, 191, 0.15);
 }
+
+
 
 /* Left Section: Colored Accent Bar + Match Number (#1, #2, #3...) */
 .match-card-meta {
@@ -80,6 +84,10 @@
     flex-shrink: 0;
 }
 
+.match-list-seed.bye-seed {
+    visibility: hidden;
+}
+
 /* Team Names */
 .match-team-side {
     display: flex;
@@ -98,20 +106,36 @@
 }
 
 .match-list-name {
-    font-size: 0.78rem;
-    font-weight: 600;
+    font-size: 0.88rem;
+    font-weight: 700;
     color: #cbd5e1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: color 0.15s ease;
 }
 
+/* Unconfirmed / Placeholder Team Name */
+.match-team-side.placeholder .match-list-name {
+    color: #64748b;
+    font-style: italic;
+}
+
+/* BYE Team Name Styling (Dimmed, Italic) */
+.match-team-side.bye-team .match-list-name {
+    color: #64748b;
+    font-style: italic;
+    opacity: 0.4;
+    letter-spacing: 0.05em;
+}
+
+/* Winner Team Name Highlight (Mint) */
 .match-team-side.winner .match-list-name {
     color: #2dd4bf !important;
     font-weight: 800;
 }
 
-/* Two Separate Score Boxes (Team 1 Box & Team 2 Box) */
+/* Two Separate Neutral Score Boxes (Identical for Winner and Loser) */
 .match-score-container {
     display: flex;
     align-items: center;
@@ -120,25 +144,18 @@
 }
 
 .match-score-single-box {
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
     background: #141a26;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #94a3b8;
-    font-size: 0.85rem;
+    color: #fbbf24;
+    font-size: 0.8rem;
     font-weight: 800;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.18s ease;
-}
-
-.match-score-single-box.winner {
-    background: #2dd4bf;
-    color: #0b0d12;
-    border-color: #2dd4bf;
-    box-shadow: 0 0 10px rgba(45, 212, 191, 0.35);
 }
 
 .match-score-dash {
@@ -147,13 +164,12 @@
     font-size: 0.75rem;
 }
 
-/* Right Section: Fixed Width Action Column (105px) */
+/* Right Section: Fixed Width Action Column (65px) */
 .match-card-actions {
-    width: 105px;
+    width: 65px;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.4rem;
     flex-shrink: 0;
 }
 
@@ -179,27 +195,4 @@
     background: rgba(100, 116, 139, 0.15);
     color: #64748b;
     border: 1px solid rgba(100, 116, 139, 0.25);
-}
-
-.btn-edit-match-list {
-    background: rgba(45, 212, 191, 0.12);
-    color: #2dd4bf;
-    border: 1px solid rgba(45, 212, 191, 0.3);
-    border-radius: 6px;
-    padding: 0.3rem 0.55rem;
-    font-family: 'Lexend', sans-serif !important;
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.18s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.btn-edit-match-list:hover {
-    background: #2dd4bf;
-    color: #0b0d12;
-    box-shadow: 0 3px 10px rgba(45, 212, 191, 0.3);
 }

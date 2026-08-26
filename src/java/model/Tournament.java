@@ -10,6 +10,7 @@ public class Tournament {
     private String seriesId;
     private String name;
     private String tournamentType; // SINGLE_STAGE, MULTI_STAGE
+    private String format; // SINGLE_ELIMINATION, DOUBLE_ELIMINATION, ROUND_ROBIN
     private String seriesEventType; // QUALIFIER, MAIN, NONE
     private String tierName; // S, A, B, C, D
     private int tournamentIndexInSeries;
@@ -21,6 +22,7 @@ public class Tournament {
     private Timestamp createdAt;
 
     public Tournament() {
+        this.format = "SINGLE_ELIMINATION";
     }
 
     public Tournament(String id, String seriesId, String name, String tournamentType, String seriesEventType,
@@ -30,6 +32,7 @@ public class Tournament {
         this.seriesId = seriesId;
         this.name = name;
         this.tournamentType = tournamentType;
+        this.format = "SINGLE_ELIMINATION";
         this.seriesEventType = seriesEventType;
         this.tierName = tierName;
         this.tournamentIndexInSeries = tournamentIndexInSeries;
@@ -53,6 +56,9 @@ public class Tournament {
 
     public String getTournamentType() { return tournamentType; }
     public void setTournamentType(String tournamentType) { this.tournamentType = tournamentType; }
+
+    public String getFormat() { return format; }
+    public void setFormat(String format) { this.format = format; }
 
     public String getSeriesEventType() { return seriesEventType; }
     public void setSeriesEventType(String seriesEventType) { this.seriesEventType = seriesEventType; }

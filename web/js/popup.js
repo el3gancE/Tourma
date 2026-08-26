@@ -45,15 +45,19 @@
             if (t1Seed) t1Seed.innerText = cleanSeed1;
             var t1Name = document.getElementById('modalTeam1Name');
             if (t1Name) t1Name.innerText = t1NameStr;
+            
             var t1Score = document.getElementById('modalTeam1Score');
-            if (t1Score) t1Score.value = (matchData.team1Score !== undefined && matchData.team1Score !== null) ? matchData.team1Score : 0;
+            var s1Val = (matchData.team1Score !== undefined && matchData.team1Score !== null && matchData.team1Score !== '') ? matchData.team1Score : '';
+            if (t1Score) t1Score.value = s1Val;
 
             var t2Seed = document.getElementById('modalTeam2Seed');
             if (t2Seed) t2Seed.innerText = cleanSeed2;
             var t2Name = document.getElementById('modalTeam2Name');
             if (t2Name) t2Name.innerText = t2NameStr;
+
             var t2Score = document.getElementById('modalTeam2Score');
-            if (t2Score) t2Score.value = (matchData.team2Score !== undefined && matchData.team2Score !== null) ? matchData.team2Score : 0;
+            var s2Val = (matchData.team2Score !== undefined && matchData.team2Score !== null && matchData.team2Score !== '') ? matchData.team2Score : '';
+            if (t2Score) t2Score.value = s2Val;
 
             // Populate Winner Segmented Button Labels
             var btnT1 = document.getElementById('btnWinnerT1');
@@ -72,7 +76,7 @@
             var initWinner = matchData.winnerId || matchData.winner;
             if (initWinner === 'draw' && this.allowDraw) {
                 this.selectWinner('draw');
-            } else if (initWinner === 'team2' || Number(t2Score.value) > Number(t1Score.value)) {
+            } else if (initWinner === 'team2' || (s1Val !== '' && s2Val !== '' && Number(s2Val) > Number(s1Val))) {
                 this.selectWinner('team2');
             } else {
                 this.selectWinner('team1');
@@ -117,8 +121,13 @@
          * Auto-determine winner based on score inputs
          */
         autoDetermineWinner: function () {
-            var s1 = Number(document.getElementById('modalTeam1Score').value || 0);
-            var s2 = Number(document.getElementById('modalTeam2Score').value || 0);
+            var val1 = document.getElementById('modalTeam1Score').value;
+            var val2 = document.getElementById('modalTeam2Score').value;
+
+            if (val1 === '' && val2 === '') return;
+
+            var s1 = Number(val1 || 0);
+            var s2 = Number(val2 || 0);
 
             if (s1 > s2) {
                 this.selectWinner('team1');
@@ -135,8 +144,11 @@
         save: function () {
             if (!this.activeMatchId) return;
 
-            var s1 = Number(document.getElementById('modalTeam1Score').value || 0);
-            var s2 = Number(document.getElementById('modalTeam2Score').value || 0);
+            var val1 = document.getElementById('modalTeam1Score').value;
+            var val2 = document.getElementById('modalTeam2Score').value;
+
+            var s1 = val1 !== '' ? Number(val1) : 0;
+            var s2 = val2 !== '' ? Number(val2) : 0;
 
             var resultPayload = {
                 matchId: this.activeMatchId,

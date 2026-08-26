@@ -13,10 +13,18 @@
         matchNum = (mId != null) ? mId.replaceAll("[^0-9]", "") : "1";
         if (matchNum.isEmpty()) matchNum = "1";
     }
+
+    String status = request.getParameter("status");
+    boolean isDone = "done".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status);
+
+    String s1Param = request.getParameter("team1Score");
+    String s2Param = request.getParameter("team2Score");
+    String s1Disp = (isDone && s1Param != null && !s1Param.trim().isEmpty()) ? s1Param : "";
+    String s2Disp = (isDone && s2Param != null && !s2Param.trim().isEmpty()) ? s2Param : "";
 %>
 
-<!-- Reusable Horizontal List Match Card Template -->
-<div class="match-card-item" data-match-id="${param.matchId != null ? param.matchId : '1'}" data-status="${param.status != null ? param.status : 'COMPLETED'}">
+<!-- Reusable Horizontal List Match Card Template (Clickable to Edit) -->
+<div class="match-card-item" data-match-id="${param.matchId != null ? param.matchId : '1'}" data-status="<%= isDone ? "COMPLETED" : "SCHEDULED" %>" onclick="window.TourmaScoreModal && window.TourmaScoreModal.open({matchId: '${param.matchId != null ? param.matchId : '1'}', roundName: 'Trận #<%= matchNum %>', team1Name: '${param.team1Name != null ? param.team1Name : 'Đội A'}', team1Seed: '${param.team1Seed != null ? param.team1Seed : '1'}', team1Score: '<%= s1Disp %>', team2Name: '${param.team2Name != null ? param.team2Name : 'Đội B'}', team2Seed: '${param.team2Seed != null ? param.team2Seed : '2'}', team2Score: '<%= s2Disp %>', winnerId: '${param.winner != null ? param.winner : ''}', status: '<%= isDone ? "COMPLETED" : "SCHEDULED" %>'})">
     
     <!-- Left Section: Static Mint Accent Bar + Match Number (#1, #2, #3...) -->
     <div class="match-card-meta">
@@ -36,14 +44,14 @@
             </span>
         </div>
 
-        <!-- Col 3: Two Separate Score Boxes -->
+        <!-- Col 3: Two Separate Score Boxes (Identical styling for winner and loser) -->
         <div class="match-score-container">
-            <span class="match-score-single-box ${param.winner == 'team1' ? 'winner' : ''}">
-                ${param.team1Score != null ? param.team1Score : 0}
+            <span class="match-score-single-box">
+                <%= s1Disp %>
             </span>
             <span class="match-score-dash">-</span>
-            <span class="match-score-single-box ${param.winner == 'team2' ? 'winner' : ''}">
-                ${param.team2Score != null ? param.team2Score : 0}
+            <span class="match-score-single-box">
+                <%= s2Disp %>
             </span>
         </div>
 
@@ -58,14 +66,11 @@
         <span class="match-list-seed">${param.team2Seed != null ? param.team2Seed : '2'}</span>
     </div>
 
-    <!-- Right Section: Status Badge (DONE / PENDING) & Compact Edit Button -->
+    <!-- Right Section: Status Badge (DONE / PENDING) -->
     <div class="match-card-actions">
-        <span class="match-list-status ${param.status == 'done' || param.status == 'COMPLETED' ? 'done' : 'pending'}">
-            ${param.status == 'done' || param.status == 'COMPLETED' ? 'DONE' : 'PENDING'}
+        <span class="match-list-status <%= isDone ? "done" : "pending" %>">
+            <%= isDone ? "DONE" : "PENDING" %>
         </span>
-        <button type="button" class="btn-edit-match-list" title="Sửa Tỷ Số" onclick="window.TourmaScoreModal && window.TourmaScoreModal.open({matchId: '${param.matchId != null ? param.matchId : '1'}', roundName: 'Trận #<%= matchNum %>', team1Name: '${param.team1Name != null ? param.team1Name : 'Đội A'}', team1Seed: '${param.team1Seed != null ? param.team1Seed : '1'}', team1Score: ${param.team1Score != null ? param.team1Score : 0}, team2Name: '${param.team2Name != null ? param.team2Name : 'Đội B'}', team2Seed: '${param.team2Seed != null ? param.team2Seed : '2'}', team2Score: ${param.team2Score != null ? param.team2Score : 0}, winnerId: '${param.winner != null ? param.winner : 'team1'}', status: '${param.status != null ? param.status : 'COMPLETED'}'})">
-            <i class="fa-solid fa-pen-to-square"></i>
-        </button>
     </div>
 
 </div>
