@@ -16,6 +16,7 @@
     position: relative;
     user-select: none;
     font-family: 'Lexend', sans-serif !important;
+    z-index: 2;
 }
 
 .bracket-node-card:hover {
@@ -115,8 +116,8 @@
 }
 
 .bracket-team-name {
-    font-size: 0.68rem;
-    font-weight: 500;
+    font-size: 0.74rem;
+    font-weight: 700;
     color: #cbd5e1;
     white-space: nowrap;
     overflow: hidden;
@@ -161,23 +162,8 @@
     border-color: #2dd4bf;
 }
 
-/* Tree Connectors (Anchor Points) */
-.bracket-connector-in {
-    position: absolute;
-    left: -8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 8px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.2);
-}
-
+/* Tree Connectors: Replaced by Dynamic SVG Lines */
+.bracket-connector-in,
 .bracket-connector-out {
-    position: absolute;
-    right: -8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 8px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.2);
+    display: none;
 }
