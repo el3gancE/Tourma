@@ -1,16 +1,31 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="dao.TournamentDAO"%>
+<%@page import="dao.ParticipantDAO"%>
 <%@page import="model.Tournament"%>
+<%@page import="model.Team"%>
+<%@page import="java.util.List"%>
 <%
     String tourneyId = request.getParameter("id");
     String tourneyName = "Giải Đấu Double Elimination";
+    String deTeamsJson = "[]";
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId);
             if (t != null && t.getName() != null && !t.getName().trim().isEmpty()) {
                 tourneyName = t.getName();
+            }
+            ParticipantDAO pDao = new ParticipantDAO();
+            List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
+            if (plist != null && !plist.isEmpty()) {
+                StringBuilder sb = new StringBuilder("[");
+                for (int i = 0; i < plist.size(); i++) {
+                    if (i > 0) sb.append(",");
+                    sb.append("\"").append(plist.get(i).getRawName().replace("\"", "\\\"")).append("\"");
+                }
+                sb.append("]");
+                deTeamsJson = sb.toString();
             }
         } catch (Exception e) {}
     }
@@ -66,11 +81,16 @@
                     <span id="deTeamCountBadge" class="team-count-badge">0 Đội</span>
                 </div>
 
-                <!-- Right Action Bar: Standalone Reset Button + View Mode Toggle Buttons -->
+                <!-- Right Action Bar: Standalone Reset Button + Quick Mode Toggle + View Mode Toggle Buttons -->
                 <div class="control-actions-right-group" style="display: flex; align-items: center; gap: 0.75rem;">
+                    <!-- Quick Mode Toggle Button -->
+                    <button type="button" id="deBtnQuickMode" class="btn-quick-mode-toggle" onclick="window.TourmaDoubleElimination.toggleQuickMode()" title="Chế độ phân định thắng thua nhanh (1-click chọn đội thắng)">
+                        <i class="fa-solid fa-bolt"></i> Quick Mode: <span class="quick-mode-status-text">OFF</span>
+                    </button>
+
                     <!-- Standalone Reset Bracket Button -->
-                    <button type="button" id="deBtnResetBracket" class="btn-reset-bracket-action" onclick="window.TourmaDoubleElimination.openResetModal()" title="Xóa kết quả và tái tạo lại sơ đồ ban đầu">
-                        <i class="fa-solid fa-rotate-right"></i> Tái Tạo Nhánh
+                    <button type="button" id="deBtnResetBracket" class="btn-reset-bracket-action" onclick="window.TourmaDoubleElimination.openResetModal()" title="Xóa kết quả và reset lại sơ đồ ban đầu">
+                        <i class="fa-solid fa-rotate-right"></i> Reset Nhánh
                     </button>
 
                     <!-- View Mode Toggle Buttons (Bracket ↔ List View) -->
@@ -91,7 +111,7 @@
                     <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
                         <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
                             <i class="fa-solid fa-rotate-right"></i>
-                            <span>Xác Nhận Tái Tạo Nhánh Đấu</span>
+                            <span>Xác Nhận Reset Nhánh Đấu</span>
                         </div>
                         <button type="button" class="modal-close-btn" onclick="window.TourmaDoubleElimination.closeResetModal()" title="Đóng">
                             <i class="fa-solid fa-xmark"></i>
@@ -101,7 +121,7 @@
                     <div class="modal-body-content" style="padding: 1.25rem 1rem;">
                         <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
                             <strong style="color: #f43f5e;">⚠️ Cảnh báo quan trọng:</strong><br>
-                            Hành động này sẽ <strong style="color: #ffffff;">XÓA TOÀN BỘ tỷ số và kết quả các trận đã đấu</strong>, tái tạo lại sơ đồ Double Elimination nguyên bản ban đầu từ danh sách hạt giống.
+                            Hành động này sẽ <strong style="color: #ffffff;">XÓA TOÀN BỘ tỷ số và kết quả các trận đã đấu</strong>, reset lại sơ đồ Double Elimination nguyên bản ban đầu từ danh sách hạt giống.
                         </div>
                         <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
                             Bạn có chắc chắn muốn thiết lập lại toàn bộ nhánh đấu không?
@@ -111,7 +131,7 @@
                     <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem;">
                         <button type="button" class="btn btn-secondary" onclick="window.TourmaDoubleElimination.closeResetModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
                         <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="window.TourmaDoubleElimination.confirmResetBracket()">
-                            <i class="fa-solid fa-rotate-right"></i> Xác Nhận Tái Tạo
+                            <i class="fa-solid fa-rotate-right"></i> Xác Nhận Reset
                         </button>
                     </div>
                 </div>
@@ -213,10 +233,12 @@
             document.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = '<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>';
                 var tourneyName = '<%= tourneyName %>';
+                var preloadedTeams = <%= deTeamsJson %>;
 
                 window.TourmaDoubleElimination.init({
                     tournamentId: tourneyId,
-                    tournamentName: tourneyName
+                    tournamentName: tourneyName,
+                    teamsList: preloadedTeams
                 });
             });
         </script>

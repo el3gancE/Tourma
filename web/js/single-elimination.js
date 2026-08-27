@@ -20,16 +20,18 @@
          * @param {string} tourneyId - Tournament ID from server
          * @param {Array} dbMatches - Matches preloaded from database (optional)
          */
-        init: function (tourneyId, dbMatches) {
+        init: function (tourneyId, dbMatches, preloadedTeams) {
             this.tournamentId = tourneyId || 'demo';
 
             // 1. Load Teams List
             var storageKeyTeams = 'tourma_teams_' + this.tournamentId;
-            var teams = null;
-            try {
-                teams = JSON.parse(localStorage.getItem(storageKeyTeams));
-            } catch (e) {
-                teams = null;
+            var teams = (preloadedTeams && preloadedTeams.length > 0) ? preloadedTeams : null;
+            if (!teams) {
+                try {
+                    teams = JSON.parse(localStorage.getItem(storageKeyTeams));
+                } catch (e) {
+                    teams = null;
+                }
             }
 
             if (!teams || teams.length === 0) {
@@ -42,11 +44,21 @@
                 ];
             }
             this.teamsList = teams;
+            try {
+                localStorage.setItem(storageKeyTeams, JSON.stringify(this.teamsList));
+            } catch (e) {}
 
             // Update team count badge in top toolbar
             var countBadge = document.getElementById('tournamentTeamCountBadge');
             if (countBadge) {
                 countBadge.innerText = this.teamsList.length + ' Đội';
+            }
+
+            // Restore round random inputs
+            try {
+                this.roundRandomInputs = JSON.parse(localStorage.getItem('tourma_round_inputs_' + this.tournamentId)) || {};
+            } catch (e) {
+                this.roundRandomInputs = {};
             }
 
             // 2. Generate or Restore Matches Data using TourmaBracketAlgorithm
@@ -55,6 +67,9 @@
             // 3. Render Views
             this.renderBracketView();
             this.renderListView();
+
+            // Setup Quick Mode
+            this.initQuickMode();
 
             // Restore active view mode (bracket or list) from localStorage
             var storageKeyViewMode = 'tourma_view_mode_' + this.tournamentId;
@@ -93,50 +108,39 @@
                 }
             }
 
-            // If DB matches exist, use them
-            if (dbMatches && dbMatches.length > 0) {
-                this.buildMapFromList(dbMatches);
+            if (savedMatches && Object.keys(savedMatches).length > 0) {
+                if (savedMatches.matchesMap) {
+                    this.matchesMap = savedMatches.matchesMap;
+                    this.roundsList = savedMatches.roundsList || savedMatches.rounds || [];
+                } else {
+                    this.matchesMap = savedMatches;
+                    this.buildRoundsFromMap();
+                }
                 if (window.TourmaBracketAlgorithm) {
                     window.TourmaBracketAlgorithm.renumberMatchesContiguously(this.roundsList, this.matchesMap);
                 }
-                return;
-            }
+            } else if (window.TourmaBracketAlgorithm) {
+                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList);
+                this.bracketData = generated;
+                this.roundsList = generated.roundsList || [];
+                this.matchesMap = generated.matchesMap || {};
 
-            // Check if savedMatches has any user-entered match scores
-            var hasAnyPlayedScores = false;
-            if (savedMatches) {
-                var keys = Object.keys(savedMatches);
-                for (var k = 0; k < keys.length; k++) {
-                    var sm = savedMatches[keys[k]];
-                    var t1 = sm.team1 ? sm.team1.name : '';
-                    var t2 = sm.team2 ? sm.team2.name : '';
-                    var isByeMatch = (t1 === 'BYE' || t2 === 'BYE');
-                    if (!isByeMatch && (sm.status === 'COMPLETED' || sm.status === 'done' || (sm.team1 && sm.team1.score !== '') || (sm.team2 && sm.team2.score !== ''))) {
-                        hasAnyPlayedScores = true;
-                        break;
+                if (dbMatches && dbMatches.length > 0) {
+                    for (var i = 0; i < dbMatches.length; i++) {
+                        var dbm = dbMatches[i];
+                        if (this.matchesMap[dbm.id]) {
+                            var localM = this.matchesMap[dbm.id];
+                            localM.status = dbm.status;
+                            localM.team1.score = dbm.team1Score;
+                            localM.team2.score = dbm.team2Score;
+                            if (dbm.winnerId) {
+                                localM.winnerId = (dbm.winnerId === localM.team1.name) ? 'team1' : 'team2';
+                            }
+                        }
                     }
                 }
+                this.persistMatches();
             }
-
-            // Only use savedMatches if matches have actually been played
-            // If no matches played yet, always generate fresh bracket to reflect any team list changes!
-            if (hasAnyPlayedScores && savedMatches && Object.keys(savedMatches).length > 0) {
-                this.matchesMap = savedMatches;
-                this.buildRoundsFromMap();
-                if (window.TourmaBracketAlgorithm) {
-                    window.TourmaBracketAlgorithm.renumberMatchesContiguously(this.roundsList, this.matchesMap);
-                }
-                return;
-            }
-
-            // Otherwise, generate standard single elimination bracket structure using algorithm engine
-            if (window.TourmaBracketAlgorithm) {
-                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList);
-                this.roundsList = generated.roundsList;
-                this.matchesMap = generated.matchesMap;
-            }
-
-            this.persistMatches();
         },
 
         /**
@@ -163,7 +167,7 @@
                 titleSpan.innerText = roundObj.title;
                 header.appendChild(titleSpan);
 
-                // Round Random Controls
+                // Round Random & Quick Score Controls
                 var canRandom = self.isRoundReadyForRandom(roundObj);
                 var isAllDone = window.TourmaRandomService ? window.TourmaRandomService.isRoundAllCompleted(roundObj, self.matchesMap) : false;
                 var canReset = window.TourmaRandomService ? window.TourmaRandomService.hasCompletedMatchesInRound(roundObj, self.matchesMap) : false;
@@ -176,13 +180,8 @@
                 rndInput.placeholder = '-';
                 rndInput.min = '1';
                 rndInput.max = '999';
-                rndInput.value = (self.roundRandomInputs && self.roundRandomInputs[roundObj.roundNumber]) ? self.roundRandomInputs[roundObj.roundNumber] : '';
-                rndInput.title = canRandom ? 'Điểm đội thắng' : (isAllDone ? 'Tất cả các trận đã hoàn thành' : 'Vòng đấu chưa xác định đủ các đội');
-                if (!canRandom) rndInput.disabled = true;
-                rndInput.oninput = function () {
-                    if (!self.roundRandomInputs) self.roundRandomInputs = {};
-                    self.roundRandomInputs[roundObj.roundNumber] = this.value;
-                };
+                rndInput.value = (self.roundRandomInputs && self.roundRandomInputs[roundObj.roundNumber] !== undefined) ? self.roundRandomInputs[roundObj.roundNumber] : '';
+                rndInput.title = 'Điểm đội thắng (dùng cho Quick Mode và Random)';
 
                 var rndBtn = document.createElement('button');
                 rndBtn.type = 'button';
@@ -199,6 +198,21 @@
                 if (!canReset) rndResetBtn.disabled = true;
 
                 (function (rNum, inp) {
+                    var saveRoundInput = function () {
+                        if (!self.roundRandomInputs) self.roundRandomInputs = {};
+                        if (inp.value === '') {
+                            delete self.roundRandomInputs[rNum];
+                        } else {
+                            self.roundRandomInputs[rNum] = inp.value;
+                        }
+                        try {
+                            localStorage.setItem('tourma_round_inputs_' + self.tournamentId, JSON.stringify(self.roundRandomInputs));
+                        } catch (e) {}
+                    };
+
+                    inp.oninput = saveRoundInput;
+                    inp.onchange = saveRoundInput;
+
                     rndBtn.onclick = function (e) {
                         e.stopPropagation();
                         self.randomizeRound(rNum, inp.value);
@@ -451,6 +465,105 @@
         },
 
         /**
+         * Quick Mode Management (1-click winner selection)
+         */
+        isQuickMode: false,
+
+        initQuickMode: function () {
+            var storageKey = 'tourma_quick_mode_' + this.tournamentId;
+            this.isQuickMode = (localStorage.getItem(storageKey) === 'true');
+            window.TourmaQuickMode = this.isQuickMode;
+            this.updateQuickModeUI();
+        },
+
+        toggleQuickMode: function () {
+            this.isQuickMode = !this.isQuickMode;
+            window.TourmaQuickMode = this.isQuickMode;
+            var storageKey = 'tourma_quick_mode_' + this.tournamentId;
+            localStorage.setItem(storageKey, this.isQuickMode ? 'true' : 'false');
+            this.updateQuickModeUI();
+            this.renderBracketView();
+            this.renderListView();
+        },
+
+        updateQuickModeUI: function () {
+            var btn = document.getElementById('singleBtnQuickMode') || document.getElementById('seBtnQuickMode');
+            if (btn) {
+                btn.classList.toggle('active', this.isQuickMode);
+                var txt = btn.querySelector('.quick-mode-status-text');
+                if (txt) txt.innerText = this.isQuickMode ? 'ON' : 'OFF';
+            }
+            if (this.isQuickMode) {
+                document.body.classList.add('tourma-quick-mode-active');
+            } else {
+                document.body.classList.remove('tourma-quick-mode-active');
+            }
+        },
+
+        handleQuickWinner: function (matchId, winnerSlot, customScore) {
+            var mId = Number(matchId);
+            var targetMatch = this.matchesMap[mId];
+            if (!targetMatch) return;
+
+            var t1 = targetMatch.team1 ? targetMatch.team1.name : '';
+            var t2 = targetMatch.team2 ? targetMatch.team2.name : '';
+            if (!t1 || !t2 || t1 === 'BYE' || t2 === 'BYE' || t1.startsWith('W #') || t2.startsWith('W #')) return;
+
+            var isT1Winner = (winnerSlot === 1);
+            var isT2Winner = (winnerSlot === 2);
+
+            // Determine winning score from passed customScore or stored Round Score Input (Default 1 if not specified)
+            var winningScore = '1';
+            if (customScore && Number(customScore) > 0) {
+                winningScore = String(customScore);
+            } else {
+                var rNum = targetMatch.roundNumber;
+                if (!rNum && this.bracketData && this.bracketData.rounds) {
+                    for (var r = 0; r < this.bracketData.rounds.length; r++) {
+                        var rd = this.bracketData.rounds[r];
+                        if (rd.matches && rd.matches.some(function (m) { return m.matchId === mId; })) {
+                            rNum = rd.roundNumber;
+                            break;
+                        }
+                    }
+                }
+                if (rNum && this.roundRandomInputs && this.roundRandomInputs[rNum]) {
+                    var cScore = this.roundRandomInputs[rNum];
+                    if (cScore && Number(cScore) > 0) {
+                        winningScore = String(cScore);
+                    }
+                }
+            }
+
+            targetMatch.winnerId = isT1Winner ? 'team1' : 'team2';
+            targetMatch.status = 'COMPLETED';
+
+            var winNum = Number(winningScore);
+            var losingScore = '0';
+            if (winNum > 1) {
+                losingScore = String(Math.floor(Math.random() * winNum)); // Range: [0, X-1]
+            }
+
+            targetMatch.team1.score = isT1Winner ? winningScore : losingScore;
+            targetMatch.team2.score = isT2Winner ? winningScore : losingScore;
+
+            if (window.TourmaBracketAlgorithm) {
+                window.TourmaBracketAlgorithm.propagateAndResetDownstream(this.matchesMap, mId, targetMatch.winnerId, isT1Winner);
+            }
+
+            this.persistMatches();
+            this.renderBracketView();
+            this.renderListView();
+
+            this.saveMatchResultAJAX(
+                mId,
+                targetMatch.team1.score,
+                targetMatch.team2.score,
+                isT1Winner ? targetMatch.team1.name : targetMatch.team2.name
+            );
+        },
+
+        /**
          * Handle Realtime Match Updates (Dispatched from Popup Modal)
          */
         onMatchUpdated: function (detail) {
@@ -510,26 +623,29 @@
 
         confirmResetBracket: function () {
             this.closeResetModal();
+            this.roundRandomInputs = {};
             if (this.tournamentId) {
                 try {
                     localStorage.removeItem('tourma_matches_' + this.tournamentId);
                     localStorage.removeItem('tourma_matches_demo');
+                    localStorage.removeItem('tourma_round_inputs_' + this.tournamentId);
                 } catch (e) {}
             }
 
             // Regenerate fresh initial bracket
             if (window.TourmaBracketAlgorithm && typeof window.TourmaBracketAlgorithm.generateSingleElimination === 'function') {
-                this.roundsList = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList);
-                this.matchesMap = {};
-                for (var r = 0; r < this.roundsList.length; r++) {
-                    for (var m = 0; m < this.roundsList[r].matches.length; m++) {
-                        var match = this.roundsList[r].matches[m];
-                        this.matchesMap[match.matchId] = match;
-                    }
-                }
+                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList);
+                this.bracketData = generated;
+                this.roundsList = generated.roundsList || [];
+                this.matchesMap = generated.matchesMap || {};
+
                 this.persistMatches();
                 this.renderBracketView();
                 this.renderListView();
+                var self = this;
+                setTimeout(function () {
+                    self.drawTreeConnectors();
+                }, 50);
             }
         },
 

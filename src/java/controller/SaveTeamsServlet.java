@@ -27,6 +27,11 @@ public class SaveTeamsServlet extends HttpServlet {
         String format = request.getParameter("format");
         String teamListRaw = request.getParameter("teamListRaw");
 
+        if (tournamentId != null && format != null && !format.trim().isEmpty()) {
+            dao.TournamentDAO tDao = new dao.TournamentDAO();
+            tDao.saveOrUpdateStageFormat(tournamentId, format.trim());
+        }
+
         if (tournamentId != null && teamListRaw != null && !teamListRaw.trim().isEmpty()) {
             String[] lines = teamListRaw.split("\n");
             List<String> teamNames = new ArrayList<>();

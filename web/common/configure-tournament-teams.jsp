@@ -149,7 +149,7 @@
                 <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
                     <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>Xác Nhận Thay Đổi & Tái Tạo Nhánh Đấu</span>
+                        <span>Xác Nhận Thay Đổi & Reset Nhánh Đấu</span>
                     </div>
                     <button type="button" class="modal-close-btn" onclick="closeResetModal()" title="Hủy bỏ">
                         <i class="fa-solid fa-xmark"></i>

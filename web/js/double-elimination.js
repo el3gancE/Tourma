@@ -49,6 +49,13 @@
                 ];
             }
 
+            // Restore saved round inputs
+            try {
+                this.roundRandomInputs = JSON.parse(localStorage.getItem('tourma_de_round_inputs_' + this.tournamentId)) || {};
+            } catch (e) {
+                this.roundRandomInputs = {};
+            }
+
             // Restore saved view mode
             var savedView = localStorage.getItem('tourma_de_view_' + this.tournamentId);
             if (savedView === 'list' || savedView === 'bracket') {
@@ -57,6 +64,9 @@
 
             // Generate or Restore Matches Data
             this.loadOrGenerateBracketData();
+
+            // Setup Quick Mode
+            this.initQuickMode();
 
             // Setup Dual Viewport Controls
             this.initDualViewports();
@@ -247,13 +257,8 @@
                 rInput.placeholder = '-';
                 rInput.min = '1';
                 rInput.max = '999';
-                rInput.value = (self.roundRandomInputs && self.roundRandomInputs[ubKey]) ? self.roundRandomInputs[ubKey] : '';
-                rInput.title = canRandom ? 'Điểm đội thắng' : (isAllDone ? 'Tất cả các trận đã hoàn thành' : 'Vòng đấu chưa xác định đủ các đội');
-                if (!canRandom) rInput.disabled = true;
-                rInput.oninput = function () {
-                    if (!self.roundRandomInputs) self.roundRandomInputs = {};
-                    self.roundRandomInputs[ubKey] = this.value;
-                };
+                rInput.value = (self.roundRandomInputs && self.roundRandomInputs[ubKey] !== undefined) ? self.roundRandomInputs[ubKey] : '';
+                rInput.title = 'Điểm đội thắng (dùng cho Quick Mode và Random)';
 
                 var rBtn = document.createElement('button');
                 rBtn.type = 'button';
@@ -269,7 +274,22 @@
                 rResetBtn.title = canReset ? 'Reset kết quả vòng đấu' : 'Vòng đấu chưa có trận nào hoàn thành';
                 if (!canReset) rResetBtn.disabled = true;
 
-                (function (bType, rNum, inp) {
+                (function (bType, rNum, currentKey, inp) {
+                    var saveUbInput = function () {
+                        if (!self.roundRandomInputs) self.roundRandomInputs = {};
+                        if (inp.value === '') {
+                            delete self.roundRandomInputs[currentKey];
+                        } else {
+                            self.roundRandomInputs[currentKey] = inp.value;
+                        }
+                        try {
+                            localStorage.setItem('tourma_de_round_inputs_' + self.tournamentId, JSON.stringify(self.roundRandomInputs));
+                        } catch (e) {}
+                    };
+
+                    inp.oninput = saveUbInput;
+                    inp.onchange = saveUbInput;
+
                     rBtn.onclick = function (e) {
                         e.stopPropagation();
                         self.randomizeRound(bType, rNum, inp.value);
@@ -278,7 +298,7 @@
                         e.stopPropagation();
                         self.resetRound(bType, rNum);
                     };
-                })('UPPER', ro.roundNumber, rInput);
+                })('UPPER', ro.roundNumber, ubKey, rInput);
 
                 rControls.appendChild(rInput);
                 rControls.appendChild(rBtn);
@@ -331,13 +351,8 @@
                 gfInput.placeholder = '-';
                 gfInput.min = '1';
                 gfInput.max = '999';
-                gfInput.value = (self.roundRandomInputs && self.roundRandomInputs[gfKey]) ? self.roundRandomInputs[gfKey] : '';
-                gfInput.title = canGfRandom ? 'Điểm đội thắng' : (isGfAllDone ? 'Tất cả các trận đã hoàn thành' : 'Vòng đấu chưa xác định đủ các đội');
-                if (!canGfRandom) gfInput.disabled = true;
-                gfInput.oninput = function () {
-                    if (!self.roundRandomInputs) self.roundRandomInputs = {};
-                    self.roundRandomInputs[gfKey] = this.value;
-                };
+                gfInput.value = (self.roundRandomInputs && self.roundRandomInputs[gfKey] !== undefined) ? self.roundRandomInputs[gfKey] : '';
+                gfInput.title = 'Điểm đội thắng (dùng cho Quick Mode và Random)';
 
                 var gfBtn = document.createElement('button');
                 gfBtn.type = 'button';
@@ -353,7 +368,22 @@
                 gfResetBtn.title = canGfReset ? 'Reset kết quả Grand Finals' : 'Vòng đấu chưa có trận nào hoàn thành';
                 if (!canGfReset) gfResetBtn.disabled = true;
 
-                (function (bType, rNum, inp) {
+                (function (bType, rNum, currentKey, inp) {
+                    var saveGfInput = function () {
+                        if (!self.roundRandomInputs) self.roundRandomInputs = {};
+                        if (inp.value === '') {
+                            delete self.roundRandomInputs[currentKey];
+                        } else {
+                            self.roundRandomInputs[currentKey] = inp.value;
+                        }
+                        try {
+                            localStorage.setItem('tourma_de_round_inputs_' + self.tournamentId, JSON.stringify(self.roundRandomInputs));
+                        } catch (e) {}
+                    };
+
+                    inp.oninput = saveGfInput;
+                    inp.onchange = saveGfInput;
+
                     gfBtn.onclick = function (e) {
                         e.stopPropagation();
                         self.randomizeRound(bType, rNum, inp.value);
@@ -362,7 +392,7 @@
                         e.stopPropagation();
                         self.resetRound(bType, rNum);
                     };
-                })('GRAND_FINAL', gfRound.roundNumber, gfInput);
+                })('GRAND_FINAL', gfRound.roundNumber, gfKey, gfInput);
 
                 gfControls.appendChild(gfInput);
                 gfControls.appendChild(gfBtn);
@@ -433,13 +463,8 @@
                 lbInput.placeholder = '-';
                 lbInput.min = '1';
                 lbInput.max = '999';
-                lbInput.value = (self.roundRandomInputs && self.roundRandomInputs[lbKey]) ? self.roundRandomInputs[lbKey] : '';
-                lbInput.title = canLbRandom ? 'Điểm đội thắng' : (isLbAllDone ? 'Tất cả các trận đã hoàn thành' : 'Vòng đấu chưa xác định đủ các đội');
-                if (!canLbRandom) lbInput.disabled = true;
-                lbInput.oninput = function () {
-                    if (!self.roundRandomInputs) self.roundRandomInputs = {};
-                    self.roundRandomInputs[lbKey] = this.value;
-                };
+                lbInput.value = (self.roundRandomInputs && self.roundRandomInputs[lbKey] !== undefined) ? self.roundRandomInputs[lbKey] : '';
+                lbInput.title = 'Điểm đội thắng (dùng cho Quick Mode và Random)';
 
                 var lbBtn = document.createElement('button');
                 lbBtn.type = 'button';
@@ -455,7 +480,22 @@
                 lbResetBtn.title = canLbReset ? 'Reset kết quả vòng đấu' : 'Vòng đấu chưa có trận nào hoàn thành';
                 if (!canLbReset) lbResetBtn.disabled = true;
 
-                (function (bType, rNum, inp) {
+                (function (bType, rNum, currentKey, inp) {
+                    var saveLbInput = function () {
+                        if (!self.roundRandomInputs) self.roundRandomInputs = {};
+                        if (inp.value === '') {
+                            delete self.roundRandomInputs[currentKey];
+                        } else {
+                            self.roundRandomInputs[currentKey] = inp.value;
+                        }
+                        try {
+                            localStorage.setItem('tourma_de_round_inputs_' + self.tournamentId, JSON.stringify(self.roundRandomInputs));
+                        } catch (e) {}
+                    };
+
+                    inp.oninput = saveLbInput;
+                    inp.onchange = saveLbInput;
+
                     lbBtn.onclick = function (e) {
                         e.stopPropagation();
                         self.randomizeRound(bType, rNum, inp.value);
@@ -464,7 +504,7 @@
                         e.stopPropagation();
                         self.resetRound(bType, rNum);
                     };
-                })('LOWER', lro.roundNumber, lbInput);
+                })('LOWER', lro.roundNumber, lbKey, lbInput);
 
                 lbControls.appendChild(lbInput);
                 lbControls.appendChild(lbBtn);
@@ -746,6 +786,111 @@
         },
 
         /**
+         * Quick Mode Management (1-click winner selection for DE)
+         */
+        isQuickMode: false,
+
+        initQuickMode: function () {
+            var storageKey = 'tourma_quick_mode_' + this.tournamentId;
+            this.isQuickMode = (localStorage.getItem(storageKey) === 'true');
+            window.TourmaQuickMode = this.isQuickMode;
+            this.updateQuickModeUI();
+        },
+
+        toggleQuickMode: function () {
+            this.isQuickMode = !this.isQuickMode;
+            window.TourmaQuickMode = this.isQuickMode;
+            var storageKey = 'tourma_quick_mode_' + this.tournamentId;
+            localStorage.setItem(storageKey, this.isQuickMode ? 'true' : 'false');
+            this.updateQuickModeUI();
+            this.renderUpperBracket();
+            this.renderLowerBracket();
+            this.renderListView();
+        },
+
+        updateQuickModeUI: function () {
+            var btn = document.getElementById('deBtnQuickMode');
+            if (btn) {
+                btn.classList.toggle('active', this.isQuickMode);
+                var txt = btn.querySelector('.quick-mode-status-text');
+                if (txt) txt.innerText = this.isQuickMode ? 'ON' : 'OFF';
+            }
+            if (this.isQuickMode) {
+                document.body.classList.add('tourma-quick-mode-active');
+            } else {
+                document.body.classList.remove('tourma-quick-mode-active');
+            }
+        },
+
+        handleQuickWinner: function (matchId, winnerSlot, customScore) {
+            var m = this.matchesMap[matchId];
+            if (!m) return;
+
+            var t1 = m.team1 ? m.team1.name : '';
+            var t2 = m.team2 ? m.team2.name : '';
+            if (!t1 || !t2 || t1 === 'BYE' || t2 === 'BYE' ||
+                t1.startsWith('W #') || t1.startsWith('L #') ||
+                t2.startsWith('W #') || t2.startsWith('L #') ||
+                t1 === 'Winner UB' || t2 === 'Winner LB') return;
+
+            if (m.isResetMatch && !m.isUnlocked) return;
+
+            var isT1Winner = (winnerSlot === 1);
+            var isT2Winner = (winnerSlot === 2);
+
+            // Determine winning score from passed customScore or stored Round Score Input (Default 1 if not specified)
+            var winningScore = '1';
+            if (customScore && Number(customScore) > 0) {
+                winningScore = String(customScore);
+            } else {
+                var roundKey = null;
+                if (m.bracketType === 'UPPER') {
+                    roundKey = 'UPPER_' + m.roundNumber;
+                } else if (m.bracketType === 'LOWER') {
+                    roundKey = 'LOWER_' + m.roundNumber;
+                } else if (m.bracketType === 'GRAND_FINAL' || m.bracketType === 'GF') {
+                    roundKey = 'GRAND_FINAL_' + m.roundNumber;
+                    if (!this.roundRandomInputs || !this.roundRandomInputs[roundKey]) {
+                        roundKey = 'GRAND_FINAL';
+                    }
+                }
+
+                if (roundKey && this.roundRandomInputs && this.roundRandomInputs[roundKey]) {
+                    var cScore = this.roundRandomInputs[roundKey];
+                    if (cScore && Number(cScore) > 0) {
+                        winningScore = String(cScore);
+                    }
+                }
+            }
+
+            m.winnerId = isT1Winner ? 'team1' : 'team2';
+            m.status = 'COMPLETED';
+
+            var winNum = Number(winningScore);
+            var losingScore = '0';
+            if (winNum > 1) {
+                losingScore = String(Math.floor(Math.random() * winNum)); // Range: [0, X-1]
+            }
+
+            m.team1.score = isT1Winner ? winningScore : losingScore;
+            m.team2.score = isT2Winner ? winningScore : losingScore;
+
+            var winnerName = isT1Winner ? t1 : t2;
+
+            if (window.TourmaDoubleElimAlgorithm) {
+                window.TourmaDoubleElimAlgorithm.propagateMatchResult(this.matchesMap, matchId, m.winnerId, isT1Winner);
+                window.TourmaDoubleElimAlgorithm.renumberDoubleEliminationContiguously(this.bracketData);
+            }
+
+            this.persistLocal();
+            this.renderUpperBracket();
+            this.renderLowerBracket();
+            this.renderListView();
+
+            this.saveMatchAJAX(matchId, m.team1.score, m.team2.score, winnerName);
+        },
+
+        /**
          * Attach Match Updates & Global Event Listeners
          */
         attachEventListeners: function () {
@@ -807,9 +952,11 @@
 
         confirmResetBracket: function () {
             this.closeResetModal();
+            this.roundRandomInputs = {};
             try {
                 localStorage.removeItem('tourma_de_matches_' + this.tournamentId);
                 localStorage.removeItem('tourma_matches_' + this.tournamentId);
+                localStorage.removeItem('tourma_de_round_inputs_' + this.tournamentId);
             } catch (e) {}
 
             // Re-generate fresh initial bracket

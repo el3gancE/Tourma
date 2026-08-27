@@ -289,12 +289,59 @@
                 path.setAttribute('stroke-width', isCompleted ? '2.2' : '1.5');
                 path.setAttribute('stroke-linecap', 'round');
                 path.setAttribute('stroke-linejoin', 'round');
-                if (isCompleted) {
-                    path.setAttribute('style', 'filter: drop-shadow(0 0 4px rgba(45, 212, 191, 0.4));');
+                var t1Name = m.team1 ? m.team1.name : '';
+                var t2Name = m.team2 ? m.team2.name : '';
+                var isT1Win = (m.winnerId === 'team1');
+                var isT2Win = (m.winnerId === 'team2');
+                var winnerName = isT1Win ? t1Name : (isT2Win ? t2Name : '');
+
+                path.setAttribute('data-teams', t1Name + '|' + t2Name);
+                if (winnerName) {
+                    path.setAttribute('data-winner', winnerName);
                 }
 
                 svg.appendChild(path);
             }
+        }
+    };
+
+    /**
+     * UNIVERSAL TEAM PATH TRACKER (Tournament Journey Highlighter)
+     */
+    window.TourmaPathTracker = {
+        activeTeam: null,
+
+        highlightTeam: function (teamName) {
+            if (!teamName || teamName === 'BYE' ||
+                teamName.startsWith('W #') || teamName.startsWith('L #') ||
+                teamName === 'Winner UB' || teamName === 'Winner LB') {
+                this.clearHighlight();
+                return;
+            }
+
+            this.activeTeam = teamName;
+            document.body.classList.add('tourma-team-path-active');
+
+            // Highlight all matching team rows in bracket cards only
+            var allRows = document.querySelectorAll('.bracket-team-row');
+            for (var r = 0; r < allRows.length; r++) {
+                var row = allRows[r];
+                var name = row.getAttribute('data-team-name') || '';
+                if (name === teamName) {
+                    row.classList.add('path-focused');
+                } else {
+                    row.classList.remove('path-focused');
+                }
+            }
+        },
+
+        clearHighlight: function () {
+            if (!this.activeTeam) return;
+            this.activeTeam = null;
+            document.body.classList.remove('tourma-team-path-active');
+
+            var focusedRows = document.querySelectorAll('.bracket-team-row.path-focused');
+            for (var r = 0; r < focusedRows.length; r++) focusedRows[r].classList.remove('path-focused');
         }
     };
 

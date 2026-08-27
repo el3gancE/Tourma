@@ -291,3 +291,84 @@
     color: #64748b !important;
     background: rgba(11, 13, 18, 0.5) !important;
 }
+
+/* Quick Mode Toggle Button in Header Bar */
+.btn-quick-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0.42rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease-in-out;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-quick-mode-toggle:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-quick-mode-toggle.active {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border-color: #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.25);
+    font-weight: 800;
+}
+
+/* ==========================================================================
+   TEAM TOURNAMENT PATH HIGHLIGHTING (Default Hover Feature)
+   ========================================================================== */
+.bracket-team-row, .match-team-side {
+    transition: background 0.15s ease, color 0.15s ease, opacity 0.18s ease;
+    cursor: pointer;
+}
+
+/* Default Hover on any team row in bracket view */
+.bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:hover {
+    background: rgba(45, 212, 191, 0.22) !important;
+}
+
+.bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:hover .bracket-team-name {
+    color: #2dd4bf !important;
+}
+
+/* When a team path is actively focused across the bracket: Inset border & uniform brightness */
+body.tourma-team-path-active .bracket-team-row.path-focused {
+    background: rgba(45, 212, 191, 0.22) !important;
+    box-shadow: inset 0 0 0 1px #2dd4bf, 0 0 10px rgba(45, 212, 191, 0.4) !important;
+    border-radius: 4px !important;
+    position: relative;
+    z-index: 5;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.tourma-team-path-active .bracket-team-row.path-focused .bracket-team-name {
+    color: #2dd4bf !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+
+/* If the match was LOST by this team: ONLY SHOW BORDER, NO BACKGROUND COLOR, NO TEXT COLORING (0px layout shift) */
+body.tourma-team-path-active .bracket-team-row.path-focused.loser,
+body.tourma-team-path-active .bracket-team-row.path-focused.loser:hover {
+    background: transparent !important;
+    box-shadow: inset 0 0 0 1px #2dd4bf !important;
+}
+
+body.tourma-team-path-active .bracket-team-row.path-focused.loser .bracket-team-name {
+    color: #cbd5e1 !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+
+

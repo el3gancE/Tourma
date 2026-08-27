@@ -111,14 +111,15 @@
 }
 
 .bracket-team-name {
-    font-size: 0.76rem;
+    font-size: 0.76rem !important;
     font-weight: 700;
     color: #cbd5e1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     padding: 0.05rem 0.2rem;
-    line-height: 1.2;
+    line-height: 1.25;
+    letter-spacing: 0;
 }
 
 /* Unconfirmed / Placeholder Team Name Styling (e.g. W #1 or L #2) */
@@ -167,7 +168,16 @@
 
 .bracket-team-row.winner .bracket-team-name {
     color: #2dd4bf !important;
-    font-weight: 800;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0;
+}
+
+.bracket-team-row.loser .bracket-team-name {
+    color: #94a3b8;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0;
 }
 
 .bracket-team-row.winner .bracket-score-box {
