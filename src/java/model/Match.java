@@ -25,12 +25,17 @@ public class Match implements Serializable {
     private Integer nextMatchId;
     private int nextMatchSlot; // 1 = Team 1, 2 = Team 2 in next match
     
+    private Integer dropToMatchId; // For Double Elimination (where loser goes)
+    private int dropToMatchSlot;
+    
     private String status; // "SCHEDULED" (PENDING) or "COMPLETED" (DONE)
+    private String bracketType; // "UPPER", "LOWER", "GRAND_FINAL"
     private boolean isLosersBracket;
 
     public Match() {
         this.status = "SCHEDULED";
         this.nextMatchSlot = 1;
+        this.bracketType = "UPPER";
         this.isLosersBracket = false;
     }
 
@@ -54,6 +59,7 @@ public class Match implements Serializable {
         this.nextMatchId = nextMatchId;
         this.nextMatchSlot = nextMatchSlot;
         this.status = status;
+        this.bracketType = "UPPER";
         this.isLosersBracket = false;
     }
 
@@ -103,9 +109,24 @@ public class Match implements Serializable {
     public int getNextMatchSlot() { return nextMatchSlot; }
     public void setNextMatchSlot(int nextMatchSlot) { this.nextMatchSlot = nextMatchSlot; }
 
+    public Integer getDropToMatchId() { return dropToMatchId; }
+    public void setDropToMatchId(Integer dropToMatchId) { this.dropToMatchId = dropToMatchId; }
+
+    public int getDropToMatchSlot() { return dropToMatchSlot; }
+    public void setDropToMatchSlot(int dropToMatchSlot) { this.dropToMatchSlot = dropToMatchSlot; }
+
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    public boolean isLosersBracket() { return isLosersBracket; }
-    public void setLosersBracket(boolean losersBracket) { isLosersBracket = losersBracket; }
+    public String getBracketType() { return bracketType != null ? bracketType : (isLosersBracket ? "LOWER" : "UPPER"); }
+    public void setBracketType(String bracketType) { 
+        this.bracketType = bracketType; 
+        this.isLosersBracket = "LOWER".equalsIgnoreCase(bracketType);
+    }
+
+    public boolean isLosersBracket() { return isLosersBracket || "LOWER".equalsIgnoreCase(bracketType); }
+    public void setLosersBracket(boolean losersBracket) { 
+        this.isLosersBracket = losersBracket; 
+        if (losersBracket) this.bracketType = "LOWER";
+    }
 }

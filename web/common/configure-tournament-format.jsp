@@ -173,15 +173,17 @@
         var originalFormat = "<%= currentFormat %>";
         var hasOngoingMatches = false;
 
-        // Check if bracket already has completed / scored matches
+        // Check if bracket already has completed / scored matches (SE or DE)
         if (tournamentId) {
             try {
                 var matchesObj = JSON.parse(localStorage.getItem("tourma_matches_" + tournamentId));
-                if (matchesObj) {
-                    var keys = Object.keys(matchesObj);
+                var deObj = JSON.parse(localStorage.getItem("tourma_de_matches_" + tournamentId));
+                var combined = matchesObj || (deObj ? deObj.matchesMap : null);
+                if (combined) {
+                    var keys = Object.keys(combined);
                     for (var i = 0; i < keys.length; i++) {
-                        var m = matchesObj[keys[i]];
-                        if (m.status === 'COMPLETED' || m.status === 'done' || (m.team1 && m.team1.score !== '') || (m.team2 && m.team2.score !== '')) {
+                        var m = combined[keys[i]];
+                        if (m && (m.status === 'COMPLETED' || m.status === 'done' || (m.team1 && m.team1.score !== '') || (m.team2 && m.team2.score !== ''))) {
                             hasOngoingMatches = true;
                             break;
                         }

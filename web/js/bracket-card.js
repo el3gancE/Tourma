@@ -53,13 +53,15 @@
 
             var isT1Winner = data.winnerId === 'team1' || (isDone && Number(t1.score) > Number(t2.score));
             var isT2Winner = data.winnerId === 'team2' || (isDone && Number(t2.score) > Number(t1.score));
+            var isT1Loser = isDone && !hasBye && !isT1Winner && isT2Winner;
+            var isT2Loser = isDone && !hasBye && !isT2Winner && isT1Winner;
 
             var card = document.createElement('div');
             card.className = 'bracket-node-card' + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-node-card' : '');
             card.dataset.matchId = matchId;
 
-            var t1RowClass = 'bracket-team-row ' + (isT1Winner ? 'winner ' : '') + (isT1Bye ? 'bye-row ' : '');
-            var t2RowClass = 'bracket-team-row ' + (isT2Winner ? 'winner ' : '') + (isT2Bye ? 'bye-row ' : '');
+            var t1RowClass = 'bracket-team-row ' + (isT1Winner ? 'winner ' : '') + (isT1Loser ? 'loser ' : '') + (isT1Bye ? 'bye-row ' : '');
+            var t2RowClass = 'bracket-team-row ' + (isT2Winner ? 'winner ' : '') + (isT2Loser ? 'loser ' : '') + (isT2Bye ? 'bye-row ' : '');
 
             var t1SeedHtml = (isT1Bye || !seed1) ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : ('<span class="bracket-seed-badge">' + seed1 + '</span>');
             var t2SeedHtml = (isT2Bye || !seed2) ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : ('<span class="bracket-seed-badge">' + seed2 + '</span>');
@@ -70,14 +72,14 @@
                     (hasBye ? '' : ('<span class="bracket-status-badge ' + statusClass + '">' + statusLabel + '</span>')) +
                 '</div>' +
                 '<div class="bracket-teams-box">' +
-                    '<div class="' + t1RowClass + '">' +
+                    '<div class="' + t1RowClass + '" data-team-name="' + t1Name + '">' +
                         '<div class="bracket-team-info">' +
                             t1SeedHtml +
                             '<span class="bracket-team-name ' + (isT1Placeholder ? 'placeholder' : '') + '" title="' + t1Name + '">' + t1Name + '</span>' +
                         '</div>' +
                         '<span class="bracket-score-box">' + t1ScoreDisp + '</span>' +
                     '</div>' +
-                    '<div class="' + t2RowClass + '">' +
+                    '<div class="' + t2RowClass + '" data-team-name="' + t2Name + '">' +
                         '<div class="bracket-team-info">' +
                             t2SeedHtml +
                             '<span class="bracket-team-name ' + (isT2Placeholder ? 'placeholder' : '') + '" title="' + t2Name + '">' + t2Name + '</span>' +
@@ -86,10 +88,64 @@
                     '</div>' +
                 '</div>';
 
-            // Attach Click Event to Launch Score Popup ONLY if match is playable (2 confirmed teams & not BYE)
+            // Attach Quick Mode Row Handlers & Team Path Tracing Hover Events
+            var rows = card.querySelectorAll('.bracket-team-row');
+            if (rows.length >= 2) {
+                // Team 1 Hover & Click
+                rows[0].addEventListener('mouseenter', function () {
+                    if (window.TourmaPathTracker) window.TourmaPathTracker.highlightTeam(t1Name);
+                });
+                rows[0].addEventListener('mouseleave', function () {
+                    if (window.TourmaPathTracker) window.TourmaPathTracker.clearHighlight();
+                });
+                rows[0].addEventListener('click', function (e) {
+                    if (window.TourmaQuickMode && isPlayable) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var parentCol = card.closest('.single-round-column, .de-round-column, .de-column');
+                        var rInp = parentCol ? parentCol.querySelector('.round-random-input') : null;
+                        var customScore = (rInp && rInp.value && Number(rInp.value) > 0) ? rInp.value.trim() : null;
+
+                        if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
+                            window.SingleEliminationEngine.handleQuickWinner(matchId, 1, customScore);
+                        } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
+                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 1, customScore);
+                        }
+                    }
+                });
+
+                // Team 2 Hover & Click
+                rows[1].addEventListener('mouseenter', function () {
+                    if (window.TourmaPathTracker) window.TourmaPathTracker.highlightTeam(t2Name);
+                });
+                rows[1].addEventListener('mouseleave', function () {
+                    if (window.TourmaPathTracker) window.TourmaPathTracker.clearHighlight();
+                });
+                rows[1].addEventListener('click', function (e) {
+                    if (window.TourmaQuickMode && isPlayable) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var parentCol = card.closest('.single-round-column, .de-round-column, .de-column');
+                        var rInp = parentCol ? parentCol.querySelector('.round-random-input') : null;
+                        var customScore = (rInp && rInp.value && Number(rInp.value) > 0) ? rInp.value.trim() : null;
+
+                        if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
+                            window.SingleEliminationEngine.handleQuickWinner(matchId, 2, customScore);
+                        } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
+                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 2, customScore);
+                        }
+                    }
+                });
+            }
+
+            // Attach Click Event to Launch Score Popup ONLY if match is playable and NOT in Quick Mode
             card.addEventListener('click', function () {
                 if (!isPlayable) {
                     return; // Disabled from clicking
+                }
+
+                if (window.TourmaQuickMode) {
+                    return; // In Quick Mode, only team row clicks are active
                 }
 
                 if (window.TourmaScoreModal && typeof window.TourmaScoreModal.open === 'function') {
@@ -109,6 +165,10 @@
             });
 
             return card;
+        },
+
+        createCardElement: function (data) {
+            return this.createNodeElement(data);
         }
     };
 

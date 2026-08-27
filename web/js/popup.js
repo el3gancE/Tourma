@@ -72,14 +72,33 @@
                 btnDraw.style.display = this.allowDraw ? 'block' : 'none';
             }
 
+            // Hide any previous error message
+            var err = document.getElementById('modalScoreError');
+            if (err) err.style.display = 'none';
+
             // Determine Initial Winner Selection
             var initWinner = matchData.winnerId || matchData.winner;
-            if (initWinner === 'draw' && this.allowDraw) {
-                this.selectWinner('draw');
-            } else if (initWinner === 'team2' || (s1Val !== '' && s2Val !== '' && Number(s2Val) > Number(s1Val))) {
-                this.selectWinner('team2');
-            } else {
+            if (initWinner === 'team1') {
                 this.selectWinner('team1');
+            } else if (initWinner === 'team2') {
+                this.selectWinner('team2');
+            } else if (initWinner === 'draw' && this.allowDraw) {
+                this.selectWinner('draw');
+            } else if (s1Val !== '' || s2Val !== '') {
+                var s1 = (s1Val !== '') ? Number(s1Val) : 0;
+                var s2 = (s2Val !== '') ? Number(s2Val) : 0;
+                if (s1 > s2) {
+                    this.selectWinner('team1');
+                } else if (s2 > s1) {
+                    this.selectWinner('team2');
+                } else if (s1 === s2 && this.allowDraw) {
+                    this.selectWinner('draw');
+                } else {
+                    this.selectWinner(null);
+                }
+            } else {
+                // Not played yet (both blank) -> Turn off all lights
+                this.selectWinner(null);
             }
 
             // Show Backdrop
@@ -99,11 +118,13 @@
                 backdrop.classList.remove('show');
                 document.body.style.overflow = '';
             }
+            var err = document.getElementById('modalScoreError');
+            if (err) err.style.display = 'none';
             this.activeMatchId = null;
         },
 
         /**
-         * Select Winner Segment Option ('team1' | 'draw' | 'team2')
+         * Select Winner Segment Option ('team1' | 'draw' | 'team2' | null)
          */
         selectWinner: function (winnerType) {
             this.selectedWinner = winnerType;
@@ -115,27 +136,78 @@
             if (btnT1) btnT1.classList.toggle('active', winnerType === 'team1');
             if (btnDraw) btnDraw.classList.toggle('active', winnerType === 'draw');
             if (btnT2) btnT2.classList.toggle('active', winnerType === 'team2');
+
+            // Hide error banner once user selects a winner
+            if (winnerType) {
+                var err = document.getElementById('modalScoreError');
+                if (err) err.style.display = 'none';
+            }
         },
 
         /**
-         * Auto-determine winner based on score inputs
+         * Auto-determine winner based on score inputs (Blank counts as 0)
          */
         autoDetermineWinner: function () {
             var val1 = document.getElementById('modalTeam1Score').value;
             var val2 = document.getElementById('modalTeam2Score').value;
 
-            if (val1 === '' && val2 === '') return;
+            // If both are completely blank, turn off selection
+            if (val1 === '' && val2 === '') {
+                this.selectWinner(null);
+                return;
+            }
 
-            var s1 = Number(val1 || 0);
-            var s2 = Number(val2 || 0);
+            // Blank input defaults to 0
+            var s1 = (val1 !== '') ? Number(val1) : 0;
+            var s2 = (val2 !== '') ? Number(val2) : 0;
 
             if (s1 > s2) {
                 this.selectWinner('team1');
             } else if (s2 > s1) {
                 this.selectWinner('team2');
-            } else if (s1 === s2 && this.allowDraw) {
-                this.selectWinner('draw');
+            } else if (s1 === s2) {
+                if (this.allowDraw) {
+                    this.selectWinner('draw');
+                } else {
+                    // Turn off selection when scores are tied in knockout match
+                    this.selectWinner(null);
+                }
             }
+        },
+
+        /**
+         * Randomize match result, immediately save and exit popup
+         */
+        randomizeAndSave: function () {
+            if (!this.activeMatchId) return;
+
+            var winScoreInput = document.getElementById('modalRandomWinScore');
+            var rawVal = winScoreInput ? winScoreInput.value : '';
+
+            var scoreResult = (window.TourmaRandomService)
+                ? window.TourmaRandomService.generateMatchScore(rawVal)
+                : { team1Score: 5, team2Score: 3, winner: 'team1', isT1Winner: true };
+
+            var resultPayload = {
+                matchId: this.activeMatchId,
+                team1Score: scoreResult.team1Score,
+                team2Score: scoreResult.team2Score,
+                winner: scoreResult.winner,
+                status: 'COMPLETED'
+            };
+
+            // Dispatch Custom DOM Event for Bracket and List update
+            var updateEvent = new CustomEvent('tourmaMatchUpdated', {
+                detail: resultPayload,
+                bubbles: true
+            });
+            document.dispatchEvent(updateEvent);
+
+            if (typeof this.onSaveCallback === 'function') {
+                this.onSaveCallback(resultPayload);
+            }
+
+            this.close();
         },
 
         /**
@@ -143,6 +215,35 @@
          */
         save: function () {
             if (!this.activeMatchId) return;
+
+            // In elimination / knockout matches (no draw allowed), must specify a winner
+            if (!this.allowDraw) {
+                if (!this.selectedWinner || (this.selectedWinner !== 'team1' && this.selectedWinner !== 'team2')) {
+                    var err = document.getElementById('modalScoreError');
+                    if (err) {
+                        err.style.display = 'flex';
+                    } else {
+                        alert('phải xác định 1 đội thắng');
+                    }
+                    return;
+                }
+            } else {
+                if (!this.selectedWinner) {
+                    var val1 = document.getElementById('modalTeam1Score').value;
+                    var val2 = document.getElementById('modalTeam2Score').value;
+                    if (val1 !== '' && val2 !== '' && Number(val1) === Number(val2)) {
+                        this.selectedWinner = 'draw';
+                    } else {
+                        var err = document.getElementById('modalScoreError');
+                        if (err) {
+                            err.style.display = 'flex';
+                        } else {
+                            alert('phải xác định 1 đội thắng');
+                        }
+                        return;
+                    }
+                }
+            }
 
             var val1 = document.getElementById('modalTeam1Score').value;
             var val2 = document.getElementById('modalTeam2Score').value;

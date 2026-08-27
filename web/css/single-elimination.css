@@ -58,6 +58,31 @@
     font-family: 'Lexend', sans-serif !important;
 }
 
+/* Standalone Reset Bracket Action Button */
+.btn-reset-bracket-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(244, 63, 94, 0.1);
+    color: #f43f5e;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: 8px;
+    padding: 0.42rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease-in-out;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-reset-bracket-action:hover {
+    background: #f43f5e;
+    color: #ffffff;
+    border-color: #f43f5e;
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+    transform: translateY(-1px);
+}
+
 /* View Mode Segmented Toggle Buttons (Bracket View ↔ List View) */
 .view-mode-toggle-group {
     display: flex;

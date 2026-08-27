@@ -153,7 +153,7 @@
 
 /* Score Input Box (Right Side of Row) */
 .modal-score-input-box {
-    width: 54px;
+    width: 60px;
     height: 42px;
     background: #141a26;
     border: 1.5px solid rgba(255, 255, 255, 0.15);
@@ -166,12 +166,119 @@
     outline: none;
     transition: all 0.18s ease;
     flex-shrink: 0;
+    padding-left: 4px;
 }
 
 .modal-score-input-box:focus {
     border-color: #2dd4bf;
     box-shadow: 0 0 12px rgba(45, 212, 191, 0.35);
     background: #182030;
+}
+
+/* Custom Styled Increase / Decrease Stepper Spin Buttons */
+.modal-score-input-box::-webkit-inner-spin-button,
+.modal-score-input-box::-webkit-outer-spin-button {
+    opacity: 0.75;
+    cursor: pointer;
+    filter: invert(0.85) hue-rotate(140deg) brightness(1.6);
+    height: 100%;
+    margin: 0;
+    transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.modal-score-input-box:hover::-webkit-inner-spin-button,
+.modal-score-input-box:focus::-webkit-inner-spin-button {
+    opacity: 1;
+    filter: invert(0.9) hue-rotate(140deg) brightness(2);
+}
+
+.modal-random-input::-webkit-inner-spin-button,
+.modal-random-input::-webkit-outer-spin-button {
+    opacity: 0.75;
+    cursor: pointer;
+    filter: invert(0.8) hue-rotate(40deg) brightness(1.6);
+    height: 100%;
+    margin: 0;
+    transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.modal-random-input:hover::-webkit-inner-spin-button,
+.modal-random-input:focus::-webkit-inner-spin-button {
+    opacity: 1;
+    filter: invert(0.9) hue-rotate(40deg) brightness(2);
+}
+
+/* Random Match Result Generator Controls */
+.modal-random-controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0.75rem;
+    background: #0b0d12;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+}
+
+.modal-random-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1;
+}
+
+.modal-random-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.modal-random-input {
+    width: 60px;
+    height: 32px;
+    background: #141a26;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: #fbbf24;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-align: center;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.modal-random-input:focus {
+    border-color: #fbbf24;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+    background: #182030;
+}
+
+.btn-modal-random {
+    height: 32px;
+    padding: 0 1.1rem;
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 6px;
+    color: #fbbf24;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.btn-modal-random:hover {
+    background: #fbbf24;
+    color: #0b0d12;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
 }
 
 /* Winner Selection Segmented Bar Control (Matching Wireframe Bottom Bar) */
@@ -253,15 +360,72 @@
     border-color: #2dd4bf;
 }
 
-/* Modal Footer Action Buttons */
+/* Modal Footer */
 .modal-footer-bar {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 0.75rem;
+    justify-content: space-between;
     padding: 0.85rem 1.25rem;
     background: #121622;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 0.75rem;
+}
+
+.modal-footer-left-random {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-footer-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.modal-random-input {
+    width: 52px;
+    height: 34px;
+    background: #0b0d12;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: #fbbf24;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 1rem;
+    font-weight: 800;
+    text-align: center;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.modal-random-input:focus {
+    border-color: #fbbf24;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+    background: #141a26;
+}
+
+.btn-modal-random {
+    height: 34px;
+    padding: 0 1rem;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 6px;
+    color: #fbbf24;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.btn-modal-random:hover {
+    background: #fbbf24;
+    color: #0b0d12;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
 }
 
 .btn-modal-cancel {
@@ -275,6 +439,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.18s ease;
+    height: 34px;
 }
 
 .btn-modal-cancel:hover {
@@ -297,6 +462,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    height: 34px;
 }
 
 .btn-modal-save:hover {

@@ -47,6 +47,28 @@
     flex-shrink: 0;
 }
 
+/* Lower Bracket Accent Bar: Crimson Red */
+.match-card-accent-bar.lower {
+    background: #f43f5e;
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+}
+
+/* Grand Finals Accent Bar: Gold / Yellow */
+.match-card-accent-bar.grand-final {
+    background: #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.55);
+}
+
+.match-card-item.lower:hover {
+    border-color: #f43f5e;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 12px rgba(244, 63, 94, 0.25);
+}
+
+.match-card-item.grand-final:hover {
+    border-color: #fbbf24;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 12px rgba(251, 191, 36, 0.25);
+}
+
 .match-card-id {
     font-size: 0.8rem;
     font-weight: 800;

@@ -95,7 +95,16 @@
                                                 <span><i class="fa-solid fa-flag"></i> Giải thứ ${t.tournamentIndexInSeries} - Phase ${t.phaseNumber}</span>
                                             </c:when>
                                             <c:otherwise>
-                                                <span><i class="fa-solid fa-flag text-mint"></i> Giải Đơn Lẻ</span>
+                                                <span>
+                                                    <i class="fa-solid fa-diagram-project text-mint"></i> 
+                                                    <c:choose>
+                                                        <c:when test="${t.format == 'DOUBLE_ELIMINATION'}">Double Elimination</c:when>
+                                                        <c:when test="${t.format == 'ROUND_ROBIN'}">Round Robin</c:when>
+                                                        <c:when test="${t.format == 'SWISS_LITE'}">Swiss System</c:when>
+                                                        <c:when test="${t.format == 'GROUP_STAGE'}">Group Stage</c:when>
+                                                        <c:otherwise>Single Elimination</c:otherwise>
+                                                    </c:choose>
+                                                </span>
                                             </c:otherwise>
                                         </c:choose>
                                     </div>
@@ -103,13 +112,27 @@
 
                                 <div class="tourney-card-footer">
                                     <span class="text-muted" style="font-size: 0.72rem;">ID: ${t.id}</span>
-                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <div style="display: flex; gap: 0.45rem; align-items: center;">
+                                        <button type="button" class="btn-delete-tourney" 
+                                                onclick="openDeleteTourneyModal('${t.id}', '${t.name}')" 
+                                                title="Xóa giải đấu">
+                                            <i class="fa-solid fa-trash-can"></i> Xóa
+                                        </button>
                                         <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${t.id}" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
                                             <i class="fa-solid fa-sliders"></i> Chi Tiết
                                         </a>
-                                        <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
-                                            Xem Sơ Đồ ➔
-                                        </a>
+                                        <c:choose>
+                                            <c:when test="${t.format == 'DOUBLE_ELIMINATION'}">
+                                                <a href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=${t.id}&format=DOUBLE_ELIMINATION" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                                    Xem Sơ Đồ ➔
+                                                </a>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}&format=${t.format}" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                                    Xem Sơ Đồ ➔
+                                                </a>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </div>
                                 </div>
                             </div>
@@ -134,9 +157,72 @@
                 </c:otherwise>
             </c:choose>
 
+            <!-- DELETE TOURNAMENT CONFIRMATION MODAL -->
+            <div id="deleteTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeDeleteTourneyModal();">
+                <div class="tourma-modal-card" style="border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
+                        <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>Xác Nhận Xóa Giải Đấu</span>
+                        </div>
+                        <button type="button" class="modal-close-btn" onclick="closeDeleteTourneyModal()" title="Đóng">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+                        <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
+                            <strong style="color: #f43f5e;">⚠️ Cảnh báo xóa vĩnh viễn:</strong><br>
+                            Hành động này sẽ <strong style="color: #ffffff;">xóa hoàn toàn giải đấu</strong> cùng toàn bộ danh sách đội tuyển, cấu hình thể thức và kết quả các trận đấu liên quan.
+                        </div>
+                        <p style="color: #cbd5e1; font-size: 0.85rem; margin: 0 0 0.35rem 0;">
+                            Bạn có chắc chắn muốn xóa giải: <strong id="deleteTourneyTargetName" style="color: #f43f5e;"></strong> (ID: <span id="deleteTourneyTargetId" class="text-muted"></span>)?
+                        </p>
+                    </div>
+
+                    <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.85rem 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2);">
+                        <button type="button" class="btn btn-secondary" onclick="closeDeleteTourneyModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
+                        <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="confirmDeleteTourney()">
+                            <i class="fa-solid fa-trash-can"></i> Xác Nhận Xóa
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </main>
 
         <script>
+            let pendingDeleteId = null;
+
+            function openDeleteTourneyModal(id, name) {
+                pendingDeleteId = id;
+                document.getElementById('deleteTourneyTargetId').innerText = id;
+                document.getElementById('deleteTourneyTargetName').innerText = name;
+                document.getElementById('deleteTourneyModalBackdrop').style.display = 'flex';
+            }
+
+            function closeDeleteTourneyModal() {
+                pendingDeleteId = null;
+                document.getElementById('deleteTourneyModalBackdrop').style.display = 'none';
+            }
+
+            function confirmDeleteTourney() {
+                if (!pendingDeleteId) return;
+
+                // Clear client-side local storage cache
+                try {
+                    localStorage.removeItem('tourma_teams_' + pendingDeleteId);
+                    localStorage.removeItem('tourma_matches_' + pendingDeleteId);
+                    localStorage.removeItem('tourma_de_matches_' + pendingDeleteId);
+                    localStorage.removeItem('tourma_view_mode_' + pendingDeleteId);
+                    localStorage.removeItem('tourma_de_view_' + pendingDeleteId);
+                    localStorage.removeItem('tourma_format_' + pendingDeleteId);
+                } catch (e) {}
+
+                // Send request to DeleteTournamentServlet
+                window.location.href = '${pageContext.request.contextPath}/delete-tournament?id=' + encodeURIComponent(pendingDeleteId);
+            }
+
             function filterTournaments(filterType, btn) {
                 document.querySelectorAll('.filter-pill-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');

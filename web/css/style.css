@@ -134,15 +134,35 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--shadow-gold);
 }
 
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-white);
-  border-color: var(--border-color);
-}
-
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Standalone Reset Bracket Action Button */
+.btn-reset-bracket-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(244, 63, 94, 0.1) !important;
+  color: #f43f5e !important;
+  border: 1px solid rgba(244, 63, 94, 0.35) !important;
+  border-radius: 8px;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease-in-out;
+  font-family: 'Lexend', sans-serif !important;
+  user-select: none;
+}
+
+.btn-reset-bracket-action:hover {
+  background: #f43f5e !important;
+  color: #ffffff !important;
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+  transform: translateY(-1px);
 }
 
 /* Container & Sections */

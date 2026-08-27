@@ -49,7 +49,7 @@
             <div class="modal-winner-selection-group">
                 <label class="modal-section-label">CHỌN ĐỘI THẮNG</label>
                 <div class="segmented-control-bar">
-                    <button type="button" id="btnWinnerT1" class="segmented-btn active" onclick="window.TourmaScoreModal.selectWinner('team1')">
+                    <button type="button" id="btnWinnerT1" class="segmented-btn" onclick="window.TourmaScoreModal.selectWinner('team1')">
                         Team 1
                     </button>
                     <button type="button" id="btnWinnerDraw" class="segmented-btn" style="display: none;" onclick="window.TourmaScoreModal.selectWinner('draw')">
@@ -59,19 +59,36 @@
                         Team 2
                     </button>
                 </div>
+                <!-- Error message banner when winner is not determined -->
+                <div id="modalScoreError" style="display: none; align-items: center; justify-content: center; gap: 0.4rem; color: #f43f5e; font-size: 0.78rem; font-weight: 700; margin-top: 0.6rem; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 6px; padding: 0.4rem 0.6rem;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Phải xác định 1 đội thắng</span>
+                </div>
             </div>
 
         </div>
 
         <!-- Modal Footer -->
         <div class="modal-footer-bar">
-            <button type="button" class="btn-modal-cancel" onclick="window.TourmaScoreModal.close()">Hủy Bỏ</button>
-            <button type="button" class="btn-modal-save" onclick="window.TourmaScoreModal.save()">
-                <i class="fa-solid fa-check"></i> Lưu Kết Quả
-            </button>
+            <!-- Left: Random Score Controls -->
+            <div class="modal-footer-left-random">
+                <input type="number" id="modalRandomWinScore" class="modal-random-input" value="" min="1" max="999" placeholder="-" title="Điểm đội thắng">
+                <button type="button" id="btnModalRandomScore" class="btn-modal-random" onclick="window.TourmaScoreModal.randomizeAndSave()">
+                    Random
+                </button>
+            </div>
+
+            <!-- Right: Action Buttons -->
+            <div class="modal-footer-right-actions">
+                <button type="button" class="btn-modal-cancel" onclick="window.TourmaScoreModal.close()">Hủy Bỏ</button>
+                <button type="button" class="btn-modal-save" onclick="window.TourmaScoreModal.save()">
+                    <i class="fa-solid fa-check"></i> Lưu Kết Quả
+                </button>
+            </div>
         </div>
 
     </div>
 </div>
 
+<script src="${pageContext.request.contextPath}/js/random-service.js"></script>
 <script src="${pageContext.request.contextPath}/js/popup.js"></script>

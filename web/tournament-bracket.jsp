@@ -1,7 +1,19 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="dao.TournamentDAO"%>
+<%@page import="model.Tournament"%>
 <%
     String tournamentId = request.getParameter("id");
     String format = request.getParameter("format");
+
+    if ((format == null || format.trim().isEmpty()) && tournamentId != null && !tournamentId.trim().isEmpty()) {
+        try {
+            TournamentDAO tDao = new TournamentDAO();
+            Tournament t = tDao.getTournamentById(tournamentId);
+            if (t != null && t.getFormat() != null) {
+                format = t.getFormat();
+            }
+        } catch (Exception ignore) {}
+    }
 
     String targetPage = "single-elimination.jsp";
     if ("DOUBLE_ELIMINATION".equalsIgnoreCase(format)) {
