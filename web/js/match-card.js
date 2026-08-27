@@ -54,8 +54,11 @@
             var isT1Winner = data.winnerId === 'team1' || (isDone && Number(t1.score) > Number(t2.score));
             var isT2Winner = data.winnerId === 'team2' || (isDone && Number(t2.score) > Number(t1.score));
 
+            var bType = (data.bracketType || '').toUpperCase();
+            var bTypeClass = (bType === 'LOWER') ? ' lower' : ((bType === 'GRAND_FINAL' || bType === 'GF') ? ' grand-final' : '');
+
             var card = document.createElement('div');
-            card.className = 'match-card-item' + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-match-item' : '');
+            card.className = 'match-card-item' + bTypeClass + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-match-item' : '');
             card.dataset.matchId = matchId;
             card.dataset.status = isDone ? 'COMPLETED' : 'SCHEDULED';
 
@@ -65,9 +68,11 @@
             var seed1Html = (isT1Bye || !seed1) ? '<span class="match-list-seed bye-seed"></span>' : ('<span class="match-list-seed">' + seed1 + '</span>');
             var seed2Html = (isT2Bye || !seed2) ? '<span class="match-list-seed bye-seed"></span>' : ('<span class="match-list-seed">' + seed2 + '</span>');
 
+            var accentClass = 'match-card-accent-bar' + bTypeClass;
+
             card.innerHTML =
                 '<div class="match-card-meta">' +
-                    '<div class="match-card-accent-bar"' + (hasBye ? ' style="background: #475569; box-shadow: none;"' : '') + '></div>' +
+                    '<div class="' + accentClass + '"' + (hasBye ? ' style="background: #475569; box-shadow: none;"' : '') + '></div>' +
                     '<span class="match-card-id">' + matchHeaderLabel + '</span>' +
                 '</div>' +
 

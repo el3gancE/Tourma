@@ -109,6 +109,10 @@
             });
 
             return card;
+        },
+
+        createCardElement: function (data) {
+            return this.createNodeElement(data);
         }
     };
 

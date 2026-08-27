@@ -143,33 +143,33 @@
                     </form>
         </main>
 
-        <!-- RESET BRACKET CONFIRMATION WARNING MODAL -->
+        <!-- RESET BRACKET MODAL UPON ANY TEAM MODIFICATION -->
         <div id="resetBracketModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) closeResetModal();">
             <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
                 <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
                     <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>Cảnh Báo Sinh Lại Sơ Đồ</span>
+                        <span>Xác Nhận Thay Đổi & Tái Tạo Nhánh Đấu</span>
                     </div>
-                    <button type="button" class="modal-close-btn" onclick="closeResetModal()" title="Đóng">
+                    <button type="button" class="modal-close-btn" onclick="closeResetModal()" title="Hủy bỏ">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
                 
                 <div class="modal-body-content" style="padding: 1.25rem 1rem;">
-                    <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
-                        <strong style="color: #f43f5e;">⚠️ Lưu ý quan trọng:</strong><br>
-                        Giải đấu này đã có các trận đấu diễn ra. Việc thay đổi danh sách đội bóng và sinh lại sơ đồ sẽ <strong style="color: #ffffff;">XÓA TOÀN BỘ kết quả các trận đã đấu</strong> để tái cấu trúc cây thi đấu mới cho số lượng đội hiện tại.
+                    <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.88rem; line-height: 1.5;">
+                        <strong style="color: #f43f5e;">⚠️ Cảnh báo:</strong><br>
+                        Việc này sẽ reset toàn bộ nhánh thi đấu của bạn, bạn có muốn thay đổi không?
                     </div>
                     <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
-                        Bạn có chắc chắn muốn xác nhận xóa kết quả cũ và sinh lại sơ đồ thi đấu không?
+                        Nếu bấm <strong>Hủy Bỏ</strong>, hệ thống sẽ hoàn tác và giữ nguyên danh sách đội & nhánh đấu trước đó.
                     </p>
                 </div>
 
                 <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem;">
                     <button type="button" class="btn btn-secondary" onclick="closeResetModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
                     <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="confirmResetAndSubmit()">
-                        <i class="fa-solid fa-rotate-right"></i> Xác Nhận Sinh Lại
+                        <i class="fa-solid fa-rotate-right"></i> Xác Nhận Đổi
                     </button>
                 </div>
             </div>
@@ -226,6 +226,7 @@
             ];
 
             var currentTeamsList = [];
+            var initialTeamsSnapshot = null;
 
             // Restore state logic
             if (dbTeams.length > 0) {
@@ -236,6 +237,23 @@
                 } catch(e) {
                     currentTeamsList = [];
                 }
+            }
+
+            // Restore initial teams snapshot for change detection
+            if (tournamentId) {
+                try {
+                    initialTeamsSnapshot = JSON.parse(localStorage.getItem('tourma_teams_snapshot_' + tournamentId));
+                } catch(e) {
+                    initialTeamsSnapshot = null;
+                }
+            }
+
+            // If snapshot not saved yet but bracket exists, initialize snapshot
+            if (!initialTeamsSnapshot && tournamentId && (localStorage.getItem('tourma_matches_' + tournamentId) || localStorage.getItem('tourma_de_matches_' + tournamentId))) {
+                initialTeamsSnapshot = JSON.parse(JSON.stringify(currentTeamsList));
+                try {
+                    localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(initialTeamsSnapshot));
+                } catch(e) {}
             }
 
             var dragSrcIndex = null;
@@ -483,15 +501,31 @@
                     modal.classList.remove('show');
                     document.body.style.overflow = '';
                 }
+                // If user cancels and there was an existing snapshot, revert back to the snapshot!
+                if (initialTeamsSnapshot && initialTeamsSnapshot.length > 0) {
+                    currentTeamsList = JSON.parse(JSON.stringify(initialTeamsSnapshot));
+                    persistState();
+                    window.renderTable();
+                }
             };
 
             window.confirmResetAndSubmit = function() {
                 if (tournamentId) {
-                    localStorage.removeItem('tourma_matches_' + tournamentId);
+                    try {
+                        localStorage.removeItem('tourma_matches_' + tournamentId);
+                        localStorage.removeItem('tourma_de_matches_' + tournamentId);
+                        localStorage.removeItem('tourma_matches_demo');
+                        localStorage.removeItem('tourma_de_matches_demo');
+                        localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));
+                    } catch (e) {}
                 }
                 persistState();
                 bypassWarning = true;
-                window.closeResetModal();
+                var modal = document.getElementById('resetBracketModalBackdrop');
+                if (modal) {
+                    modal.classList.remove('show');
+                    document.body.style.overflow = '';
+                }
                 document.getElementById('finalTeamsInput').value = currentTeamsList.join('\n');
                 document.getElementById('configureTeamsForm').submit();
             };
@@ -510,36 +544,29 @@
                     return false;
                 }
 
-                // Check if tournament already has matches that were completed or played
-                var hasCompletedMatches = false;
-                if (tournamentId) {
-                    try {
-                        var matchesObj = JSON.parse(localStorage.getItem('tourma_matches_' + tournamentId));
-                        if (matchesObj) {
-                            var keys = Object.keys(matchesObj);
-                            for (var i = 0; i < keys.length; i++) {
-                                var m = matchesObj[keys[i]];
-                                if (m.status === 'COMPLETED' || m.status === 'done' || (m.team1 && m.team1.score !== '') || (m.team2 && m.team2.score !== '')) {
-                                    hasCompletedMatches = true;
-                                    break;
-                                }
-                            }
-                        }
-                    } catch(e) {}
+                // Check if bracket was previously generated
+                var hasPriorBracket = (initialTeamsSnapshot && initialTeamsSnapshot.length > 0);
+                if (!hasPriorBracket && tournamentId && (localStorage.getItem('tourma_matches_' + tournamentId) || localStorage.getItem('tourma_de_matches_' + tournamentId))) {
+                    hasPriorBracket = true;
                 }
 
-                // If matches were already played, show the confirmation modal!
-                if (hasCompletedMatches) {
+                // Check if ANY modification occurred (team count, team names, seed order)
+                var isModified = false;
+                if (hasPriorBracket && initialTeamsSnapshot) {
+                    isModified = (JSON.stringify(currentTeamsList) !== JSON.stringify(initialTeamsSnapshot));
+                }
+
+                // If bracket existed and any team info was modified, ALWAYS show the confirmation popup!
+                if (hasPriorBracket && isModified) {
                     if (e && e.preventDefault) e.preventDefault();
                     window.openResetModal();
                     return false;
                 }
 
-                // If no matches played yet, clear cached matches so bracket will regenerate immediately with updated teams
+                // First time creating bracket: save snapshot
                 if (tournamentId) {
                     try {
-                        localStorage.removeItem('tourma_matches_' + tournamentId);
-                        localStorage.removeItem('tourma_matches_demo');
+                        localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));
                     } catch(e) {}
                 }
 

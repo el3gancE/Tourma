@@ -61,8 +61,15 @@
             var savedMode = localStorage.getItem(storageKeyViewMode) || 'bracket';
             this.switchViewMode(savedMode);
 
-            // 4. Attach resize & redraw listeners
+            // 4. Initialize TourmaViewport & attach redraw listeners
             var self = this;
+            if (window.TourmaViewport && typeof window.TourmaViewport.init === 'function') {
+                window.TourmaViewport.init('bracketViewportContainer', 'bracketViewportCanvas', {
+                    badgeId: 'zoomLevelBadge',
+                    onRedraw: function () { self.drawTreeConnectors(); }
+                });
+            }
+
             window.addEventListener('resize', function () {
                 self.drawTreeConnectors();
             });
@@ -140,6 +147,7 @@
             if (!canvasWrapper) return;
 
             canvasWrapper.innerHTML = '';
+            var self = this;
 
             for (var r = 0; r < this.roundsList.length; r++) {
                 var roundObj = this.roundsList[r];
@@ -149,7 +157,63 @@
 
                 var header = document.createElement('div');
                 header.className = 'single-round-header';
-                header.innerText = roundObj.title;
+
+                var titleSpan = document.createElement('span');
+                titleSpan.className = 'round-header-title';
+                titleSpan.innerText = roundObj.title;
+                header.appendChild(titleSpan);
+
+                // Round Random Controls
+                var canRandom = self.isRoundReadyForRandom(roundObj);
+                var isAllDone = window.TourmaRandomService ? window.TourmaRandomService.isRoundAllCompleted(roundObj, self.matchesMap) : false;
+                var canReset = window.TourmaRandomService ? window.TourmaRandomService.hasCompletedMatchesInRound(roundObj, self.matchesMap) : false;
+                var rndControls = document.createElement('div');
+                rndControls.className = 'round-header-random-controls';
+
+                var rndInput = document.createElement('input');
+                rndInput.type = 'number';
+                rndInput.className = 'round-random-input';
+                rndInput.placeholder = '-';
+                rndInput.min = '1';
+                rndInput.max = '999';
+                rndInput.value = (self.roundRandomInputs && self.roundRandomInputs[roundObj.roundNumber]) ? self.roundRandomInputs[roundObj.roundNumber] : '';
+                rndInput.title = canRandom ? 'Điểm đội thắng' : (isAllDone ? 'Tất cả các trận đã hoàn thành' : 'Vòng đấu chưa xác định đủ các đội');
+                if (!canRandom) rndInput.disabled = true;
+                rndInput.oninput = function () {
+                    if (!self.roundRandomInputs) self.roundRandomInputs = {};
+                    self.roundRandomInputs[roundObj.roundNumber] = this.value;
+                };
+
+                var rndBtn = document.createElement('button');
+                rndBtn.type = 'button';
+                rndBtn.className = 'btn-round-random' + (canRandom ? '' : ' disabled');
+                rndBtn.innerText = 'Random';
+                rndBtn.title = canRandom ? 'Random kết quả vòng đấu' : (isAllDone ? 'Tất cả các trận đã hoàn thành (bấm nút Reset để mở lại)' : 'Vòng đấu chưa xác định đủ các đội');
+                if (!canRandom) rndBtn.disabled = true;
+
+                var rndResetBtn = document.createElement('button');
+                rndResetBtn.type = 'button';
+                rndResetBtn.className = 'btn-round-reset' + (canReset ? '' : ' disabled');
+                rndResetBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
+                rndResetBtn.title = canReset ? 'Reset kết quả vòng đấu' : 'Vòng đấu chưa có trận nào hoàn thành';
+                if (!canReset) rndResetBtn.disabled = true;
+
+                (function (rNum, inp) {
+                    rndBtn.onclick = function (e) {
+                        e.stopPropagation();
+                        self.randomizeRound(rNum, inp.value);
+                    };
+                    rndResetBtn.onclick = function (e) {
+                        e.stopPropagation();
+                        self.resetRound(rNum);
+                    };
+                })(roundObj.roundNumber, rndInput);
+
+                rndControls.appendChild(rndInput);
+                rndControls.appendChild(rndBtn);
+                rndControls.appendChild(rndResetBtn);
+                header.appendChild(rndControls);
+
                 col.appendChild(header);
 
                 var box = document.createElement('div');
@@ -167,79 +231,23 @@
                 canvasWrapper.appendChild(col);
             }
 
-            var self = this;
-            setTimeout(function () {
-                self.drawTreeConnectors();
-            }, 50);
+            requestAnimationFrame(function () { self.drawTreeConnectors(); });
+            setTimeout(function () { self.drawTreeConnectors(); }, 60);
+            setTimeout(function () { self.drawTreeConnectors(); }, 250);
         },
 
         /**
-         * Dynamic High-Precision SVG Stepped Tree Connectors
+         * Draw SVG Tree Connectors — delegates to shared TourmaViewport.drawConnectors engine
          */
         drawTreeConnectors: function () {
             var canvas = document.getElementById('bracketViewportCanvas');
-            var canvasWrapper = document.getElementById('singleBracketColumnsWrapper');
-            if (!canvas || !canvasWrapper) return;
+            var wrapper = document.getElementById('singleBracketColumnsWrapper');
+            if (!canvas || !wrapper) return;
 
-            var svg = document.getElementById('bracketSvgConnectors');
-            if (!svg) {
-                svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.id = 'bracketSvgConnectors';
-                svg.setAttribute('class', 'bracket-svg-connectors');
-                canvas.insertBefore(svg, canvasWrapper);
-            }
+            var scale = (window.TourmaViewport && window.TourmaViewport.currentScale) ? window.TourmaViewport.currentScale : 1;
 
-            // Sync SVG coordinate dimensions with canvas
-            var w = Math.max(canvas.scrollWidth, canvasWrapper.offsetWidth + 100);
-            var h = Math.max(canvas.scrollHeight, canvasWrapper.offsetHeight + 100);
-            svg.setAttribute('width', w);
-            svg.setAttribute('height', h);
-            svg.innerHTML = '';
-
-            var cRect = canvas.getBoundingClientRect();
-            var scale = (window.TourmaViewport && window.TourmaViewport.currentZoom) ? window.TourmaViewport.currentZoom : 1;
-
-            var keys = Object.keys(this.matchesMap);
-            for (var i = 0; i < keys.length; i++) {
-                var mId = keys[i];
-                var match = this.matchesMap[mId];
-                if (!match || !match.nextMatchId) continue;
-
-                var sourceEl = document.querySelector('.bracket-node-card[data-match-id="' + mId + '"]');
-                var targetEl = document.querySelector('.bracket-node-card[data-match-id="' + match.nextMatchId + '"]');
-
-                if (!sourceEl || !targetEl) continue;
-
-                var sRect = sourceEl.getBoundingClientRect();
-                var tRect = targetEl.getBoundingClientRect();
-
-                // Compute exact center right of source card
-                var x1 = (sRect.right - cRect.left) / scale;
-                var y1 = (sRect.top + sRect.height / 2 - cRect.top) / scale;
-
-                // Compute exact target team row connector entry of target card
-                var slot = match.nextMatchSlot || 1;
-                var x2 = (tRect.left - cRect.left) / scale;
-                var y2 = (tRect.top + (slot === 1 ? (tRect.height * 0.42) : (tRect.height * 0.72)) - cRect.top) / scale;
-
-                var midX = x1 + (x2 - x1) / 2;
-                var isCompleted = (match.status === 'COMPLETED' || match.status === 'done');
-
-                // Draw Orthogonal Step Line: x1,y1 -> midX,y1 -> midX,y2 -> x2,y2
-                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                var d = 'M ' + x1.toFixed(1) + ' ' + y1.toFixed(1) +
-                        ' H ' + midX.toFixed(1) +
-                        ' V ' + y2.toFixed(1) +
-                        ' H ' + x2.toFixed(1);
-
-                path.setAttribute('d', d);
-                path.setAttribute('fill', 'none');
-                path.setAttribute('stroke', isCompleted ? '#2dd4bf' : 'rgba(255, 255, 255, 0.2)');
-                path.setAttribute('stroke-width', '2');
-                path.setAttribute('stroke-linecap', 'round');
-                path.setAttribute('stroke-linejoin', 'round');
-
-                svg.appendChild(path);
+            if (window.TourmaViewport && typeof window.TourmaViewport.drawConnectors === 'function') {
+                window.TourmaViewport.drawConnectors(canvas, wrapper, this.matchesMap, scale);
             }
         },
 
@@ -251,6 +259,7 @@
             if (!listContainer) return;
 
             listContainer.innerHTML = '';
+            var self = this;
 
             var roundsToRender = (window.TourmaBracketAlgorithm) ?
                 window.TourmaBracketAlgorithm.filterMatchesForListView(this.roundsList) : this.roundsList;
@@ -260,7 +269,63 @@
 
                 var rHeader = document.createElement('div');
                 rHeader.className = 'match-list-round-header';
-                rHeader.innerText = roundObj.title;
+
+                var rTitle = document.createElement('span');
+                rTitle.className = 'round-header-title';
+                rTitle.innerText = roundObj.title;
+                rHeader.appendChild(rTitle);
+
+                // Round Random Controls in list header
+                var canListRandom = self.isRoundReadyForRandom(roundObj);
+                var isListAllDone = window.TourmaRandomService ? window.TourmaRandomService.isRoundAllCompleted(roundObj, self.matchesMap) : false;
+                var canListReset = window.TourmaRandomService ? window.TourmaRandomService.hasCompletedMatchesInRound(roundObj, self.matchesMap) : false;
+                var rControls = document.createElement('div');
+                rControls.className = 'round-header-random-controls';
+
+                var rInp = document.createElement('input');
+                rInp.type = 'number';
+                rInp.className = 'round-random-input';
+                rInp.placeholder = '-';
+                rInp.min = '1';
+                rInp.max = '999';
+                rInp.value = (self.roundRandomInputs && self.roundRandomInputs[roundObj.roundNumber]) ? self.roundRandomInputs[roundObj.roundNumber] : '';
+                rInp.title = canListRandom ? 'Điểm đội thắng' : (isListAllDone ? 'Tất cả các trận đã hoàn thành' : 'Vòng đấu chưa xác định đủ các đội');
+                if (!canListRandom) rInp.disabled = true;
+                rInp.oninput = function () {
+                    if (!self.roundRandomInputs) self.roundRandomInputs = {};
+                    self.roundRandomInputs[roundObj.roundNumber] = this.value;
+                };
+
+                var rBtn = document.createElement('button');
+                rBtn.type = 'button';
+                rBtn.className = 'btn-round-random' + (canListRandom ? '' : ' disabled');
+                rBtn.innerText = 'Random';
+                rBtn.title = canListRandom ? 'Random kết quả vòng đấu' : (isListAllDone ? 'Tất cả các trận đã hoàn thành (bấm nút Reset để mở lại)' : 'Vòng đấu chưa xác định đủ các đội');
+                if (!canListRandom) rBtn.disabled = true;
+
+                var rResetBtn = document.createElement('button');
+                rResetBtn.type = 'button';
+                rResetBtn.className = 'btn-round-reset' + (canListReset ? '' : ' disabled');
+                rResetBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
+                rResetBtn.title = canListReset ? 'Reset kết quả vòng đấu' : 'Vòng đấu chưa có trận nào hoàn thành';
+                if (!canListReset) rResetBtn.disabled = true;
+
+                (function (rNum, inp) {
+                    rBtn.onclick = function (e) {
+                        e.stopPropagation();
+                        self.randomizeRound(rNum, inp.value);
+                    };
+                    rResetBtn.onclick = function (e) {
+                        e.stopPropagation();
+                        self.resetRound(rNum);
+                    };
+                })(roundObj.roundNumber, rInp);
+
+                rControls.appendChild(rInp);
+                rControls.appendChild(rBtn);
+                rControls.appendChild(rResetBtn);
+                rHeader.appendChild(rControls);
+
                 listContainer.appendChild(rHeader);
 
                 for (var m = 0; m < roundObj.matches.length; m++) {
@@ -270,6 +335,87 @@
                         if (cardElem) listContainer.appendChild(cardElem);
                     }
                 }
+            }
+        },
+
+        /**
+         * Check if all matches in a round have determined teams and need completion
+         */
+        isRoundReadyForRandom: function (roundObj) {
+            if (window.TourmaRandomService) {
+                return window.TourmaRandomService.isRoundReadyForRandom(roundObj, this.matchesMap);
+            }
+            return false;
+        },
+
+        /**
+         * Randomize all playable uncompleted matches in a specific SE round via TourmaRandomService
+         */
+        randomizeRound: function (roundNumber, rawWinScore) {
+            var roundObj = null;
+            for (var r = 0; r < this.roundsList.length; r++) {
+                if (this.roundsList[r].roundNumber === roundNumber) {
+                    roundObj = this.roundsList[r];
+                    break;
+                }
+            }
+            if (!roundObj) return;
+
+            var self = this;
+            var changed = false;
+
+            if (window.TourmaRandomService) {
+                changed = window.TourmaRandomService.randomizeRoundMatches(
+                    roundObj,
+                    this.matchesMap,
+                    rawWinScore,
+                    function (mId, winnerSlot, isT1Winner, s1, s2) {
+                        if (window.TourmaBracketAlgorithm) {
+                            window.TourmaBracketAlgorithm.propagateAndResetDownstream(self.matchesMap, mId, winnerSlot, isT1Winner);
+                        }
+                    }
+                );
+            }
+
+            if (changed) {
+                this.persistMatches();
+                this.renderBracketView();
+                this.renderListView();
+            }
+        },
+
+        /**
+         * Reset all matches in a specific SE round and cascade resets downstream
+         */
+        resetRound: function (roundNumber) {
+            var roundObj = null;
+            for (var r = 0; r < this.roundsList.length; r++) {
+                if (this.roundsList[r].roundNumber === roundNumber) {
+                    roundObj = this.roundsList[r];
+                    break;
+                }
+            }
+            if (!roundObj) return;
+
+            var self = this;
+            var changed = false;
+
+            if (window.TourmaRandomService) {
+                changed = window.TourmaRandomService.resetRoundMatches(
+                    roundObj,
+                    this.matchesMap,
+                    function (mId) {
+                        if (window.TourmaBracketAlgorithm) {
+                            window.TourmaBracketAlgorithm.cascadeResetPlaceholders(self.matchesMap, mId);
+                        }
+                    }
+                );
+            }
+
+            if (changed) {
+                this.persistMatches();
+                this.renderBracketView();
+                this.renderListView();
             }
         },
 
@@ -341,6 +487,50 @@
                 detail.team2Score,
                 detail.winner ? (isT1Winner ? targetMatch.team1.name : targetMatch.team2.name) : ''
             );
+        },
+
+        /**
+         * Open / Close / Confirm Reset Bracket Modal
+         */
+        openResetModal: function () {
+            var modal = document.getElementById('seResetModalBackdrop');
+            if (modal) {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        },
+
+        closeResetModal: function () {
+            var modal = document.getElementById('seResetModalBackdrop');
+            if (modal) {
+                modal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        },
+
+        confirmResetBracket: function () {
+            this.closeResetModal();
+            if (this.tournamentId) {
+                try {
+                    localStorage.removeItem('tourma_matches_' + this.tournamentId);
+                    localStorage.removeItem('tourma_matches_demo');
+                } catch (e) {}
+            }
+
+            // Regenerate fresh initial bracket
+            if (window.TourmaBracketAlgorithm && typeof window.TourmaBracketAlgorithm.generateSingleElimination === 'function') {
+                this.roundsList = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList);
+                this.matchesMap = {};
+                for (var r = 0; r < this.roundsList.length; r++) {
+                    for (var m = 0; m < this.roundsList[r].matches.length; m++) {
+                        var match = this.roundsList[r].matches[m];
+                        this.matchesMap[match.matchId] = match;
+                    }
+                }
+                this.persistMatches();
+                this.renderBracketView();
+                this.renderListView();
+            }
         },
 
         /**

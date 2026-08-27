@@ -65,14 +65,54 @@
                     <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
                 </div>
 
-                <!-- View Mode Toggle Buttons (Bracket ↔ List View) -->
-                <div class="view-mode-toggle-group">
-                    <button type="button" id="btnViewBracket" class="btn-view-toggle active" onclick="window.SingleEliminationEngine.switchViewMode('bracket')">
-                        <i class="fa-solid fa-diagram-project"></i> Sơ Đồ Cây
+                <!-- Right Action Bar: Standalone Reset Button + View Mode Toggle Buttons -->
+                <div class="control-actions-right-group" style="display: flex; align-items: center; gap: 0.75rem;">
+                    <!-- Standalone Reset Bracket Button -->
+                    <button type="button" id="seBtnResetBracket" class="btn-reset-bracket-action" onclick="window.SingleEliminationEngine.openResetModal()" title="Xóa kết quả và tái tạo lại sơ đồ ban đầu">
+                        <i class="fa-solid fa-rotate-right"></i> Tái Tạo Nhánh
                     </button>
-                    <button type="button" id="btnViewList" class="btn-view-toggle" onclick="window.SingleEliminationEngine.switchViewMode('list')">
-                        <i class="fa-solid fa-list-ol"></i> Danh Sách Trận
-                    </button>
+
+                    <!-- View Mode Toggle Buttons (Bracket ↔ List View) -->
+                    <div class="view-mode-toggle-group">
+                        <button type="button" id="btnViewBracket" class="btn-view-toggle active" onclick="window.SingleEliminationEngine.switchViewMode('bracket')">
+                            <i class="fa-solid fa-diagram-project"></i> Sơ Đồ Cây
+                        </button>
+                        <button type="button" id="btnViewList" class="btn-view-toggle" onclick="window.SingleEliminationEngine.switchViewMode('list')">
+                            <i class="fa-solid fa-list-ol"></i> Danh Sách Trận
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESET BRACKET CONFIRMATION MODAL -->
+            <div id="seResetModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) window.SingleEliminationEngine.closeResetModal();">
+                <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
+                        <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span>Xác Nhận Tái Tạo Nhánh Đấu</span>
+                        </div>
+                        <button type="button" class="modal-close-btn" onclick="window.SingleEliminationEngine.closeResetModal()" title="Đóng">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+                        <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
+                            <strong style="color: #f43f5e;">⚠️ Cảnh báo quan trọng:</strong><br>
+                            Hành động này sẽ <strong style="color: #ffffff;">XÓA TOÀN BỘ tỷ số và kết quả các trận đã đấu</strong>, tái tạo lại sơ đồ Single Elimination nguyên bản ban đầu từ danh sách hạt giống.
+                        </div>
+                        <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
+                            Bạn có chắc chắn muốn thiết lập lại toàn bộ nhánh đấu không?
+                        </p>
+                    </div>
+
+                    <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem;">
+                        <button type="button" class="btn btn-secondary" onclick="window.SingleEliminationEngine.closeResetModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
+                        <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="window.SingleEliminationEngine.confirmResetBracket()">
+                            <i class="fa-solid fa-rotate-right"></i> Xác Nhận Tái Tạo
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -116,6 +156,7 @@
         <jsp:include page="/common/component/popup.jsp"/>
 
         <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
         <script src="${pageContext.request.contextPath}/js/bracket-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/bracket-viewport.js"></script>

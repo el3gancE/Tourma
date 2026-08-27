@@ -202,5 +202,29 @@
         <jsp:include page="/common/component/popup.jsp"/>
 
         <script src="${pageContext.request.contextPath}/js/bracket-viewport.js"></script>
+        <script>
+            // Build a minimal matchesMap from the demo card relationships
+            var templateMatchesMap = {
+                '1': { matchId: '1', nextMatchId: '3', nextMatchSlot: 1, status: 'done' },
+                '2': { matchId: '2', nextMatchId: '3', nextMatchSlot: 2, status: 'done' },
+                '3': { matchId: '3', nextMatchId: '4', nextMatchSlot: 1, status: 'SCHEDULED' },
+                '4': { matchId: '4', nextMatchId: null, nextMatchSlot: null, status: 'SCHEDULED' }
+            };
+
+            function drawTemplateSvgLines() {
+                var canvas = document.getElementById('bracketViewportCanvas');
+                var wrapper = canvas; // cards are direct children of canvas in template
+                if (!canvas || !window.TourmaViewport) return;
+                var scale = window.TourmaViewport.currentScale || 1;
+                window.TourmaViewport.drawConnectors(canvas, canvas, templateMatchesMap, scale);
+            }
+
+            window.addEventListener('DOMContentLoaded', function () {
+                requestAnimationFrame(drawTemplateSvgLines);
+                setTimeout(drawTemplateSvgLines, 60);
+                setTimeout(drawTemplateSvgLines, 250);
+            });
+            window.addEventListener('resize', drawTemplateSvgLines);
+        </script>
     </body>
 </html>
