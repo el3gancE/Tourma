@@ -54,8 +54,12 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
     </head>
     <body>
+        <!-- Final Stage Popup Banner -->
+        <jsp:include page="/common/component/final-stage-popup.jsp"/>
+
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="tournaments"/>
@@ -153,6 +157,7 @@
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/popup.js"></script>
+        <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin.js"></script>
 
         <script>

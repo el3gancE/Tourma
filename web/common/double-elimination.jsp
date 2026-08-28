@@ -54,8 +54,12 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/double-elimination.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
     </head>
     <body>
+        <!-- Final Stage Popup Banner -->
+        <jsp:include page="/common/component/final-stage-popup.jsp"/>
+
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="tournaments"/>
@@ -226,6 +230,7 @@
         <script src="${pageContext.request.contextPath}/js/bracket-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/popup.js"></script>
+        <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination.js"></script>
 
         <!-- Page Bootstrap Execution -->

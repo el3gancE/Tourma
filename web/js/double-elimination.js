@@ -74,6 +74,9 @@
             // Render Views
             this.renderAll();
 
+            // Check Final Stage conclusion & render top banner if complete
+            this.checkFinalStage();
+
             // Setup Global Event Listeners
             this.attachEventListeners();
         },
@@ -211,7 +214,7 @@
             var teamCountElem = document.getElementById('deTeamCountBadge');
             var formatElem = document.getElementById('deFormatBadge');
 
-            if (titleElem) titleElem.innerText = '🏆 ' + this.tournamentName;
+            if (titleElem) titleElem.innerText = this.tournamentName;
             if (teamCountElem) teamCountElem.innerText = this.teamsList.length + ' Đội';
             if (formatElem) formatElem.innerText = 'DOUBLE ELIMINATION';
         },
@@ -698,6 +701,10 @@
          * Randomize all playable uncompleted matches in a specific DE round via TourmaRandomService
          */
         randomizeRound: function (bracketType, roundNumber, rawWinScore) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             if (!this.bracketData) return;
 
             var targetRound = null;
@@ -752,6 +759,10 @@
          * Reset all matches in a specific DE round and cascade resets downstream
          */
         resetRound: function (bracketType, roundNumber) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             if (!this.bracketData) return;
 
             var targetRound = null;
@@ -863,6 +874,10 @@
         },
 
         toggleQuickMode: function () {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             this.isQuickMode = !this.isQuickMode;
             window.TourmaQuickMode = this.isQuickMode;
             var storageKey = 'tourma_quick_mode_' + this.tournamentId;
@@ -888,6 +903,8 @@
         },
 
         handleQuickWinner: function (matchId, winnerSlot, customScore) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return;
+
             var m = this.matchesMap[matchId];
             if (!m) return;
 
@@ -1000,6 +1017,10 @@
          * Open / Close / Confirm Reset Bracket Modal
          */
         openResetModal: function () {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset giải.');
+                return;
+            }
             var modal = document.getElementById('deResetModalBackdrop');
             if (modal) {
                 modal.classList.add('show');
@@ -1041,6 +1062,28 @@
                 localStorage.setItem('tourma_de_matches_' + this.tournamentId, JSON.stringify(this.bracketData));
                 localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
             } catch (e) {}
+            this.checkFinalStage();
+        },
+
+        checkFinalStage: function () {
+            var self = this;
+            if (window.FinalStagePopup) {
+                window.FinalStagePopup.checkAndRender(
+                    this.tournamentId,
+                    'DOUBLE_ELIMINATION',
+                    this.matchesMap,
+                    this.teamsList,
+                    null,
+                    function (isLocked) {
+                        if (isLocked) {
+                            self.isQuickMode = false;
+                            window.TourmaQuickMode = false;
+                            var qBtn = document.getElementById('deBtnQuickMode');
+                            if (qBtn) qBtn.style.display = 'none';
+                        }
+                    }
+                );
+            }
         },
 
         /**

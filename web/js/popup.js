@@ -20,6 +20,18 @@
         open: function (matchData, callback) {
             if (!matchData) return;
 
+            // Check lock directly from localStorage for guaranteed correctness
+            var tid = window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null;
+            var isLockedLS = false;
+            if (tid) {
+                try { isLockedLS = localStorage.getItem('tourma_final_locked_' + tid) === 'true'; } catch(e) {}
+            }
+            if (isLockedLS || (window.FinalStagePopup && window.FinalStagePopup.isLocked)) {
+                // Sync the isLocked flag just in case it drifted
+                if (window.FinalStagePopup) window.FinalStagePopup.isLocked = true;
+                return;
+            }
+
             this.activeMatchId = matchData.matchId || matchData.id || '1';
             this.onSaveCallback = callback || null;
             this.allowDraw = matchData.allowDraw === true || matchData.allowDraw === 'true';

@@ -108,6 +108,7 @@
 
             if (t1Side) {
                 t1Side.addEventListener('click', function (e) {
+                    if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
@@ -122,6 +123,7 @@
 
             if (t2Side) {
                 t2Side.addEventListener('click', function (e) {
+                    if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
@@ -136,6 +138,14 @@
 
             // Attach Click Handler to Entire Card (Only if playable and NOT Quick Mode)
             card.addEventListener('click', function () {
+                // Check lock directly from localStorage - most reliable source of truth
+                var _tid = window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null;
+                var _locked = (window.FinalStagePopup && window.FinalStagePopup.isLocked);
+                if (!_locked && _tid) {
+                    try { _locked = localStorage.getItem('tourma_final_locked_' + _tid) === 'true'; } catch(e) {}
+                }
+                if (_locked) return;
+
                 if (!isPlayable) {
                     return; // Prevent clicking unconfirmed / BYE matches
                 }

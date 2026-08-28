@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
+
+/**
+ * ============================================================================
+ * TOURMA - FINAL STAGE POPUP STYLESHEET (final-stage-popup.css)
+ * Native Dark Theme matching Tourma Control Bar & Cards (#181d29 Surface)
+ * Font: Lexend explicitly applied to all popup elements
+ * ============================================================================
+ */
+
+/* ── Enforce Lexend font on banner text and buttons ── */
+.final-stage-popup-banner,
+.final-stage-popup-content,
+.final-stage-popup-text,
+.final-stage-title-line,
+.final-stage-champion-line,
+.final-stage-champion-name,
+.final-stage-popup-actions,
+.final-stage-confirm-btn,
+.final-stage-unlock-btn,
+.final-stage-close-btn {
+    font-family: 'Lexend', sans-serif !important;
+}
+
+/* ── Banner card matching control bar styling ── */
+.final-stage-popup-banner {
+    display: none;                          /* toggled via JS */
+    width: 100%;
+    box-sizing: border-box;
+    background: #181d29;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    animation: fadeInBannerFinal 0.25s ease-out forwards;
+}
+
+@keyframes fadeInBannerFinal {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Content layout ── */
+.final-stage-popup-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+/* ── Text Container ── */
+.final-stage-popup-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Line 1: Main Announcement */
+.final-stage-title-line {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #e2e8f0;
+    line-height: 1.4;
+}
+
+/* Line 2: Champion Name (Gold / Yellow, larger font) */
+.final-stage-champion-line {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fbbf24;
+    line-height: 1.4;
+}
+
+.final-stage-champion-name {
+    font-weight: 800;
+    color: #fbbf24;
+}
+
+/* ── Action buttons group ── */
+.final-stage-popup-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-shrink: 0;
+}
+
+/* Confirm button – matches Tourma active cyan pill button */
+.final-stage-confirm-btn {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.45rem 1.15rem;
+    background: #2dd4bf;
+    color: #0b0d12;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    box-shadow: 0 2px 8px rgba(45, 212, 191, 0.3);
+    white-space: nowrap;
+}
+
+.final-stage-confirm-btn:hover {
+    background: #14b8a6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(45, 212, 191, 0.45);
+}
+
+/* Unlock button – matches format warning/amber badge button */
+.final-stage-unlock-btn {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.42rem 1rem;
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.final-stage-unlock-btn:hover {
+    background: #f59e0b;
+    color: #0b0d12;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Close button – matches Tourma neutral action button */
+.final-stage-close-btn {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.42rem 0.95rem;
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.final-stage-close-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.25);
+}

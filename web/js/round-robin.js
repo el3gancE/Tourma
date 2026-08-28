@@ -83,6 +83,9 @@
 
             // 4. Attach Match Modal Update Event Listeners
             this.attachEventListeners();
+
+            // 5. Check Final Stage conclusion & render top banner if complete
+            this.checkFinalStage();
         },
 
         /**
@@ -204,6 +207,20 @@
                 localStorage.setItem('tourma_rr_matches_' + this.tournamentId, JSON.stringify(payload));
                 localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
             } catch (e) {}
+            this.checkFinalStage();
+        },
+
+        checkFinalStage: function () {
+            if (window.FinalStagePopup) {
+                window.FinalStagePopup.checkAndRender(
+                    this.tournamentId,
+                    'ROUND_ROBIN',
+                    this.matchesMap,
+                    this.teamsList,
+                    this.config,
+                    null
+                );
+            }
         },
 
         /**
@@ -394,6 +411,10 @@
          * Randomize all matches in a round with custom score support [X, random(0..X-1)]
          */
         randomizeRound: function (roundNum, rawWinScore) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             var roundObj = this.roundsList.find(function (r) { return r.roundNumber === roundNum; });
             if (!roundObj) return;
 
@@ -468,6 +489,10 @@
          * Reset all matches in a round
          */
         resetRound: function (roundNum) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             var roundObj = this.roundsList.find(function (r) { return r.roundNumber === roundNum; });
             if (!roundObj) return;
 
@@ -519,6 +544,10 @@
         },
 
         openResetModal: function () {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset giải.');
+                return;
+            }
             var modal = document.getElementById('rrResetModalBackdrop');
             if (modal) {
                 modal.classList.add('show');

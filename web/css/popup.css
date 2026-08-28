@@ -1,7 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
+
 /* ============================================================================
    TOURMA - MATCH SCORE EDIT POPUP MODAL (WIREFRAME STACKED LAYOUT)
    Font: Lexend | High-Density Dark Theme (#181d29 Surface & #0b0d12 Obsidian)
    ============================================================================ */
+
+.tourma-modal-backdrop,
+.tourma-modal-card,
+.modal-header-title,
+.modal-body-content,
+.modal-footer-bar,
+.btn-modal {
+    font-family: 'Lexend', sans-serif;
+}
 
 /* Modal Backdrop Overlay */
 .tourma-modal-backdrop {

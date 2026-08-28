@@ -62,6 +62,22 @@
 
             // 3. Render Standings Table
             this.renderStandings();
+
+            // 4. Check Final Stage conclusion & render top banner if complete
+            this.checkFinalStage();
+        },
+
+        checkFinalStage: function () {
+            if (window.FinalStagePopup) {
+                window.FinalStagePopup.checkAndRender(
+                    this.tournamentId,
+                    'ROUND_ROBIN',
+                    this.matchesMap,
+                    this.teamsList,
+                    this.config,
+                    null
+                );
+            }
         },
 
         /**

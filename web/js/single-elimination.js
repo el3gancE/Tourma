@@ -91,6 +91,9 @@
             setTimeout(function () {
                 self.drawTreeConnectors();
             }, 100);
+
+            // Check Final Stage conclusion & render top banner if complete
+            this.checkFinalStage();
         },
 
         /**
@@ -428,6 +431,10 @@
          * Randomize all playable uncompleted matches in a specific SE round via TourmaRandomService
          */
         randomizeRound: function (roundNumber, rawWinScore) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             var roundObj = null;
             for (var r = 0; r < this.roundsList.length; r++) {
                 if (this.roundsList[r].roundNumber === roundNumber) {
@@ -464,6 +471,10 @@
          * Reset all matches in a specific SE round and cascade resets downstream
          */
         resetRound: function (roundNumber) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             var roundObj = null;
             for (var r = 0; r < this.roundsList.length; r++) {
                 if (this.roundsList[r].roundNumber === roundNumber) {
@@ -539,6 +550,10 @@
         },
 
         toggleQuickMode: function () {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             this.isQuickMode = !this.isQuickMode;
             window.TourmaQuickMode = this.isQuickMode;
             var storageKey = 'tourma_quick_mode_' + this.tournamentId;
@@ -563,6 +578,8 @@
         },
 
         handleQuickWinner: function (matchId, winnerSlot, customScore) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return;
+
             var mId = Number(matchId);
             var targetMatch = this.matchesMap[mId];
             if (!targetMatch) return;
@@ -668,6 +685,10 @@
          * Open / Close / Confirm Reset Bracket Modal
          */
         openResetModal: function () {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset giải.');
+                return;
+            }
             var modal = document.getElementById('seResetModalBackdrop');
             if (modal) {
                 modal.classList.add('show');
@@ -720,6 +741,28 @@
                 try {
                     localStorage.setItem(storageKeyMatches, JSON.stringify(this.matchesMap));
                 } catch (e) {}
+            }
+            this.checkFinalStage();
+        },
+
+        checkFinalStage: function () {
+            var self = this;
+            if (window.FinalStagePopup) {
+                window.FinalStagePopup.checkAndRender(
+                    this.tournamentId,
+                    'SINGLE_ELIMINATION',
+                    this.matchesMap,
+                    this.teamsList,
+                    null,
+                    function (isLocked) {
+                        if (isLocked) {
+                            self.isQuickMode = false;
+                            window.TourmaQuickMode = false;
+                            var qBtn = document.getElementById('singleBtnQuickMode') || document.getElementById('seBtnQuickMode');
+                            if (qBtn) qBtn.style.display = 'none';
+                        }
+                    }
+                );
             }
         },
 
