@@ -159,7 +159,8 @@
                         team2Seed: seed2,
                         team2Score: t2ScoreDisp,
                         winnerId: isT1Winner ? 'team1' : (isT2Winner ? 'team2' : null),
-                        status: isDone ? 'COMPLETED' : 'SCHEDULED'
+                        status: isDone ? 'COMPLETED' : 'SCHEDULED',
+                        allowDraw: (typeof window.TourmaRoundRobin !== 'undefined')
                     });
                 }
             });

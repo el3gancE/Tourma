@@ -68,7 +68,7 @@
         </jsp:include>
 
         <!-- Main Content Area Shifted Right by Sidebar -->
-        <main class="container has-sidebar" style="max-width: 100% !important; padding-right: 1.5rem !important;">
+        <main class="container has-sidebar">
             
             <!-- Top Control Bar (Tournament Title, Format Badge, Team Count Badge & View Mode Toggle) -->
             <div class="single-elimination-control-bar" style="margin-bottom: 1rem;">

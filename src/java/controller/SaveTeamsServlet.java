@@ -36,13 +36,16 @@ public class SaveTeamsServlet extends HttpServlet {
             String[] lines = teamListRaw.split("\n");
             List<String> teamNames = new ArrayList<>();
             for (String line : lines) {
-                String clean = line.trim().replaceAll("^[0-9]+[\\.\\-\\)\\s]+", "").trim();
+                String clean = line.trim().replaceAll("^[0-9]+[\\.\\-\\)\\s]+", "").trim().replaceAll("\\s+", " ");
                 if (!clean.isEmpty()) {
                     teamNames.add(clean);
                 }
             }
 
             if (!teamNames.isEmpty()) {
+                if (teamNames.size() > 24) {
+                    teamNames = new ArrayList<>(teamNames.subList(0, 24));
+                }
                 ParticipantDAO dao = new ParticipantDAO();
                 dao.saveTournamentTeams(tournamentId, teamNames);
             }

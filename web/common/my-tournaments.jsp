@@ -127,6 +127,11 @@
                                                     Xem Sơ Đồ ➔
                                                 </a>
                                             </c:when>
+                                            <c:when test="${t.format == 'ROUND_ROBIN'}">
+                                                <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=${t.id}&format=ROUND_ROBIN" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                                    Lịch Đấu ➔
+                                                </a>
+                                            </c:when>
                                             <c:otherwise>
                                                 <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}&format=${t.format}" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
                                                     Xem Sơ Đồ ➔

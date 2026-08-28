@@ -45,8 +45,9 @@
             // Only matches with 2 real confirmed teams and NOT BYE are clickable
             var isPlayable = !isT1Placeholder && !isT2Placeholder && !hasBye;
 
-            var seed1 = isT1Bye ? '' : (t1.seed || '').toString().replace('#', '');
-            var seed2 = isT2Bye ? '' : (t2.seed || '').toString().replace('#', '');
+            var hideSeeds = (data.hideSeeds === true);
+            var seed1 = (isT1Bye || hideSeeds) ? '' : (t1.seed || '').toString().replace('#', '');
+            var seed2 = (isT2Bye || hideSeeds) ? '' : (t2.seed || '').toString().replace('#', '');
 
             var t1ScoreDisp = (isDone && !hasBye && t1.score !== undefined && t1.score !== null && t1.score !== '') ? t1.score : '';
             var t2ScoreDisp = (isDone && !hasBye && t2.score !== undefined && t2.score !== null && t2.score !== '') ? t2.score : '';
@@ -146,7 +147,7 @@
                 if (window.TourmaScoreModal && typeof window.TourmaScoreModal.open === 'function') {
                     window.TourmaScoreModal.open({
                         matchId: matchId,
-                        roundName: 'Trận ' + matchHeaderLabel,
+                        roundName: data.roundName || ('Trận ' + matchHeaderLabel),
                         team1Name: t1Name,
                         team1Seed: seed1,
                         team1Score: t1ScoreDisp,
@@ -154,7 +155,8 @@
                         team2Seed: seed2,
                         team2Score: t2ScoreDisp,
                         winnerId: isT1Winner ? 'team1' : (isT2Winner ? 'team2' : null),
-                        status: isDone ? 'COMPLETED' : 'SCHEDULED'
+                        status: isDone ? 'COMPLETED' : 'SCHEDULED',
+                        allowDraw: (data.allowDraw === true)
                     });
                 }
             });

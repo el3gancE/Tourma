@@ -80,13 +80,24 @@
             </a>
         </li>
 
-        <!-- BƯỚC 3: VÒNG ĐẤU (Dynamic URL based on Format) -->
+        <!-- BƯỚC 3: VÒNG ĐẤU / LỊCH THI ĐẤU -->
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %>"
                class="sidebar-menu-link <%= "bracket".equals(activeStep) || "step3".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-bolt menu-icon"></i>
-                <span>Vòng Đấu</span>
+                <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : "fa-diagram-project" %> menu-icon"></i>
+                <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu" : "Sơ Đồ Nhánh" %></span>
             </a>
         </li>
+
+        <% if ("ROUND_ROBIN".equalsIgnoreCase(format)) { %>
+        <!-- MỤC RIÊNG CHO ROUND ROBIN: BẢNG XẾP HẠNG -->
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=<%= format %>"
+               class="sidebar-menu-link <%= "standings".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
+                <span>Bảng Xếp Hạng</span>
+            </a>
+        </li>
+        <% } %>
     </ul>
 </aside>
