@@ -4,10 +4,20 @@
 <%@page import="java.util.List"%>
 <%
     String tournamentId = request.getParameter("id");
+    String tourneyFormat = request.getParameter("format");
     List<Team> existingTeams = null;
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
         ParticipantDAO pDao = new ParticipantDAO();
         existingTeams = pDao.getTeamsByTournamentId(tournamentId);
+        if (tourneyFormat == null || tourneyFormat.trim().isEmpty()) {
+            try {
+                dao.TournamentDAO tDao = new dao.TournamentDAO();
+                model.Tournament t = tDao.getTournamentById(tournamentId);
+                if (t != null && t.getFormat() != null) {
+                    tourneyFormat = t.getFormat();
+                }
+            } catch(Exception e) {}
+        }
     }
 %>
 <!DOCTYPE html>
@@ -51,7 +61,7 @@
 
                     <form id="configureTeamsForm" action="${pageContext.request.contextPath}/save-teams" method="POST" onsubmit="return prepareFormSubmission(event)">
                         <input type="hidden" name="id" value="${param.id}">
-                        <input type="hidden" name="format" value="${param.format}">
+                        <input type="hidden" name="format" value="<%= (tourneyFormat != null) ? tourneyFormat : "" %>">
                         <input type="hidden" id="finalTeamsInput" name="teamListRaw" value="">
 
                         <!-- TWO-COLUMN WORKSPACE GRID (MATCHING FIGMA PERFECTLY) -->
@@ -209,7 +219,33 @@
 
         <script>
             var tournamentId = "<%= (tournamentId != null) ? tournamentId : "" %>";
+            var tourneyFormatServer = "<%= (tourneyFormat != null) ? tourneyFormat.toUpperCase() : "" %>";
             var localStorageKey = "tourma_teams_" + tournamentId;
+
+            // Helper to check if format is Round Robin
+            function checkIsRoundRobin() {
+                if (tourneyFormatServer === 'ROUND_ROBIN' || tourneyFormatServer === 'ROUNDROBIN') return true;
+                var urlFormat = new URLSearchParams(window.location.search).get('format');
+                if (urlFormat && (urlFormat.toUpperCase() === 'ROUND_ROBIN' || urlFormat.toUpperCase() === 'ROUNDROBIN')) return true;
+                if (tournamentId) {
+                    var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
+                    if (localFmt && localFmt.toUpperCase() === 'ROUND_ROBIN') return true;
+                    if (localStorage.getItem('tourma_rr_matches_' + tournamentId)) return true;
+                }
+                return false;
+            }
+
+            // Helper to check if two team lists contain the exact same team names (ignoring order)
+            function isSameTeamSet(listA, listB) {
+                if (!listA || !listB) return false;
+                if (listA.length !== listB.length) return false;
+                var sortedA = listA.slice().sort();
+                var sortedB = listB.slice().sort();
+                for (var i = 0; i < sortedA.length; i++) {
+                    if (sortedA[i] !== sortedB[i]) return false;
+                }
+                return true;
+            }
 
             // Load initial teams from Database first, fallback to localStorage
             var dbTeams = [
@@ -249,7 +285,7 @@
             }
 
             // If snapshot not saved yet but bracket exists, initialize snapshot
-            if (!initialTeamsSnapshot && tournamentId && (localStorage.getItem('tourma_matches_' + tournamentId) || localStorage.getItem('tourma_de_matches_' + tournamentId))) {
+            if (!initialTeamsSnapshot && tournamentId && (localStorage.getItem('tourma_matches_' + tournamentId) || localStorage.getItem('tourma_de_matches_' + tournamentId) || localStorage.getItem('tourma_rr_matches_' + tournamentId))) {
                 initialTeamsSnapshot = JSON.parse(JSON.stringify(currentTeamsList));
                 try {
                     localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(initialTeamsSnapshot));
@@ -265,6 +301,12 @@
                 }
             }
 
+            // Normalize team name: trim leading/trailing spaces and collapse multiple inner spaces into 1
+            window.normalizeTeamName = function(name) {
+                if (!name) return '';
+                return name.trim().replace(/\s+/g, ' ');
+            };
+
             // Extract valid team names from raw textarea string
             window.extractNamesFromTextarea = function() {
                 var textarea = document.getElementById('teamTextarea');
@@ -273,9 +315,9 @@
                 var lines = textarea.value.split('\n');
                 var names = [];
                 for (var i = 0; i < lines.length; i++) {
-                    var trimmed = lines[i].trim();
-                    if (trimmed.length > 0) {
-                        names.push(trimmed);
+                    var cleaned = window.normalizeTeamName(lines[i]);
+                    if (cleaned.length > 0) {
+                        names.push(cleaned);
                     }
                 }
                 return names;
@@ -284,7 +326,14 @@
             // Handle realtime input counter
             window.handleTextareaTyping = function() {
                 var names = window.extractNamesFromTextarea();
-                document.getElementById('inputCountDisplay').innerText = names.length + " Đội";
+                var countDisplay = document.getElementById('inputCountDisplay');
+                if (countDisplay) {
+                    if (names.length > 24) {
+                        countDisplay.innerHTML = '<span style="color:#f43f5e; font-weight:700;">' + names.length + ' / 24 Đội (Vượt tối đa)</span>';
+                    } else {
+                        countDisplay.innerText = names.length + " / 24 Đội";
+                    }
+                }
             };
 
             // Clear textarea helper
@@ -296,10 +345,43 @@
                 }
             };
 
-            // Add teams from left bulk input to right managed list
+            // Add teams from left bulk input to right managed list with exact duplicate prevention
             window.addTeamsFromInput = function() {
                 var newNames = window.extractNamesFromTextarea();
                 if (newNames.length === 0) return;
+
+                // 1. Check duplicate within the textarea input itself
+                var seenInput = {};
+                for (var a = 0; a < newNames.length; a++) {
+                    var nameA = newNames[a];
+                    if (seenInput[nameA]) {
+                        alert('Phát hiện tên đội bị trùng lặp trong ô nhập: "' + nameA + '"! Vui lòng đặt tên khác nhau.');
+                        return;
+                    }
+                    seenInput[nameA] = true;
+                }
+
+                // 2. Check duplicate against existing managed teams (exact match, case-sensitive)
+                for (var b = 0; b < newNames.length; b++) {
+                    var nameB = newNames[b];
+                    for (var c = 0; c < currentTeamsList.length; c++) {
+                        if (currentTeamsList[c] === nameB) {
+                            alert('Tên đội "' + nameB + '" đã tồn tại trong danh sách! Vui lòng không đặt tên đội trùng nhau.');
+                            return;
+                        }
+                    }
+                }
+
+                if (currentTeamsList.length >= 24) {
+                    alert("Số lượng đội tham gia đã đạt tối đa 24 đội!");
+                    return;
+                }
+
+                var availableSlots = 24 - currentTeamsList.length;
+                if (newNames.length > availableSlots) {
+                    alert("Hệ thống chỉ hỗ trợ tối đa 24 đội. Đã tự động thêm " + availableSlots + " đội đầu tiên!");
+                    newNames = newNames.slice(0, availableSlots);
+                }
 
                 for (var i = 0; i < newNames.length; i++) {
                     currentTeamsList.push(newNames[i]);
@@ -414,13 +496,24 @@
 
             // Update team name in place
             window.updateTeamName = function(index, newName) {
-                var trimmed = newName.trim();
-                if (trimmed.length > 0) {
-                    currentTeamsList[index] = trimmed;
-                    persistState();
-                } else {
+                var cleaned = window.normalizeTeamName(newName);
+                if (cleaned.length === 0) {
                     window.renderTable();
+                    return;
                 }
+
+                // Check if this cleaned name already exists at any OTHER index in currentTeamsList (exact match)
+                for (var i = 0; i < currentTeamsList.length; i++) {
+                    if (i !== index && currentTeamsList[i] === cleaned) {
+                        alert('Tên đội "' + cleaned + '" đã tồn tại trong danh sách! Vui lòng không đặt tên đội trùng nhau.');
+                        window.renderTable();
+                        return;
+                    }
+                }
+
+                currentTeamsList[index] = cleaned;
+                persistState();
+                window.renderTable();
             };
 
             /* --- Drag & Drop Handlers --- */
@@ -514,8 +607,12 @@
                     try {
                         localStorage.removeItem('tourma_matches_' + tournamentId);
                         localStorage.removeItem('tourma_de_matches_' + tournamentId);
+                        localStorage.removeItem('tourma_rr_matches_' + tournamentId);
+                        localStorage.removeItem('tourma_rr_round_inputs_' + tournamentId);
                         localStorage.removeItem('tourma_matches_demo');
                         localStorage.removeItem('tourma_de_matches_demo');
+                        localStorage.removeItem('tourma_rr_matches_demo');
+                        localStorage.removeItem('tourma_rr_round_inputs_demo');
                         localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));
                     } catch (e) {}
                 }
@@ -538,32 +635,54 @@
                     window.addTeamsFromInput();
                 }
 
+                // Clean and normalize all names in currentTeamsList, then verify no duplicates
+                var seenNames = {};
+                for (var t = 0; t < currentTeamsList.length; t++) {
+                    var tName = window.normalizeTeamName(currentTeamsList[t]);
+                    currentTeamsList[t] = tName;
+                    if (seenNames[tName]) {
+                        alert('Phát hiện tên đội bị trùng lặp: "' + tName + '"! Mỗi đội cần có tên riêng biệt.');
+                        if (e && e.preventDefault) e.preventDefault();
+                        return false;
+                    }
+                    seenNames[tName] = true;
+                }
+
                 if (currentTeamsList.length < 2) {
                     alert('Cần ít nhất 2 đội bóng để sinh sơ đồ thi đấu.');
                     if (e && e.preventDefault) e.preventDefault();
                     return false;
                 }
 
+                var isRR = checkIsRoundRobin();
+
                 // Check if bracket was previously generated
                 var hasPriorBracket = (initialTeamsSnapshot && initialTeamsSnapshot.length > 0);
-                if (!hasPriorBracket && tournamentId && (localStorage.getItem('tourma_matches_' + tournamentId) || localStorage.getItem('tourma_de_matches_' + tournamentId))) {
+                if (!hasPriorBracket && tournamentId && (localStorage.getItem('tourma_matches_' + tournamentId) || localStorage.getItem('tourma_de_matches_' + tournamentId) || localStorage.getItem('tourma_rr_matches_' + tournamentId))) {
                     hasPriorBracket = true;
                 }
 
-                // Check if ANY modification occurred (team count, team names, seed order)
+                // Check if modification occurred
                 var isModified = false;
                 if (hasPriorBracket && initialTeamsSnapshot) {
-                    isModified = (JSON.stringify(currentTeamsList) !== JSON.stringify(initialTeamsSnapshot));
+                    if (isRR) {
+                        // In Round Robin: ONLY consider modified if teams were added, removed, or renamed.
+                        // Shuffling the same team list does NOT reset the RR schedule!
+                        isModified = !isSameTeamSet(currentTeamsList, initialTeamsSnapshot);
+                    } else {
+                        // For SE and DE: any seed order change alters the bracket tree pairings
+                        isModified = (JSON.stringify(currentTeamsList) !== JSON.stringify(initialTeamsSnapshot));
+                    }
                 }
 
-                // If bracket existed and any team info was modified, ALWAYS show the confirmation popup!
+                // If bracket existed and teams were modified, show the confirmation popup
                 if (hasPriorBracket && isModified) {
                     if (e && e.preventDefault) e.preventDefault();
                     window.openResetModal();
                     return false;
                 }
 
-                // First time creating bracket: save snapshot
+                // Save current snapshot
                 if (tournamentId) {
                     try {
                         localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));

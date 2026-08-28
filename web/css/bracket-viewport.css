@@ -170,12 +170,32 @@
     position: relative;
 }
 
-.match-list-round-header .round-header-title,
+.match-list-round-header .round-header-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #fbbf24;
+    letter-spacing: 0.03em;
+}
+
 .de-list-section-header .round-header-title {
     font-size: 0.85rem;
-    font-weight: 700;
-    color: #ffffff;
+    font-weight: 800;
     letter-spacing: 0.03em;
+}
+
+.de-list-section-header.upper .round-header-title,
+.de-round-header.upper .round-header-title {
+    color: #2dd4bf !important;
+}
+
+.de-list-section-header.lower .round-header-title,
+.de-round-header.lower .round-header-title {
+    color: #f43f5e !important;
+}
+
+.de-list-section-header.gf .round-header-title,
+.de-round-header.gf .round-header-title {
+    color: #fbbf24 !important;
 }
 
 .round-header-random-controls {

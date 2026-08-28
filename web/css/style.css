@@ -51,6 +51,10 @@ html {
   font-size: 14px; /* Reduced base rem from 16px to 14px for 67%-equivalent look */
 }
 
+body, button, input, select, textarea, optgroup {
+  font-family: 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -58,7 +62,7 @@ html {
 }
 
 body {
-  font-family: var(--font-family);
+  font-family: 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-dark-obsidian);
   color: var(--text-white);
   line-height: 1.5;
@@ -68,6 +72,15 @@ body {
     radial-gradient(circle at 15% 15%, rgba(45, 212, 191, 0.04) 0%, transparent 40%),
     radial-gradient(circle at 85% 85%, rgba(251, 191, 36, 0.03) 0%, transparent 40%);
   background-attachment: fixed;
+}
+
+/* Explicitly preserve Font Awesome icon fonts */
+i.fa, i.fas, i.far, i.fal, i.fad, i.fab, i.fa-solid, i.fa-regular, i.fa-brands,
+.fa, .fas, .far, .fal, .fad, .fab, .fa-solid, .fa-regular, .fa-brands,
+[class*="fa-"], [class^="fa-"],
+[class*="fa-"]::before, [class^="fa-"]::before,
+[class*="fa-"]::after, [class^="fa-"]::after {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "FontAwesome" !important;
 }
 
 a {

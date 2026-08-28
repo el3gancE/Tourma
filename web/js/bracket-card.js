@@ -99,6 +99,7 @@
                     if (window.TourmaPathTracker) window.TourmaPathTracker.clearHighlight();
                 });
                 rows[0].addEventListener('click', function (e) {
+                    if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
@@ -122,6 +123,7 @@
                     if (window.TourmaPathTracker) window.TourmaPathTracker.clearHighlight();
                 });
                 rows[1].addEventListener('click', function (e) {
+                    if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
@@ -140,6 +142,14 @@
 
             // Attach Click Event to Launch Score Popup ONLY if match is playable and NOT in Quick Mode
             card.addEventListener('click', function () {
+                // Check lock directly from localStorage - most reliable source of truth
+                var _tid = window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null;
+                var _locked = (window.FinalStagePopup && window.FinalStagePopup.isLocked);
+                if (!_locked && _tid) {
+                    try { _locked = localStorage.getItem('tourma_final_locked_' + _tid) === 'true'; } catch(e) {}
+                }
+                if (_locked) return;
+
                 if (!isPlayable) {
                     return; // Disabled from clicking
                 }
@@ -159,7 +169,8 @@
                         team2Seed: seed2,
                         team2Score: t2ScoreDisp,
                         winnerId: isT1Winner ? 'team1' : (isT2Winner ? 'team2' : null),
-                        status: isDone ? 'COMPLETED' : 'SCHEDULED'
+                        status: isDone ? 'COMPLETED' : 'SCHEDULED',
+                        allowDraw: (typeof window.TourmaRoundRobin !== 'undefined')
                     });
                 }
             });

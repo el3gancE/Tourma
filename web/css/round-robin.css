@@ -1,0 +1,436 @@
+/**
+ * ============================================================================
+ * TOURMA - ROUND ROBIN STYLESHEET (round-robin.css)
+ * Dark Cyber / Glassmorphism UI for Round Robin Fixtures & Standings Table.
+ * ============================================================================
+ */
+
+/* 1. Main Page Layout & Control Bar */
+.round-robin-container {
+    padding: 1.5rem 0 3rem 0 !important;
+    width: 100%;
+    max-width: 900px !important;
+    margin: 0 auto;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-control-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(18, 20, 29, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    width: 100%;
+}
+
+.rr-info-group {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.rr-tourney-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.format-badge-rr {
+    background: rgba(45, 212, 191, 0.12);
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    border-radius: 50px;
+    padding: 0.22rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.team-count-badge {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 50px;
+    padding: 0.22rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+/* Standalone Reset Bracket / Tournament Action Button */
+.btn-reset-bracket-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(244, 63, 94, 0.1);
+    color: #f43f5e;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: 8px;
+    padding: 0.42rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease-in-out;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-reset-bracket-action:hover {
+    background: #f43f5e;
+    color: #ffffff;
+    border-color: #f43f5e;
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+    transform: translateY(-1px);
+}
+
+/* View Mode Segmented Toggle Buttons (Fixtures List ↔ Standings Table) */
+.view-mode-toggle-group {
+    display: flex;
+    background: #0b0d12;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+}
+
+.btn-view-toggle {
+    padding: 0.4rem 0.85rem;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #94a3b8;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-view-toggle:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-view-toggle.active {
+    background: #2dd4bf;
+    color: #0b0d12;
+    box-shadow: 0 2px 8px rgba(45, 212, 191, 0.3);
+}
+
+.rr-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* 2. Round Selector Tabs (Horizontal Pills) */
+.rr-round-selector-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.5rem 0 1rem 0;
+    margin-bottom: 1.25rem;
+    width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 212, 191, 0.3) rgba(255, 255, 255, 0.05);
+}
+
+.rr-round-selector-bar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.rr-round-selector-bar::-webkit-scrollbar-thumb {
+    background: rgba(45, 212, 191, 0.3);
+    border-radius: 4px;
+}
+
+.rr-round-tab-btn {
+    background: rgba(26, 29, 41, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rr-round-tab-btn:hover {
+    background: rgba(45, 212, 191, 0.12);
+    border-color: rgba(45, 212, 191, 0.3);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.rr-round-tab-btn.active {
+    background: #2dd4bf;
+    border-color: #2dd4bf;
+    color: #0b0d12;
+    box-shadow: 0 0 16px rgba(45, 212, 191, 0.4);
+}
+
+/* 3. Round Fixtures Container & Prominent Gold Round Headers (Matching SE/DE) */
+.rr-fixtures-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.match-list-round-header {
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #fbbf24;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 1.25rem;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.match-list-round-header:first-child {
+    margin-top: 0.25rem;
+}
+
+.match-list-round-header .round-header-title {
+    color: #fbbf24;
+    font-weight: 800;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rr-bye-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #facc15;
+    background: rgba(234, 179, 8, 0.12);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: 0.4rem;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.rr-bye-badge strong {
+    color: #fef08a;
+    font-weight: 700;
+}
+
+/* 4. Live Standings Table */
+.rr-standings-card {
+    background: rgba(18, 20, 29, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-standings-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-standings-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fbbf24;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-standings-table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.92rem;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-table th {
+    background: rgba(12, 14, 20, 0.95);
+    color: #94a3b8;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-table td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: #cbd5e1;
+    font-size: 0.92rem;
+    font-weight: 500;
+    vertical-align: middle;
+    transition: background 0.15s ease;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-table tr:hover td {
+    background: rgba(45, 212, 191, 0.04);
+}
+
+/* Rank Numbers - Rounded Square with Gold Number (Matching Seed Badge) */
+.rr-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: #1f2533 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 5px !important;
+    color: #fbbf24 !important;
+    font-family: 'Lexend', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 0.82rem !important;
+}
+
+/* Standard Stats Cell (Trận, BT, BB, HS) - Lexend Bold */
+.rr-stat-cell {
+    font-family: 'Lexend', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    color: #cbd5e1 !important;
+}
+
+/* W/D/L (T / H / B) Green Color Stat */
+.rr-stat-green {
+    font-family: 'Lexend', sans-serif !important;
+    color: #2dd4bf !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+}
+
+/* Team Column in Standings */
+.rr-team-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #ffffff;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-team-seed {
+    font-size: 0.68rem;
+    color: #64748b;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+}
+
+/* Points Cell - Gold & Bigger Size */
+.rr-points-cell {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    color: #fbbf24 !important;
+    letter-spacing: 0.02em;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+/* Form Badges (Recent 5 matches) */
+.rr-form-group {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.rr-form-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-form-w {
+    background: rgba(34, 197, 94, 0.25);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.rr-form-d {
+    background: rgba(234, 179, 8, 0.25);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.rr-form-l {
+    background: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* 5. Responsive Breakpoints */
+@media (max-width: 992px) {
+    .round-robin-container {
+        padding: 1rem;
+    }
+    .rr-control-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    .rr-actions-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

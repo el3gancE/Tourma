@@ -1,0 +1,273 @@
+/* ============================================================================
+   TOURMA - ROUND ROBIN STANDINGS DESIGN SYSTEM (round-robin-standings.css)
+   Standalone Leaderboard Table, Modern Glassmorphism, Medals & Form Badges.
+   ============================================================================ */
+
+/* 1. Leaderboard Container & Card */
+.round-robin-container {
+    padding: 1.5rem 0 3rem 0 !important;
+    width: 100%;
+    max-width: 900px !important;
+    margin: 0 auto;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-control-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(18, 20, 29, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    width: 100%;
+}
+
+.rr-info-group {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.rr-tourney-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.format-badge-rr {
+    background: rgba(45, 212, 191, 0.12);
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    border-radius: 50px;
+    padding: 0.22rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.team-count-badge {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 50px;
+    padding: 0.22rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+/* View Mode Segmented Toggle Buttons (Fixtures List ↔ Standings Table) */
+.view-mode-toggle-group {
+    display: flex;
+    background: #0b0d12;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+}
+
+.btn-view-toggle {
+    padding: 0.4rem 0.85rem;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #94a3b8;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-view-toggle:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-view-toggle.active {
+    background: #2dd4bf;
+    color: #0b0d12;
+    box-shadow: 0 2px 8px rgba(45, 212, 191, 0.3);
+}
+
+.rr-standings-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    font-family: 'Lexend', sans-serif;
+}
+
+.rr-standings-card {
+    background: rgba(18, 20, 29, 0.85);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.rr-standings-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rr-standings-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fbbf24;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+/* 2. Standings Table */
+.rr-standings-table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rr-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.92rem;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-table th {
+    background: rgba(12, 14, 20, 0.95);
+    color: #94a3b8;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-table td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: #cbd5e1;
+    font-size: 0.92rem;
+    font-weight: 500;
+    vertical-align: middle;
+    transition: background 0.15s ease;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-table tr:hover td {
+    background: rgba(45, 212, 191, 0.04);
+}
+
+/* 3. Rank Badge - Rounded Square with Gold Number (Matching Seed Badge) */
+.rr-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: #1f2533 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 5px !important;
+    color: #fbbf24 !important;
+    font-family: 'Lexend', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 0.82rem !important;
+}
+
+/* Standard Stats Cell (Trận, BT, BB, HS) - Lexend Bold */
+.rr-stat-cell {
+    font-family: 'Lexend', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    color: #cbd5e1 !important;
+}
+
+/* W/D/L (T / H / B) Green Color Stat */
+.rr-stat-green {
+    font-family: 'Lexend', sans-serif !important;
+    color: #2dd4bf !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+}
+
+/* 4. Team Identity & Cells */
+.rr-team-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #ffffff;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-points-cell {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    color: #fbbf24 !important;
+    letter-spacing: 0.02em;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+/* 5. Recent Form Badges (W / D / L) */
+.rr-form-group {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.rr-form-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.rr-form-w {
+    background: rgba(34, 197, 94, 0.25);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.rr-form-d {
+    background: rgba(234, 179, 8, 0.25);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.rr-form-l {
+    background: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}

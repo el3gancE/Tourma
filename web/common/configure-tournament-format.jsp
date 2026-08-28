@@ -167,11 +167,45 @@
         </div>
     </div>
 
+    <!-- LEGS CHANGE / RR CONFIG RESET WARNING MODAL -->
+    <div id="legsChangeModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) closeLegsChangeModal();">
+        <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
+            <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
+                <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Xác Nhận Đổi Số Lượt & Reset Lịch Đấu</span>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeLegsChangeModal()" title="Hủy bỏ">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+                <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.88rem; line-height: 1.5;">
+                    <strong style="color: #f43f5e;">⚠️ Cảnh báo quan trọng:</strong><br>
+                    Việc thay đổi <strong>Số lần gặp nhau</strong> sẽ tạo lại cấu trúc giải và <strong style="color: #ffffff;">RESET toàn bộ lịch thi đấu cùng kết quả các trận</strong> của bạn.
+                </div>
+                <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
+                    Bạn có chắc chắn muốn áp dụng thay đổi này không?
+                </p>
+            </div>
+
+            <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeLegsChangeModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
+                <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="confirmLegsChangeAndSubmit()">
+                    <i class="fa-solid fa-rotate-right"></i> Xác Nhận Đổi
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         var tournamentId = "<%= (tournamentId != null) ? tournamentId : "" %>";
         var storageKeyFormat = "tourma_format_" + tournamentId;
         var originalFormat = "<%= currentFormat %>";
         var hasOngoingMatches = false;
+        var bypassWarning = false;
+        var initialLegsCount = 1;
 
         // Check if bracket already has completed / scored matches (SE or DE)
         if (tournamentId) {
@@ -212,6 +246,19 @@
             var selectedVal = document.getElementById('selectedFormat').value;
             if (tournamentId) {
                 localStorage.setItem(storageKeyFormat, selectedVal);
+                if (selectedVal === 'ROUND_ROBIN') {
+                    var winInp = document.querySelector('input[name="winPoints"]');
+                    var drawInp = document.querySelector('input[name="drawPoints"]');
+                    var lossInp = document.querySelector('input[name="lossPoints"]');
+                    var legsInp = document.querySelector('input[name="legsCount"]');
+                    var rrConfig = {
+                        winPoints: winInp ? (parseInt(winInp.value) || 3) : 3,
+                        drawPoints: drawInp ? (parseInt(drawInp.value) || 1) : 1,
+                        lossPoints: lossInp ? (parseInt(lossInp.value) || 0) : 0,
+                        legsCount: legsInp ? (parseInt(legsInp.value) || 1) : 1
+                    };
+                    localStorage.setItem('tourma_rr_config_' + tournamentId, JSON.stringify(rrConfig));
+                }
             }
         }
 
@@ -233,7 +280,45 @@
             selectFormat(originalFormat);
         }
 
+        function openLegsChangeModal() {
+            var modal = document.getElementById('legsChangeModalBackdrop');
+            if (modal) {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeLegsChangeModal() {
+            var modal = document.getElementById('legsChangeModalBackdrop');
+            if (modal) {
+                modal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+            var legsInp = document.querySelector('input[name="legsCount"]');
+            if (legsInp) legsInp.value = initialLegsCount;
+        }
+
+        function confirmLegsChangeAndSubmit() {
+            if (tournamentId) {
+                try {
+                    localStorage.removeItem('tourma_rr_matches_' + tournamentId);
+                    localStorage.removeItem('tourma_rr_round_inputs_' + tournamentId);
+                    localStorage.removeItem('tourma_matches_' + tournamentId);
+                } catch (e) {}
+            }
+            persistFormatSelection();
+            bypassWarning = true;
+            var modal = document.getElementById('legsChangeModalBackdrop');
+            if (modal) {
+                modal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+            document.getElementById('configureFormatForm').submit();
+        }
+
         function validateAndSubmitFormat(e) {
+            if (bypassWarning) return true;
+
             var currentSelected = document.getElementById('selectedFormat').value;
 
             // If tournament has started and format changed, block and show popup!
@@ -241,6 +326,19 @@
                 if (e && e.preventDefault) e.preventDefault();
                 openFormatLockedModal();
                 return false;
+            }
+
+            // If Round Robin and existing schedule exists, check if legsCount changed
+            if (currentSelected === 'ROUND_ROBIN' && tournamentId) {
+                var hasPriorRRSchedule = !!localStorage.getItem('tourma_rr_matches_' + tournamentId);
+                var legsInp = document.querySelector('input[name="legsCount"]');
+                var newLegsCount = legsInp ? (parseInt(legsInp.value) || 1) : 1;
+
+                if (hasPriorRRSchedule && newLegsCount !== initialLegsCount) {
+                    if (e && e.preventDefault) e.preventDefault();
+                    openLegsChangeModal();
+                    return false;
+                }
             }
 
             persistFormatSelection();
@@ -255,6 +353,26 @@
             }
             originalFormat = savedFormat || 'SINGLE_ELIMINATION';
             selectFormat(originalFormat);
+
+            // Restore Round Robin Config inputs (legsCount, winPoints, etc.)
+            if (tournamentId && localStorage.getItem('tourma_rr_config_' + tournamentId)) {
+                try {
+                    var savedCfg = JSON.parse(localStorage.getItem('tourma_rr_config_' + tournamentId));
+                    if (savedCfg) {
+                        var winInp = document.querySelector('input[name="winPoints"]');
+                        var drawInp = document.querySelector('input[name="drawPoints"]');
+                        var lossInp = document.querySelector('input[name="lossPoints"]');
+                        var legsInp = document.querySelector('input[name="legsCount"]');
+                        if (winInp && savedCfg.winPoints !== undefined) winInp.value = savedCfg.winPoints;
+                        if (drawInp && savedCfg.drawPoints !== undefined) drawInp.value = savedCfg.drawPoints;
+                        if (lossInp && savedCfg.lossPoints !== undefined) lossInp.value = savedCfg.lossPoints;
+                        if (legsInp && savedCfg.legsCount !== undefined) {
+                            legsInp.value = savedCfg.legsCount;
+                            initialLegsCount = parseInt(savedCfg.legsCount);
+                        }
+                    }
+                } catch(e) {}
+            }
         });
     </script>
 </body>

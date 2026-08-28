@@ -74,6 +74,9 @@
             // Render Views
             this.renderAll();
 
+            // Check Final Stage conclusion & render top banner if complete
+            this.checkFinalStage();
+
             // Setup Global Event Listeners
             this.attachEventListeners();
         },
@@ -211,7 +214,7 @@
             var teamCountElem = document.getElementById('deTeamCountBadge');
             var formatElem = document.getElementById('deFormatBadge');
 
-            if (titleElem) titleElem.innerText = '🏆 ' + this.tournamentName;
+            if (titleElem) titleElem.innerText = this.tournamentName;
             if (teamCountElem) teamCountElem.innerText = this.teamsList.length + ' Đội';
             if (formatElem) formatElem.innerText = 'DOUBLE ELIMINATION';
         },
@@ -236,7 +239,7 @@
                 col.dataset.roundNumber = ro.roundNumber;
 
                 var h = document.createElement('div');
-                h.className = 'de-round-header';
+                h.className = 'de-round-header upper';
 
                 var hTitle = document.createElement('span');
                 hTitle.className = 'round-header-title';
@@ -330,7 +333,7 @@
                 gfCol.dataset.roundNumber = gfRound.roundNumber;
 
                 var gfH = document.createElement('div');
-                gfH.className = 'de-round-header';
+                gfH.className = 'de-round-header gf';
 
                 var gfTitle = document.createElement('span');
                 gfTitle.className = 'round-header-title';
@@ -443,7 +446,7 @@
                 col.dataset.roundNumber = lro.roundNumber;
 
                 var h = document.createElement('div');
-                h.className = 'de-round-header';
+                h.className = 'de-round-header lower';
 
                 var lTitle = document.createElement('span');
                 lTitle.className = 'round-header-title';
@@ -530,6 +533,30 @@
             }
         },
 
+        activeRoundFilter: 'all',
+
+        /**
+         * Get concise round abbreviation for filter tabs (UB R1, UB Finals, LB R1, LB Finals, Grand Finals)
+         */
+        getShortRoundName: function (ro) {
+            var bType = (ro.bracketType || '').toUpperCase();
+            var rNum = ro.roundNumber;
+            var t = (ro.title || '').toLowerCase();
+
+            if (bType === 'GRAND_FINAL' || bType === 'GF' || t.includes('grand')) {
+                return 'Grand Finals';
+            }
+            if (bType === 'UPPER') {
+                if (t.includes('final') || t.includes('chung kết')) return 'UB Finals';
+                return 'UB R' + rNum;
+            }
+            if (bType === 'LOWER') {
+                if (t.includes('final') || t.includes('chung kết')) return 'LB Finals';
+                return 'LB R' + rNum;
+            }
+            return 'R' + rNum;
+        },
+
         /**
          * Render List View
          */
@@ -539,8 +566,49 @@
             container.innerHTML = '';
             var self = this;
 
-            var roundsList = (window.TourmaDoubleElimAlgorithm) ?
+            var allRounds = (window.TourmaDoubleElimAlgorithm) ?
                 window.TourmaDoubleElimAlgorithm.filterMatchesForListView(this.bracketData) : [];
+
+            // 1. Render Horizontal Round Selector Tabs (Pills)
+            var tabsBar = document.createElement('div');
+            tabsBar.className = 'rr-round-selector-bar';
+
+            var allTab = document.createElement('button');
+            allTab.type = 'button';
+            allTab.className = 'rr-round-tab-btn' + (self.activeRoundFilter === 'all' ? ' active' : '');
+            allTab.innerText = 'Tất cả (' + allRounds.length + ')';
+            allTab.onclick = function () {
+                self.activeRoundFilter = 'all';
+                self.renderListView();
+            };
+            tabsBar.appendChild(allTab);
+
+            for (var i = 0; i < allRounds.length; i++) {
+                var roTab = allRounds[i];
+                var tabKey = roTab.bracketType + '_' + roTab.roundNumber;
+                var tab = document.createElement('button');
+                tab.type = 'button';
+                var isAct = (self.activeRoundFilter === tabKey);
+                tab.className = 'rr-round-tab-btn' + (isAct ? ' active' : '');
+                tab.innerText = self.getShortRoundName(roTab);
+
+                (function (key) {
+                    tab.onclick = function () {
+                        self.activeRoundFilter = key;
+                        self.renderListView();
+                    };
+                })(tabKey);
+                tabsBar.appendChild(tab);
+            }
+            container.appendChild(tabsBar);
+
+            // 2. Filter Rounds to display
+            var roundsList = allRounds;
+            if (self.activeRoundFilter !== 'all') {
+                roundsList = allRounds.filter(function (r) {
+                    return (r.bracketType + '_' + r.roundNumber) === self.activeRoundFilter;
+                });
+            }
 
             for (var i = 0; i < roundsList.length; i++) {
                 var ro = roundsList[i];
@@ -633,6 +701,10 @@
          * Randomize all playable uncompleted matches in a specific DE round via TourmaRandomService
          */
         randomizeRound: function (bracketType, roundNumber, rawWinScore) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             if (!this.bracketData) return;
 
             var targetRound = null;
@@ -687,6 +759,10 @@
          * Reset all matches in a specific DE round and cascade resets downstream
          */
         resetRound: function (bracketType, roundNumber) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             if (!this.bracketData) return;
 
             var targetRound = null;
@@ -798,6 +874,10 @@
         },
 
         toggleQuickMode: function () {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn chỉnh sửa kết quả.');
+                return;
+            }
             this.isQuickMode = !this.isQuickMode;
             window.TourmaQuickMode = this.isQuickMode;
             var storageKey = 'tourma_quick_mode_' + this.tournamentId;
@@ -823,6 +903,8 @@
         },
 
         handleQuickWinner: function (matchId, winnerSlot, customScore) {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return;
+
             var m = this.matchesMap[matchId];
             if (!m) return;
 
@@ -935,6 +1017,10 @@
          * Open / Close / Confirm Reset Bracket Modal
          */
         openResetModal: function () {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset giải.');
+                return;
+            }
             var modal = document.getElementById('deResetModalBackdrop');
             if (modal) {
                 modal.classList.add('show');
@@ -976,6 +1062,28 @@
                 localStorage.setItem('tourma_de_matches_' + this.tournamentId, JSON.stringify(this.bracketData));
                 localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
             } catch (e) {}
+            this.checkFinalStage();
+        },
+
+        checkFinalStage: function () {
+            var self = this;
+            if (window.FinalStagePopup) {
+                window.FinalStagePopup.checkAndRender(
+                    this.tournamentId,
+                    'DOUBLE_ELIMINATION',
+                    this.matchesMap,
+                    this.teamsList,
+                    null,
+                    function (isLocked) {
+                        if (isLocked) {
+                            self.isQuickMode = false;
+                            window.TourmaQuickMode = false;
+                            var qBtn = document.getElementById('deBtnQuickMode');
+                            if (qBtn) qBtn.style.display = 'none';
+                        }
+                    }
+                );
+            }
         },
 
         /**
