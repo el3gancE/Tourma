@@ -15,7 +15,8 @@ public class TournamentDAO {
     public List<Tournament> getAllTournaments() {
         List<Tournament> list = new ArrayList<>();
         String sql = "SELECT t.*, " +
-                     "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format " +
+                     "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
+                     "(SELECT TOP 1 tm.raw_name FROM matches m JOIN teams tm ON m.winner_id = tm.id WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL ORDER BY m.round_number DESC) AS db_champion_name " +
                      "FROM tournaments t ORDER BY t.created_at DESC";
         DBContext db = new DBContext();
         
@@ -45,6 +46,12 @@ public class TournamentDAO {
                         t.setFormat(fmt.trim());
                     }
                 } catch (Exception ignore) {}
+                try {
+                    String champ = rs.getString("db_champion_name");
+                    if (champ != null && !champ.trim().isEmpty()) {
+                        t.setChampionName(champ.trim());
+                    }
+                } catch (Exception ignore) {}
                 list.add(t);
             }
         } catch (Exception e) {
@@ -55,7 +62,8 @@ public class TournamentDAO {
 
     public Tournament getTournamentById(String id) {
         String sql = "SELECT t.*, " +
-                     "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format " +
+                     "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
+                     "(SELECT TOP 1 tm.raw_name FROM matches m JOIN teams tm ON m.winner_id = tm.id WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL ORDER BY m.round_number DESC) AS db_champion_name " +
                      "FROM tournaments t WHERE t.id = ?";
         DBContext db = new DBContext();
         
@@ -84,6 +92,12 @@ public class TournamentDAO {
                         String fmt = rs.getString("stage_format");
                         if (fmt != null && !fmt.trim().isEmpty()) {
                             t.setFormat(fmt.trim());
+                        }
+                    } catch (Exception ignore) {}
+                    try {
+                        String champ = rs.getString("db_champion_name");
+                        if (champ != null && !champ.trim().isEmpty()) {
+                            t.setChampionName(champ.trim());
                         }
                     } catch (Exception ignore) {}
                     return t;

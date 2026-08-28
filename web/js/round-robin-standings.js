@@ -43,11 +43,8 @@
                 }
             }
 
-            if (!teams || teams.length === 0) {
-                teams = [
-                    'Hà Nội FC', 'Công An Hà Nội', 'Hải Phòng FC', 'Đông Á Thanh Hóa',
-                    'Sông Lam Nghệ An', 'SHB Đà Nẵng', 'Bình Định FC', 'Becamex Bình Dương'
-                ];
+            if (!teams) {
+                teams = [];
             }
             this.teamsList = teams.slice(0, 24);
 

@@ -264,15 +264,22 @@
             var currentTeamsList = [];
             var initialTeamsSnapshot = null;
 
-            // Restore state logic
-            if (dbTeams.length > 0) {
-                currentTeamsList = dbTeams;
-            } else if (tournamentId && localStorage.getItem(localStorageKey)) {
+            // Restore state logic: Prioritize latest localStorage state over initial dbTeams so Back button navigation preserves new edits!
+            var localSavedTeams = null;
+            if (tournamentId && localStorage.getItem(localStorageKey)) {
                 try {
-                    currentTeamsList = JSON.parse(localStorage.getItem(localStorageKey)) || [];
+                    localSavedTeams = JSON.parse(localStorage.getItem(localStorageKey));
                 } catch(e) {
-                    currentTeamsList = [];
+                    localSavedTeams = null;
                 }
+            }
+
+            if (localSavedTeams && Array.isArray(localSavedTeams) && localSavedTeams.length > 0) {
+                currentTeamsList = localSavedTeams;
+            } else if (dbTeams.length > 0) {
+                currentTeamsList = dbTeams;
+            } else {
+                currentTeamsList = [];
             }
 
             // Restore initial teams snapshot for change detection
@@ -372,15 +379,19 @@
                     }
                 }
 
-                if (currentTeamsList.length >= 24) {
-                    alert("Số lượng đội tham gia đã đạt tối đa 24 đội!");
-                    return;
-                }
+                var isRR = (typeof window.checkIsRoundRobin === 'function') ? window.checkIsRoundRobin() : false;
+                if (isRR) {
+                    var maxAllowed = 24;
+                    if (currentTeamsList.length >= maxAllowed) {
+                        alert("Số lượng đội tham gia đối với thể thức Vòng Tròn (Round Robin) đã đạt tối đa 24 đội!");
+                        return;
+                    }
 
-                var availableSlots = 24 - currentTeamsList.length;
-                if (newNames.length > availableSlots) {
-                    alert("Hệ thống chỉ hỗ trợ tối đa 24 đội. Đã tự động thêm " + availableSlots + " đội đầu tiên!");
-                    newNames = newNames.slice(0, availableSlots);
+                    var availableSlots = maxAllowed - currentTeamsList.length;
+                    if (newNames.length > availableSlots) {
+                        alert("Thể thức Vòng Tròn (Round Robin) hỗ trợ tối đa 24 đội. Đã tự động thêm " + availableSlots + " đội đầu tiên!");
+                        newNames = newNames.slice(0, availableSlots);
+                    }
                 }
 
                 for (var i = 0; i < newNames.length; i++) {
@@ -703,8 +714,30 @@
                     .replace(/'/g, "&#039;");
             }
 
+            function syncLatestStateOnNavigation() {
+                if (tournamentId && localStorage.getItem(localStorageKey)) {
+                    try {
+                        var latest = JSON.parse(localStorage.getItem(localStorageKey));
+                        if (latest && Array.isArray(latest) && latest.length > 0) {
+                            currentTeamsList = latest;
+                            if (typeof window.renderTable === 'function') window.renderTable();
+                            if (typeof window.handleTextareaTyping === 'function') window.handleTextareaTyping();
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            window.addEventListener('pageshow', function (event) {
+                syncLatestStateOnNavigation();
+            });
+
+            window.addEventListener('popstate', function () {
+                syncLatestStateOnNavigation();
+            });
+
             // Initial render on page load
             window.addEventListener('DOMContentLoaded', () => {
+                syncLatestStateOnNavigation();
                 window.renderTable();
                 window.handleTextareaTyping();
             });

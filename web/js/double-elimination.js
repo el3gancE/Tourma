@@ -42,11 +42,8 @@
                 } catch (e) {}
             }
 
-            if (!this.teamsList || this.teamsList.length === 0) {
-                this.teamsList = [
-                    "Hà Nội FC", "Becamex Bình Dương", "Viettel FC", "Saigon Heat",
-                    "SHB Đà Nẵng", "Thép Xanh Nam Định", "Hoàng Anh Gia Lai", "Hải Phòng FC"
-                ];
+            if (!this.teamsList) {
+                this.teamsList = [];
             }
 
             // Restore saved round inputs
@@ -113,10 +110,13 @@
             if (hasPlayedScores && savedBracket) {
                 this.bracketData = savedBracket;
                 this.matchesMap = savedBracket.matchesMap || {};
-            } else if (window.TourmaDoubleElimAlgorithm) {
+            } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaDoubleElimAlgorithm) {
                 this.bracketData = window.TourmaDoubleElimAlgorithm.generateDoubleElimination(this.teamsList);
-                this.matchesMap = this.bracketData.matchesMap || {};
+                this.matchesMap = this.bracketData ? this.bracketData.matchesMap : {};
                 this.persistLocal();
+            } else {
+                this.bracketData = null;
+                this.matchesMap = {};
             }
         },
 
@@ -219,14 +219,35 @@
             if (formatElem) formatElem.innerText = 'DOUBLE ELIMINATION';
         },
 
+        renderEmptyState: function (containerElem) {
+            if (!containerElem) return;
+            var configTeamsUrl = (window.location.pathname.indexOf('/common/') !== -1 ? 'configure-tournament-teams.jsp' : 'common/configure-tournament-teams.jsp') + '?id=' + this.tournamentId;
+            containerElem.innerHTML = 
+                '<div class="empty-teams-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4.5rem 2rem; background: rgba(15, 23, 42, 0.6); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 16px; margin: 2.5rem auto; max-width: 520px; text-align: center; width: 100%;">' +
+                    '<div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.25); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">' +
+                        '<i class="fa-solid fa-users-slash" style="font-size: 2rem; color: #fbbf24;"></i>' +
+                    '</div>' +
+                    '<h3 style="color: #f8fafc; font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; font-family: \'Lexend\', sans-serif;">Chưa có đội bóng nào trong giải</h3>' +
+                    '<p style="color: #94a3b8; font-size: 0.88rem; margin-bottom: 1.75rem; line-height: 1.5; font-family: \'Lexend\', sans-serif;">Vui lòng thêm danh sách các đội tham gia để hệ thống tự động sinh sơ đồ và lịch thi đấu.</p>' +
+                    '<a href="' + configTeamsUrl + '" class="btn-empty-add-teams" style="display: inline-flex; align-items: center; gap: 0.6rem; background: #fbbf24; color: #0b0d12; padding: 0.75rem 1.6rem; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 0.9rem; font-family: \'Lexend\', sans-serif; transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3);">' +
+                        '<i class="fa-solid fa-plus"></i> Thêm Đội Bóng Ngay' +
+                    '</a>' +
+                '</div>';
+        },
+
         /**
          * Render Upper Bracket (including Grand Finals column at the end)
          */
         renderUpperBracket: function () {
             var wrapper = document.getElementById('upperBracketColumnsWrapper');
-            if (!wrapper || !this.bracketData) return;
+            if (!wrapper) return;
             wrapper.innerHTML = '';
             var self = this;
+
+            if (!this.teamsList || this.teamsList.length === 0 || !this.bracketData) {
+                this.renderEmptyState(wrapper);
+                return;
+            }
 
             var upperRounds = this.bracketData.upperRounds || [];
             var gfRound = this.bracketData.grandFinalsRound;
@@ -313,8 +334,16 @@
                 var stack = document.createElement('div');
                 stack.className = 'de-round-matches-stack';
 
+                var showRound1Byes = window.TourmaBracketAlgorithm ? window.TourmaBracketAlgorithm.shouldShowRound1Byes(self.ubRounds, 0.50) : true;
+
                 for (var m = 0; m < ro.matches.length; m++) {
                     var matchObj = this.matchesMap[ro.matches[m].matchId] || ro.matches[m];
+                    var t1Name = matchObj.team1 ? matchObj.team1.name : '';
+                    var t2Name = matchObj.team2 ? matchObj.team2.name : '';
+                    var isBye = matchObj.isBye || (t1Name === 'BYE' || t2Name === 'BYE');
+
+                    matchObj.hideByeSlot = (isBye && !showRound1Byes);
+
                     if (window.TourmaBracketCard) {
                         var cardElem = window.TourmaBracketCard.createNodeElement ? 
                             window.TourmaBracketCard.createNodeElement(matchObj) : 
@@ -1061,6 +1090,9 @@
             try {
                 localStorage.setItem('tourma_de_matches_' + this.tournamentId, JSON.stringify(this.bracketData));
                 localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
+                if (this.teamsList && this.teamsList.length > 0) {
+                    localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                }
             } catch (e) {}
             this.checkFinalStage();
         },

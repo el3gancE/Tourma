@@ -299,30 +299,34 @@
          * Determine if Round 1 BYE ratio exceeds the threshold (default > 40%)
          */
         shouldShowRound1Byes: function (roundsList, thresholdRatio) {
-            if (!roundsList || roundsList.length === 0) return false;
-            var threshold = (thresholdRatio !== undefined) ? thresholdRatio : 0.40;
+            if (!roundsList || roundsList.length === 0) return true;
+            var threshold = (thresholdRatio !== undefined) ? thresholdRatio : 0.50;
             var round1 = roundsList[0];
             var totalR1 = round1 && round1.matches ? round1.matches.length : 0;
-            if (totalR1 === 0) return false;
+            if (totalR1 === 0) return true;
 
             var byeCount = 0;
             for (var i = 0; i < totalR1; i++) {
                 var m = round1.matches[i];
                 var t1 = m.team1 ? m.team1.name : '';
                 var t2 = m.team2 ? m.team2.name : '';
-                if (t1 === 'BYE' || t2 === 'BYE') {
+                if (t1 === 'BYE' || t2 === 'BYE' || m.isBye) {
                     byeCount++;
                 }
             }
-            return (byeCount / totalR1) > threshold;
+            var ratio = byeCount / totalR1;
+            // Few BYE matches (<= 50%): SHOW BYEs (true)
+            // Too many BYE matches (> 50%): HIDE BYEs (false)
+            // Exactly 50%: SHOW BYEs (true)
+            return ratio <= threshold;
         },
 
         /**
-         * Filter matches for List View based on Round 1 BYE threshold rules (>40% BYE shows Round 1 BYEs)
+         * Filter matches for List View based on Round 1 BYE threshold rules (<=50% BYE shows Round 1 BYEs, >50% hides)
          */
         filterMatchesForListView: function (roundsList) {
             if (!roundsList) return [];
-            var showRound1Byes = this.shouldShowRound1Byes(roundsList, 0.40);
+            var showRound1Byes = this.shouldShowRound1Byes(roundsList, 0.50);
             var result = [];
 
             for (var r = 0; r < roundsList.length; r++) {
@@ -332,7 +336,7 @@
                 var matchesToRender = roundObj.matches.filter(function (m) {
                     var t1 = m.team1 ? m.team1.name : '';
                     var t2 = m.team2 ? m.team2.name : '';
-                    var isBye = (t1 === 'BYE' || t2 === 'BYE');
+                    var isBye = (t1 === 'BYE' || t2 === 'BYE' || m.isBye);
                     if (isBye) {
                         return isRound1 && showRound1Byes;
                     }

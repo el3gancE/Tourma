@@ -34,19 +34,10 @@
                 }
             }
 
-            if (!teams || teams.length === 0) {
-                teams = [
-                    'Hà Nội FC', 'Công An Hà Nội', 'Hải Phòng FC', 'Đông Á Thanh Hóa',
-                    'Sông Lam Nghệ An', 'SHB Đà Nẵng', 'Bình Định FC', 'Becamex Bình Dương',
-                    'TP Hồ Chí Minh', 'Hồng Lĩnh Hà Tĩnh', 'Khánh Hòa FC', 'Quảng Nam FC',
-                    'Hoàng Anh Gia Lai', 'Viettel FC', 'Thép Xanh Nam Định', 'PVF-CAND',
-                    'Bà Rịa Vũng Tàu', 'Long An FC'
-                ];
+            if (!teams) {
+                teams = [];
             }
             this.teamsList = teams;
-            try {
-                localStorage.setItem(storageKeyTeams, JSON.stringify(this.teamsList));
-            } catch (e) {}
 
             // Update team count badge in top toolbar
             var countBadge = document.getElementById('tournamentTeamCountBadge');
@@ -122,7 +113,7 @@
                 if (window.TourmaBracketAlgorithm) {
                     window.TourmaBracketAlgorithm.renumberMatchesContiguously(this.roundsList, this.matchesMap);
                 }
-            } else if (window.TourmaBracketAlgorithm) {
+            } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
                 var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList);
                 this.bracketData = generated;
                 this.roundsList = generated.roundsList || [];
@@ -146,6 +137,22 @@
             }
         },
 
+        renderEmptyState: function (containerElem) {
+            if (!containerElem) return;
+            var configTeamsUrl = (window.location.pathname.indexOf('/common/') !== -1 ? 'configure-tournament-teams.jsp' : 'common/configure-tournament-teams.jsp') + '?id=' + this.tournamentId;
+            containerElem.innerHTML = 
+                '<div class="empty-teams-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4.5rem 2rem; background: rgba(15, 23, 42, 0.6); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 16px; margin: 2.5rem auto; max-width: 520px; text-align: center; width: 100%;">' +
+                    '<div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.25); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">' +
+                        '<i class="fa-solid fa-users-slash" style="font-size: 2rem; color: #fbbf24;"></i>' +
+                    '</div>' +
+                    '<h3 style="color: #f8fafc; font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; font-family: \'Lexend\', sans-serif;">Chưa có đội bóng nào trong giải</h3>' +
+                    '<p style="color: #94a3b8; font-size: 0.88rem; margin-bottom: 1.75rem; line-height: 1.5; font-family: \'Lexend\', sans-serif;">Vui lòng thêm danh sách các đội tham gia để hệ thống tự động sinh sơ đồ và lịch thi đấu.</p>' +
+                    '<a href="' + configTeamsUrl + '" class="btn-empty-add-teams" style="display: inline-flex; align-items: center; gap: 0.6rem; background: #fbbf24; color: #0b0d12; padding: 0.75rem 1.6rem; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 0.9rem; font-family: \'Lexend\', sans-serif; transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3);">' +
+                        '<i class="fa-solid fa-plus"></i> Thêm Đội Bóng Ngay' +
+                    '</a>' +
+                '</div>';
+        },
+
         /**
          * Render Bracket Viewport Tree Columns Dynamically
          */
@@ -155,6 +162,11 @@
 
             canvasWrapper.innerHTML = '';
             var self = this;
+
+            if (!this.teamsList || this.teamsList.length === 0 || !this.roundsList || this.roundsList.length === 0) {
+                this.renderEmptyState(canvasWrapper);
+                return;
+            }
 
             for (var r = 0; r < this.roundsList.length; r++) {
                 var roundObj = this.roundsList[r];
@@ -236,8 +248,16 @@
                 var box = document.createElement('div');
                 box.className = 'single-round-matches-box';
 
+                var showRound1Byes = window.TourmaBracketAlgorithm ? window.TourmaBracketAlgorithm.shouldShowRound1Byes(self.roundsList, 0.50) : true;
+
                 for (var m = 0; m < roundObj.matches.length; m++) {
                     var matchData = roundObj.matches[m];
+                    var t1Name = matchData.team1 ? matchData.team1.name : '';
+                    var t2Name = matchData.team2 ? matchData.team2.name : '';
+                    var isBye = matchData.isBye || (t1Name === 'BYE' || t2Name === 'BYE');
+
+                    matchData.hideByeSlot = (isBye && !showRound1Byes);
+
                     if (window.TourmaBracketCard && typeof window.TourmaBracketCard.createNodeElement === 'function') {
                         var nodeElem = window.TourmaBracketCard.createNodeElement(matchData);
                         if (nodeElem) box.appendChild(nodeElem);
@@ -299,6 +319,11 @@
 
             listContainer.innerHTML = '';
             var self = this;
+
+            if (!this.teamsList || this.teamsList.length === 0 || !this.roundsList || this.roundsList.length === 0) {
+                this.renderEmptyState(listContainer);
+                return;
+            }
 
             var allRounds = (window.TourmaBracketAlgorithm) ?
                 window.TourmaBracketAlgorithm.filterMatchesForListView(this.roundsList) : this.roundsList;
@@ -740,6 +765,9 @@
                 var storageKeyMatches = 'tourma_matches_' + this.tournamentId;
                 try {
                     localStorage.setItem(storageKeyMatches, JSON.stringify(this.matchesMap));
+                    if (this.teamsList && this.teamsList.length > 0) {
+                        localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                    }
                 } catch (e) {}
             }
             this.checkFinalStage();

@@ -50,8 +50,9 @@
                     <button type="button" class="filter-pill-btn active" onclick="filterTournaments('ALL', this)">Tất Cả</button>
                     <button type="button" class="filter-pill-btn" onclick="filterTournaments('STANDALONE', this)">Giải Đơn Lẻ</button>
                     <button type="button" class="filter-pill-btn" onclick="filterTournaments('SERIES', this)">Thuộc Series</button>
-                    <button type="button" class="filter-pill-btn" onclick="filterTournaments('ONGOING', this)">Đang Diễn Ra</button>
-                    <button type="button" class="filter-pill-btn" onclick="filterTournaments('COMPLETED', this)">Đã Hoàn Thành</button>
+                    <button type="button" class="filter-pill-btn" onclick="filterTournaments('INCOMING', this)">Incoming</button>
+                    <button type="button" class="filter-pill-btn" onclick="filterTournaments('IN_PROGRESS', this)">In Progress</button>
+                    <button type="button" class="filter-pill-btn" onclick="filterTournaments('COMPLETED', this)">Completed</button>
                 </div>
 
                 <div class="search-input-box">
@@ -66,8 +67,11 @@
                     <div class="tourney-cards-grid" id="tourneyGrid">
                         <c:forEach var="t" items="${tournamentList}">
                             <div class="tourney-card" 
+                                 data-id="${t.id}"
+                                 data-db-status="${t.status}"
+                                 data-db-champion="${t.championName}"
                                  data-context="${empty t.seriesId ? 'STANDALONE' : 'SERIES'}"
-                                 data-status="${t.status}"
+                                 data-status="${t.status == 'COMPLETED' ? 'COMPLETED' : (t.status == 'ONGOING' ? 'IN_PROGRESS' : 'INCOMING')}"
                                  data-name="${t.name}">
                                 
                                 <div>
@@ -81,8 +85,8 @@
                                             </c:if>
                                         </div>
 
-                                        <span class="status-pill ${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' ? 'ongoing' : 'draft')}">
-                                            ${t.status == 'COMPLETED' ? 'Hoàn Thành' : (t.status == 'ONGOING' ? 'Đang Đấu' : 'Bản Nháp')}
+                                        <span class="status-pill ${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' ? 'in-progress' : 'incoming')}" id="statusPill_${t.id}">
+                                            ${t.status == 'COMPLETED' ? 'Completed' : (t.status == 'ONGOING' ? 'In Progress' : 'Incoming')}
                                         </span>
                                     </div>
 
@@ -107,6 +111,11 @@
                                                 </span>
                                             </c:otherwise>
                                         </c:choose>
+
+                                        <!-- INLINE CHAMPION META (When Completed) -->
+                                        <span id="championMeta_${t.id}" class="tourney-champion-meta" style="${(t.status == 'COMPLETED' || not empty t.championName) ? 'display: inline-flex;' : 'display: none;'}">
+                                            <i class="fa-solid fa-trophy text-gold"></i> Nhà vô địch: <span class="champion-name-val" style="color: #fbbf24;">${not empty t.championName ? t.championName : ''}</span>
+                                        </span>
                                     </div>
                                 </div>
 
@@ -199,53 +208,154 @@
         <script>
             let pendingDeleteId = null;
 
-            function openDeleteTourneyModal(id, name) {
-                pendingDeleteId = id;
-                document.getElementById('deleteTourneyTargetId').innerText = id;
-                document.getElementById('deleteTourneyTargetName').innerText = name;
-                document.getElementById('deleteTourneyModalBackdrop').style.display = 'flex';
+            function findChampionName(card) {
+                var tid = card.getAttribute('data-id');
+                var dbChamp = card.getAttribute('data-db-champion');
+                var saved = localStorage.getItem("tourma_champion_" + tid) || localStorage.getItem("tourma_final_champion_" + tid);
+                if (saved && saved.trim() !== "") return saved;
+                if (dbChamp && dbChamp.trim() !== "") return dbChamp;
+
+                var keys = ["tourma_matches_", "tourma_de_matches_", "tourma_rr_matches_"];
+                for (var i = 0; i < keys.length; i++) {
+                    try {
+                        var raw = localStorage.getItem(keys[i] + tid);
+                        if (!raw) continue;
+                        var data = JSON.parse(raw);
+                        var matchesMap = data.matchesMap || data;
+                        if (!matchesMap || typeof matchesMap !== 'object') continue;
+
+                        if (matchesMap['GF_RESET'] && matchesMap['GF_RESET'].winner && matchesMap['GF_RESET'].winner.name) {
+                            return matchesMap['GF_RESET'].winner.name;
+                        }
+                        if (matchesMap['GF'] && matchesMap['GF'].winner && matchesMap['GF'].winner.name) {
+                            return matchesMap['GF'].winner.name;
+                        }
+
+                        var matchKeys = Object.keys(matchesMap);
+                        var maxRound = -1;
+                        var finalWinner = null;
+                        matchKeys.forEach(function(k) {
+                            var m = matchesMap[k];
+                            if (m) {
+                                if (m.isFinalMatch && m.winner && m.winner.name) {
+                                    finalWinner = m.winner.name;
+                                } else if (m.roundIndex !== undefined && m.roundIndex > maxRound && m.winner && m.winner.name) {
+                                    maxRound = m.roundIndex;
+                                    finalWinner = m.winner.name;
+                                }
+                            }
+                        });
+                        if (finalWinner) return finalWinner;
+
+                        if (data.standings && data.standings.length > 0 && data.standings[0].name) {
+                            return data.standings[0].name;
+                        }
+                        if (data.teamsList && data.teamsList.length > 0 && window.TourmaRoundRobinAlgorithm) {
+                            var st = window.TourmaRoundRobinAlgorithm.calculateStandings(data.teamsList, matchesMap, data.config || {});
+                            if (st && st.length > 0 && st[0].team && st[0].team.name) {
+                                return st[0].team.name;
+                            }
+                        }
+                    } catch(e) {}
+                }
+                return "";
             }
 
-            function closeDeleteTourneyModal() {
-                pendingDeleteId = null;
-                document.getElementById('deleteTourneyModalBackdrop').style.display = 'none';
+            function updateCardStatuses() {
+                var cards = document.querySelectorAll('.tourney-card');
+                cards.forEach(function(card) {
+                    var tid = card.getAttribute('data-id');
+                    if (!tid) return;
+
+                    var dbStatus = card.getAttribute('data-db-status');
+                    var isLocked = localStorage.getItem("tourma_final_locked_" + tid) === "true" || dbStatus === 'COMPLETED';
+                    var championName = findChampionName(card);
+
+                    var completedMatchesCount = 0;
+
+                    var checkMatches = function(storageKey) {
+                        try {
+                            var raw = localStorage.getItem(storageKey);
+                            if (!raw) return;
+                            var data = JSON.parse(raw);
+                            var matchesMap = data.matchesMap || data;
+                            if (matchesMap && typeof matchesMap === 'object') {
+                                Object.keys(matchesMap).forEach(function(k) {
+                                    var m = matchesMap[k];
+                                    if (m && (m.status === 'COMPLETED' || m.status === 'done' || (m.winner && m.winner.name) || (m.winnerId && m.winnerId !== ''))) {
+                                        completedMatchesCount++;
+                                    }
+                                });
+                            }
+                        } catch(e) {}
+                    };
+
+                    checkMatches("tourma_matches_" + tid);
+                    checkMatches("tourma_de_matches_" + tid);
+                    checkMatches("tourma_rr_matches_" + tid);
+
+                    var statusPill = card.querySelector('.status-pill');
+                    var championMeta = card.querySelector('.tourney-champion-meta');
+
+                    if (isLocked) {
+                        card.setAttribute('data-status', 'COMPLETED');
+                        if (statusPill) {
+                            statusPill.className = 'status-pill completed';
+                            statusPill.innerText = 'Completed';
+                        }
+                        if (championMeta) {
+                            var nameValEl = championMeta.querySelector('.champion-name-val');
+                            if (nameValEl) nameValEl.innerText = championName || '';
+                            championMeta.style.display = championName ? 'inline-flex' : 'none';
+                        }
+                    } else if (completedMatchesCount > 0 || dbStatus === 'ONGOING') {
+                        card.setAttribute('data-status', 'IN_PROGRESS');
+                        if (statusPill) {
+                            statusPill.className = 'status-pill in-progress';
+                            statusPill.innerText = 'In Progress';
+                        }
+                        if (championMeta) championMeta.style.display = 'none';
+                    } else {
+                        card.setAttribute('data-status', 'INCOMING');
+                        if (statusPill) {
+                            statusPill.className = 'status-pill incoming';
+                            statusPill.innerText = 'Incoming';
+                        }
+                        if (championMeta) championMeta.style.display = 'none';
+                    }
+                });
             }
 
-            function confirmDeleteTourney() {
-                if (!pendingDeleteId) return;
+            function filterTournaments(filterType, btnEl) {
+                var btns = document.querySelectorAll('.filter-pill-btn');
+                btns.forEach(b => b.classList.remove('active'));
+                if (btnEl) btnEl.classList.add('active');
 
-                // Clear client-side local storage cache
-                try {
-                    localStorage.removeItem('tourma_teams_' + pendingDeleteId);
-                    localStorage.removeItem('tourma_matches_' + pendingDeleteId);
-                    localStorage.removeItem('tourma_de_matches_' + pendingDeleteId);
-                    localStorage.removeItem('tourma_view_mode_' + pendingDeleteId);
-                    localStorage.removeItem('tourma_de_view_' + pendingDeleteId);
-                    localStorage.removeItem('tourma_format_' + pendingDeleteId);
-                } catch (e) {}
-
-                // Send request to DeleteTournamentServlet
-                window.location.href = '${pageContext.request.contextPath}/delete-tournament?id=' + encodeURIComponent(pendingDeleteId);
-            }
-
-            function filterTournaments(filterType, btn) {
-                document.querySelectorAll('.filter-pill-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-
-                const cards = document.querySelectorAll('.tourney-card');
+                var cards = document.querySelectorAll('.tourney-card');
                 cards.forEach(card => {
-                    const ctx = card.getAttribute('data-context');
-                    const status = card.getAttribute('data-status');
-                    
+                    var context = card.getAttribute('data-context');
+                    var status = card.getAttribute('data-status');
+                    var show = false;
+
                     if (filterType === 'ALL') {
-                        card.style.display = 'flex';
-                    } else if (filterType === 'STANDALONE' && ctx === 'STANDALONE') {
-                        card.style.display = 'flex';
-                    } else if (filterType === 'SERIES' && ctx === 'SERIES') {
-                        card.style.display = 'flex';
-                    } else if (filterType === 'ONGOING' && status === 'ONGOING') {
-                        card.style.display = 'flex';
-                    } else if (filterType === 'COMPLETED' && status === 'COMPLETED') {
+                        show = true;
+                    } else if (filterType === 'STANDALONE' || filterType === 'SERIES') {
+                        show = (context === filterType);
+                    } else if (filterType === 'INCOMING' || filterType === 'IN_PROGRESS' || filterType === 'COMPLETED') {
+                        show = (status === filterType);
+                    }
+                    card.style.display = show ? 'flex' : 'none';
+                });
+            }
+
+            function searchTournaments() {
+                var input = document.getElementById('searchInput');
+                var filter = input.value.toLowerCase().trim();
+                var cards = document.querySelectorAll('.tourney-card');
+
+                cards.forEach(card => {
+                    var name = (card.getAttribute('data-name') || '').toLowerCase();
+                    if (name.includes(filter)) {
                         card.style.display = 'flex';
                     } else {
                         card.style.display = 'none';
@@ -253,14 +363,34 @@
                 });
             }
 
-            function searchTournaments() {
-                const query = document.getElementById('searchInput').value.toLowerCase();
-                const cards = document.querySelectorAll('.tourney-card');
-                cards.forEach(card => {
-                    const name = card.getAttribute('data-name').toLowerCase();
-                    card.style.display = name.includes(query) ? 'flex' : 'none';
-                });
+            function openDeleteTourneyModal(id, name) {
+                pendingDeleteId = id;
+                document.getElementById('deleteTourneyTargetId').innerText = id;
+                document.getElementById('deleteTourneyTargetName').innerText = name;
+                var modal = document.getElementById('deleteTourneyModalBackdrop');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                }
             }
+
+            function closeDeleteTourneyModal() {
+                pendingDeleteId = null;
+                var modal = document.getElementById('deleteTourneyModalBackdrop');
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            }
+
+            function confirmDeleteTourney() {
+                if (!pendingDeleteId) return;
+                window.location.href = '${pageContext.request.contextPath}/DeleteTournamentServlet?id=' + pendingDeleteId;
+            }
+
+            window.addEventListener('DOMContentLoaded', function () {
+                updateCardStatuses();
+            });
         </script>
     </body>
 </html>

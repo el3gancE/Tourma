@@ -152,23 +152,40 @@ body, button, input, select, textarea, .tourney-card-title, .filter-pill-btn {
 .status-pill {
   font-size: 0.68rem;
   font-weight: 700;
-  padding: 0.15rem 0.5rem;
+  padding: 0.18rem 0.55rem;
   border-radius: 50px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  letter-spacing: 0.02em;
 }
 
-.status-pill.draft {
-  background: rgba(148, 163, 184, 0.15);
-  color: #94a3b8;
+.status-pill.incoming, .status-pill.draft {
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
-.status-pill.ongoing {
-  background: rgba(59, 130, 246, 0.15);
+.status-pill.in-progress, .status-pill.ongoing {
+  background: rgba(59, 130, 246, 0.12);
   color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .status-pill.completed {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.12);
   color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.tourney-champion-meta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fbbf24;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
 }
 
 .tourney-card-title {
