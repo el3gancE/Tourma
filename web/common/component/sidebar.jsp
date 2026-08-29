@@ -31,6 +31,8 @@
         targetBracketUrl = "double-elimination.jsp";
     } else if ("ROUND_ROBIN".equalsIgnoreCase(format)) {
         targetBracketUrl = "round-robin.jsp";
+    } else if ("GROUP_STAGE".equalsIgnoreCase(format)) {
+        targetBracketUrl = "group-stage.jsp";
     }
 
     String tournamentName = "Giải Đấu Tourma";
@@ -80,12 +82,12 @@
             </a>
         </li>
 
-        <!-- BƯỚC 3: VÒNG ĐẤU / LỊCH THI ĐẤU -->
+        <!-- BƯỚC 3: VÒNG ĐẤU / LỊCH THI ĐẤU / VÒNG BẢNG -->
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %>"
                class="sidebar-menu-link <%= "bracket".equals(activeStep) || "step3".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : "fa-diagram-project" %> menu-icon"></i>
-                <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu" : "Sơ Đồ Nhánh" %></span>
+                <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "fa-layer-group" : "fa-diagram-project") %> menu-icon"></i>
+                <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "Vòng Bảng" : "Sơ Đồ Nhánh") %></span>
             </a>
         </li>
 
@@ -96,6 +98,26 @@
                class="sidebar-menu-link <%= "standings".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
                 <span>Bảng Xếp Hạng</span>
+            </a>
+        </li>
+        <% } %>
+
+        <% if ("GROUP_STAGE".equalsIgnoreCase(format)) { %>
+        <!-- MỤC RIÊNG CHO GROUP STAGE: QUẢN LÝ BẢNG ĐẤU -->
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/common/manage-group.jsp?id=<%= tournamentId %>&format=<%= format %>"
+               class="sidebar-menu-link <%= "manage-group".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-pen-to-square menu-icon text-mint"></i>
+                <span>Quản Lý Bảng Đấu</span>
+            </a>
+        </li>
+
+        <!-- MỤC RIÊNG CHO GROUP STAGE: BẢNG XẾP HẠNG VÒNG BẢNG -->
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=<%= format %>"
+               class="sidebar-menu-link <%= "group-standing".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
+                <span>BXH Vòng Bảng</span>
             </a>
         </li>
         <% } %>

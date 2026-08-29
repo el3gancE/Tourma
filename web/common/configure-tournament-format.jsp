@@ -210,15 +210,9 @@
 
                             <!-- 2. Group Stage Fields -->
                             <div id="stage1FieldsGR" style="display: none;">
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-                                    <div>
-                                        <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Số Bảng <span style="color: #f43f5e;">*</span></label>
-                                        <input type="number" id="stage1NumGroupsGR" name="stage1NumGroupsGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="" min="1" placeholder="Nhập số bảng...">
-                                    </div>
-                                    <div>
-                                        <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Tổng Số Đội Đi Tiếp <span style="color: #f43f5e;">*</span></label>
-                                        <input type="number" id="stage1AdvanceGR" name="stage1AdvanceGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="" min="1" placeholder="Nhập tổng số đội đi tiếp...">
-                                    </div>
+                                <div style="margin-bottom: 0.75rem;">
+                                    <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Tổng Số Đội Đi Tiếp <span style="color: #f43f5e;">*</span></label>
+                                    <input type="number" id="stage1AdvanceGR" name="stage1AdvanceGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="" min="1" placeholder="Nhập tổng số đội đi tiếp...">
                                 </div>
                                 <div style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.85rem;">
                                     <div style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">
@@ -502,6 +496,7 @@
         // Multi Stage: Stage 1 format selection
         function selectStage1Format(formatVal) {
             document.getElementById('stage1Format').value = formatVal;
+            document.getElementById('selectedFormat').value = formatVal;
             var ids = ['pillStage1RR', 'pillStage1GR', 'pillStage1SE', 'pillStage1DE', 'pillStage1Swiss'];
             var vals = ['ROUND_ROBIN', 'GROUP_STAGE', 'SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'SWISS_LITE'];
             for (var i = 0; i < ids.length; i++) {
@@ -543,6 +538,13 @@
         function persistFormatSelection() {
             var selectedType = document.getElementById('selectedTournamentType').value;
             var selectedVal = document.getElementById('selectedFormat').value;
+
+            if (selectedType === 'MULTI_STAGE') {
+                var s1F = document.getElementById('stage1Format').value;
+                selectedVal = s1F;
+                document.getElementById('selectedFormat').value = s1F;
+            }
+
             if (tournamentId) {
                 localStorage.setItem("tourma_type_" + tournamentId, selectedType);
                 localStorage.setItem(storageKeyFormat, selectedVal);
@@ -590,14 +592,12 @@
                     legsCount: legs ? (parseInt(legs.value) || 1) : 1
                 };
             } else if (formatVal === 'GROUP_STAGE') {
-                var numG = document.getElementById(prefix + 'NumGroupsGR');
                 var adv = document.getElementById(prefix + 'AdvanceGR');
                 var win = document.getElementById(prefix + 'WinPointsGR');
                 var draw = document.getElementById(prefix + 'DrawPointsGR');
                 var loss = document.getElementById(prefix + 'LossPointsGR');
                 var legs = document.getElementById(prefix + 'LegsCountGR');
                 return {
-                    numGroups: numG ? (parseInt(numG.value) || 0) : 0,
                     totalAdvanceCount: adv ? (parseInt(adv.value) || 0) : 0,
                     winPoints: win ? (parseInt(win.value) || 3) : 3,
                     drawPoints: draw ? (parseInt(draw.value) || 1) : 1,
@@ -684,17 +684,9 @@
                     return false;
                 }
             } else if (formatVal === 'GROUP_STAGE') {
-                var numG = document.getElementById(prefix + 'NumGroupsGR');
                 var advG = document.getElementById(prefix + 'AdvanceGR');
-                var numGVal = numG ? numG.value.trim() : '';
                 var advGVal = advG ? advG.value.trim() : '';
 
-                if (!numGVal || Number(numGVal) <= 0) {
-                    if (e && e.preventDefault) e.preventDefault();
-                    alert('Vui lòng nhập số bảng ở ' + stageName + '!');
-                    if (numG) numG.focus();
-                    return false;
-                }
                 if (!advGVal || Number(advGVal) <= 0) {
                     if (e && e.preventDefault) e.preventDefault();
                     alert('Vui lòng nhập tổng số đội đi tiếp ở ' + stageName + '!');
@@ -806,13 +798,11 @@
                                 if (loss && cfg.lossPoints !== undefined) loss.value = cfg.lossPoints;
                                 if (legs && cfg.legsCount !== undefined) legs.value = cfg.legsCount;
                             } else if (sFormat === 'GROUP_STAGE') {
-                                var numEl = document.getElementById(prefix + 'NumGroupsGR');
                                 var advEl = document.getElementById(prefix + 'AdvanceGR');
                                 var winEl = document.getElementById(prefix + 'WinPointsGR');
                                 var drawEl = document.getElementById(prefix + 'DrawPointsGR');
                                 var lossEl = document.getElementById(prefix + 'LossPointsGR');
                                 var legsEl = document.getElementById(prefix + 'LegsCountGR');
-                                if (numEl && cfg.numGroups) numEl.value = cfg.numGroups;
                                 if (advEl && cfg.totalAdvanceCount) advEl.value = cfg.totalAdvanceCount;
                                 if (winEl && cfg.winPoints !== undefined) winEl.value = cfg.winPoints;
                                 if (drawEl && cfg.drawPoints !== undefined) drawEl.value = cfg.drawPoints;

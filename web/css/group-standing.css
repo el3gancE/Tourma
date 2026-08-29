@@ -1,0 +1,154 @@
+/* Tourma Group Standing CSS Design System */
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+    --gst-bg-dark: #0b0d12;
+    --gst-card-bg: #121620;
+    --gst-border: rgba(255, 255, 255, 0.08);
+    --gst-teal: #2dd4bf;
+    --gst-gold: #fbbf24;
+    --gst-rose: #f43f5e;
+    --gst-text: #f8fafc;
+    --gst-muted: #94a3b8;
+}
+
+.gst-container {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: 'Lexend', sans-serif;
+    color: var(--gst-text);
+}
+
+.gst-group-block {
+    background: var(--gst-card-bg);
+    border: 1px solid var(--gst-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.gst-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--gst-border);
+}
+
+.gst-group-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--gst-gold);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gst-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.85rem;
+}
+
+.gst-table th {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--gst-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    padding: 0.75rem 0.85rem;
+    text-align: center;
+    border-bottom: 1px solid var(--gst-border);
+}
+
+.gst-table th.th-left {
+    text-align: left;
+}
+
+.gst-table td {
+    padding: 0.75rem 0.85rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-weight: 500;
+}
+
+.gst-table td.td-left {
+    text-align: left;
+}
+
+.gst-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* 1. Direct Qualified Row - Vibrant Green (#22c55e) */
+.rr-table tr.qualified-direct td,
+.gst-table tr.qualified-direct td,
+.rr-table tr.qualified-row td,
+.gst-table tr.qualified-row td {
+    background: rgba(34, 197, 94, 0.14) !important;
+}
+
+.rr-table tr.qualified-direct:hover td,
+.gst-table tr.qualified-direct:hover td,
+.rr-table tr.qualified-row:hover td,
+.gst-table tr.qualified-row:hover td {
+    background: rgba(34, 197, 94, 0.24) !important;
+}
+
+.rr-table tr.qualified-direct td:first-child,
+.gst-table tr.qualified-direct td:first-child,
+.rr-table tr.qualified-row td:first-child,
+.gst-table tr.qualified-row td:first-child {
+    border-left: 4px solid #22c55e !important;
+}
+
+/* 2. Wildcard Candidate / Qualified Row - Vibrant Mint (#2dd4bf) */
+.rr-table tr.qualified-wildcard td,
+.gst-table tr.qualified-wildcard td {
+    background: rgba(45, 212, 191, 0.14) !important;
+}
+
+.rr-table tr.qualified-wildcard:hover td,
+.gst-table tr.qualified-wildcard:hover td {
+    background: rgba(45, 212, 191, 0.24) !important;
+}
+
+.rr-table tr.qualified-wildcard td:first-child,
+.gst-table tr.qualified-wildcard td:first-child {
+    border-left: 4px solid #2dd4bf !important;
+}
+
+.gst-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--gst-muted);
+}
+
+.gst-rank-badge.rank-1 {
+    background: rgba(251, 191, 36, 0.2);
+    color: var(--gst-gold);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.gst-rank-badge.rank-2 {
+    background: rgba(203, 213, 225, 0.2);
+    color: #cbd5e1;
+    border: 1px solid rgba(203, 213, 225, 0.4);
+}
+
+.gst-pts-highlight {
+    font-weight: 800;
+    color: var(--gst-teal);
+    font-size: 0.95rem;
+}

@@ -153,7 +153,7 @@
                         <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; margin-bottom: 2.5rem;">
                             <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${param.id}" class="btn btn-secondary">Quay Lại</a>
                             <button type="submit" class="btn btn-mint" style="padding-left: 2rem; padding-right: 2rem;">
-                                SINH SƠ ĐỒ THI ĐẤU ➔
+                                TIẾP THEO ➔
                             </button>
                         </div>
                     </form>
@@ -341,11 +341,7 @@
                 var names = window.extractNamesFromTextarea();
                 var countDisplay = document.getElementById('inputCountDisplay');
                 if (countDisplay) {
-                    if (names.length > 24) {
-                        countDisplay.innerHTML = '<span style="color:#f43f5e; font-weight:700;">' + names.length + ' / 24 Đội (Vượt tối đa)</span>';
-                    } else {
-                        countDisplay.innerText = names.length + " / 24 Đội";
-                    }
+                    countDisplay.innerText = names.length + " Đội";
                 }
             };
 

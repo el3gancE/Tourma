@@ -1,0 +1,207 @@
+/* Tourma Manage Group CSS Design System */
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+    --mg-bg-dark: #0b0d12;
+    --mg-card-bg: #121620;
+    --mg-border: rgba(255, 255, 255, 0.1);
+    --mg-teal: #2dd4bf;
+    --mg-gold: #fbbf24;
+    --mg-text: #f8fafc;
+    --mg-muted: #94a3b8;
+}
+
+.mg-container {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: 'Lexend', sans-serif;
+    color: var(--mg-text);
+}
+
+.mg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--mg-card-bg);
+    border: 1px solid var(--mg-border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.mg-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--mg-teal);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mg-workspace {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.mg-group-column {
+    background: var(--mg-card-bg);
+    border: 1px solid var(--mg-border);
+    border-radius: 12px;
+    padding: 1rem;
+    min-height: 280px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.mg-group-column:hover {
+    border-color: rgba(45, 212, 191, 0.3);
+}
+
+.mg-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--mg-border);
+}
+
+.mg-group-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--mg-gold);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-delete-group {
+    background: transparent;
+    border: none;
+    color: #f43f5e;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.25rem 0.45rem;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.btn-delete-group:hover {
+    background: rgba(244, 63, 94, 0.15);
+}
+
+.mg-team-card {
+    background: #181d29;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.mg-team-card:hover {
+    border-color: var(--mg-teal);
+    transform: translateX(2px);
+}
+
+.mg-team-info {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.mg-move-select {
+    background: #0b0d12;
+    color: var(--mg-text);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.mg-seed-badge {
+    background: #1b2230;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fbbf24;
+    font-size: 0.82rem;
+    font-weight: 800;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    margin-right: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.btn-mg-add {
+    background: #181d29;
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-mg-add:hover {
+    background: rgba(45, 212, 191, 0.12);
+    border-color: #2dd4bf;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(45, 212, 191, 0.2);
+}
+
+.btn-mg-distribute {
+    background: #181d29;
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-mg-distribute:hover {
+    background: rgba(251, 191, 36, 0.12);
+    border-color: #fbbf24;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+}
+
+.mg-group-column.mg-drag-over {
+    border-color: #2dd4bf !important;
+    background: rgba(45, 212, 191, 0.08) !important;
+    box-shadow: 0 0 20px rgba(45, 212, 191, 0.25);
+}
+
+.mg-team-card[draggable="true"] {
+    cursor: grab;
+}
+
+.mg-team-card[draggable="true"]:active {
+    cursor: grabbing;
+}
