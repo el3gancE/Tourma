@@ -55,8 +55,12 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/double-elimination.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     </head>
     <body>
+        <!-- Empty Team Alert Component -->
+        <jsp:include page="/common/component/empty-team-alert.jsp"/>
+
         <!-- Final Stage Popup Banner -->
         <jsp:include page="/common/component/final-stage-popup.jsp"/>
 
@@ -231,6 +235,7 @@
         <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
+        <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination.js"></script>
 
         <!-- Page Bootstrap Execution -->

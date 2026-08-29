@@ -120,6 +120,21 @@
             }
         },
 
+        renderEmptyState: function (containerElem) {
+            if (!containerElem) return;
+            var tr = document.createElement('tr');
+            var td = document.createElement('td');
+            td.colSpan = 10;
+            td.style.textAlign = 'center';
+            td.style.padding = '2rem 1rem';
+            tr.appendChild(td);
+            containerElem.appendChild(tr);
+
+            if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
+                window.TourmaEmptyTeamAlert.checkAndRender(this.tournamentId, this.teamsList, td);
+            }
+        },
+
         /**
          * Render Standings Table
          */
@@ -127,13 +142,18 @@
             var tbody = document.getElementById('rrStandingsTableBody');
             if (!tbody || !window.TourmaRoundRobinAlgorithm) return;
 
+            tbody.innerHTML = '';
+
+            if (!this.teamsList || this.teamsList.length === 0) {
+                this.renderEmptyState(tbody);
+                return;
+            }
+
             var standings = window.TourmaRoundRobinAlgorithm.calculateStandings(
                 this.teamsList,
                 this.matchesMap,
                 this.config
             );
-
-            tbody.innerHTML = '';
 
             for (var i = 0; i < standings.length; i++) {
                 var row = standings[i];

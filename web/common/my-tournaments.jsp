@@ -99,7 +99,7 @@
                                                 <span><i class="fa-solid fa-flag"></i> Giải thứ ${t.tournamentIndexInSeries} - Phase ${t.phaseNumber}</span>
                                             </c:when>
                                             <c:otherwise>
-                                                <span>
+                                                <span class="tourney-format-span">
                                                     <i class="fa-solid fa-diagram-project text-mint"></i> 
                                                     <c:choose>
                                                         <c:when test="${t.format == 'DOUBLE_ELIMINATION'}">Double Elimination</c:when>
@@ -132,17 +132,17 @@
                                         </a>
                                         <c:choose>
                                             <c:when test="${t.format == 'DOUBLE_ELIMINATION'}">
-                                                <a href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=${t.id}&format=DOUBLE_ELIMINATION" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                                <a href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=${t.id}&format=DOUBLE_ELIMINATION" class="btn btn-mint btn-view-bracket" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
                                                     Xem Sơ Đồ ➔
                                                 </a>
                                             </c:when>
                                             <c:when test="${t.format == 'ROUND_ROBIN'}">
-                                                <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=${t.id}&format=ROUND_ROBIN" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                                <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=${t.id}&format=ROUND_ROBIN" class="btn btn-mint btn-view-bracket" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
                                                     Lịch Đấu ➔
                                                 </a>
                                             </c:when>
                                             <c:otherwise>
-                                                <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}&format=${t.format}" class="btn btn-mint" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                                <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}&format=${t.format}" class="btn btn-mint btn-view-bracket" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
                                                     Xem Sơ Đồ ➔
                                                 </a>
                                             </c:otherwise>
@@ -270,6 +270,33 @@
                     var dbStatus = card.getAttribute('data-db-status');
                     var isLocked = localStorage.getItem("tourma_final_locked_" + tid) === "true" || dbStatus === 'COMPLETED';
                     var championName = findChampionName(card);
+
+                    // Check local format override
+                    var localFmt = localStorage.getItem("tourma_format_" + tid);
+                    if (localFmt) {
+                        var formatSpan = card.querySelector('.tourney-format-span');
+                        var btnView = card.querySelector('.btn-view-bracket');
+                        var ctx = "${pageContext.request.contextPath}";
+                        if (localFmt === 'DOUBLE_ELIMINATION') {
+                            if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Double Elimination';
+                            if (btnView) {
+                                btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid + '&format=DOUBLE_ELIMINATION';
+                                btnView.innerHTML = 'Xem Sơ Đồ ➔';
+                            }
+                        } else if (localFmt === 'ROUND_ROBIN') {
+                            if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Round Robin';
+                            if (btnView) {
+                                btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&format=ROUND_ROBIN';
+                                btnView.innerHTML = 'Lịch Đấu ➔';
+                            }
+                        } else if (localFmt === 'SINGLE_ELIMINATION') {
+                            if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Single Elimination';
+                            if (btnView) {
+                                btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&format=SINGLE_ELIMINATION';
+                                btnView.innerHTML = 'Xem Sơ Đồ ➔';
+                            }
+                        }
+                    }
 
                     var completedMatchesCount = 0;
 

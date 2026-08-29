@@ -262,15 +262,27 @@
             }
         },
 
+        renderEmptyState: function (containerElem) {
+            if (!containerElem) return;
+            if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
+                window.TourmaEmptyTeamAlert.checkAndRender(this.tournamentId, this.teamsList, containerElem);
+            }
+        },
+
         /**
          * Render Fixtures List by Rounds
          */
         renderFixtures: function () {
             var container = document.getElementById('rrFixturesContainer');
-            if (!container || !this.roundsList) return;
+            if (!container) return;
 
             container.innerHTML = '';
             var self = this;
+
+            if (!this.teamsList || this.teamsList.length === 0 || !this.roundsList || this.roundsList.length === 0) {
+                this.renderEmptyState(container);
+                return;
+            }
 
             var filteredRounds = this.roundsList;
             if (this.activeRoundFilter !== 'all') {

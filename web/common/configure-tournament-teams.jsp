@@ -7,6 +7,12 @@
     String tourneyFormat = request.getParameter("format");
     List<Team> existingTeams = null;
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+        if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
+            try {
+                dao.TournamentDAO tDao = new dao.TournamentDAO();
+                tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
+            } catch(Exception ignore) {}
+        }
         ParticipantDAO pDao = new ParticipantDAO();
         existingTeams = pDao.getTeamsByTournamentId(tournamentId);
         if (tourneyFormat == null || tourneyFormat.trim().isEmpty()) {

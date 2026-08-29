@@ -221,18 +221,9 @@
 
         renderEmptyState: function (containerElem) {
             if (!containerElem) return;
-            var configTeamsUrl = (window.location.pathname.indexOf('/common/') !== -1 ? 'configure-tournament-teams.jsp' : 'common/configure-tournament-teams.jsp') + '?id=' + this.tournamentId;
-            containerElem.innerHTML = 
-                '<div class="empty-teams-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4.5rem 2rem; background: rgba(15, 23, 42, 0.6); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 16px; margin: 2.5rem auto; max-width: 520px; text-align: center; width: 100%;">' +
-                    '<div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.25); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">' +
-                        '<i class="fa-solid fa-users-slash" style="font-size: 2rem; color: #fbbf24;"></i>' +
-                    '</div>' +
-                    '<h3 style="color: #f8fafc; font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; font-family: \'Lexend\', sans-serif;">Chưa có đội bóng nào trong giải</h3>' +
-                    '<p style="color: #94a3b8; font-size: 0.88rem; margin-bottom: 1.75rem; line-height: 1.5; font-family: \'Lexend\', sans-serif;">Vui lòng thêm danh sách các đội tham gia để hệ thống tự động sinh sơ đồ và lịch thi đấu.</p>' +
-                    '<a href="' + configTeamsUrl + '" class="btn-empty-add-teams" style="display: inline-flex; align-items: center; gap: 0.6rem; background: #fbbf24; color: #0b0d12; padding: 0.75rem 1.6rem; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 0.9rem; font-family: \'Lexend\', sans-serif; transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3);">' +
-                        '<i class="fa-solid fa-plus"></i> Thêm Đội Bóng Ngay' +
-                    '</a>' +
-                '</div>';
+            if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
+                window.TourmaEmptyTeamAlert.checkAndRender(this.tournamentId, this.teamsList, containerElem);
+            }
         },
 
         /**
