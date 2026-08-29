@@ -618,14 +618,25 @@
             window.confirmResetAndSubmit = function() {
                 if (tournamentId) {
                     try {
+                        var oldSnap = initialTeamsSnapshot || [];
+                        var isCountChanged = (oldSnap.length !== currentTeamsList.length);
+
                         localStorage.removeItem('tourma_matches_' + tournamentId);
                         localStorage.removeItem('tourma_de_matches_' + tournamentId);
                         localStorage.removeItem('tourma_rr_matches_' + tournamentId);
+                        localStorage.removeItem('tourma_group_matches_' + tournamentId);
                         localStorage.removeItem('tourma_rr_round_inputs_' + tournamentId);
                         localStorage.removeItem('tourma_matches_demo');
                         localStorage.removeItem('tourma_de_matches_demo');
                         localStorage.removeItem('tourma_rr_matches_demo');
                         localStorage.removeItem('tourma_rr_round_inputs_demo');
+
+                        if (isCountChanged) {
+                            // Team count changed on Add Teams screen -> Reset group division!
+                            localStorage.removeItem('tourma_group_assignments_' + tournamentId);
+                            localStorage.removeItem('tourma_group_assignments_demo');
+                        }
+
                         localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));
                     } catch (e) {}
                 }
@@ -695,9 +706,17 @@
                     return false;
                 }
 
-                // Save current snapshot
+                // Save current snapshot and check for team count changes
                 if (tournamentId) {
                     try {
+                        var oldSnap = initialTeamsSnapshot || [];
+                        if (oldSnap.length !== currentTeamsList.length) {
+                            localStorage.removeItem('tourma_group_assignments_' + tournamentId);
+                            localStorage.removeItem('tourma_group_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_de_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_rr_matches_' + tournamentId);
+                        }
                         localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));
                     } catch(e) {}
                 }

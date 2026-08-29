@@ -74,23 +74,19 @@
                                  data-status="${t.status == 'COMPLETED' ? 'COMPLETED' : (t.status == 'ONGOING' ? 'IN_PROGRESS' : 'INCOMING')}"
                                  data-name="${t.name}">
                                 
-                                <div>
-                                    <div class="tourney-card-header">
-                                        <div style="display: flex; gap: 0.4rem; align-items: center;">
-                                            <span class="tourney-badge-type">
-                                                ${t.tournamentType == 'MULTI_STAGE' ? 'MULTI STAGE' : 'SINGLE STAGE'}
-                                            </span>
-                                            <c:if test="${not empty t.tierName}">
-                                                <span class="tourney-badge-tier">TIER ${t.tierName}</span>
-                                            </c:if>
-                                        </div>
-
+                                <div class="tourney-card-main">
+                                    <div class="tourney-card-top-row">
+                                        <h3 class="tourney-card-title">${t.name}</h3>
+                                        <span class="tourney-badge-type">
+                                            ${t.tournamentType == 'MULTI_STAGE' ? 'MULTI STAGE' : 'SINGLE STAGE'}
+                                        </span>
+                                        <c:if test="${not empty t.tierName}">
+                                            <span class="tourney-badge-tier">TIER ${t.tierName}</span>
+                                        </c:if>
                                         <span class="status-pill ${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' ? 'in-progress' : 'incoming')}" id="statusPill_${t.id}">
                                             ${t.status == 'COMPLETED' ? 'Completed' : (t.status == 'ONGOING' ? 'In Progress' : 'Incoming')}
                                         </span>
                                     </div>
-
-                                    <h3 class="tourney-card-title">${t.name}</h3>
 
                                     <div class="tourney-card-meta">
                                         <!-- TOTAL TEAMS COUNT META -->
@@ -99,10 +95,13 @@
                                             <span class="team-count-val" style="color: #f8fafc; font-weight: 700;">0 Đội</span>
                                         </span>
 
+                                        <span class="meta-divider">•</span>
+
                                         <c:choose>
                                             <c:when test="${not empty t.seriesId}">
-                                                <span><i class="fa-solid fa-layer-group text-gold"></i> Thuộc Series Mùa Giải</span>
-                                                <span><i class="fa-solid fa-flag"></i> Giải thứ ${t.tournamentIndexInSeries} - Phase ${t.phaseNumber}</span>
+                                                <span><i class="fa-solid fa-layer-group text-gold"></i> Thuộc Series</span>
+                                                <span class="meta-divider">•</span>
+                                                <span><i class="fa-solid fa-flag"></i> Giải thứ ${t.tournamentIndexInSeries} (Phase ${t.phaseNumber})</span>
                                             </c:when>
                                             <c:otherwise>
                                                 <span class="tourney-format-span">
@@ -120,36 +119,41 @@
 
                                         <!-- INLINE CHAMPION META (When Completed) -->
                                         <span id="championMeta_${t.id}" class="tourney-champion-meta" style="${(t.status == 'COMPLETED' || not empty t.championName) ? 'display: inline-flex;' : 'display: none;'}">
+                                            <span class="meta-divider">•</span>
                                             <i class="fa-solid fa-trophy text-gold"></i> Nhà vô địch: <span class="champion-name-val" style="color: #fbbf24;">${not empty t.championName ? t.championName : ''}</span>
                                         </span>
                                     </div>
                                 </div>
 
                                 <div class="tourney-card-footer">
-                                    <span class="text-muted" style="font-size: 0.72rem;">ID: ${t.id}</span>
-                                    <div style="display: flex; gap: 0.45rem; align-items: center;">
+                                    <div class="tourney-card-actions">
                                         <button type="button" class="btn-delete-tourney" 
                                                 onclick="openDeleteTourneyModal('${t.id}', '${t.name}')" 
                                                 title="Xóa giải đấu">
                                             <i class="fa-solid fa-trash-can"></i> Xóa
                                         </button>
-                                        <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${t.id}" class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
+                                        <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${t.id}" class="btn-details-tourney" title="Cấu hình & Chi tiết giải đấu">
                                             <i class="fa-solid fa-sliders"></i> Chi Tiết
                                         </a>
                                         <c:choose>
                                             <c:when test="${t.format == 'DOUBLE_ELIMINATION'}">
-                                                <a href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=${t.id}&format=DOUBLE_ELIMINATION" class="btn btn-mint btn-view-bracket" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
-                                                    Xem Sơ Đồ ➔
+                                                <a href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=${t.id}&format=DOUBLE_ELIMINATION" class="btn-view-bracket-card">
+                                                    Trận Đấu ➔
                                                 </a>
                                             </c:when>
                                             <c:when test="${t.format == 'ROUND_ROBIN'}">
-                                                <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=${t.id}&format=ROUND_ROBIN" class="btn btn-mint btn-view-bracket" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
-                                                    Lịch Đấu ➔
+                                                <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=${t.id}&format=ROUND_ROBIN" class="btn-view-bracket-card">
+                                                    Trận Đấu ➔
+                                                </a>
+                                            </c:when>
+                                            <c:when test="${t.format == 'GROUP_STAGE'}">
+                                                <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=${t.id}&format=GROUP_STAGE" class="btn-view-bracket-card">
+                                                    Trận Đấu ➔
                                                 </a>
                                             </c:when>
                                             <c:otherwise>
-                                                <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}&format=${t.format}" class="btn btn-mint btn-view-bracket" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
-                                                    Xem Sơ Đồ ➔
+                                                <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}&format=${t.format}" class="btn-view-bracket-card">
+                                                    Trận Đấu ➔
                                                 </a>
                                             </c:otherwise>
                                         </c:choose>
@@ -384,22 +388,23 @@
                         var s1Name = getFormatDisplayName(multiConfig.stage1Format || 'GROUP_STAGE');
                         var s2Name = getFormatDisplayName(multiConfig.stage2Format || 'SINGLE_ELIMINATION');
                         if (formatSpan) {
-                            formatSpan.innerHTML = '<div style="display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.15rem;">' +
+                            formatSpan.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">' +
                                 '<span><i class="fa-solid fa-layer-group text-mint"></i> <strong>Vòng 1:</strong> ' + s1Name + '</span>' +
+                                '<span class="meta-divider">•</span>' +
                                 '<span><i class="fa-solid fa-sitemap text-mint"></i> <strong>Vòng 2:</strong> ' + s2Name + '</span>' +
-                                '</div>';
+                                '</span>';
                         }
                         if (btnView) {
                             var s1Fmt = (multiConfig.stage1Format || 'GROUP_STAGE').toUpperCase();
                             if (s1Fmt === 'GROUP_STAGE') {
                                 btnView.href = ctx + '/common/group-stage.jsp?id=' + tid;
-                                btnView.innerText = 'Xem Vòng Bảng ➔';
+                                btnView.innerText = 'Trận Đấu ➔';
                             } else if (s1Fmt === 'DOUBLE_ELIMINATION') {
                                 btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid;
-                                btnView.innerText = 'Xem Sơ Đồ ➔';
+                                btnView.innerText = 'Trận Đấu ➔';
                             } else {
                                 btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid;
-                                btnView.innerText = 'Xem Sơ Đồ ➔';
+                                btnView.innerText = 'Trận Đấu ➔';
                             }
                         }
                     } else {
@@ -409,25 +414,25 @@
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Double Elimination';
                                 if (btnView) {
                                     btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid + '&format=DOUBLE_ELIMINATION';
-                                    btnView.innerHTML = 'Xem Sơ Đồ ➔';
+                                    btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             } else if (localFmt === 'ROUND_ROBIN') {
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Round Robin';
                                 if (btnView) {
                                     btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&format=ROUND_ROBIN';
-                                    btnView.innerHTML = 'Lịch Đấu ➔';
+                                    btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             } else if (localFmt === 'GROUP_STAGE') {
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Group Stage';
                                 if (btnView) {
                                     btnView.href = ctx + '/common/group-stage.jsp?id=' + tid + '&format=GROUP_STAGE';
-                                    btnView.innerHTML = 'Xem Vòng Bảng ➔';
+                                    btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             } else if (localFmt === 'SINGLE_ELIMINATION') {
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Single Elimination';
                                 if (btnView) {
                                     btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&format=SINGLE_ELIMINATION';
-                                    btnView.innerHTML = 'Xem Sơ Đồ ➔';
+                                    btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             }
                         }

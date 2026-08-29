@@ -492,8 +492,26 @@
         },
 
         saveGroupsState: function () {
+            var oldGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
+            var oldTotalCount = 0;
+            if (oldGroupsRaw) {
+                try {
+                    var oldG = JSON.parse(oldGroupsRaw);
+                    Object.keys(oldG).forEach(function(k) { if (Array.isArray(oldG[k])) oldTotalCount += oldG[k].length; });
+                } catch(e) {}
+            }
+
+            var newTotalCount = 0;
+            var self = this;
+            Object.keys(this.groups).forEach(function(k) {
+                if (Array.isArray(self.groups[k])) newTotalCount += self.groups[k].length;
+            });
+
             localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
-            localStorage.removeItem('tourma_group_matches_' + this.tournamentId); // Reset match schedule on edit
+
+            // Reset match schedule whenever team count or assignments change
+            localStorage.removeItem('tourma_group_matches_' + this.tournamentId);
+            localStorage.removeItem('tourma_matches_' + this.tournamentId);
         },
 
         saveAndReturn: function () {

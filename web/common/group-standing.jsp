@@ -46,6 +46,10 @@
                 </h1>
                 <span class="format-badge-rr">Group Stage</span>
                 <span id="gstTeamCountBadge" class="team-count-badge">0 Đội</span>
+                <span id="gstAdvanceBadge" class="team-count-badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <i class="fa-solid fa-circle-check" style="font-size: 0.75rem;"></i>
+                    <span id="gstAdvanceText">0 Đội đi tiếp</span>
+                </span>
             </div>
 
             <div class="rr-actions-group">

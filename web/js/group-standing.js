@@ -46,6 +46,36 @@
                 if (rules.advanceCount !== undefined) this.rules.advanceCount = Number(rules.advanceCount);
             }
 
+            try {
+                var directAdv = localStorage.getItem('tourma_advance_count_' + tid);
+                if (directAdv && !isNaN(parseInt(directAdv)) && parseInt(directAdv) > 0) {
+                    this.rules.advanceCount = parseInt(directAdv);
+                }
+
+                var mCfgRaw = localStorage.getItem('tourma_multi_config_' + tid);
+                if (mCfgRaw) {
+                    var mCfg = JSON.parse(mCfgRaw);
+                    if (mCfg && mCfg.stage1Config) {
+                        var c = mCfg.stage1Config;
+                        var advVal = c.totalAdvanceCount || c.advanceCount;
+                        if (advVal && !isNaN(parseInt(advVal)) && parseInt(advVal) > 0) {
+                            this.rules.advanceCount = parseInt(advVal);
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            var self = this;
+            var gstBadge = document.getElementById('gstTeamCountBadge');
+            var gstAdvText = document.getElementById('gstAdvanceText');
+            var totalTeams = 0;
+            var numG = Object.keys(this.groups).length || 1;
+            Object.keys(this.groups).forEach(function (g) {
+                if (Array.isArray(self.groups[g])) totalTeams += self.groups[g].length;
+            });
+            if (gstBadge) gstBadge.innerText = totalTeams + ' Đội (' + numG + ' Bảng)';
+            if (gstAdvText) gstAdvText.innerText = (this.rules.advanceCount || 2) + ' Đội Đi Tiếp';
+
             this.renderGroupFilterPills();
             this.renderStandingsTables(container);
         },
@@ -301,12 +331,12 @@
                     '<th style="width: 48px; text-align: center;">#</th>' +
                     '<th style="text-align: left;">Đội bóng</th>' +
                     '<th style="width: 70px; text-align: center;">Trận</th>' +
-                    '<th style="width: 60px; text-align: center;">T</th>' +
-                    '<th style="width: 60px; text-align: center;">H</th>' +
-                    '<th style="width: 60px; text-align: center;">B</th>' +
+                    '<th style="width: 60px; text-align: center; color: #2dd4bf;">T</th>' +
+                    '<th style="width: 60px; text-align: center; color: #2dd4bf;">H</th>' +
+                    '<th style="width: 60px; text-align: center; color: #2dd4bf;">B</th>' +
                     '<th style="width: 90px; text-align: center;">BT/BB</th>' +
                     '<th style="width: 70px; text-align: center;">HS</th>' +
-                    '<th style="width: 80px; text-align: center; color: #2dd4bf;">Điểm</th>' +
+                    '<th style="width: 80px; text-align: center; color: #fbbf24;">Điểm</th>' +
                     '</tr>' +
                     '</thead>' +
                     '<tbody>';
@@ -329,11 +359,11 @@
                         '<td style="font-weight: 700; color: #f8fafc; text-align: left;">' + row.name + '</td>' +
                         '<td style="text-align: center;" class="rr-stat-cell">' + row.mp + '</td>' +
                         '<td style="text-align: center;" class="rr-stat-green">' + row.w + '</td>' +
-                        '<td style="text-align: center;" class="rr-stat-cell">' + row.d + '</td>' +
-                        '<td style="text-align: center;" class="rr-stat-cell">' + row.l + '</td>' +
+                        '<td style="text-align: center;" class="rr-stat-green">' + row.d + '</td>' +
+                        '<td style="text-align: center;" class="rr-stat-green">' + row.l + '</td>' +
                         '<td style="text-align: center;" class="rr-stat-cell">' + row.gf + '/' + row.ga + '</td>' +
                         '<td style="text-align: center;" class="rr-stat-cell">' + (row.gd > 0 ? '+' + row.gd : row.gd) + '</td>' +
-                        '<td style="text-align: center; font-weight: 800; color: #2dd4bf; font-size: 1.05rem;">' + row.pts + '</td>' +
+                        '<td style="text-align: center; font-weight: 800; color: #fbbf24; font-size: 1.05rem;">' + row.pts + '</td>' +
                         '</tr>';
                 }
                 tableHtml += '</tbody></table></div>';
@@ -380,12 +410,12 @@
                 '<th style="text-align: left;">Đội bóng</th>' +
                 '<th style="width: 90px; text-align: center;">Bảng</th>' +
                 '<th style="width: 70px; text-align: center;">Trận</th>' +
-                '<th style="width: 60px; text-align: center;">T</th>' +
-                '<th style="width: 60px; text-align: center;">H</th>' +
-                '<th style="width: 60px; text-align: center;">B</th>' +
+                '<th style="width: 60px; text-align: center; color: #2dd4bf;">T</th>' +
+                '<th style="width: 60px; text-align: center; color: #2dd4bf;">H</th>' +
+                '<th style="width: 60px; text-align: center; color: #2dd4bf;">B</th>' +
                 '<th style="width: 90px; text-align: center;">BT/BB</th>' +
                 '<th style="width: 70px; text-align: center;">HS</th>' +
-                '<th style="width: 80px; text-align: center; color: #2dd4bf;">Điểm</th>' +
+                '<th style="width: 80px; text-align: center; color: #fbbf24;">Điểm</th>' +
                 '</tr>' +
                 '</thead>' +
                 '<tbody>';
@@ -401,11 +431,11 @@
                     '<td style="text-align: center; font-weight: 700; color: #fbbf24;">Bảng ' + row.groupKey + '</td>' +
                     '<td style="text-align: center;" class="rr-stat-cell">' + row.mp + '</td>' +
                     '<td style="text-align: center;" class="rr-stat-green">' + row.w + '</td>' +
-                    '<td style="text-align: center;" class="rr-stat-cell">' + row.d + '</td>' +
-                    '<td style="text-align: center;" class="rr-stat-cell">' + row.l + '</td>' +
+                    '<td style="text-align: center;" class="rr-stat-green">' + row.d + '</td>' +
+                    '<td style="text-align: center;" class="rr-stat-green">' + row.l + '</td>' +
                     '<td style="text-align: center;" class="rr-stat-cell">' + row.gf + '/' + row.ga + '</td>' +
                     '<td style="text-align: center;" class="rr-stat-cell">' + (row.gd > 0 ? '+' + row.gd : row.gd) + '</td>' +
-                    '<td style="text-align: center; font-weight: 800; color: #2dd4bf; font-size: 1.05rem;">' + row.pts + '</td>' +
+                    '<td style="text-align: center; font-weight: 800; color: #fbbf24; font-size: 1.05rem;">' + row.pts + '</td>' +
                     '</tr>';
             }
 

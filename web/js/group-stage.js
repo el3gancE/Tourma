@@ -8,6 +8,89 @@
 (function () {
     'use strict';
 
+    window.TourmaGroupSync = {
+        syncGroupAssignments: function (tournamentId, teamsList) {
+            if (!tournamentId || !teamsList || !Array.isArray(teamsList)) return { valid: true };
+
+            var gRaw = localStorage.getItem('tourma_group_assignments_' + tournamentId);
+            if (!gRaw) return { valid: true };
+
+            var groups = {};
+            try { groups = JSON.parse(gRaw); } catch (e) { return { valid: true }; }
+
+            var groupKeys = Object.keys(groups);
+            if (groupKeys.length === 0) return { valid: true };
+
+            // Build lookup of current valid teams
+            var validTeamIds = {};
+            var validTeamNames = {};
+            for (var i = 0; i < teamsList.length; i++) {
+                var tm = teamsList[i];
+                var tId = (typeof tm === 'object') ? tm.id : (i + 1);
+                var tName = (typeof tm === 'object') ? tm.name : String(tm);
+                if (tId !== undefined) validTeamIds[String(tId)] = true;
+                if (tName) validTeamNames[String(tName).trim().toLowerCase()] = true;
+            }
+
+            // Clean group assignments: remove teams that no longer exist
+            var updatedGroups = {};
+            var deficientGroupKey = null;
+            var isModified = false;
+
+            for (var k = 0; k < groupKeys.length; k++) {
+                var gKey = groupKeys[k];
+                var rawList = groups[gKey] || [];
+                var cleanedList = [];
+
+                for (var m = 0; m < rawList.length; m++) {
+                    var item = rawList[m];
+                    var itemId = (typeof item === 'object') ? item.id : item;
+                    var itemName = (typeof item === 'object') ? item.name : String(item);
+
+                    var isMatch = false;
+                    if (itemId !== undefined && validTeamIds[String(itemId)]) {
+                        isMatch = true;
+                    } else if (itemName && validTeamNames[String(itemName).trim().toLowerCase()]) {
+                        isMatch = true;
+                    }
+
+                    if (isMatch) {
+                        cleanedList.push(item);
+                    }
+                }
+
+                if (cleanedList.length !== rawList.length) {
+                    isModified = true;
+                }
+
+                updatedGroups[gKey] = cleanedList;
+
+                if (cleanedList.length < 2 && deficientGroupKey === null) {
+                    deficientGroupKey = gKey;
+                }
+            }
+
+            // Save cleaned assignments
+            localStorage.setItem('tourma_group_assignments_' + tournamentId, JSON.stringify(updatedGroups));
+
+            // Only reset match schedule if teams were actually deleted/modified from groups
+            if (isModified) {
+                localStorage.removeItem('tourma_group_matches_' + tournamentId);
+                localStorage.removeItem('tourma_matches_' + tournamentId);
+            }
+
+            if (deficientGroupKey !== null) {
+                return {
+                    valid: false,
+                    deficientGroupKey: deficientGroupKey,
+                    reason: 'DEFICIENT_GROUP'
+                };
+            }
+
+            return { valid: true, groups: updatedGroups };
+        }
+    };
+
     window.TourmaGroupStage = {
         tournamentId: '',
         tournamentName: 'Giải Đấu Vòng Bảng',
@@ -42,12 +125,20 @@
             }
 
             try {
+                var directAdv = localStorage.getItem('tourma_advance_count_' + this.tournamentId);
+                if (directAdv && !isNaN(parseInt(directAdv)) && parseInt(directAdv) > 0) {
+                    this.advanceCount = parseInt(directAdv);
+                }
+
                 var mCfgRaw = localStorage.getItem('tourma_multi_config_' + this.tournamentId);
                 if (mCfgRaw) {
                     var mCfg = JSON.parse(mCfgRaw);
                     if (mCfg && mCfg.stage1Config) {
                         var c = mCfg.stage1Config;
-                        if (c.totalAdvanceCount) this.advanceCount = Math.max(1, parseInt(c.totalAdvanceCount));
+                        var advVal = c.totalAdvanceCount || c.advanceCount;
+                        if (advVal && !isNaN(parseInt(advVal)) && parseInt(advVal) > 0) {
+                            this.advanceCount = parseInt(advVal);
+                        }
                         if (c.legsCount) this.legsCount = Math.max(1, parseInt(c.legsCount));
                         if (c.winPoints !== undefined) this.winPoints = parseInt(c.winPoints);
                         if (c.drawPoints !== undefined) this.drawPoints = parseInt(c.drawPoints);
@@ -58,11 +149,44 @@
         },
 
         loadTeams: function () {
+            // PRIORITY 1: Always use DB serverTeams as authoritative source when available
+            if (window.serverTeams && window.serverTeams.length > 0) {
+                this.teamsList = window.serverTeams;
+                try {
+                    localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                } catch(e) {}
+                return;
+            }
+
+            // PRIORITY 2: localStorage cache
             var rawTeams = localStorage.getItem('tourma_teams_' + this.tournamentId);
             if (rawTeams) {
                 try {
-                    this.teamsList = JSON.parse(rawTeams);
-                } catch (e) { this.teamsList = []; }
+                    var parsed = JSON.parse(rawTeams);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        this.teamsList = parsed;
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            // PRIORITY 3: Extract teams from saved group assignments if still empty
+            var gRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
+            if (gRaw) {
+                try {
+                    var groupsObj = JSON.parse(gRaw);
+                    var extracted = [];
+                    Object.keys(groupsObj).forEach(function(gKey) {
+                        var list = groupsObj[gKey] || [];
+                        for (var i = 0; i < list.length; i++) {
+                            extracted.push(list[i]);
+                        }
+                    });
+                    if (extracted.length > 0) {
+                        this.teamsList = extracted;
+                        localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                    }
+                } catch(e) {}
             }
         },
 
@@ -93,13 +217,27 @@
 
         loadOrGenerateGroupsAndMatches: function () {
             var totalTeams = this.teamsList ? this.teamsList.length : 0;
-            var minRequired = Math.max(1, this.advanceCount) + 1;
-
-            if (totalTeams < minRequired) {
+            if (totalTeams < 2) {
                 this.groups = {};
                 this.groupMatches = {};
                 this.matchesMap = {};
                 return;
+            }
+
+            // Execute Smart Group Assignment Sync (preserves groups when teams are added/removed unless a group drops below 2 teams)
+            if (window.TourmaGroupSync) {
+                var syncRes = window.TourmaGroupSync.syncGroupAssignments(this.tournamentId, this.teamsList);
+                if (!syncRes.valid && syncRes.reason === 'DEFICIENT_GROUP') {
+                    if (window.location.pathname.includes('group-stage.jsp')) {
+                        var alertKey = 'tourma_deficient_alert_' + this.tournamentId;
+                        if (!sessionStorage.getItem(alertKey)) {
+                            sessionStorage.setItem(alertKey, 'true');
+                            alert('⚠️ Sau khi bớt đội, Bảng ' + syncRes.deficientGroupKey + ' hiện tại chỉ còn 1 đội (dưới tối thiểu 2 đội/bảng)!\n\nVui lòng di chuyển hoặc bổ sung đội bóng sao cho mỗi bảng đấu đủ tối thiểu 2 đội.');
+                        }
+                        window.location.href = 'manage-group.jsp?id=' + this.tournamentId;
+                        return;
+                    }
+                }
             }
 
             var savedGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
@@ -452,13 +590,12 @@
         },
 
         renderAll: function () {
-            var minRequired = Math.max(1, this.advanceCount) + 1;
             var totalTeams = this.teamsList ? this.teamsList.length : 0;
 
             var alertContainer = document.getElementById('gsEmptyAlertContainer');
             var mainContent = document.getElementById('gsMainContent');
 
-            if (totalTeams < minRequired) {
+            if (totalTeams < 2) {
                 if (mainContent) mainContent.style.display = 'none';
                 if (alertContainer) {
                     alertContainer.style.display = 'flex';
@@ -480,9 +617,11 @@
         updateHeaderInfo: function () {
             var tName = document.getElementById('gsTournamentTitle');
             var tBadge = document.getElementById('gsTeamCountBadge');
+            var advText = document.getElementById('gsAdvanceText');
             var numG = Object.keys(this.groups).length || 2;
             if (tName) tName.innerText = this.tournamentName;
             if (tBadge) tBadge.innerText = (this.teamsList ? this.teamsList.length : 0) + ' Đội (' + numG + ' Bảng)';
+            if (advText) advText.innerText = (this.advanceCount || 2) + ' Đội Đi Tiếp';
         },
 
         renderGroupSelectorBar: function () {

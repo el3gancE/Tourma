@@ -11,6 +11,8 @@ body, button, input, select, textarea, .tourney-card-title, .filter-pill-btn {
   font-family: 'Lexend', sans-serif !important;
 }
 
+
+
 /* Page Top Header Bar */
 .page-header-row {
   display: flex;
@@ -31,6 +33,7 @@ body, button, input, select, textarea, .tourney-card-title, .filter-pill-btn {
 }
 
 /* Toolbar & Filters */
+/* Toolbar & Filters */
 .toolbar-bar {
   display: flex;
   align-items: center;
@@ -38,10 +41,12 @@ body, button, input, select, textarea, .tourney-card-title, .filter-pill-btn {
   gap: 1rem;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
-  background: var(--bg-dark-charcoal, #12161f);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-md, 10px);
-  padding: 0.6rem 1rem;
+  background: rgba(18, 22, 32, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem 1.15rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .filter-pills-group {
@@ -54,105 +59,141 @@ body, button, input, select, textarea, .tourney-card-title, .filter-pill-btn {
 .filter-pill-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--text-muted, #94a3b8);
-  padding: 0.35rem 0.85rem;
+  color: #94a3b8;
+  padding: 0.4rem 0.9rem;
   border-radius: 50px;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: var(--transition-fast, 0.18s ease);
+  transition: all 0.18s ease;
 }
 
 .filter-pill-btn:hover {
-  color: var(--text-white, #f8fafc);
-  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .filter-pill-btn.active {
-  background: rgba(45, 212, 191, 0.12);
-  border-color: var(--mint-primary, #2dd4bf);
-  color: var(--mint-primary, #2dd4bf);
+  background: rgba(45, 212, 191, 0.14);
+  border-color: #2dd4bf;
+  color: #2dd4bf;
+  box-shadow: 0 2px 8px rgba(45, 212, 191, 0.2);
 }
 
-/* Search Box */
+/* Modern Dark Search Box */
 .search-input-box {
   position: relative;
-  min-width: 220px;
+  min-width: 250px;
 }
 
-.search-input-box input {
-  padding-left: 2.2rem;
-  padding-top: 0.45rem;
-  padding-bottom: 0.45rem;
-  font-size: 0.82rem;
+.search-input-box input,
+.search-input-box input.form-control {
+  width: 100%;
+  background: rgba(11, 13, 18, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 50px !important;
+  color: #f8fafc !important;
+  padding: 0.45rem 1rem 0.45rem 2.3rem !important;
+  font-size: 0.82rem !important;
+  font-family: 'Lexend', sans-serif !important;
+  transition: all 0.2s ease !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.search-input-box input:focus {
+  background: rgba(11, 13, 18, 0.98) !important;
+  border-color: #2dd4bf !important;
+  box-shadow: 0 0 12px rgba(45, 212, 191, 0.25), inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  outline: none !important;
+}
+
+.search-input-box input::placeholder {
+  color: #64748b !important;
 }
 
 .search-input-box i {
   position: absolute;
-  left: 0.8rem;
+  left: 0.85rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-muted, #94a3b8);
-  font-size: 0.8rem;
+  color: #2dd4bf;
+  font-size: 0.85rem;
+  pointer-events: none;
 }
 
-/* Tournament Cards Grid */
+/* Tournament Cards List (Dạng Dài Wide Horizontal Layout) */
 .tourney-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
   margin-bottom: 3rem;
+  width: 100%;
 }
 
 .tourney-card {
-  background: var(--bg-card-surface, #181d29);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-lg, 12px);
-  padding: 1.15rem;
+  background: rgba(18, 22, 32, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.15rem 1.4rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
-  transition: var(--transition-fast, 0.18s ease);
+  gap: 1.5rem;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  width: 100%;
 }
 
 .tourney-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(45, 212, 191, 0.3);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transform: translateX(4px);
+  border-color: rgba(45, 212, 191, 0.4);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35), 0 0 15px rgba(45, 212, 191, 0.12);
+}
+
+.tourney-card-top-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
 }
 
 .tourney-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.65rem;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
 }
 
 .tourney-badge-type {
   font-size: 0.7rem;
   font-weight: 800;
-  padding: 0.18rem 0.55rem;
-  border-radius: 4px;
+  padding: 0.22rem 0.65rem;
+  border-radius: 5px;
   background: rgba(45, 212, 191, 0.12);
-  color: var(--mint-primary, #2dd4bf);
+  color: #2dd4bf;
   border: 1px solid rgba(45, 212, 191, 0.25);
+  letter-spacing: 0.02em;
 }
 
 .tourney-badge-tier {
   font-size: 0.7rem;
   font-weight: 800;
-  padding: 0.18rem 0.55rem;
-  border-radius: 4px;
+  padding: 0.22rem 0.65rem;
+  border-radius: 5px;
   background: rgba(251, 191, 36, 0.12);
-  color: var(--gold-primary, #fbbf24);
+  color: #fbbf24;
   border: 1px solid rgba(251, 191, 36, 0.25);
+  letter-spacing: 0.02em;
 }
 
 .status-pill {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  padding: 0.18rem 0.55rem;
+  padding: 0.22rem 0.65rem;
   border-radius: 50px;
   display: inline-flex;
   align-items: center;
@@ -179,61 +220,122 @@ body, button, input, select, textarea, .tourney-card-title, .filter-pill-btn {
 }
 
 .tourney-champion-meta {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #fbbf24;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  margin-top: 0.15rem;
 }
 
 .tourney-card-title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.4rem;
-  line-height: 1.35;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
 }
 
 .tourney-card-meta {
-  font-size: 0.78rem;
-  color: var(--text-muted, #94a3b8);
+  font-size: 0.82rem;
+  color: #94a3b8;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 1rem;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0;
+}
+
+.meta-divider {
+  color: #475569;
+  font-size: 0.8rem;
 }
 
 .tourney-card-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  justify-content: flex-end;
+  padding-top: 0;
+  border-top: none;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.tourney-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+/* Unified Button Standard Height & Flex Alignment for 3 Action Buttons */
+.btn-delete-tourney,
+.btn-details-tourney,
+.btn-view-bracket-card {
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 0.85rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  border-radius: 7px !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  text-decoration: none !important;
+  transition: all 0.18s ease-in-out !important;
+  font-family: 'Lexend', sans-serif !important;
 }
 
 /* Delete Tournament Button */
 .btn-delete-tourney {
-  background: rgba(244, 63, 94, 0.08);
-  color: #f43f5e;
-  border: 1px solid rgba(244, 63, 94, 0.25);
-  border-radius: 6px;
-  padding: 0.3rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 700;
+  background: rgba(244, 63, 94, 0.1) !important;
+  color: #f43f5e !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+  min-width: 68px !important;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  transition: all 0.18s ease;
-  font-family: 'Lexend', sans-serif !important;
 }
 
 .btn-delete-tourney:hover {
-  background: #f43f5e;
-  color: #ffffff;
-  border-color: #f43f5e;
-  box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+  background: #f43f5e !important;
+  color: #ffffff !important;
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.4) !important;
+}
+
+/* Dedicated "Chi Tiết" Button */
+.btn-details-tourney {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  min-width: 92px !important;
+  cursor: pointer;
+}
+
+.btn-details-tourney:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Dedicated "Trận Đấu" Button */
+.btn-view-bracket-card {
+  background: rgba(45, 212, 191, 0.15) !important;
+  color: #2dd4bf !important;
+  border: 1px solid rgba(45, 212, 191, 0.35) !important;
+  min-width: 110px !important;
+  cursor: pointer;
+}
+
+.btn-view-bracket-card:hover {
+  background: #2dd4bf !important;
+  color: #0b0d12 !important;
+  border-color: #2dd4bf !important;
+  box-shadow: 0 0 14px rgba(45, 212, 191, 0.4) !important;
 }
 
 /* Modal Backdrop & Card */

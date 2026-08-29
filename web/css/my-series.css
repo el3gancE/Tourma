@@ -11,6 +11,8 @@ body, button, input, select, textarea, .series-card-title, .filter-pill-btn {
   font-family: 'Lexend', sans-serif !important;
 }
 
+
+
 /* Page Top Header Bar */
 .page-header-row {
   display: flex;
@@ -38,10 +40,12 @@ body, button, input, select, textarea, .series-card-title, .filter-pill-btn {
   gap: 1rem;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
-  background: var(--bg-dark-charcoal, #12161f);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-md, 10px);
-  padding: 0.6rem 1rem;
+  background: rgba(18, 22, 32, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem 1.15rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .filter-pills-group {
@@ -54,132 +58,212 @@ body, button, input, select, textarea, .series-card-title, .filter-pill-btn {
 .filter-pill-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--text-muted, #94a3b8);
-  padding: 0.35rem 0.85rem;
+  color: #94a3b8;
+  padding: 0.4rem 0.9rem;
   border-radius: 50px;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: var(--transition-fast, 0.18s ease);
+  transition: all 0.18s ease;
 }
 
 .filter-pill-btn:hover {
-  color: var(--text-white, #f8fafc);
-  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .filter-pill-btn.active {
-  background: rgba(251, 191, 36, 0.12);
-  border-color: var(--gold-primary, #fbbf24);
-  color: var(--gold-primary, #fbbf24);
+  background: rgba(251, 191, 36, 0.14);
+  border-color: #fbbf24;
+  color: #fbbf24;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
 }
 
-/* Search Box */
+/* Modern Dark Search Box */
 .search-input-box {
   position: relative;
-  min-width: 220px;
+  min-width: 250px;
 }
 
-.search-input-box input {
-  padding-left: 2.2rem;
-  padding-top: 0.45rem;
-  padding-bottom: 0.45rem;
-  font-size: 0.82rem;
+.search-input-box input,
+.search-input-box input.form-control {
+  width: 100%;
+  background: rgba(11, 13, 18, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 50px !important;
+  color: #f8fafc !important;
+  padding: 0.45rem 1rem 0.45rem 2.3rem !important;
+  font-size: 0.82rem !important;
+  font-family: 'Lexend', sans-serif !important;
+  transition: all 0.2s ease !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.search-input-box input:focus {
+  background: rgba(11, 13, 18, 0.98) !important;
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.25), inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  outline: none !important;
+}
+
+.search-input-box input::placeholder {
+  color: #64748b !important;
 }
 
 .search-input-box i {
   position: absolute;
-  left: 0.8rem;
+  left: 0.85rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-muted, #94a3b8);
-  font-size: 0.8rem;
+  color: #fbbf24;
+  font-size: 0.85rem;
+  pointer-events: none;
 }
 
-/* Series Cards Grid */
+/* Series Cards List (Dạng Dài Wide Horizontal Layout) */
 .series-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
   margin-bottom: 3rem;
+  width: 100%;
 }
 
 .series-card {
-  background: var(--bg-card-surface, #181d29);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-lg, 12px);
-  padding: 1.15rem;
+  background: rgba(18, 22, 32, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.15rem 1.4rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
-  transition: var(--transition-fast, 0.18s ease);
+  gap: 1.5rem;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  width: 100%;
 }
 
 .series-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(251, 191, 36, 0.3);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transform: translateX(4px);
+  border-color: rgba(251, 191, 36, 0.4);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35), 0 0 15px rgba(251, 191, 36, 0.12);
+}
+
+.series-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.series-card-top-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
 }
 
 .series-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.65rem;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
 }
 
 .series-model-badge {
   font-size: 0.7rem;
   font-weight: 800;
-  padding: 0.18rem 0.55rem;
-  border-radius: 4px;
+  padding: 0.22rem 0.65rem;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
 }
 
 .series-model-badge.rolling {
   background: rgba(251, 191, 36, 0.12);
-  color: var(--gold-primary, #fbbf24);
+  color: #fbbf24;
   border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
 .series-model-badge.elo {
   background: rgba(45, 212, 191, 0.12);
-  color: var(--mint-primary, #2dd4bf);
+  color: #2dd4bf;
   border: 1px solid rgba(45, 212, 191, 0.25);
 }
 
 .phase-pill {
   font-size: 0.7rem;
   font-weight: 700;
-  padding: 0.18rem 0.55rem;
+  padding: 0.22rem 0.65rem;
   border-radius: 50px;
   background: rgba(255, 255, 255, 0.06);
-  color: var(--text-white, #f8fafc);
-  border: 1px solid var(--border-color);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.02em;
 }
 
 .series-card-title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.4rem;
-  line-height: 1.35;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
 }
 
 .series-card-meta {
-  font-size: 0.78rem;
-  color: var(--text-muted, #94a3b8);
+  font-size: 0.82rem;
+  color: #94a3b8;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 1rem;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0;
+}
+
+.meta-divider {
+  color: #475569;
+  font-size: 0.8rem;
 }
 
 .series-card-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  justify-content: flex-end;
+  padding-top: 0;
+  border-top: none;
+  gap: 0.85rem;
+  flex-shrink: 0;
+}
+
+.btn-view-series-card {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 7px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  white-space: nowrap !important;
+  text-decoration: none !important;
+  transition: all 0.18s ease;
+  font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-view-series-card:hover {
+  background: #fbbf24;
+  color: #0b0d12;
+  border-color: #fbbf24;
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.4);
 }
 
 /* Empty State Box */

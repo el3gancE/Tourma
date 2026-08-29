@@ -422,27 +422,63 @@
             return !isErr;
         }
 
-        // Check if bracket already has completed / scored matches
+        var hasStage1Matches = false;
+        var hasStage2Matches = false;
+
+        // Check if bracket already has completed / scored matches for Stage 1 vs Stage 2
         if (tournamentId) {
             try {
-                var matchesObj = JSON.parse(localStorage.getItem("tourma_matches_" + tournamentId));
+                var gObj = JSON.parse(localStorage.getItem("tourma_group_matches_" + tournamentId));
+                var rrObj = JSON.parse(localStorage.getItem("tourma_rr_matches_" + tournamentId));
+                var uObj = JSON.parse(localStorage.getItem("tourma_matches_" + tournamentId));
                 var deObj = JSON.parse(localStorage.getItem("tourma_de_matches_" + tournamentId));
-                var combined = matchesObj || (deObj ? deObj.matchesMap : null);
-                if (combined) {
-                    var keys = Object.keys(combined);
+
+                function checkMatchesPlayed(mObj) {
+                    if (!mObj) return false;
+                    var matchesMap = mObj.matchesMap || mObj;
+                    if (typeof matchesMap !== 'object') return false;
+                    var keys = Object.keys(matchesMap);
                     for (var i = 0; i < keys.length; i++) {
-                        var m = combined[keys[i]];
-                        if (m && (m.status === 'COMPLETED' || m.status === 'done' || (m.team1 && m.team1.score !== '') || (m.team2 && m.team2.score !== ''))) {
-                            hasOngoingMatches = true;
-                            break;
+                        var m = matchesMap[keys[i]];
+                        if (m && (m.status === 'COMPLETED' || m.status === 'done' || 
+                                 (m.team1 && m.team1.score !== undefined && String(m.team1.score).trim() !== '') || 
+                                 (m.team2 && m.team2.score !== undefined && String(m.team2.score).trim() !== ''))) {
+                            return true;
                         }
+                    }
+                    return false;
+                }
+
+                if (checkMatchesPlayed(gObj) || checkMatchesPlayed(rrObj)) {
+                    hasStage1Matches = true;
+                }
+
+                if (checkMatchesPlayed(uObj) || checkMatchesPlayed(deObj)) {
+                    var mCfgRaw = localStorage.getItem("tourma_multi_config_" + tournamentId);
+                    if (mCfgRaw) {
+                        try {
+                            var mCfg = JSON.parse(mCfgRaw);
+                            if (mCfg && mCfg.stage2MatchesCreated) {
+                                hasStage2Matches = true;
+                            } else {
+                                hasStage1Matches = true;
+                            }
+                        } catch(e) { hasStage1Matches = true; }
+                    } else {
+                        hasStage1Matches = true;
                     }
                 }
             } catch (e) {}
         }
 
+        hasOngoingMatches = hasStage1Matches || hasStage2Matches;
+
         // Select Stage Model (SINGLE_STAGE vs MULTI_STAGE)
         function selectStageType(typeValue) {
+            if (hasStage1Matches) {
+                alert('🔒 Stage 1 đã có trận đấu diễn ra. Không thể thay đổi mô hình giải đấu!');
+                return;
+            }
             document.getElementById('selectedTournamentType').value = typeValue;
 
             var btnSingle = document.getElementById('btnToggleSingleStage');
@@ -478,6 +514,10 @@
 
         // Single Stage format selection
         function selectFormat(formatValue) {
+            if (hasStage1Matches) {
+                alert('🔒 Stage 1 đã có trận đấu diễn ra. Thể thức Stage 1 đã bị khóa!');
+                return;
+            }
             document.getElementById('selectedFormat').value = formatValue;
             const isRoundRobin = formatValue === 'ROUND_ROBIN';
 
@@ -495,6 +535,10 @@
 
         // Multi Stage: Stage 1 format selection
         function selectStage1Format(formatVal) {
+            if (hasStage1Matches) {
+                alert('🔒 Stage 1 đã có trận đấu diễn ra. Thể thức Stage 1 đã bị khóa!');
+                return;
+            }
             document.getElementById('stage1Format').value = formatVal;
             document.getElementById('selectedFormat').value = formatVal;
             var ids = ['pillStage1RR', 'pillStage1GR', 'pillStage1SE', 'pillStage1DE', 'pillStage1Swiss'];
@@ -518,8 +562,12 @@
             if (pSwiss) pSwiss.style.display = (formatVal === 'SWISS_LITE') ? 'block' : 'none';
         }
 
-        // Multi Stage: Stage 2 format selection
+        // Multi Stage: Stage 2 format selection (Can still be changed if Stage 2 has not started!)
         function selectStage2Format(formatVal) {
+            if (hasStage2Matches) {
+                alert('🔒 Stage 2 đã có trận đấu diễn ra. Thể thức Stage 2 đã bị khóa!');
+                return;
+            }
             document.getElementById('stage2Format').value = formatVal;
             var btnSE = document.getElementById('pillStage2SE');
             var btnDE = document.getElementById('pillStage2DE');
@@ -549,29 +597,42 @@
                 localStorage.setItem("tourma_type_" + tournamentId, selectedType);
                 localStorage.setItem(storageKeyFormat, selectedVal);
                 
+                var advanceCountToSave = 0;
                 if (selectedType === 'MULTI_STAGE') {
                     var s1F = document.getElementById('stage1Format').value;
                     var s2F = document.getElementById('stage2Format').value;
+                    var s1Cfg = getStageConfigValues(1, s1F);
+                    var s2Cfg = getStageConfigValues(2, s2F);
 
                     var multiConfig = {
                         stage1Format: s1F,
                         stage2Format: s2F,
-                        stage1Config: getStageConfigValues(1, s1F),
-                        stage2Config: getStageConfigValues(2, s2F)
+                        stage1Config: s1Cfg,
+                        stage2Config: s2Cfg
                     };
                     localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(multiConfig));
-                } else if (selectedVal === 'ROUND_ROBIN') {
-                    var winInp = document.querySelector('input[name="winPoints"]');
-                    var drawInp = document.querySelector('input[name="drawPoints"]');
-                    var lossInp = document.querySelector('input[name="lossPoints"]');
-                    var legsInp = document.querySelector('input[name="legsCount"]');
-                    var rrConfig = {
-                        winPoints: winInp ? (parseInt(winInp.value) || 3) : 3,
-                        drawPoints: drawInp ? (parseInt(drawInp.value) || 1) : 1,
-                        lossPoints: lossInp ? (parseInt(lossInp.value) || 0) : 0,
-                        legsCount: legsInp ? (parseInt(legsInp.value) || 1) : 1
-                    };
-                    localStorage.setItem('tourma_rr_config_' + tournamentId, JSON.stringify(rrConfig));
+                    if (s1Cfg) advanceCountToSave = s1Cfg.totalAdvanceCount || s1Cfg.advanceCount || 0;
+                } else {
+                    var sSingleCfg = getStageConfigValues(1, selectedVal);
+                    if (sSingleCfg) advanceCountToSave = sSingleCfg.totalAdvanceCount || sSingleCfg.advanceCount || 0;
+
+                    if (selectedVal === 'ROUND_ROBIN') {
+                        var winInp = document.querySelector('input[name="winPoints"]');
+                        var drawInp = document.querySelector('input[name="drawPoints"]');
+                        var lossInp = document.querySelector('input[name="lossPoints"]');
+                        var legsInp = document.querySelector('input[name="legsCount"]');
+                        var rrConfig = {
+                            winPoints: winInp ? (parseInt(winInp.value) || 3) : 3,
+                            drawPoints: drawInp ? (parseInt(drawInp.value) || 1) : 1,
+                            lossPoints: lossInp ? (parseInt(lossInp.value) || 0) : 0,
+                            legsCount: legsInp ? (parseInt(legsInp.value) || 1) : 1
+                        };
+                        localStorage.setItem('tourma_rr_config_' + tournamentId, JSON.stringify(rrConfig));
+                    }
+                }
+
+                if (advanceCountToSave > 0) {
+                    localStorage.setItem('tourma_advance_count_' + tournamentId, advanceCountToSave);
                 }
             }
         }
@@ -670,6 +731,41 @@
             document.getElementById('configureFormatForm').submit();
         }
 
+        function getTotalTeamsCount() {
+            if (tournamentId) {
+                var rawTeams = localStorage.getItem('tourma_teams_' + tournamentId);
+                if (rawTeams) {
+                    try {
+                        var parsed = JSON.parse(rawTeams);
+                        if (Array.isArray(parsed) && parsed.length > 0) return parsed.length;
+                    } catch (e) {}
+                }
+                var gRaw = localStorage.getItem('tourma_group_assignments_' + tournamentId);
+                if (gRaw) {
+                    try {
+                        var gObj = JSON.parse(gRaw);
+                        var total = 0;
+                        Object.keys(gObj).forEach(function(k) { if (Array.isArray(gObj[k])) total += gObj[k].length; });
+                        if (total > 0) return total;
+                    } catch (e) {}
+                }
+            }
+            if (window.serverTeams && window.serverTeams.length > 0) return window.serverTeams.length;
+            return 0;
+        }
+
+        function validateAdvCountLessThanTotal(advVal, inputEl, e, label) {
+            var numAdv = Number(advVal);
+            var totalTeams = getTotalTeamsCount();
+            if (totalTeams > 0 && numAdv >= totalTeams) {
+                if (e && e.preventDefault) e.preventDefault();
+                alert('⚠️ Số đội đi tiếp (' + numAdv + ' đội) phải luôn NHỎ HƠN tổng số đội hiện có của giải đấu (' + totalTeams + ' đội)!\n\nVui lòng nhập số đội đi tiếp nhỏ hơn ' + totalTeams + '.');
+                if (inputEl) inputEl.focus();
+                return false;
+            }
+            return true;
+        }
+
         function validateStageInputs(stageNum, formatVal, e) {
             var prefix = 'stage' + stageNum;
             var stageName = 'Stage ' + stageNum;
@@ -683,6 +779,7 @@
                     if (el) el.focus();
                     return false;
                 }
+                if (!validateAdvCountLessThanTotal(val, el, e, stageName)) return false;
             } else if (formatVal === 'GROUP_STAGE') {
                 var advG = document.getElementById(prefix + 'AdvanceGR');
                 var advGVal = advG ? advG.value.trim() : '';
@@ -693,6 +790,7 @@
                     if (advG) advG.focus();
                     return false;
                 }
+                if (!validateAdvCountLessThanTotal(advGVal, advG, e, stageName)) return false;
             } else if (formatVal === 'SINGLE_ELIMINATION') {
                 var el = document.getElementById(prefix + 'AdvanceSE');
                 var val = el ? el.value.trim() : '';
@@ -702,6 +800,7 @@
                     if (el) el.focus();
                     return false;
                 }
+                if (!validateAdvCountLessThanTotal(val, el, e, stageName)) return false;
             } else if (formatVal === 'DOUBLE_ELIMINATION') {
                 var deInp = document.getElementById(prefix + 'AdvanceDE');
                 var val = deInp ? deInp.value.trim() : '';
@@ -711,6 +810,7 @@
                     if (deInp) deInp.focus();
                     return false;
                 }
+                if (!validateAdvCountLessThanTotal(val, deInp, e, stageName)) return false;
                 if (!validatePowerOfTwoInput(deInp)) {
                     if (e && e.preventDefault) e.preventDefault();
                     alert('Số đội đi tiếp của thể thức Double Elimination ở ' + stageName + ' bắt buộc phải là số mũ của 2 (ví dụ: 2, 4, 8, 16...)');
@@ -733,8 +833,8 @@
                 if (!validateStageInputs(1, s1F, e)) return false;
             }
 
-            // If tournament has started and format changed, block and show popup!
-            if (hasOngoingMatches && (currentSelected !== originalFormat || currentType !== originalType)) {
+            // If Stage 1 has started and Stage 1 format or type changed, block and show popup!
+            if (hasStage1Matches && (currentSelected !== originalFormat || currentType !== originalType)) {
                 if (e && e.preventDefault) e.preventDefault();
                 openFormatLockedModal();
                 return false;
@@ -821,6 +921,38 @@
                         restoreStage(2, mCfg.stage2Format, mCfg.stage2Config);
                     }
                 } catch(e) {}
+            }
+
+            // Apply Stage Locks UI
+            if (hasStage1Matches) {
+                var btnSingle = document.getElementById('btnToggleSingleStage');
+                var btnMulti = document.getElementById('btnToggleMultiStage');
+                if (btnSingle) { btnSingle.disabled = true; btnSingle.style.opacity = '0.55'; btnSingle.title = '🔒 Stage 1 đã có trận đấu diễn ra, không thể thay đổi mô hình giải!'; }
+                if (btnMulti) { btnMulti.disabled = true; btnMulti.style.opacity = '0.55'; btnMulti.title = '🔒 Stage 1 đã có trận đấu diễn ra, không thể thay đổi mô hình giải!'; }
+
+                var s1Pills = ['pillStage1RR', 'pillStage1GR', 'pillStage1SE', 'pillStage1DE', 'pillStage1Swiss', 'pillSingleElim', 'pillDoubleElim', 'pillRoundRobin'];
+                s1Pills.forEach(function(id) {
+                    var btn = document.getElementById(id);
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.55';
+                        btn.style.cursor = 'not-allowed';
+                        btn.title = '🔒 Stage 1 đã có trận đấu diễn ra, thể thức Stage 1 đã bị khóa!';
+                    }
+                });
+            }
+
+            if (hasStage2Matches) {
+                var s2Pills = ['pillStage2SE', 'pillStage2DE', 'pillStage2RR'];
+                s2Pills.forEach(function(id) {
+                    var btn = document.getElementById(id);
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.55';
+                        btn.style.cursor = 'not-allowed';
+                        btn.title = '🔒 Stage 2 đã có trận đấu diễn ra, thể thức Stage 2 đã bị khóa!';
+                    }
+                });
             }
         });
     </script>

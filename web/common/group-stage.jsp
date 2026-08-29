@@ -1,6 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="dao.TournamentDAO" %>
+<%@ page import="dao.ParticipantDAO" %>
 <%@ page import="model.Tournament" %>
+<%@ page import="model.Team" %>
+<%@ page import="java.util.List" %>
 <%
     String tournamentId = request.getParameter("id");
     if (tournamentId == null || tournamentId.trim().isEmpty()) {
@@ -9,8 +12,13 @@
 
     TournamentDAO tDao = new TournamentDAO();
     Tournament tourney = tDao.getTournamentById(tournamentId);
-
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
+
+    ParticipantDAO pDao = new ParticipantDAO();
+    List<Team> dbTeamsList = null;
+    try {
+        dbTeamsList = pDao.getTeamsByTournamentId(tournamentId);
+    } catch (Exception ignore) {}
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -58,6 +66,10 @@
                 </h1>
                 <span class="format-badge-rr">Group Stage</span>
                 <span id="gsTeamCountBadge" class="team-count-badge">0 Đội</span>
+                <span id="gsAdvanceBadge" class="team-count-badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <i class="fa-solid fa-circle-check" style="font-size: 0.75rem;"></i>
+                    <span id="gsAdvanceText">0 Đội đi tiếp</span>
+                </span>
             </div>
 
             <div class="rr-actions-group">
@@ -96,6 +108,23 @@
     </main>
 
     <!-- JS SCRIPTS -->
+    <script>
+        window.serverTeams = [
+            <% if (dbTeamsList != null && !dbTeamsList.isEmpty()) { 
+                for (int i = 0; i < dbTeamsList.size(); i++) {
+                    Team tm = dbTeamsList.get(i);
+                    String tName = tm.getRawName();
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = tm.getNormalizedName();
+                    }
+                    if (tName == null) tName = "Đội " + (i + 1);
+                    String nameEsc = tName.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
+            %>
+                { id: "<%= tm.getId() %>", name: "<%= nameEsc %>" }<%= (i < dbTeamsList.size() - 1) ? "," : "" %>
+            <%  } 
+            } %>
+        ];
+    </script>
     <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
     <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
     <script src="${pageContext.request.contextPath}/js/popup.js"></script>
