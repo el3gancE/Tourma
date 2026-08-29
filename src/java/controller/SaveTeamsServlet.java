@@ -43,7 +43,7 @@ public class SaveTeamsServlet extends HttpServlet {
             }
 
             if (!teamNames.isEmpty()) {
-                if (teamNames.size() > 24) {
+                if ("ROUND_ROBIN".equalsIgnoreCase(format) && teamNames.size() > 24) {
                     teamNames = new ArrayList<>(teamNames.subList(0, 24));
                 }
                 ParticipantDAO dao = new ParticipantDAO();

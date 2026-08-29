@@ -264,6 +264,10 @@
                 var targetCard = cardMap[String(m.nextMatchId)];
                 if (!sourceCard || !targetCard) continue;
 
+                if (sourceCard.classList.contains('bye-empty-slot')) {
+                    continue;
+                }
+
                 var srcPos = this.getRelativePos(sourceCard, canvasElem);
                 var tgtPos = this.getRelativePos(targetCard, canvasElem);
 

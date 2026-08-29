@@ -45,6 +45,8 @@ public class Team {
     public String getRawName() { return rawName; }
     public void setRawName(String rawName) { this.rawName = rawName; }
 
+    public String getName() { return (rawName != null && !rawName.trim().isEmpty()) ? rawName : normalizedName; }
+
     public String getNormalizedName() { return normalizedName; }
     public void setNormalizedName(String normalizedName) { this.normalizedName = normalizedName; }
 

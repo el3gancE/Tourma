@@ -55,16 +55,10 @@
                 }
             }
 
-            if (!teams || teams.length === 0) {
-                teams = [
-                    'Hà Nội FC', 'Công An Hà Nội', 'Hải Phòng FC', 'Đông Á Thanh Hóa',
-                    'Sông Lam Nghệ An', 'SHB Đà Nẵng', 'Bình Định FC', 'Becamex Bình Dương'
-                ];
+            if (!teams) {
+                teams = [];
             }
             this.teamsList = teams.slice(0, 24);
-            try {
-                localStorage.setItem(storageKeyTeams, JSON.stringify(this.teamsList));
-            } catch (e) {}
 
             // Update team count badge in top toolbar
             var countBadge = document.getElementById('tournamentTeamCountBadge');
@@ -164,7 +158,7 @@
                         }
                     }
                 }
-            } else if (window.TourmaRoundRobinAlgorithm) {
+            } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaRoundRobinAlgorithm) {
                 // Clear stale cache and regenerate fresh schedule
                 try {
                     localStorage.removeItem('tourma_rr_matches_' + this.tournamentId);
@@ -206,6 +200,9 @@
                 };
                 localStorage.setItem('tourma_rr_matches_' + this.tournamentId, JSON.stringify(payload));
                 localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
+                if (this.teamsList && this.teamsList.length > 0) {
+                    localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                }
             } catch (e) {}
             this.checkFinalStage();
         },
@@ -265,15 +262,27 @@
             }
         },
 
+        renderEmptyState: function (containerElem) {
+            if (!containerElem) return;
+            if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
+                window.TourmaEmptyTeamAlert.checkAndRender(this.tournamentId, this.teamsList, containerElem);
+            }
+        },
+
         /**
          * Render Fixtures List by Rounds
          */
         renderFixtures: function () {
             var container = document.getElementById('rrFixturesContainer');
-            if (!container || !this.roundsList) return;
+            if (!container) return;
 
             container.innerHTML = '';
             var self = this;
+
+            if (!this.teamsList || this.teamsList.length === 0 || !this.roundsList || this.roundsList.length === 0) {
+                this.renderEmptyState(container);
+                return;
+            }
 
             var filteredRounds = this.roundsList;
             if (this.activeRoundFilter !== 'all') {

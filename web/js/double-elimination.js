@@ -42,11 +42,8 @@
                 } catch (e) {}
             }
 
-            if (!this.teamsList || this.teamsList.length === 0) {
-                this.teamsList = [
-                    "Hà Nội FC", "Becamex Bình Dương", "Viettel FC", "Saigon Heat",
-                    "SHB Đà Nẵng", "Thép Xanh Nam Định", "Hoàng Anh Gia Lai", "Hải Phòng FC"
-                ];
+            if (!this.teamsList) {
+                this.teamsList = [];
             }
 
             // Restore saved round inputs
@@ -113,10 +110,13 @@
             if (hasPlayedScores && savedBracket) {
                 this.bracketData = savedBracket;
                 this.matchesMap = savedBracket.matchesMap || {};
-            } else if (window.TourmaDoubleElimAlgorithm) {
+            } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaDoubleElimAlgorithm) {
                 this.bracketData = window.TourmaDoubleElimAlgorithm.generateDoubleElimination(this.teamsList);
-                this.matchesMap = this.bracketData.matchesMap || {};
+                this.matchesMap = this.bracketData ? this.bracketData.matchesMap : {};
                 this.persistLocal();
+            } else {
+                this.bracketData = null;
+                this.matchesMap = {};
             }
         },
 
@@ -219,14 +219,39 @@
             if (formatElem) formatElem.innerText = 'DOUBLE ELIMINATION';
         },
 
+        renderEmptyState: function (containerElem) {
+            if (!containerElem) return;
+            if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
+                window.TourmaEmptyTeamAlert.checkAndRender(this.tournamentId, this.teamsList, containerElem);
+            }
+        },
+
         /**
          * Render Upper Bracket (including Grand Finals column at the end)
          */
         renderUpperBracket: function () {
+            var dualWorkspace = document.getElementById('deDualViewportWorkspace');
+            var alertContainer = document.getElementById('deEmptyAlertContainer');
             var wrapper = document.getElementById('upperBracketColumnsWrapper');
-            if (!wrapper || !this.bracketData) return;
+            if (!wrapper) return;
             wrapper.innerHTML = '';
             var self = this;
+
+            var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+
+            if (teamCount < 2 || !this.bracketData) {
+                if (dualWorkspace) dualWorkspace.style.display = 'none';
+                if (alertContainer) {
+                    alertContainer.style.display = 'flex';
+                    this.renderEmptyState(alertContainer);
+                } else {
+                    this.renderEmptyState(wrapper);
+                }
+                return;
+            } else {
+                if (dualWorkspace) dualWorkspace.style.display = 'flex';
+                if (alertContainer) alertContainer.style.display = 'none';
+            }
 
             var upperRounds = this.bracketData.upperRounds || [];
             var gfRound = this.bracketData.grandFinalsRound;
@@ -313,8 +338,16 @@
                 var stack = document.createElement('div');
                 stack.className = 'de-round-matches-stack';
 
+                var showRound1Byes = window.TourmaBracketAlgorithm ? window.TourmaBracketAlgorithm.shouldShowRound1Byes(self.ubRounds, 0.50) : true;
+
                 for (var m = 0; m < ro.matches.length; m++) {
                     var matchObj = this.matchesMap[ro.matches[m].matchId] || ro.matches[m];
+                    var t1Name = matchObj.team1 ? matchObj.team1.name : '';
+                    var t2Name = matchObj.team2 ? matchObj.team2.name : '';
+                    var isBye = matchObj.isBye || (t1Name === 'BYE' || t2Name === 'BYE');
+
+                    matchObj.hideByeSlot = (isBye && !showRound1Byes);
+
                     if (window.TourmaBracketCard) {
                         var cardElem = window.TourmaBracketCard.createNodeElement ? 
                             window.TourmaBracketCard.createNodeElement(matchObj) : 
@@ -562,9 +595,15 @@
          */
         renderListView: function () {
             var container = document.getElementById('deListViewContainer');
-            if (!container || !this.bracketData) return;
+            if (!container) return;
             container.innerHTML = '';
             var self = this;
+
+            var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+            if (teamCount < 2 || !this.bracketData) {
+                this.renderEmptyState(container);
+                return;
+            }
 
             var allRounds = (window.TourmaDoubleElimAlgorithm) ?
                 window.TourmaDoubleElimAlgorithm.filterMatchesForListView(this.bracketData) : [];
@@ -748,6 +787,7 @@
                 this.renderUpperBracket();
                 this.renderLowerBracket();
                 this.renderListView();
+                this.applyViewMode(this.currentView || 'bracket');
                 var self = this;
                 requestAnimationFrame(function () { self.drawSvgConnectors(); });
                 setTimeout(function () { self.drawSvgConnectors(); }, 60);
@@ -805,6 +845,7 @@
                 this.renderUpperBracket();
                 this.renderLowerBracket();
                 this.renderListView();
+                this.applyViewMode(this.currentView || 'bracket');
                 var self = this;
                 requestAnimationFrame(function () { self.drawSvgConnectors(); });
                 setTimeout(function () { self.drawSvgConnectors(); }, 60);
@@ -843,8 +884,23 @@
         applyViewMode: function (mode) {
             var dualWorkspace = document.getElementById('deDualViewportWorkspace');
             var listContainer = document.getElementById('deListViewContainer');
+            var alertContainer = document.getElementById('deEmptyAlertContainer');
             var btnBracket = document.getElementById('deBtnBracketView');
             var btnList = document.getElementById('deBtnListView');
+
+            var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+
+            if (teamCount < 2 || !this.bracketData) {
+                if (dualWorkspace) dualWorkspace.style.display = 'none';
+                if (listContainer) listContainer.style.display = 'none';
+                if (alertContainer) {
+                    alertContainer.style.display = 'flex';
+                    this.renderEmptyState(alertContainer);
+                }
+                return;
+            }
+
+            if (alertContainer) alertContainer.style.display = 'none';
 
             if (mode === 'list') {
                 if (dualWorkspace) dualWorkspace.style.display = 'none';
@@ -968,6 +1024,7 @@
             this.renderUpperBracket();
             this.renderLowerBracket();
             this.renderListView();
+            this.applyViewMode(this.currentView || 'bracket');
 
             this.saveMatchAJAX(matchId, m.team1.score, m.team2.score, winnerName);
         },
@@ -1006,6 +1063,7 @@
 
                 // Re-render
                 self.renderAll();
+                self.applyViewMode(self.currentView || 'bracket');
             });
 
             window.addEventListener('resize', function () {
@@ -1061,6 +1119,9 @@
             try {
                 localStorage.setItem('tourma_de_matches_' + this.tournamentId, JSON.stringify(this.bracketData));
                 localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
+                if (this.teamsList && this.teamsList.length > 0) {
+                    localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                }
             } catch (e) {}
             this.checkFinalStage();
         },

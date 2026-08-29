@@ -285,6 +285,9 @@
 
             try {
                 localStorage.setItem('tourma_final_locked_' + this.tournamentId, 'true');
+                if (this.championName) {
+                    localStorage.setItem('tourma_champion_' + this.tournamentId, this.championName);
+                }
             } catch (e) {}
 
             this.isLocked = true;

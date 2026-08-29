@@ -67,27 +67,27 @@
                                  data-model="${s.rankingModel}"
                                  data-name="${s.name}">
                                 
-                                <div>
-                                    <div class="series-card-header">
+                                <div class="series-card-main">
+                                    <div class="series-card-top-row">
+                                        <h3 class="series-card-title">${s.name}</h3>
                                         <span class="series-model-badge ${s.rankingModel == 'ROLLING_WINDOW' ? 'rolling' : 'elo'}">
                                             ${s.rankingModel == 'ROLLING_WINDOW' ? 'ROLLING WINDOW' : 'FIFA ELO'}
                                         </span>
-
                                         <span class="phase-pill">
                                             Phase ${s.currentPhase}
                                         </span>
                                     </div>
 
-                                    <h3 class="series-card-title">${s.name}</h3>
-
                                     <div class="series-card-meta">
                                         <c:choose>
                                             <c:when test="${s.rankingModel == 'ROLLING_WINDOW'}">
                                                 <span><i class="fa-solid fa-chart-line text-gold"></i> Cửa sổ trượt ${s.phaseSize} giải / Phase</span>
-                                                <span><i class="fa-solid fa-star"></i> Điểm khởi đầu: ${s.initialPoints} điểm</span>
+                                                <span class="meta-divider">•</span>
+                                                <span><i class="fa-solid fa-star text-gold"></i> Điểm khởi đầu: ${s.initialPoints} điểm</span>
                                             </c:when>
                                             <c:otherwise>
                                                 <span><i class="fa-solid fa-ranking-star text-mint"></i> Rating Elo khởi điểm: ${s.initialElo} Elo</span>
+                                                <span class="meta-divider">•</span>
                                                 <span><i class="fa-solid fa-users text-muted"></i> Bảng xếp hạng chung & theo nhóm</span>
                                             </c:otherwise>
                                         </c:choose>
@@ -95,9 +95,8 @@
                                 </div>
 
                                 <div class="series-card-footer">
-                                    <span class="text-muted" style="font-size: 0.72rem;">ID: ${s.id}</span>
-                                    <a href="${pageContext.request.contextPath}/leaderboard.jsp?seriesId=${s.id}" class="btn btn-gold-outline" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;">
-                                        Xem BXH ➔
+                                    <a href="${pageContext.request.contextPath}/leaderboard.jsp?seriesId=${s.id}" class="btn-view-series-card">
+                                        <i class="fa-solid fa-ranking-star"></i> Xem BXH ➔
                                     </a>
                                 </div>
                             </div>

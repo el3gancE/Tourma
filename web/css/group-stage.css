@@ -1,0 +1,229 @@
+/* Tourma Group Stage CSS Design System */
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+    --gs-bg-dark: #0b0d12;
+    --gs-card-bg: #121620;
+    --gs-card-border: rgba(255, 255, 255, 0.08);
+    --gs-accent-teal: #2dd4bf;
+    --gs-accent-gold: #fbbf24;
+    --gs-accent-blue: #38bdf8;
+    --gs-text-main: #f8fafc;
+    --gs-text-muted: #94a3b8;
+    --gs-radius: 12px;
+}
+
+.gs-container {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: 'Lexend', sans-serif;
+    color: var(--gs-text-main);
+}
+
+/* Header & Controls Bar */
+.gs-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--gs-card-bg);
+    border: 1px solid var(--gs-card-border);
+    border-radius: var(--gs-radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.gs-title-area {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.gs-title-area h1 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--gs-text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gs-badge {
+    background: rgba(45, 212, 191, 0.15);
+    color: var(--gs-accent-teal);
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    border-radius: 6px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.gs-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+/* Nav Tabs */
+.gs-tabs-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    background: rgba(18, 22, 32, 0.8);
+    padding: 0.4rem;
+    border-radius: 10px;
+    border: 1px solid var(--gs-card-border);
+}
+
+.gs-tab-btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--gs-text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.gs-tab-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.gs-tab-btn.active {
+    background: var(--gs-accent-teal);
+    color: #0b0d12;
+    font-weight: 700;
+}
+
+/* Group Grid Layout */
+.gs-groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.gs-group-card {
+    background: var(--gs-card-bg);
+    border: 1px solid var(--gs-card-border);
+    border-radius: var(--gs-radius);
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.gs-group-card:hover {
+    border-color: rgba(45, 212, 191, 0.4);
+    transform: translateY(-2px);
+}
+
+.gs-group-card-header {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--gs-card-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gs-group-name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--gs-accent-gold);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gs-team-count {
+    font-size: 0.75rem;
+    color: var(--gs-text-muted);
+}
+
+.gs-group-teams-list {
+    padding: 0.5rem 0;
+}
+
+.gs-team-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.gs-team-item:last-child {
+    border-bottom: none;
+}
+
+.gs-team-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--gs-accent-teal);
+}
+
+.gs-group-package {
+    background: #121620;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.gs-group-package-header {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fbbf24;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gs-group-package-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.2rem 0.65rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gs-round-subpackage {
+    margin-bottom: 1.25rem;
+}
+
+.gs-round-subpackage:last-child {
+    margin-bottom: 0;
+}
+
+.gs-round-subtitle {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #2dd4bf;
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}

@@ -7,6 +7,12 @@
     String tourneyFormat = request.getParameter("format");
     List<Team> existingTeams = null;
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+        if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
+            try {
+                dao.TournamentDAO tDao = new dao.TournamentDAO();
+                tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
+            } catch(Exception ignore) {}
+        }
         ParticipantDAO pDao = new ParticipantDAO();
         existingTeams = pDao.getTeamsByTournamentId(tournamentId);
         if (tourneyFormat == null || tourneyFormat.trim().isEmpty()) {
@@ -147,7 +153,7 @@
                         <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; margin-bottom: 2.5rem;">
                             <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${param.id}" class="btn btn-secondary">Quay Lại</a>
                             <button type="submit" class="btn btn-mint" style="padding-left: 2rem; padding-right: 2rem;">
-                                SINH SƠ ĐỒ THI ĐẤU ➔
+                                TIẾP THEO ➔
                             </button>
                         </div>
                     </form>
@@ -264,15 +270,22 @@
             var currentTeamsList = [];
             var initialTeamsSnapshot = null;
 
-            // Restore state logic
-            if (dbTeams.length > 0) {
-                currentTeamsList = dbTeams;
-            } else if (tournamentId && localStorage.getItem(localStorageKey)) {
+            // Restore state logic: Prioritize latest localStorage state over initial dbTeams so Back button navigation preserves new edits!
+            var localSavedTeams = null;
+            if (tournamentId && localStorage.getItem(localStorageKey)) {
                 try {
-                    currentTeamsList = JSON.parse(localStorage.getItem(localStorageKey)) || [];
+                    localSavedTeams = JSON.parse(localStorage.getItem(localStorageKey));
                 } catch(e) {
-                    currentTeamsList = [];
+                    localSavedTeams = null;
                 }
+            }
+
+            if (localSavedTeams && Array.isArray(localSavedTeams) && localSavedTeams.length > 0) {
+                currentTeamsList = localSavedTeams;
+            } else if (dbTeams.length > 0) {
+                currentTeamsList = dbTeams;
+            } else {
+                currentTeamsList = [];
             }
 
             // Restore initial teams snapshot for change detection
@@ -328,11 +341,7 @@
                 var names = window.extractNamesFromTextarea();
                 var countDisplay = document.getElementById('inputCountDisplay');
                 if (countDisplay) {
-                    if (names.length > 24) {
-                        countDisplay.innerHTML = '<span style="color:#f43f5e; font-weight:700;">' + names.length + ' / 24 Đội (Vượt tối đa)</span>';
-                    } else {
-                        countDisplay.innerText = names.length + " / 24 Đội";
-                    }
+                    countDisplay.innerText = names.length + " Đội";
                 }
             };
 
@@ -372,15 +381,19 @@
                     }
                 }
 
-                if (currentTeamsList.length >= 24) {
-                    alert("Số lượng đội tham gia đã đạt tối đa 24 đội!");
-                    return;
-                }
+                var isRR = (typeof window.checkIsRoundRobin === 'function') ? window.checkIsRoundRobin() : false;
+                if (isRR) {
+                    var maxAllowed = 24;
+                    if (currentTeamsList.length >= maxAllowed) {
+                        alert("Số lượng đội tham gia đối với thể thức Vòng Tròn (Round Robin) đã đạt tối đa 24 đội!");
+                        return;
+                    }
 
-                var availableSlots = 24 - currentTeamsList.length;
-                if (newNames.length > availableSlots) {
-                    alert("Hệ thống chỉ hỗ trợ tối đa 24 đội. Đã tự động thêm " + availableSlots + " đội đầu tiên!");
-                    newNames = newNames.slice(0, availableSlots);
+                    var availableSlots = maxAllowed - currentTeamsList.length;
+                    if (newNames.length > availableSlots) {
+                        alert("Thể thức Vòng Tròn (Round Robin) hỗ trợ tối đa 24 đội. Đã tự động thêm " + availableSlots + " đội đầu tiên!");
+                        newNames = newNames.slice(0, availableSlots);
+                    }
                 }
 
                 for (var i = 0; i < newNames.length; i++) {
@@ -605,14 +618,25 @@
             window.confirmResetAndSubmit = function() {
                 if (tournamentId) {
                     try {
+                        var oldSnap = initialTeamsSnapshot || [];
+                        var isCountChanged = (oldSnap.length !== currentTeamsList.length);
+
                         localStorage.removeItem('tourma_matches_' + tournamentId);
                         localStorage.removeItem('tourma_de_matches_' + tournamentId);
                         localStorage.removeItem('tourma_rr_matches_' + tournamentId);
+                        localStorage.removeItem('tourma_group_matches_' + tournamentId);
                         localStorage.removeItem('tourma_rr_round_inputs_' + tournamentId);
                         localStorage.removeItem('tourma_matches_demo');
                         localStorage.removeItem('tourma_de_matches_demo');
                         localStorage.removeItem('tourma_rr_matches_demo');
                         localStorage.removeItem('tourma_rr_round_inputs_demo');
+
+                        if (isCountChanged) {
+                            // Team count changed on Add Teams screen -> Reset group division!
+                            localStorage.removeItem('tourma_group_assignments_' + tournamentId);
+                            localStorage.removeItem('tourma_group_assignments_demo');
+                        }
+
                         localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));
                     } catch (e) {}
                 }
@@ -682,9 +706,17 @@
                     return false;
                 }
 
-                // Save current snapshot
+                // Save current snapshot and check for team count changes
                 if (tournamentId) {
                     try {
+                        var oldSnap = initialTeamsSnapshot || [];
+                        if (oldSnap.length !== currentTeamsList.length) {
+                            localStorage.removeItem('tourma_group_assignments_' + tournamentId);
+                            localStorage.removeItem('tourma_group_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_de_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_rr_matches_' + tournamentId);
+                        }
                         localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));
                     } catch(e) {}
                 }
@@ -703,8 +735,30 @@
                     .replace(/'/g, "&#039;");
             }
 
+            function syncLatestStateOnNavigation() {
+                if (tournamentId && localStorage.getItem(localStorageKey)) {
+                    try {
+                        var latest = JSON.parse(localStorage.getItem(localStorageKey));
+                        if (latest && Array.isArray(latest) && latest.length > 0) {
+                            currentTeamsList = latest;
+                            if (typeof window.renderTable === 'function') window.renderTable();
+                            if (typeof window.handleTextareaTyping === 'function') window.handleTextareaTyping();
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            window.addEventListener('pageshow', function (event) {
+                syncLatestStateOnNavigation();
+            });
+
+            window.addEventListener('popstate', function () {
+                syncLatestStateOnNavigation();
+            });
+
             // Initial render on page load
             window.addEventListener('DOMContentLoaded', () => {
+                syncLatestStateOnNavigation();
                 window.renderTable();
                 window.handleTextareaTyping();
             });

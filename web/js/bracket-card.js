@@ -56,8 +56,9 @@
             var isT1Loser = isDone && !hasBye && !isT1Winner && isT2Winner;
             var isT2Loser = isDone && !hasBye && !isT2Winner && isT1Winner;
 
+            var hideByeSlot = data.hideByeSlot === true;
             var card = document.createElement('div');
-            card.className = 'bracket-node-card' + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-node-card' : '');
+            card.className = 'bracket-node-card' + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-node-card' : '') + (hideByeSlot ? ' bye-empty-slot' : '');
             card.dataset.matchId = matchId;
 
             var t1RowClass = 'bracket-team-row ' + (isT1Winner ? 'winner ' : '') + (isT1Loser ? 'loser ' : '') + (isT1Bye ? 'bye-row ' : '');

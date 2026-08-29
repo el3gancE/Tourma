@@ -386,9 +386,213 @@ body.tourma-team-path-active .bracket-team-row.path-focused.loser:hover {
 
 body.tourma-team-path-active .bracket-team-row.path-focused.loser .bracket-team-name {
     color: #cbd5e1 !important;
+}
+
+.de-list-section-header.gf .round-header-title,
+.de-round-header.gf .round-header-title {
+    color: #fbbf24 !important;
+}
+
+.round-header-random-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.round-random-input {
+    width: 44px;
+    height: 22px;
+    background: #0b0d12;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    color: #fbbf24;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: center;
+    outline: none;
+    transition: all 0.15s ease;
+    padding-left: 2px;
+}
+
+.round-random-input:focus {
+    border-color: #fbbf24;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.3);
+    background: #141a26;
+}
+
+.round-random-input::-webkit-inner-spin-button,
+.round-random-input::-webkit-outer-spin-button {
+    opacity: 0.65;
+    cursor: pointer;
+    filter: invert(0.8) hue-rotate(40deg) brightness(1.6);
+    height: 100%;
+    margin: 0;
+}
+
+.btn-round-random {
+    height: 22px;
+    padding: 0 0.65rem;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 4px;
+    color: #fbbf24;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.btn-round-random:hover {
+    background: #fbbf24;
+    color: #0b0d12;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.35);
+}
+
+.btn-round-random:disabled,
+.btn-round-random.disabled {
+    opacity: 0.25 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #64748b !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    box-shadow: none !important;
+}
+
+.btn-round-reset {
+    height: 22px;
+    width: 24px;
+    padding: 0;
+    background: rgba(244, 63, 94, 0.1);
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    border-radius: 4px;
+    color: #f43f5e;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.btn-round-reset:hover {
+    background: #f43f5e;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.35);
+}
+
+.btn-round-reset:disabled,
+.btn-round-reset.disabled {
+    opacity: 0.22 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #64748b !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    box-shadow: none !important;
+}
+
+.round-random-input:disabled {
+    opacity: 0.25 !important;
+    cursor: not-allowed !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #64748b !important;
+    background: rgba(11, 13, 18, 0.5) !important;
+}
+
+/* Quick Mode Toggle Button in Header Bar */
+.btn-quick-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0.42rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease-in-out;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-quick-mode-toggle:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-quick-mode-toggle.active {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border-color: #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.25);
+    font-weight: 800;
+}
+
+/* ==========================================================================
+   TEAM TOURNAMENT PATH HIGHLIGHTING (Default Hover Feature)
+   ========================================================================== */
+.bracket-team-row, .match-team-side {
+    transition: background 0.15s ease, color 0.15s ease, opacity 0.18s ease;
+    cursor: pointer;
+}
+
+/* Default Hover on any team row in bracket view */
+.bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:hover {
+    background: rgba(45, 212, 191, 0.22) !important;
+}
+
+.bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:hover .bracket-team-name {
+    color: #2dd4bf !important;
+}
+
+/* When a team path is actively focused across the bracket: Inset border & uniform brightness */
+body.tourma-team-path-active .bracket-team-row.path-focused {
+    background: rgba(45, 212, 191, 0.22) !important;
+    box-shadow: inset 0 0 0 1px #2dd4bf, 0 0 10px rgba(45, 212, 191, 0.4) !important;
+    border-radius: 4px !important;
+    position: relative;
+    z-index: 5;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.tourma-team-path-active .bracket-team-row.path-focused .bracket-team-name {
+    color: #2dd4bf !important;
     font-size: 0.76rem !important;
     font-weight: 700 !important;
     text-shadow: none !important;
+}
+
+/* If the match was LOST by this team: ONLY SHOW BORDER, NO BACKGROUND COLOR, NO TEXT COLORING (0px layout shift) */
+body.tourma-team-path-active .bracket-team-row.path-focused.loser,
+body.tourma-team-path-active .bracket-team-row.path-focused.loser:hover {
+    background: transparent !important;
+    box-shadow: inset 0 0 0 1px #2dd4bf !important;
+}
+
+body.tourma-team-path-active .bracket-team-row.path-focused.loser .bracket-team-name {
+    color: #cbd5e1 !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+
+/* BYE Empty Slot: Leaves clean blank space in viewport layout geometry without showing text or border */
+.bracket-node-card.bye-empty-slot {
+    visibility: hidden !important;
+    pointer-events: none !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 

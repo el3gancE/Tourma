@@ -20,6 +20,7 @@ public class Tournament {
     private String linkedQualifierTournamentId;
     private String status; // DRAFT, ONGOING, COMPLETED
     private Timestamp createdAt;
+    private String championName;
 
     public Tournament() {
         this.format = "SINGLE_ELIMINATION";
@@ -86,4 +87,7 @@ public class Tournament {
 
     public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+
+    public String getChampionName() { return championName; }
+    public void setChampionName(String championName) { this.championName = championName; }
 }

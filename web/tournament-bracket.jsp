@@ -20,6 +20,8 @@
         targetPage = "double-elimination.jsp";
     } else if ("ROUND_ROBIN".equalsIgnoreCase(format)) {
         targetPage = "round-robin.jsp";
+    } else if ("GROUP_STAGE".equalsIgnoreCase(format)) {
+        targetPage = "manage-group.jsp";
     }
 
     String targetUrl = request.getContextPath() + "/common/" + targetPage;

@@ -54,8 +54,12 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     </head>
     <body>
+        <!-- Empty Team Alert Component -->
+        <jsp:include page="/common/component/empty-team-alert.jsp"/>
+
         <!-- Final Stage Popup Banner -->
         <jsp:include page="/common/component/final-stage-popup.jsp"/>
 
@@ -140,6 +144,9 @@
                 </div>
             </div>
 
+            <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
+            <div id="singleEmptyAlertContainer" style="display: none; width: 100%;"></div>
+
             <!-- MODE 1: BRACKET TREE VIEW (Inside Drag-to-Pan Viewport Frame) -->
             <div id="bracketViewportFrame" class="bracket-viewport-frame">
                 
@@ -185,6 +192,7 @@
         <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/bracket-viewport.js"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
+        <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/single-elimination.js"></script>
 
         <script>

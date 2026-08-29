@@ -52,8 +52,12 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin-standings.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     </head>
     <body>
+        <!-- Empty Team Alert Component -->
+        <jsp:include page="/common/component/empty-team-alert.jsp"/>
+
         <!-- Final Stage Popup Banner -->
         <jsp:include page="/common/component/final-stage-popup.jsp"/>
 
@@ -141,6 +145,7 @@
         <!-- Scripts -->
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
+        <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin-standings.js"></script>
 
         <script>
