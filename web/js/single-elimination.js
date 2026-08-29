@@ -494,6 +494,7 @@
                 this.persistMatches();
                 this.renderBracketView();
                 this.renderListView();
+                this.switchViewMode(this.currentViewMode || 'bracket');
             }
         },
 
@@ -533,6 +534,7 @@
                 this.persistMatches();
                 this.renderBracketView();
                 this.renderListView();
+                this.switchViewMode(this.currentViewMode || 'bracket');
             }
         },
 
@@ -608,6 +610,7 @@
             this.updateQuickModeUI();
             this.renderBracketView();
             this.renderListView();
+            this.switchViewMode(this.currentViewMode || 'bracket');
         },
 
         updateQuickModeUI: function () {
@@ -680,6 +683,7 @@
             this.persistMatches();
             this.renderBracketView();
             this.renderListView();
+            this.switchViewMode(this.currentViewMode || 'bracket');
 
             this.saveMatchResultAJAX(
                 mId,
@@ -718,6 +722,7 @@
             // Re-render UI views to reflect updated tree and list
             this.renderBracketView();
             this.renderListView();
+            this.switchViewMode(this.currentViewMode || 'bracket');
 
             // Notify backend asynchronously
             this.saveMatchResultAJAX(

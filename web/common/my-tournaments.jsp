@@ -93,6 +93,12 @@
                                     <h3 class="tourney-card-title">${t.name}</h3>
 
                                     <div class="tourney-card-meta">
+                                        <!-- TOTAL TEAMS COUNT META -->
+                                        <span class="tourney-teams-meta" id="teamMeta_${t.id}">
+                                            <i class="fa-solid fa-users text-mint"></i> 
+                                            <span class="team-count-val" style="color: #f8fafc; font-weight: 700;">0 Đội</span>
+                                        </span>
+
                                         <c:choose>
                                             <c:when test="${not empty t.seriesId}">
                                                 <span><i class="fa-solid fa-layer-group text-gold"></i> Thuộc Series Mùa Giải</span>
@@ -261,6 +267,70 @@
                 return "";
             }
 
+            function getFormatDisplayName(fmt) {
+                if (!fmt) return 'Single Elimination';
+                var u = fmt.toUpperCase();
+                if (u === 'GROUP_STAGE') return 'Group Stage';
+                if (u === 'ROUND_ROBIN') return 'Round Robin';
+                if (u === 'SINGLE_ELIMINATION') return 'Single Elimination';
+                if (u === 'DOUBLE_ELIMINATION') return 'Double Elimination';
+                if (u === 'SWISS_LITE') return 'Swiss System';
+                return fmt;
+            }
+
+            function getTournamentTeamsCount(tid) {
+                // 1. Try tourma_teams_
+                try {
+                    var rawTeams = localStorage.getItem("tourma_teams_" + tid);
+                    if (rawTeams) {
+                        var teams = JSON.parse(rawTeams);
+                        if (Array.isArray(teams) && teams.length > 0) return teams.length;
+                    }
+                } catch(e) {}
+
+                // 2. Try tourma_group_assignments_
+                try {
+                    var rawGroups = localStorage.getItem("tourma_group_assignments_" + tid);
+                    if (rawGroups) {
+                        var groups = JSON.parse(rawGroups);
+                        var count = 0;
+                        Object.keys(groups).forEach(function(k) {
+                            if (Array.isArray(groups[k])) count += groups[k].length;
+                        });
+                        if (count > 0) return count;
+                    }
+                } catch(e) {}
+
+                // 3. Try unique teams from matchesMap
+                try {
+                    var keys = ["tourma_matches_", "tourma_de_matches_", "tourma_rr_matches_", "tourma_group_matches_"];
+                    var uniqueTeams = {};
+                    for (var i = 0; i < keys.length; i++) {
+                        var rawM = localStorage.getItem(keys[i] + tid);
+                        if (!rawM) continue;
+                        var mData = JSON.parse(rawM);
+                        var matchesMap = mData.matchesMap || mData;
+                        if (matchesMap && typeof matchesMap === 'object') {
+                            Object.keys(matchesMap).forEach(function(k) {
+                                var m = matchesMap[k];
+                                if (m) {
+                                    if (m.team1 && m.team1.name && m.team1.name !== 'BYE' && !m.team1.name.startsWith('W #') && !m.team1.name.startsWith('L #')) {
+                                        uniqueTeams[m.team1.name.trim()] = true;
+                                    }
+                                    if (m.team2 && m.team2.name && m.team2.name !== 'BYE' && !m.team2.name.startsWith('W #') && !m.team2.name.startsWith('L #')) {
+                                        uniqueTeams[m.team2.name.trim()] = true;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    var uKeys = Object.keys(uniqueTeams);
+                    if (uKeys.length > 0) return uKeys.length;
+                } catch(e) {}
+
+                return 0;
+            }
+
             function updateCardStatuses() {
                 var cards = document.querySelectorAll('.tourney-card');
                 cards.forEach(function(card) {
@@ -271,35 +341,100 @@
                     var isLocked = localStorage.getItem("tourma_final_locked_" + tid) === "true" || dbStatus === 'COMPLETED';
                     var championName = findChampionName(card);
 
-                    // Check local format override
-                    var localFmt = localStorage.getItem("tourma_format_" + tid);
-                    if (localFmt) {
-                        var formatSpan = card.querySelector('.tourney-format-span');
-                        var btnView = card.querySelector('.btn-view-bracket');
-                        var ctx = "${pageContext.request.contextPath}";
-                        if (localFmt === 'DOUBLE_ELIMINATION') {
-                            if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Double Elimination';
-                            if (btnView) {
-                                btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid + '&format=DOUBLE_ELIMINATION';
-                                btnView.innerHTML = 'Xem Sơ Đồ ➔';
+                    // --- 1. UPDATE TEAMS COUNT ---
+                    var teamsCount = getTournamentTeamsCount(tid);
+                    var teamMeta = card.querySelector('.tourney-teams-meta');
+                    if (teamMeta) {
+                        var teamValEl = teamMeta.querySelector('.team-count-val');
+                        if (teamValEl) {
+                            teamValEl.innerText = teamsCount > 0 ? (teamsCount + ' Đội') : 'Chưa xếp đội';
+                        }
+                    }
+
+                    // --- 2. UPDATE TOURNAMENT TYPE & MULTI-STAGE FORMATS ---
+                    var localType = localStorage.getItem("tourma_type_" + tid);
+                    var multiConfigRaw = localStorage.getItem("tourma_multi_config_" + tid);
+                    var multiConfig = null;
+                    if (multiConfigRaw) {
+                        try { multiConfig = JSON.parse(multiConfigRaw); } catch(e) {}
+                    }
+
+                    var isMulti = (localType === 'MULTI_STAGE' || multiConfig !== null);
+                    
+                    var badgeType = card.querySelector('.tourney-badge-type');
+                    if (badgeType) {
+                        if (isMulti) {
+                            badgeType.innerText = 'MULTI STAGE';
+                            badgeType.style.background = 'rgba(251, 191, 36, 0.15)';
+                            badgeType.style.color = '#fbbf24';
+                            badgeType.style.border = '1px solid rgba(251, 191, 36, 0.3)';
+                        } else {
+                            badgeType.innerText = 'SINGLE STAGE';
+                            badgeType.style.background = '';
+                            badgeType.style.color = '';
+                            badgeType.style.border = '';
+                        }
+                    }
+
+                    var formatSpan = card.querySelector('.tourney-format-span');
+                    var btnView = card.querySelector('.btn-view-bracket');
+                    var ctx = "${pageContext.request.contextPath}";
+
+                    if (isMulti && multiConfig) {
+                        var s1Name = getFormatDisplayName(multiConfig.stage1Format || 'GROUP_STAGE');
+                        var s2Name = getFormatDisplayName(multiConfig.stage2Format || 'SINGLE_ELIMINATION');
+                        if (formatSpan) {
+                            formatSpan.innerHTML = '<div style="display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.15rem;">' +
+                                '<span><i class="fa-solid fa-layer-group text-mint"></i> <strong>Vòng 1:</strong> ' + s1Name + '</span>' +
+                                '<span><i class="fa-solid fa-sitemap text-mint"></i> <strong>Vòng 2:</strong> ' + s2Name + '</span>' +
+                                '</div>';
+                        }
+                        if (btnView) {
+                            var s1Fmt = (multiConfig.stage1Format || 'GROUP_STAGE').toUpperCase();
+                            if (s1Fmt === 'GROUP_STAGE') {
+                                btnView.href = ctx + '/common/group-stage.jsp?id=' + tid;
+                                btnView.innerText = 'Xem Vòng Bảng ➔';
+                            } else if (s1Fmt === 'DOUBLE_ELIMINATION') {
+                                btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid;
+                                btnView.innerText = 'Xem Sơ Đồ ➔';
+                            } else {
+                                btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid;
+                                btnView.innerText = 'Xem Sơ Đồ ➔';
                             }
-                        } else if (localFmt === 'ROUND_ROBIN') {
-                            if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Round Robin';
-                            if (btnView) {
-                                btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&format=ROUND_ROBIN';
-                                btnView.innerHTML = 'Lịch Đấu ➔';
-                            }
-                        } else if (localFmt === 'SINGLE_ELIMINATION') {
-                            if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Single Elimination';
-                            if (btnView) {
-                                btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&format=SINGLE_ELIMINATION';
-                                btnView.innerHTML = 'Xem Sơ Đồ ➔';
+                        }
+                    } else {
+                        var localFmt = localStorage.getItem("tourma_format_" + tid);
+                        if (localFmt) {
+                            if (localFmt === 'DOUBLE_ELIMINATION') {
+                                if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Double Elimination';
+                                if (btnView) {
+                                    btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid + '&format=DOUBLE_ELIMINATION';
+                                    btnView.innerHTML = 'Xem Sơ Đồ ➔';
+                                }
+                            } else if (localFmt === 'ROUND_ROBIN') {
+                                if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Round Robin';
+                                if (btnView) {
+                                    btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&format=ROUND_ROBIN';
+                                    btnView.innerHTML = 'Lịch Đấu ➔';
+                                }
+                            } else if (localFmt === 'GROUP_STAGE') {
+                                if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Group Stage';
+                                if (btnView) {
+                                    btnView.href = ctx + '/common/group-stage.jsp?id=' + tid + '&format=GROUP_STAGE';
+                                    btnView.innerHTML = 'Xem Vòng Bảng ➔';
+                                }
+                            } else if (localFmt === 'SINGLE_ELIMINATION') {
+                                if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Single Elimination';
+                                if (btnView) {
+                                    btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&format=SINGLE_ELIMINATION';
+                                    btnView.innerHTML = 'Xem Sơ Đồ ➔';
+                                }
                             }
                         }
                     }
 
+                    // --- 3. UPDATE MATCHES & STATUS ---
                     var completedMatchesCount = 0;
-
                     var checkMatches = function(storageKey) {
                         try {
                             var raw = localStorage.getItem(storageKey);
@@ -320,6 +455,7 @@
                     checkMatches("tourma_matches_" + tid);
                     checkMatches("tourma_de_matches_" + tid);
                     checkMatches("tourma_rr_matches_" + tid);
+                    checkMatches("tourma_group_matches_" + tid);
 
                     var statusPill = card.querySelector('.status-pill');
                     var championMeta = card.querySelector('.tourney-champion-meta');

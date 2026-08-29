@@ -787,6 +787,7 @@
                 this.renderUpperBracket();
                 this.renderLowerBracket();
                 this.renderListView();
+                this.applyViewMode(this.currentView || 'bracket');
                 var self = this;
                 requestAnimationFrame(function () { self.drawSvgConnectors(); });
                 setTimeout(function () { self.drawSvgConnectors(); }, 60);
@@ -844,6 +845,7 @@
                 this.renderUpperBracket();
                 this.renderLowerBracket();
                 this.renderListView();
+                this.applyViewMode(this.currentView || 'bracket');
                 var self = this;
                 requestAnimationFrame(function () { self.drawSvgConnectors(); });
                 setTimeout(function () { self.drawSvgConnectors(); }, 60);
@@ -1022,6 +1024,7 @@
             this.renderUpperBracket();
             this.renderLowerBracket();
             this.renderListView();
+            this.applyViewMode(this.currentView || 'bracket');
 
             this.saveMatchAJAX(matchId, m.team1.score, m.team2.score, winnerName);
         },
@@ -1060,6 +1063,7 @@
 
                 // Re-render
                 self.renderAll();
+                self.applyViewMode(self.currentView || 'bracket');
             });
 
             window.addEventListener('resize', function () {
