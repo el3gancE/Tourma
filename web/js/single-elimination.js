@@ -148,15 +148,28 @@
          * Render Bracket Viewport Tree Columns Dynamically
          */
         renderBracketView: function () {
+            var viewportFrame = document.getElementById('bracketViewportFrame');
+            var alertContainer = document.getElementById('singleEmptyAlertContainer');
             var canvasWrapper = document.getElementById('singleBracketColumnsWrapper');
             if (!canvasWrapper) return;
 
             canvasWrapper.innerHTML = '';
             var self = this;
 
-            if (!this.teamsList || this.teamsList.length === 0 || !this.roundsList || this.roundsList.length === 0) {
-                this.renderEmptyState(canvasWrapper);
+            var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+
+            if (teamCount < 2 || !this.roundsList || this.roundsList.length === 0) {
+                if (viewportFrame) viewportFrame.style.display = 'none';
+                if (alertContainer) {
+                    alertContainer.style.display = 'flex';
+                    this.renderEmptyState(alertContainer);
+                } else {
+                    this.renderEmptyState(canvasWrapper);
+                }
                 return;
+            } else {
+                if (viewportFrame) viewportFrame.style.display = 'block';
+                if (alertContainer) alertContainer.style.display = 'none';
             }
 
             for (var r = 0; r < this.roundsList.length; r++) {
@@ -311,7 +324,8 @@
             listContainer.innerHTML = '';
             var self = this;
 
-            if (!this.teamsList || this.teamsList.length === 0 || !this.roundsList || this.roundsList.length === 0) {
+            var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+            if (teamCount < 2 || !this.roundsList || this.roundsList.length === 0) {
                 this.renderEmptyState(listContainer);
                 return;
             }
@@ -526,17 +540,34 @@
          * Toggle View Mode between Bracket View (Tree Canvas) and List View (Matches List)
          */
         switchViewMode: function (mode) {
+            this.currentViewMode = mode;
             if (this.tournamentId) {
+                var storageKeyViewMode = 'tourma_view_mode_' + this.tournamentId;
                 try {
-                    localStorage.setItem('tourma_view_mode_' + this.tournamentId, mode);
+                    localStorage.setItem(storageKeyViewMode, mode);
                 } catch (e) {}
             }
 
-            var bracketContainer = document.getElementById('bracketViewportFrame') || document.getElementById('bracketViewportContainer');
+            var bracketContainer = document.getElementById('bracketViewportFrame');
+            var alertContainer = document.getElementById('singleEmptyAlertContainer');
             var listContainer = document.getElementById('singleListViewContainer');
 
             var btnBracket = document.getElementById('btnViewBracket');
             var btnList = document.getElementById('btnViewList');
+
+            var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+
+            if (teamCount < 2 || !this.roundsList || this.roundsList.length === 0) {
+                if (bracketContainer) bracketContainer.style.display = 'none';
+                if (listContainer) listContainer.classList.remove('show');
+                if (alertContainer) {
+                    alertContainer.style.display = 'flex';
+                    this.renderEmptyState(alertContainer);
+                }
+                return;
+            }
+
+            if (alertContainer) alertContainer.style.display = 'none';
 
             if (mode === 'bracket') {
                 if (bracketContainer) bracketContainer.style.display = 'block';

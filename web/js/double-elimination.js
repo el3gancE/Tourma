@@ -230,14 +230,27 @@
          * Render Upper Bracket (including Grand Finals column at the end)
          */
         renderUpperBracket: function () {
+            var dualWorkspace = document.getElementById('deDualViewportWorkspace');
+            var alertContainer = document.getElementById('deEmptyAlertContainer');
             var wrapper = document.getElementById('upperBracketColumnsWrapper');
             if (!wrapper) return;
             wrapper.innerHTML = '';
             var self = this;
 
-            if (!this.teamsList || this.teamsList.length === 0 || !this.bracketData) {
-                this.renderEmptyState(wrapper);
+            var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+
+            if (teamCount < 2 || !this.bracketData) {
+                if (dualWorkspace) dualWorkspace.style.display = 'none';
+                if (alertContainer) {
+                    alertContainer.style.display = 'flex';
+                    this.renderEmptyState(alertContainer);
+                } else {
+                    this.renderEmptyState(wrapper);
+                }
                 return;
+            } else {
+                if (dualWorkspace) dualWorkspace.style.display = 'flex';
+                if (alertContainer) alertContainer.style.display = 'none';
             }
 
             var upperRounds = this.bracketData.upperRounds || [];
@@ -582,9 +595,15 @@
          */
         renderListView: function () {
             var container = document.getElementById('deListViewContainer');
-            if (!container || !this.bracketData) return;
+            if (!container) return;
             container.innerHTML = '';
             var self = this;
+
+            var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+            if (teamCount < 2 || !this.bracketData) {
+                this.renderEmptyState(container);
+                return;
+            }
 
             var allRounds = (window.TourmaDoubleElimAlgorithm) ?
                 window.TourmaDoubleElimAlgorithm.filterMatchesForListView(this.bracketData) : [];
@@ -863,8 +882,23 @@
         applyViewMode: function (mode) {
             var dualWorkspace = document.getElementById('deDualViewportWorkspace');
             var listContainer = document.getElementById('deListViewContainer');
+            var alertContainer = document.getElementById('deEmptyAlertContainer');
             var btnBracket = document.getElementById('deBtnBracketView');
             var btnList = document.getElementById('deBtnListView');
+
+            var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+
+            if (teamCount < 2 || !this.bracketData) {
+                if (dualWorkspace) dualWorkspace.style.display = 'none';
+                if (listContainer) listContainer.style.display = 'none';
+                if (alertContainer) {
+                    alertContainer.style.display = 'flex';
+                    this.renderEmptyState(alertContainer);
+                }
+                return;
+            }
+
+            if (alertContainer) alertContainer.style.display = 'none';
 
             if (mode === 'list') {
                 if (dualWorkspace) dualWorkspace.style.display = 'none';

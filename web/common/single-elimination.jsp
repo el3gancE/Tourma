@@ -144,6 +144,9 @@
                 </div>
             </div>
 
+            <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
+            <div id="singleEmptyAlertContainer" style="display: none; width: 100%;"></div>
+
             <!-- MODE 1: BRACKET TREE VIEW (Inside Drag-to-Pan Viewport Frame) -->
             <div id="bracketViewportFrame" class="bracket-viewport-frame">
                 

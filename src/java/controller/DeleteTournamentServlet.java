@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * Controller Servlet for Deleting Tournaments
  */
-@WebServlet(name = "DeleteTournamentServlet", urlPatterns = {"/delete-tournament"})
+@WebServlet(name = "DeleteTournamentServlet", urlPatterns = {"/delete-tournament", "/DeleteTournamentServlet"})
 public class DeleteTournamentServlet extends HttpServlet {
 
     @Override

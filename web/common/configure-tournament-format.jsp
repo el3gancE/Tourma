@@ -179,20 +179,68 @@
                             
                             <!-- 1. Round Robin Fields -->
                             <div id="stage1FieldsRR">
-                                <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Số Đội Đi Tiếp <span style="color: #f43f5e;">*</span></label>
-                                <input type="number" id="stage1AdvanceRR" name="stage1AdvanceRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="" min="1" placeholder="Nhập số đội đi tiếp...">
+                                <div style="margin-bottom: 0.75rem;">
+                                    <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Số Đội Đi Tiếp <span style="color: #f43f5e;">*</span></label>
+                                    <input type="number" id="stage1AdvanceRR" name="stage1AdvanceRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="" min="1" placeholder="Nhập số đội đi tiếp...">
+                                </div>
+                                <div style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.85rem;">
+                                    <div style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">
+                                        <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG ĐIỂM & SỐ LẦN GẶP NHAU
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Điểm Thắng</label>
+                                            <input type="number" id="stage1WinPointsRR" name="stage1WinPointsRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="3" min="0" max="10">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Điểm Hòa</label>
+                                            <input type="number" id="stage1DrawPointsRR" name="stage1DrawPointsRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="1" min="0" max="10">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Điểm Thua</label>
+                                            <input type="number" id="stage1LossPointsRR" name="stage1LossPointsRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="0" min="0" max="10">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Số Lượt Gặp Nhau</label>
+                                            <input type="number" id="stage1LegsCountRR" name="stage1LegsCountRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="1" min="1" max="10">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- 2. Group Stage Fields -->
                             <div id="stage1FieldsGR" style="display: none;">
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                                     <div>
                                         <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Số Bảng <span style="color: #f43f5e;">*</span></label>
-                                        <input type="number" id="stage1NumGroupsGR" name="stage1NumGroupsGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="" min="2" placeholder="Nhập số bảng...">
+                                        <input type="number" id="stage1NumGroupsGR" name="stage1NumGroupsGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="" min="1" placeholder="Nhập số bảng...">
                                     </div>
                                     <div>
                                         <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Tổng Số Đội Đi Tiếp <span style="color: #f43f5e;">*</span></label>
                                         <input type="number" id="stage1AdvanceGR" name="stage1AdvanceGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="" min="1" placeholder="Nhập tổng số đội đi tiếp...">
+                                    </div>
+                                </div>
+                                <div style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.85rem;">
+                                    <div style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">
+                                        <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG ĐIỂM & SỐ LẦN GẶP NHAU
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Điểm Thắng</label>
+                                            <input type="number" id="stage1WinPointsGR" name="stage1WinPointsGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="3" min="0" max="10">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Điểm Hòa</label>
+                                            <input type="number" id="stage1DrawPointsGR" name="stage1DrawPointsGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="1" min="0" max="10">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Điểm Thua</label>
+                                            <input type="number" id="stage1LossPointsGR" name="stage1LossPointsGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="0" min="0" max="10">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Số Lượt Gặp Nhau</label>
+                                            <input type="number" id="stage1LegsCountGR" name="stage1LegsCountGR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="1" min="1" max="10">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -248,6 +296,36 @@
                             <button type="button" class="format-pill-btn" id="pillStage2RR" onclick="selectStage2Format('ROUND_ROBIN')">
                                 Round Robin
                             </button>
+                        </div>
+
+                        <!-- DYNAMIC SUB-PANEL FOR STAGE 2 FORMAT CONFIG -->
+                        <div id="stage2ConfigContainer" style="display: none; background: #181d29; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 1rem; margin-top: 0.85rem;">
+                            <!-- Round Robin Fields (Stage 2) -->
+                            <div id="stage2FieldsRR">
+                                <div style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.85rem;">
+                                    <div style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">
+                                        <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG ĐIỂM & SỐ LẦN GẶP NHAU (STAGE 2)
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Điểm Thắng</label>
+                                            <input type="number" id="stage2WinPointsRR" name="stage2WinPointsRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="3" min="0" max="10">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Điểm Hòa</label>
+                                            <input type="number" id="stage2DrawPointsRR" name="stage2DrawPointsRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="1" min="0" max="10">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Điểm Thua</label>
+                                            <input type="number" id="stage2LossPointsRR" name="stage2LossPointsRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="0" min="0" max="10">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.72rem; color: var(--text-muted);">Số Lượt Gặp Nhau</label>
+                                            <input type="number" id="stage2LegsCountRR" name="stage2LegsCountRR" class="form-control" style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);" value="1" min="1" max="10">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -455,6 +533,11 @@
             if (btnSE) btnSE.classList.toggle('active', formatVal === 'SINGLE_ELIMINATION');
             if (btnDE) btnDE.classList.toggle('active', formatVal === 'DOUBLE_ELIMINATION');
             if (btnRR) btnRR.classList.toggle('active', formatVal === 'ROUND_ROBIN');
+
+            var s2ConfigContainer = document.getElementById('stage2ConfigContainer');
+            if (s2ConfigContainer) {
+                s2ConfigContainer.style.display = (formatVal === 'ROUND_ROBIN') ? 'block' : 'none';
+            }
         }
 
         function persistFormatSelection() {
@@ -495,13 +578,31 @@
             var prefix = 'stage' + stageNum;
             if (formatVal === 'ROUND_ROBIN') {
                 var adv = document.getElementById(prefix + 'AdvanceRR');
-                return { advanceCount: adv ? (parseInt(adv.value) || 0) : 0 };
+                var win = document.getElementById(prefix + 'WinPointsRR');
+                var draw = document.getElementById(prefix + 'DrawPointsRR');
+                var loss = document.getElementById(prefix + 'LossPointsRR');
+                var legs = document.getElementById(prefix + 'LegsCountRR');
+                return {
+                    advanceCount: adv ? (parseInt(adv.value) || 0) : 0,
+                    winPoints: win ? (parseInt(win.value) || 3) : 3,
+                    drawPoints: draw ? (parseInt(draw.value) || 1) : 1,
+                    lossPoints: loss ? (parseInt(loss.value) || 0) : 0,
+                    legsCount: legs ? (parseInt(legs.value) || 1) : 1
+                };
             } else if (formatVal === 'GROUP_STAGE') {
                 var numG = document.getElementById(prefix + 'NumGroupsGR');
                 var adv = document.getElementById(prefix + 'AdvanceGR');
+                var win = document.getElementById(prefix + 'WinPointsGR');
+                var draw = document.getElementById(prefix + 'DrawPointsGR');
+                var loss = document.getElementById(prefix + 'LossPointsGR');
+                var legs = document.getElementById(prefix + 'LegsCountGR');
                 return {
                     numGroups: numG ? (parseInt(numG.value) || 0) : 0,
-                    totalAdvanceCount: adv ? (parseInt(adv.value) || 0) : 0
+                    totalAdvanceCount: adv ? (parseInt(adv.value) || 0) : 0,
+                    winPoints: win ? (parseInt(win.value) || 3) : 3,
+                    drawPoints: draw ? (parseInt(draw.value) || 1) : 1,
+                    lossPoints: loss ? (parseInt(loss.value) || 0) : 0,
+                    legsCount: legs ? (parseInt(legs.value) || 1) : 1
                 };
             } else if (formatVal === 'SINGLE_ELIMINATION') {
                 var adv = document.getElementById(prefix + 'AdvanceSE');
@@ -693,14 +794,30 @@
                         var restoreStage = function (stageNum, sFormat, cfg) {
                             var prefix = 'stage' + stageNum;
                             if (!cfg) return;
-                            if (sFormat === 'ROUND_ROBIN' && cfg.advanceCount) {
+                            if (sFormat === 'ROUND_ROBIN') {
                                 var el = document.getElementById(prefix + 'AdvanceRR');
-                                if (el) el.value = cfg.advanceCount;
+                                var win = document.getElementById(prefix + 'WinPointsRR');
+                                var draw = document.getElementById(prefix + 'DrawPointsRR');
+                                var loss = document.getElementById(prefix + 'LossPointsRR');
+                                var legs = document.getElementById(prefix + 'LegsCountRR');
+                                if (el && cfg.advanceCount) el.value = cfg.advanceCount;
+                                if (win && cfg.winPoints !== undefined) win.value = cfg.winPoints;
+                                if (draw && cfg.drawPoints !== undefined) draw.value = cfg.drawPoints;
+                                if (loss && cfg.lossPoints !== undefined) loss.value = cfg.lossPoints;
+                                if (legs && cfg.legsCount !== undefined) legs.value = cfg.legsCount;
                             } else if (sFormat === 'GROUP_STAGE') {
                                 var numEl = document.getElementById(prefix + 'NumGroupsGR');
                                 var advEl = document.getElementById(prefix + 'AdvanceGR');
+                                var winEl = document.getElementById(prefix + 'WinPointsGR');
+                                var drawEl = document.getElementById(prefix + 'DrawPointsGR');
+                                var lossEl = document.getElementById(prefix + 'LossPointsGR');
+                                var legsEl = document.getElementById(prefix + 'LegsCountGR');
                                 if (numEl && cfg.numGroups) numEl.value = cfg.numGroups;
                                 if (advEl && cfg.totalAdvanceCount) advEl.value = cfg.totalAdvanceCount;
+                                if (winEl && cfg.winPoints !== undefined) winEl.value = cfg.winPoints;
+                                if (drawEl && cfg.drawPoints !== undefined) drawEl.value = cfg.drawPoints;
+                                if (lossEl && cfg.lossPoints !== undefined) lossEl.value = cfg.lossPoints;
+                                if (legsEl && cfg.legsCount !== undefined) legsEl.value = cfg.legsCount;
                             } else if (sFormat === 'SINGLE_ELIMINATION' && cfg.advanceCount) {
                                 var el = document.getElementById(prefix + 'AdvanceSE');
                                 if (el) el.value = cfg.advanceCount;

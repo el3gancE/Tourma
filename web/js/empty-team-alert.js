@@ -16,25 +16,43 @@
          */
         checkAndRender: function (tournamentId, teamsList, targetContainer) {
             var wrapper = document.getElementById('emptyTeamAlertContainer');
-            var addBtn = document.getElementById('emptyTeamAlertAddBtn');
             var targetNode = (typeof targetContainer === 'string') ? document.getElementById(targetContainer) : targetContainer;
 
             // Determine if tournament has teams
             var hasTeams = (teamsList && Array.isArray(teamsList) && teamsList.length > 0);
 
             if (!hasTeams) {
-                // If button exists, update link to configure-tournament-teams.jsp?id=...
-                if (addBtn && tournamentId) {
-                    var isCommonPath = window.location.pathname.indexOf('/common/') !== -1;
-                    var baseUrl = isCommonPath ? 'configure-tournament-teams.jsp' : 'common/configure-tournament-teams.jsp';
-                    addBtn.href = baseUrl + '?id=' + encodeURIComponent(tournamentId);
-                }
+                var isCommonPath = window.location.pathname.indexOf('/common/') !== -1;
+                var baseUrl = isCommonPath ? 'configure-tournament-teams.jsp' : 'common/configure-tournament-teams.jsp';
+                var targetHref = baseUrl + '?id=' + encodeURIComponent(tournamentId || '');
 
-                // If target container specified and wrapper exists, move wrapper inside target container or toggle visibility
-                if (wrapper && targetNode) {
+                if (targetNode) {
                     targetNode.innerHTML = '';
-                    targetNode.appendChild(wrapper);
-                    wrapper.style.display = 'flex';
+                    if (wrapper) {
+                        var clone = wrapper.cloneNode(true);
+                        clone.id = '';
+                        clone.style.display = 'flex';
+                        var cloneBtn = clone.querySelector('.btn-empty-team-add') || clone.querySelector('#emptyTeamAlertAddBtn');
+                        if (cloneBtn) {
+                            cloneBtn.href = targetHref;
+                        }
+                        targetNode.appendChild(clone);
+                    } else {
+                        // Fallback HTML if JSP template wrapper not present
+                        targetNode.innerHTML = 
+                            '<div class="empty-team-alert-wrapper" style="display: flex;">' +
+                                '<div class="empty-team-alert-card">' +
+                                    '<div class="empty-team-alert-icon-box">' +
+                                        '<i class="fa-solid fa-users-slash empty-team-alert-icon"></i>' +
+                                    '</div>' +
+                                    '<h3 class="empty-team-alert-title">Chưa có đội bóng nào trong giải đấu</h3>' +
+                                    '<p class="empty-team-alert-desc">Giải đấu hiện tại chưa có thông tin đội tham gia. Vui lòng thêm danh sách các đội bóng để hệ thống tự động sinh sơ đồ nhánh đấu và lịch thi đấu.</p>' +
+                                    '<a href="' + targetHref + '" class="btn-empty-team-add">' +
+                                        '<i class="fa-solid fa-plus"></i> Thêm Đội Bóng Ngay' +
+                                    '</a>' +
+                                '</div>' +
+                            '</div>';
+                    }
                 } else if (wrapper) {
                     wrapper.style.display = 'flex';
                 }

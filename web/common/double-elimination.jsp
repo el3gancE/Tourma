@@ -145,6 +145,9 @@
                 </div>
             </div>
 
+            <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
+            <div id="deEmptyAlertContainer" style="display: none; width: 100%;"></div>
+
             <!-- 1. DUAL VIEWPORTS WORKSPACE (Upper Bracket & Lower Bracket) -->
             <div id="deDualViewportWorkspace" class="de-dual-viewport-workspace">
                 
