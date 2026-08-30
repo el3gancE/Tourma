@@ -151,6 +151,11 @@
                                                     Trận Đấu ➔
                                                 </a>
                                             </c:when>
+                                            <c:when test="${t.format == 'SWISS_LITE' || t.format == 'SWISS'}">
+                                                <a href="${pageContext.request.contextPath}/common/swiss-stage.jsp?id=${t.id}&format=SWISS_LITE" class="btn-view-bracket-card">
+                                                    Trận Đấu ➔
+                                                </a>
+                                            </c:when>
                                             <c:otherwise>
                                                 <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}&format=${t.format}" class="btn-view-bracket-card">
                                                     Trận Đấu ➔
@@ -432,6 +437,12 @@
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Single Elimination';
                                 if (btnView) {
                                     btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&format=SINGLE_ELIMINATION';
+                                    btnView.innerHTML = 'Trận Đấu ➔';
+                                }
+                            } else if (localFmt === 'SWISS_LITE' || localFmt === 'SWISS') {
+                                if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Swiss System';
+                                if (btnView) {
+                                    btnView.href = ctx + '/common/swiss-stage.jsp?id=' + tid + '&format=SWISS_LITE';
                                     btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             }

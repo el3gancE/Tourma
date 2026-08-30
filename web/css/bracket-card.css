@@ -1,10 +1,15 @@
 /* ============================================================================
    TOURMA - BRACKET CARD COMPONENT DESIGN SYSTEM (bracket-card.css)
    Font: Lexend | Compact Dark Theme (#181d29 & #0b0d12)
+   Native CSS Variable Theme Colors for SE, DE, and Swiss Record Pools
    ============================================================================ */
 
 /* Bracket Node Card Container */
 .bracket-node-card {
+    --card-theme-color: #2dd4bf;
+    --card-theme-hover-bg: rgba(45, 212, 191, 0.22);
+    --card-theme-glow: rgba(45, 212, 191, 0.4);
+
     width: 195px;
     background: #181d29;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -20,8 +25,37 @@
 }
 
 .bracket-node-card:hover {
-    border-color: #2dd4bf;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 10px rgba(45, 212, 191, 0.2);
+    border-color: var(--card-theme-color);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 10px var(--card-theme-glow);
+}
+
+/* Theme Color Variants for Bracket Cards (Supported natively in bracket-card) */
+.bracket-node-card.swiss-card-green {
+    --card-theme-color: #22c55e;
+    --card-theme-hover-bg: rgba(34, 197, 94, 0.22);
+    --card-theme-glow: rgba(34, 197, 94, 0.4);
+    border-color: rgba(34, 197, 94, 0.4);
+}
+
+.bracket-node-card.swiss-card-red {
+    --card-theme-color: #f43f5e;
+    --card-theme-hover-bg: rgba(244, 63, 94, 0.22);
+    --card-theme-glow: rgba(244, 63, 94, 0.4);
+    border-color: rgba(244, 63, 94, 0.4);
+}
+
+.bracket-node-card.swiss-card-gold {
+    --card-theme-color: #fbbf24;
+    --card-theme-hover-bg: rgba(251, 191, 36, 0.22);
+    --card-theme-glow: rgba(251, 191, 36, 0.4);
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+.bracket-node-card.swiss-card-mint {
+    --card-theme-color: #2dd4bf;
+    --card-theme-hover-bg: rgba(45, 212, 191, 0.22);
+    --card-theme-glow: rgba(45, 212, 191, 0.4);
+    border-color: rgba(45, 212, 191, 0.4);
 }
 
 /* Card Header: Match ID (#1, #2...) & Status Badge (DONE / PENDING) */
@@ -50,8 +84,8 @@
 
 .bracket-status-badge.done {
     background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: var(--card-theme-color);
+    border: 1px solid var(--card-theme-color);
 }
 
 .bracket-status-badge.pending {
@@ -122,7 +156,7 @@
     letter-spacing: 0;
 }
 
-/* Unconfirmed / Placeholder Team Name Styling (e.g. W #1 or L #2) */
+/* Unconfirmed / Placeholder Team Name Styling (e.g. W #1 or L #2 or TBD) */
 .bracket-team-name.placeholder {
     color: #64748b;
     font-style: italic;
@@ -160,30 +194,30 @@
     flex-shrink: 0;
 }
 
-/* Winner Team Row Highlight */
+/* Winner Team Row Highlight: Uses --card-theme-color */
 .bracket-team-row.winner {
-    background: rgba(45, 212, 191, 0.22);
-    border-left: 2.5px solid #2dd4bf;
+    background: var(--card-theme-hover-bg);
+    border-left: 2.5px solid var(--card-theme-color);
 }
 
 .bracket-team-row.winner .bracket-team-name {
-    color: #2dd4bf !important;
+    color: var(--card-theme-color) !important;
     font-size: 0.76rem !important;
     font-weight: 700 !important;
     letter-spacing: 0;
 }
 
 .bracket-team-row.loser .bracket-team-name {
-    color: #94a3b8;
+    color: #cbd5e1;
     font-size: 0.76rem !important;
     font-weight: 700 !important;
     letter-spacing: 0;
 }
 
 .bracket-team-row.winner .bracket-score-box {
-    background: #2dd4bf;
+    background: var(--card-theme-color);
     color: #0b0d12;
-    border-color: #2dd4bf;
+    border-color: var(--card-theme-color);
 }
 
 /* Tree Connectors: Replaced by Dynamic SVG Lines */

@@ -1,0 +1,473 @@
+/* ==========================================================================
+   TOURMA - SWISS SYSTEM DEDICATED STYLESHEET (swiss-stage.css)
+   Font: Lexend
+   Design System: Obsidian Glassmorphism
+   (All bracket card themes are handled natively in bracket-card.css & bracket-viewport.css)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
+
+body, button, input, select, textarea {
+  font-family: 'Lexend', sans-serif !important;
+}
+
+/* Control Bar */
+.swiss-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(18, 22, 32, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  margin-top: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.tournament-info-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.tournament-name-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* PILL-SHAPED NAVBAR BADGES (PILL SHAPE - BORDER-RADIUS: 50PX) */
+.format-badge-swiss {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.28rem 0.85rem;
+  border-radius: 50px !important; /* PILL SHAPE AS REQUESTED */
+  background: rgba(45, 212, 191, 0.14);
+  color: #2dd4bf;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.team-count-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.28rem 0.85rem;
+  border-radius: 50px !important; /* PILL SHAPE AS REQUESTED */
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.qualified-count-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.28rem 0.85rem;
+  border-radius: 50px !important; /* PILL SHAPE AS REQUESTED */
+  background: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+}
+
+/* Quick Mode Toggle Button */
+.btn-quick-mode-toggle {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  height: 36px;
+  padding: 0 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 50px !important; /* PILL SHAPE */
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.btn-quick-mode-toggle.active {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.45);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.25);
+}
+
+/* View Mode Toggles Group (List vs Bracket) */
+.swiss-view-mode-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(11, 13, 18, 0.6);
+  padding: 0.25rem;
+  border-radius: 50px !important; /* PILL SHAPE */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-toggle-view {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 0.4rem 0.95rem;
+  border-radius: 50px !important; /* PILL SHAPE */
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-toggle-view:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btn-toggle-view.active {
+  background: rgba(45, 212, 191, 0.15);
+  color: #2dd4bf;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  box-shadow: 0 0 12px rgba(45, 212, 191, 0.2);
+}
+
+/* List View Outer Container (Exactly 900px centered like SE and DE) */
+#swissListView {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* List View Round Filter Pills */
+.swiss-round-pills-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.swiss-round-pill-btn {
+  background: rgba(18, 22, 32, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  padding: 0.45rem 1rem;
+  border-radius: 50px !important; /* PILL SHAPE */
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.swiss-round-pill-btn:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.swiss-round-pill-btn.active {
+  background: rgba(45, 212, 191, 0.15);
+  border-color: #2dd4bf;
+  color: #2dd4bf;
+  box-shadow: 0 0 10px rgba(45, 212, 191, 0.2);
+}
+
+/* LIST VIEW: UNBOXED NARROW LAYOUT MATCHING SE/DE (MAX-WIDTH 900px) */
+.swiss-list-round-card {
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.swiss-list-round-header {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fbbf24; /* GOLD */
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-bottom: 0.4rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.swiss-list-round-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fbbf24; /* GOLD */
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.swiss-list-pool-box {
+  margin-bottom: 1rem;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.swiss-list-pool-box:last-child {
+  margin-bottom: 0;
+}
+
+.swiss-list-pool-header {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #2dd4bf; /* Default Mint */
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.swiss-list-matches-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+/* Viewport Bracket View Styling (FLUSH ALIGNED 220px COLUMN) */
+.swiss-bracket-column {
+  width: 220px !important;
+  min-width: 220px !important;
+  max-width: 220px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-sizing: border-box;
+}
+
+/* ROUND HEADER CARD 100% FLUSH ALIGNED WITH 220px COLUMN */
+.swiss-bracket-col-header {
+  background: #181d29;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.45rem 0.5rem;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-bottom: 1rem;
+}
+
+.swiss-bracket-col-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #fbbf24; /* GOLD AS REQUESTED */
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* UNBOXED BRACKET RECORD POOL CONTAINERS (100% FLUSH WIDTH) */
+.swiss-pool-card {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.swiss-pool-card .bracket-node-card,
+.swiss-pool-card .swiss-card-item {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.swiss-pool-card-header {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #2dd4bf; /* Default Mint */
+  padding-bottom: 0.2rem;
+  margin-bottom: 0.2rem;
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* COMPACT RECORD POOL RANDOM CONTROLS (INPUT + RANDOM BUTTON) */
+.pool-header-random-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pool-random-input {
+  width: 36px;
+  height: 20px;
+  background: #0b0d12;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  color: #fbbf24;
+  font-family: 'Lexend', sans-serif !important;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.pool-random-input:focus {
+  border-color: #fbbf24;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.3);
+  background: #141a26;
+}
+
+.btn-pool-random {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.18rem 0.45rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.btn-pool-random:hover {
+  background: rgba(45, 212, 191, 0.2);
+  color: #2dd4bf;
+  border-color: #2dd4bf;
+  box-shadow: 0 0 8px rgba(45, 212, 191, 0.3);
+}
+
+.btn-round-random:disabled,
+.btn-pool-random:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+}
+
+/* CUSTOM SWISS RECORD POOL HEADER COLOR UTILITIES */
+.swiss-pool-green {
+  color: #22c55e !important; /* GREEN for 2-0, 2-1 */
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.25);
+}
+
+.swiss-pool-red {
+  color: #f43f5e !important; /* RED for 0-2, 1-2 */
+  text-shadow: 0 0 8px rgba(244, 63, 94, 0.25);
+}
+
+.swiss-pool-gold {
+  color: #fbbf24 !important; /* GOLD for 2-2 */
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.25);
+}
+
+.swiss-pool-mint {
+  color: #2dd4bf !important; /* MINT for 0-0, 1-0, 0-1, 1-1 */
+}
+
+/* Disabled unconfirmed TBD cards: keep inner boxes dark and unhighlighted */
+.bracket-node-card.disabled-unconfirmed {
+  cursor: default !important;
+  opacity: 0.65;
+}
+
+.bracket-node-card.disabled-unconfirmed .bracket-team-row {
+  pointer-events: none !important;
+  background: transparent !important;
+  border-left: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.bracket-node-card.disabled-unconfirmed .bracket-team-name {
+  color: #64748b !important;
+  font-style: italic !important;
+  font-weight: 500 !important;
+}
+
+/* Floating Zoom Toolbar Button Fix (Exact SE & DE Styling) */
+.bracket-zoom-toolbar {
+  position: absolute;
+  top: 0.85rem;
+  right: 1.25rem;
+  z-index: 50;
+  background: rgba(24, 29, 41, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 0.35rem 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(45, 212, 191, 0.15);
+}
+
+.bracket-zoom-toolbar button, .btn-zoom {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+  outline: none !important;
+  padding: 0 !important;
+}
+
+.bracket-zoom-toolbar button:hover, .btn-zoom:hover {
+  background: #2dd4bf !important;
+  color: #0b0d12 !important;
+  border-color: #2dd4bf !important;
+  box-shadow: 0 0 10px rgba(45, 212, 191, 0.3) !important;
+}
+
+.zoom-level-badge {
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  color: #2dd4bf !important;
+  min-width: 42px !important;
+  text-align: center !important;
+}
