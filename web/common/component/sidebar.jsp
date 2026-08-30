@@ -33,6 +33,8 @@
         targetBracketUrl = "round-robin.jsp";
     } else if ("GROUP_STAGE".equalsIgnoreCase(format)) {
         targetBracketUrl = "group-stage.jsp";
+    } else if ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format)) {
+        targetBracketUrl = "swiss-stage.jsp";
     }
 
     String tournamentName = "Giải Đấu Tourma";
@@ -82,12 +84,12 @@
             </a>
         </li>
 
-        <!-- BƯỚC 3: VÒNG ĐẤU / LỊCH THI ĐẤU / VÒNG BẢNG -->
+        <!-- BƯỚC 3: VÒNG ĐẤU / LỊCH THI ĐẤU / VÒNG BẢNG / VÒNG SWISS -->
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %>"
                class="sidebar-menu-link <%= "bracket".equals(activeStep) || "step3".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "fa-layer-group" : "fa-diagram-project") %> menu-icon"></i>
-                <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "Vòng Bảng" : "Sơ Đồ Nhánh") %></span>
+                <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "fa-layer-group" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "fa-diagram-project" : "fa-diagram-project")) %> menu-icon"></i>
+                <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "Vòng Bảng" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "Vòng Swiss" : "Sơ Đồ Nhánh")) %></span>
             </a>
         </li>
 

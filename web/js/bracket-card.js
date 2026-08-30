@@ -33,8 +33,8 @@
             var t1Name = t1.name || defaultT1Name;
             var t2Name = t2.name || defaultT2Name;
 
-            var isT1Placeholder = !t1.name || t1Name.startsWith('W #') || t1Name.startsWith('L #');
-            var isT2Placeholder = !t2.name || t2Name.startsWith('W #') || t2Name.startsWith('L #');
+            var isT1Placeholder = !t1.name || t1Name.startsWith('W #') || t1Name.startsWith('L #') || t1Name === 'TBD';
+            var isT2Placeholder = !t2.name || t2Name.startsWith('W #') || t2Name.startsWith('L #') || t2Name === 'TBD';
 
             var isT1Bye = (t1Name === 'BYE' || t1.isBye === true);
             var isT2Bye = (t2Name === 'BYE' || t2.isBye === true);

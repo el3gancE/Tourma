@@ -22,6 +22,8 @@
         targetPage = "round-robin.jsp";
     } else if ("GROUP_STAGE".equalsIgnoreCase(format)) {
         targetPage = "manage-group.jsp";
+    } else if ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format)) {
+        targetPage = "swiss-stage.jsp";
     }
 
     String targetUrl = request.getContextPath() + "/common/" + targetPage;

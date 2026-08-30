@@ -241,6 +241,18 @@
                 return false;
             }
 
+            // Helper to check if format is Swiss System (Swiss Lite)
+            function checkIsSwissFormat() {
+                if (tourneyFormatServer === 'SWISS_LITE' || tourneyFormatServer === 'SWISS') return true;
+                var urlFormat = new URLSearchParams(window.location.search).get('format');
+                if (urlFormat && (urlFormat.toUpperCase() === 'SWISS_LITE' || urlFormat.toUpperCase() === 'SWISS')) return true;
+                if (tournamentId) {
+                    var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
+                    if (localFmt && (localFmt.toUpperCase() === 'SWISS_LITE' || localFmt.toUpperCase() === 'SWISS')) return true;
+                }
+                return false;
+            }
+
             // Helper to check if two team lists contain the exact same team names (ignoring order)
             function isSameTeamSet(listA, listB) {
                 if (!listA || !listB) return false;
@@ -676,6 +688,15 @@
                     alert('Cần ít nhất 2 đội bóng để sinh sơ đồ thi đấu.');
                     if (e && e.preventDefault) e.preventDefault();
                     return false;
+                }
+
+                // Swiss System validation: MUST have EXACTLY 16 teams!
+                if (checkIsSwissFormat()) {
+                    if (currentTeamsList.length !== 16) {
+                        alert('⚠️ Thể thức Swiss System bắt buộc phải có CHÍNH XÁC 16 đội tham gia (Hiện tại bạn đã nhập ' + currentTeamsList.length + ' đội).\n\nVui lòng nhập đúng 16 đội để tiếp tục sinh sơ đồ Swiss System.');
+                        if (e && e.preventDefault) e.preventDefault();
+                        return false;
+                    }
                 }
 
                 var isRR = checkIsRoundRobin();
