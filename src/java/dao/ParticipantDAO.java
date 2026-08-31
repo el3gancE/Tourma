@@ -44,6 +44,10 @@ public class ParticipantDAO {
         return list;
     }
 
+    public List<Team> getTeamsByTournamentId(int tournamentId) {
+        return getTeamsByTournamentId(String.valueOf(tournamentId));
+    }
+
     public boolean saveTournamentTeams(String tournamentId, List<String> teamNames) {
         if (tournamentId == null || teamNames == null || teamNames.isEmpty()) {
             return false;

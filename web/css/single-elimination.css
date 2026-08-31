@@ -152,7 +152,7 @@
 .single-round-column {
     display: flex;
     flex-direction: column;
-    width: 195px;
+    width: 220px;
     flex-shrink: 0;
 }
 
@@ -173,6 +173,7 @@
 }
 
 .single-round-matches-box {
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-around;

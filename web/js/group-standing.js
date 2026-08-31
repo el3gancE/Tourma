@@ -137,7 +137,7 @@
                     var btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = 'rr-round-tab-btn' + (self.selectedGroupFilter === gKey ? ' active' : '');
-                    btn.innerText = 'Bảng ' + gKey;
+                    btn.innerText = gKey.startsWith('Bảng') ? gKey : ('Bảng ' + gKey);
                     btn.onclick = function () {
                         self.selectedGroupFilter = gKey;
                         self.renderGroupFilterPills();
@@ -447,6 +447,208 @@
 
         render: function (groups, groupMatches, rules) {
             this.renderAllGroupStandings('gsStandingsContainer', groups, groupMatches, rules);
+        },
+
+        getQualifiedTeamsCrossover: function (tournamentId, groups, groupMatches, totalAdvanceCount) {
+            this.groups = groups || this.groups || {};
+            this.groupMatches = groupMatches || this.groupMatches || {};
+            if (totalAdvanceCount) this.rules.advanceCount = Number(totalAdvanceCount);
+
+            var standings = this.calculateAllGroupStandings();
+            var groupKeys = Object.keys(standings).sort();
+            var numGroups = groupKeys.length || 1;
+            var advCount = this.rules.advanceCount || 4;
+
+            var directPerGroup = Math.floor(advCount / numGroups);
+            var remainder = advCount % numGroups;
+
+            var qualifiedList = [];
+
+            // 1. Direct qualifiers
+            for (var k = 0; k < groupKeys.length; k++) {
+                var gKey = groupKeys[k];
+                var gList = standings[gKey] || [];
+                var limit = Math.min(directPerGroup, gList.length);
+                for (var i = 0; i < limit; i++) {
+                    var tm = gList[i];
+                    qualifiedList.push({
+                        id: tm.teamId,
+                        name: tm.name,
+                        groupKey: gKey,
+                        groupRank: i + 1,
+                        points: tm.pts,
+                        goalDifference: tm.gd,
+                        goalsFor: tm.gf,
+                        isWildcard: false
+                    });
+                }
+            }
+
+            // 2. Wildcards
+            if (remainder > 0) {
+                var wildcardCandidates = [];
+                var wildcardRankIndex = directPerGroup;
+
+                for (var k = 0; k < groupKeys.length; k++) {
+                    var gKey = groupKeys[k];
+                    var gList = standings[gKey] || [];
+                    if (gList.length > wildcardRankIndex) {
+                        var candidate = gList[wildcardRankIndex];
+                        wildcardCandidates.push({
+                            id: candidate.teamId,
+                            name: candidate.name,
+                            groupKey: gKey,
+                            groupRank: wildcardRankIndex + 1,
+                            points: candidate.pts,
+                            goalDifference: candidate.gd,
+                            goalsFor: candidate.gf,
+                            isWildcard: true
+                        });
+                    }
+                }
+
+                wildcardCandidates.sort(function (a, b) {
+                    if (b.points !== a.points) return b.points - a.points;
+                    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+                    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                    return (a.name || '').localeCompare(b.name || '');
+                });
+
+                var takeCount = Math.min(remainder, wildcardCandidates.length);
+                for (var w = 0; w < takeCount; w++) {
+                    qualifiedList.push(wildcardCandidates[w]);
+                }
+            }
+
+            // 3. Dynamic Crossover Pairing
+            return this.pairCrossoverForKnockout(qualifiedList);
+        },
+
+        pairCrossoverForKnockout: function (qualifiedTeams) {
+            if (!qualifiedTeams || qualifiedTeams.length === 0) return [];
+
+            var count = qualifiedTeams.length;
+            var nextPowerOfTwo = function (n) {
+                if (n <= 1) return 2;
+                var p = 1;
+                while (p < n) p *= 2;
+                return p;
+            };
+
+            var generateSeedPairs = function (pow2) {
+                var rounds = Math.log2(pow2) - 1;
+                var pls = [1, 2];
+                for (var i = 0; i < rounds; i++) {
+                    var nextPls = [];
+                    var sum = Math.pow(2, i + 2) + 1;
+                    for (var j = 0; j < pls.length; j++) {
+                        nextPls.push(pls[j]);
+                        nextPls.push(sum - pls[j]);
+                    }
+                    pls = nextPls;
+                }
+                var pairs = [];
+                for (var k = 0; k < pls.length; k += 2) {
+                    pairs.push([pls[k], pls[k + 1]]);
+                }
+                return pairs;
+            };
+
+            var bracketSize = nextPowerOfTwo(count);
+            var seedPairs = generateSeedPairs(bracketSize);
+            var numMatches = seedPairs.length;
+
+            // Sort qualified teams: Rank 1 first (A..Z), Rank 2 (A..Z), Wildcards by PTS
+            var sorted = qualifiedTeams.slice().sort(function (a, b) {
+                var rA = a.groupRank || 99;
+                var rB = b.groupRank || 99;
+                if (rA !== rB) return rA - rB;
+                var gA = a.groupKey || '';
+                var gB = b.groupKey || '';
+                return gA.localeCompare(gB);
+            });
+
+            // Assign top half to top slots of matches (seedPairs[m][0])
+            // and bottom half to bottom slots of matches (seedPairs[m][1])
+            var matchTops = [];
+            var matchBots = [];
+
+            for (var m = 0; m < numMatches; m++) {
+                matchTops.push((m < sorted.length) ? sorted[m] : null);
+            }
+            for (var m = numMatches; m < 2 * numMatches; m++) {
+                matchBots.push((m < sorted.length) ? sorted[m] : null);
+            }
+
+            // ZERO-CONFLICT CONSTRAINT SOLVER:
+            // Guarantees matchTops[m].groupKey != matchBots[m].groupKey
+            var solveZeroConflict = function (tops, bots) {
+                var bestPerm = bots.slice();
+                var countConflicts = function (p) {
+                    var conf = 0;
+                    for (var i = 0; i < tops.length; i++) {
+                        if (tops[i] && p[i] && tops[i].groupKey && p[i].groupKey && tops[i].groupKey === p[i].groupKey) {
+                            conf++;
+                        }
+                    }
+                    return conf;
+                };
+
+                var current = bots.slice();
+                var minConflicts = countConflicts(current);
+                if (minConflicts === 0) return current;
+
+                for (var step = 0; step < 3000; step++) {
+                    var conflictIndices = [];
+                    for (var i = 0; i < tops.length; i++) {
+                        if (tops[i] && current[i] && tops[i].groupKey && current[i].groupKey && tops[i].groupKey === current[i].groupKey) {
+                            conflictIndices.push(i);
+                        }
+                    }
+                    if (conflictIndices.length === 0) {
+                        return current; // Zero conflict found!
+                    }
+
+                    var cIdx = conflictIndices[Math.floor(Math.random() * conflictIndices.length)];
+                    var swapWith = Math.floor(Math.random() * current.length);
+                    if (cIdx === swapWith) continue;
+
+                    var tmp = current[cIdx];
+                    current[cIdx] = current[swapWith];
+                    current[swapWith] = tmp;
+
+                    var newConf = countConflicts(current);
+                    if (newConf < minConflicts) {
+                        minConflicts = newConf;
+                        bestPerm = current.slice();
+                        if (minConflicts === 0) return bestPerm;
+                    } else if (newConf > minConflicts) {
+                        if (Math.random() > 0.15) {
+                            var rev = current[cIdx];
+                            current[cIdx] = current[swapWith];
+                            current[swapWith] = rev;
+                        }
+                    }
+                }
+
+                return bestPerm;
+            };
+
+            var resolvedBots = solveZeroConflict(matchTops, matchBots);
+
+            // Reconstruct ordered seed array [Seed 1, Seed 2, ..., Seed N]
+            var seedArray = new Array(bracketSize);
+            for (var m = 0; m < numMatches; m++) {
+                var topSlot = seedPairs[m][0]; // 1-indexed
+                var botSlot = seedPairs[m][1]; // 1-indexed
+                var topTeam = matchTops[m];
+                var botTeam = resolvedBots[m];
+
+                seedArray[topSlot - 1] = topTeam ? (topTeam.name || topTeam) : 'BYE';
+                seedArray[botSlot - 1] = botTeam ? (botTeam.name || botTeam) : 'BYE';
+            }
+
+            return seedArray;
         }
     };
 })();

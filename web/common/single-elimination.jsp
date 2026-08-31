@@ -9,12 +9,28 @@
     String tourneyId = request.getParameter("id");
     String tourneyName = "Giải Đấu Single Elimination";
     String teamsJson = "[]";
+    int cutTarget = 0;
+    String tournamentType = "SINGLE_STAGE";
+    String stageParam = request.getParameter("stage");
+    int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
+    String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
+
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId);
-            if (t != null && t.getName() != null && !t.getName().trim().isEmpty()) {
-                tourneyName = t.getName();
+            if (t != null) {
+                if (t.getName() != null && !t.getName().trim().isEmpty()) {
+                    tourneyName = t.getName();
+                }
+                // cutTarget only applies to MULTI_STAGE Stage 1 (Stage 1 → Stage 2 cut)
+                // Single Stage & Stage 2 always play all rounds to find a champion
+                if (t.getTournamentType() != null) {
+                    tournamentType = t.getTournamentType();
+                }
+                if ("MULTI_STAGE".equals(tournamentType) && currentStage == 1) {
+                    cutTarget = t.getAdvancingSeatsCount();
+                }
             }
             ParticipantDAO pDao = new ParticipantDAO();
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
@@ -54,6 +70,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     </head>
     <body>
@@ -63,6 +80,12 @@
         <!-- Final Stage Popup Banner -->
         <jsp:include page="/common/component/final-stage-popup.jsp"/>
 
+        <!-- Stage End Popup Component -->
+        <jsp:include page="/common/component/stage-end-popup.jsp"/>
+
+        <!-- Stage Finish Alert Component (Locked Stage 2) -->
+        <jsp:include page="/common/component/stage-finish-alert.jsp"/>
+
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="tournaments"/>
@@ -70,7 +93,7 @@
 
         <!-- Sidebar Component (Step 4: Vòng Đấu) -->
         <jsp:include page="/common/component/sidebar.jsp">
-            <jsp:param name="activeStep" value="bracket"/>
+            <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
             <jsp:param name="id" value="${not empty param.id ? param.id : (tournament != null ? tournament.id : '')}"/>
         </jsp:include>
 
@@ -86,6 +109,9 @@
                     </h1>
                     <span class="format-badge-single">Single Elimination</span>
                     <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
+                    <span id="tournamentAdvancingBadge" class="advancing-count-badge" style="background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.65rem; border-radius: 20px; display: inline-flex; align-items: center; gap: 0.4rem; <%= ("MULTI_STAGE".equals(tournamentType) && cutTarget > 1) ? "" : "display: none;" %>">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> <%= cutTarget %> Đội đi tiếp
+                    </span>
                 </div>
 
                 <!-- Right Action Bar: Standalone Reset Button + Quick Mode Toggle + View Mode Toggle Buttons -->
@@ -199,7 +225,74 @@
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var preloadedTeams = <%= teamsJson %>;
-                window.SingleEliminationEngine.init(tourneyId, null, preloadedTeams);
+                var cutTarget = <%= cutTarget %>; // from DB
+                var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
+                var currentStage = <%= currentStage %>;
+
+                if (currentStage === 2) {
+                    // Resolve advCount / cutTarget for Stage 2
+                    var advCount = <%= cutTarget %>;
+                    if (!advCount || advCount <= 1) {
+                        try {
+                            var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
+                            if (multiCfg && multiCfg.stage1Config) {
+                                advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                            }
+                        } catch(e) {}
+                    }
+                    if (!advCount || advCount <= 1) {
+                        try {
+                            var rawAdv = localStorage.getItem('tourma_advance_count_' + tourneyId) || localStorage.getItem('tourma_cut_target_' + tourneyId);
+                            if (rawAdv) advCount = parseInt(rawAdv, 10);
+                        } catch(e) {}
+                    }
+
+                    // Stage 2 SE: Load qualified teams from Stage 1 completion
+                    var s2TeamsRaw = null;
+                    try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                    if (s2TeamsRaw && s2TeamsRaw.length > 0) {
+                        preloadedTeams = s2TeamsRaw;
+                    } else if (advCount && advCount > 1 && preloadedTeams && preloadedTeams.length > advCount) {
+                        preloadedTeams = preloadedTeams.slice(0, advCount);
+                    }
+                    cutTarget = 0; // Stage 2 always plays to find a champion!
+                } else if (!isMultiStage) {
+                    // Single Stage = tìm vô địch, chơi hết rounds — clear stale cut config
+                    try { localStorage.removeItem('tourma_advance_count_' + tourneyId); } catch(e) {}
+                    try { localStorage.removeItem('tourma_cut_target_' + tourneyId); } catch(e) {}
+                    cutTarget = 0;
+                } else {
+                    // Multi-Stage Stage 1: read cutTarget from tourma_multi_config_ localStorage (most reliable source)
+                    try {
+                        var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
+                        if (multiCfg && multiCfg.stage1Config) {
+                            var cfgAdv = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                            if (cfgAdv > 1) {
+                                cutTarget = cfgAdv;
+                                // Sync to the simple keys too
+                                localStorage.setItem('tourma_advance_count_' + tourneyId, cfgAdv);
+                                localStorage.setItem('tourma_cut_target_' + tourneyId, cfgAdv);
+                            }
+                        }
+                    } catch(e) {}
+                    // Fallback: try tourma_advance_count_ key
+                    if (!cutTarget || cutTarget <= 1) {
+                        try {
+                            var adv = localStorage.getItem('tourma_advance_count_' + tourneyId)
+                                   || localStorage.getItem('tourma_cut_target_' + tourneyId);
+                            if (adv) cutTarget = parseInt(adv, 10);
+                        } catch(e) {}
+                    }
+                }
+                // DEBUG
+                console.log('[JSP init] tourneyId=', tourneyId,
+                    '| stage=', currentStage,
+                    '| isMultiStage=', isMultiStage,
+                    '| cutTarget(DB)=', <%= cutTarget %>,
+                    '| tourma_multi_config_=', localStorage.getItem('tourma_multi_config_' + tourneyId),
+                    '| tourma_advance_count_=', localStorage.getItem('tourma_advance_count_' + tourneyId));
+                window.SingleEliminationEngine.init(tourneyId, null, preloadedTeams, cutTarget, currentStage);
+                console.log('[JSP init] final cutTarget passed to engine=', cutTarget);
             });
         </script>
     </body>

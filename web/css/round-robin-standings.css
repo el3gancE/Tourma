@@ -184,7 +184,7 @@
     background: rgba(45, 212, 191, 0.04);
 }
 
-/* 3. Rank Badge - Rounded Square with Gold Number (Matching Seed Badge) */
+/* 3. Rank Badges - Signature Dark Square with Bold Gold Numbers (Uniform for all rows) */
 .rr-rank-badge {
     display: inline-flex;
     align-items: center;
@@ -194,10 +194,32 @@
     background: #1f2533 !important;
     border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 5px !important;
-    color: #fbbf24 !important;
+    color: #fbbf24 !important; /* Luôn là nền đen chữ vàng đồng nhất */
     font-family: 'Lexend', sans-serif !important;
     font-weight: 800 !important;
     font-size: 0.82rem !important;
+    transition: all 0.18s ease;
+}
+
+/* Đổi màu cả hàng cho các vị trí đi tiếp (hoặc Hạng 1 ở Stage cuối) */
+.rr-table tr.rr-row-advancing-mint td:first-child {
+    border-left: 3px solid #2dd4bf;
+}
+
+.rr-table tr.rr-row-advancing-mint td {
+    background: rgba(45, 212, 191, 0.08);
+}
+
+.rr-table tr.rr-row-advancing-mint:hover td {
+    background: rgba(45, 212, 191, 0.15) !important;
+}
+
+.rr-table tr td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rr-table tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
 }
 
 /* Standard Stats Cell (Trận, BT, BB, HS) - Lexend Bold */

@@ -401,6 +401,101 @@
                 localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
                 localStorage.setItem('tourma_group_matches_' + this.tournamentId, JSON.stringify(this.groupMatches));
             } catch (e) {}
+            this.checkAndTriggerStage2Cut();
+            if (window.StageEndPopup) {
+                window.StageEndPopup.update(this.tournamentId, 'GROUP_STAGE', this.matchesMap, this.teamsList, this.config, this.groupMatches, 1);
+            }
+        },
+
+        checkAndTriggerStage2Cut: function () {
+            if (!this.tournamentId) return;
+
+            var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + this.tournamentId);
+            if (!multiCfgRaw) return;
+
+            var multiCfg = null;
+            try { multiCfg = JSON.parse(multiCfgRaw); } catch (e) { return; }
+            if (!multiCfg || multiCfg.stage1Format !== 'GROUP_STAGE') return;
+
+            // Check if all non-BYE matches across all groups are COMPLETED
+            var groupKeys = Object.keys(this.groupMatches);
+            if (groupKeys.length === 0) return;
+
+            var totalMatches = 0;
+            var completedMatches = 0;
+
+            for (var k = 0; k < groupKeys.length; k++) {
+                var mList = this.groupMatches[groupKeys[k]] || [];
+                for (var m = 0; m < mList.length; m++) {
+                    var match = mList[m];
+                    var t1 = match.team1 ? match.team1.name : '';
+                    var t2 = match.team2 ? match.team2.name : '';
+                    if (!t1 || !t2 || t1 === 'BYE' || t2 === 'BYE') continue;
+
+                    totalMatches++;
+                    var s1 = (match.team1 && match.team1.score !== '' && match.team1.score != null && !isNaN(Number(match.team1.score))) ? Number(match.team1.score) : null;
+                    var s2 = (match.team2 && match.team2.score !== '' && match.team2.score != null && !isNaN(Number(match.team2.score))) ? Number(match.team2.score) : null;
+                    if (s1 !== null && s2 !== null) {
+                        completedMatches++;
+                    }
+                }
+            }
+
+            if (totalMatches === 0 || completedMatches < totalMatches) {
+                try {
+                    localStorage.removeItem('tourma_stage1_completed_' + this.tournamentId);
+                } catch(e) {}
+                return; // Not all group matches finished yet!
+            }
+
+            // All group stage matches finished! Calculate standings and crossover pairing for Stage 2!
+            var advCount = 0;
+            if (multiCfg.stage1Config) {
+                advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+            }
+            if (!advCount || advCount <= 1) {
+                try {
+                    var rawAdv = localStorage.getItem('tourma_advance_count_' + this.tournamentId) || localStorage.getItem('tourma_cut_target_' + this.tournamentId);
+                    if (rawAdv) advCount = parseInt(rawAdv, 10);
+                } catch(e) {}
+            }
+            if (!advCount || advCount <= 1) advCount = 4;
+
+            var finalStage2Teams = [];
+            if (window.TourmaGroupStanding && typeof window.TourmaGroupStanding.getQualifiedTeamsCrossover === 'function') {
+                finalStage2Teams = window.TourmaGroupStanding.getQualifiedTeamsCrossover(this.tournamentId, this.groups, this.groupMatches, advCount);
+            }
+
+            if (!finalStage2Teams || finalStage2Teams.length === 0) return;
+
+            localStorage.setItem('tourma_stage2_teams_' + this.tournamentId, JSON.stringify(finalStage2Teams));
+
+            var s2Format = multiCfg.stage2Format || 'SINGLE_ELIMINATION';
+
+            if (s2Format === 'SINGLE_ELIMINATION' && window.TourmaSingleElimAlgorithm) {
+                var seBracket = window.TourmaSingleElimAlgorithm.generateBracket(finalStage2Teams, 0);
+                if (seBracket) {
+                    localStorage.setItem('tourma_bracket_stage2_' + this.tournamentId, JSON.stringify(seBracket));
+                    localStorage.setItem('tourma_matches_stage2_' + this.tournamentId, JSON.stringify(seBracket.matchesMap || {}));
+                }
+            } else if (s2Format === 'DOUBLE_ELIMINATION' && (window.TourmaDoubleElimAlgorithm || window.TourmaDoubleEliminationAlgorithm)) {
+                var doubleEngine = window.TourmaDoubleElimAlgorithm || window.TourmaDoubleEliminationAlgorithm;
+                var deBracket = doubleEngine.generateDoubleElimination(finalStage2Teams, 0);
+                if (deBracket) {
+                    localStorage.setItem('tourma_de_matches_stage2_' + this.tournamentId, JSON.stringify(deBracket));
+                    localStorage.setItem('tourma_matches_stage2_' + this.tournamentId, JSON.stringify(deBracket.matchesMap || {}));
+                }
+            } else if (s2Format === 'ROUND_ROBIN' && window.TourmaRoundRobinAlgorithm) {
+                var rrBracket = window.TourmaRoundRobinAlgorithm.generateRoundRobin(finalStage2Teams, multiCfg.stage2Config);
+                if (rrBracket) {
+                    localStorage.setItem('tourma_rr_matches_stage2_' + this.tournamentId, JSON.stringify(rrBracket));
+                    localStorage.setItem('tourma_matches_stage2_' + this.tournamentId, JSON.stringify(rrBracket.matchesMap || {}));
+                }
+            }
+
+            multiCfg.stage2MatchesCreated = true;
+            localStorage.setItem('tourma_multi_config_' + this.tournamentId, JSON.stringify(multiCfg));
+            localStorage.setItem('tourma_stage1_completed_' + this.tournamentId, 'true');
         },
 
         bindEvents: function () {
@@ -612,6 +707,10 @@
             this.updateHeaderInfo();
             this.renderGroupSelectorBar();
             this.renderMatchesView();
+
+            if (window.StageEndPopup) {
+                window.StageEndPopup.update(this.tournamentId, 'GROUP_STAGE', this.matchesMap, this.teamsList, this.config, this.groupMatches, 1);
+            }
         },
 
         updateHeaderInfo: function () {
@@ -651,7 +750,7 @@
                     var btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = 'rr-round-tab-btn' + (self.selectedGroupFilter === gKey ? ' active' : '');
-                    btn.innerText = 'Bảng ' + gKey;
+                    btn.innerText = gKey.startsWith('Bảng') ? gKey : ('Bảng ' + gKey);
                     btn.onclick = function () {
                         self.selectedGroupFilter = gKey;
                         self.renderGroupSelectorBar();

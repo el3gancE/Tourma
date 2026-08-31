@@ -57,9 +57,55 @@
             var isT2Loser = isDone && !hasBye && !isT2Winner && isT1Winner;
 
             var hideByeSlot = data.hideByeSlot === true;
+
+            // Play-In BYE: both teams auto-advance, render special card
+            if (data.isPlayInBye === true) {
+                var byeCard = document.createElement('div');
+                byeCard.className = 'bracket-node-card play-in-bye-card';
+                byeCard.dataset.matchId = matchId;
+                byeCard.setAttribute('data-match-id', String(matchId));
+                byeCard.innerHTML =
+                    '<div class="bracket-node-header">' +
+                        '<span class="bracket-match-id" style="color:#2dd4bf;">AUTO</span>' +
+                        '<span class="bracket-status-badge" style="background:rgba(45,212,191,0.2);color:#2dd4bf;border-color:rgba(45,212,191,0.4);">BYE</span>' +
+                    '</div>' +
+                    '<div class="bracket-teams-box">' +
+                        '<div class="bracket-team-row winner" data-team-name="' + t1Name + '">' +
+                            '<div class="bracket-team-info">' +
+                                (seed1 ? ('<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.25);color:#2dd4bf;">' + seed1 + '</span>') : '') +
+                                '<span class="bracket-team-name" title="' + t1Name + '">' + t1Name + '</span>' +
+                            '</div>' +
+                            '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
+                        '</div>' +
+                        '<div class="bracket-team-row winner" data-team-name="' + t2Name + '">' +
+                            '<div class="bracket-team-info">' +
+                                (seed2 ? ('<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.25);color:#2dd4bf;">' + seed2 + '</span>') : '') +
+                                '<span class="bracket-team-name" title="' + t2Name + '">' + t2Name + '</span>' +
+                            '</div>' +
+                            '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
+                        '</div>' +
+                    '</div>';
+                return byeCard;
+            }
+
+            var themeClass = '';
+            var bType = (data.bracketType || '').toUpperCase();
+            if (bType === 'GRAND_FINAL' || bType === 'GF' || data.isGrandFinal || data.themeColor === 'gold' || data.isGold) {
+                themeClass = ' swiss-card-gold';
+            } else if (data.themeColor === 'green' || data.isGreen) {
+                themeClass = ' swiss-card-green';
+            } else if (data.themeColor === 'red' || data.isRed || bType === 'LOWER') {
+                themeClass = ' lower-bracket-card';
+            } else if (data.themeColor === 'mint' || data.isMint) {
+                themeClass = ' swiss-card-mint';
+            }
+
             var card = document.createElement('div');
-            card.className = 'bracket-node-card' + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-node-card' : '') + (hideByeSlot ? ' bye-empty-slot' : '');
+            card.className = 'bracket-node-card' + themeClass + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-node-card' : '') + (hideByeSlot ? ' bye-empty-slot' : '');
             card.dataset.matchId = matchId;
+            card.setAttribute('data-match-id', String(matchId));
+            card.id = 'bracket-match-' + matchId;
+
 
             var t1RowClass = 'bracket-team-row ' + (isT1Winner ? 'winner ' : '') + (isT1Loser ? 'loser ' : '') + (isT1Bye ? 'bye-row ' : '');
             var t2RowClass = 'bracket-team-row ' + (isT2Winner ? 'winner ' : '') + (isT2Loser ? 'loser ' : '') + (isT2Bye ? 'bye-row ' : '');
@@ -67,10 +113,18 @@
             var t1SeedHtml = (isT1Bye || !seed1) ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : ('<span class="bracket-seed-badge">' + seed1 + '</span>');
             var t2SeedHtml = (isT2Bye || !seed2) ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : ('<span class="bracket-seed-badge">' + seed2 + '</span>');
 
+            var matchHeaderContent = matchHeaderLabel ? 
+                ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') : 
+                (hasBye ? '<span class="bracket-match-id" style="color: #64748b; font-style: italic; font-size: 0.65rem;">BYE</span>' : '<span class="bracket-match-id">&nbsp;</span>');
+
+            var statusBadgeContent = hasBye ? 
+                '<span class="bracket-status-badge" style="visibility: hidden;">BYE</span>' : 
+                ('<span class="bracket-status-badge ' + statusClass + '">' + statusLabel + '</span>');
+
             card.innerHTML =
                 '<div class="bracket-node-header">' +
-                    (matchHeaderLabel ? ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') : '<span></span>') +
-                    (hasBye ? '' : ('<span class="bracket-status-badge ' + statusClass + '">' + statusLabel + '</span>')) +
+                    matchHeaderContent +
+                    statusBadgeContent +
                 '</div>' +
                 '<div class="bracket-teams-box">' +
                     '<div class="' + t1RowClass + '" data-team-name="' + t1Name + '">' +

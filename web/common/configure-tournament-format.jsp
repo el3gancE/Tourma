@@ -65,10 +65,10 @@
 
         <!-- Top Stage Model Toggle Bar (Single Stage ↔ Multi-Stage) -->
         <div class="stage-toggle-bar">
-            <button type="button" id="btnToggleSingleStage" class="stage-toggle-btn active" onclick="selectStageType('SINGLE_STAGE')">
+            <button type="button" id="btnToggleSingleStage" class="stage-toggle-btn active" onclick="selectStageType('SINGLE_STAGE', true)">
                 <i class="fa-solid fa-trophy text-mint"></i> Single Stage
             </button>
-            <button type="button" id="btnToggleMultiStage" class="stage-toggle-btn" onclick="selectStageType('MULTI_STAGE')">
+            <button type="button" id="btnToggleMultiStage" class="stage-toggle-btn" onclick="selectStageType('MULTI_STAGE', true)">
                 <i class="fa-solid fa-layer-group"></i> Multi-Stage
             </button>
         </div>
@@ -94,6 +94,8 @@
                 <!-- Multi-stage specific hidden values -->
                 <input type="hidden" id="stage1Format" name="stage1Format" value="ROUND_ROBIN">
                 <input type="hidden" id="stage2Format" name="stage2Format" value="SINGLE_ELIMINATION">
+                <!-- advancingSeatsCount: populated by JS before form submit -->
+                <input type="hidden" id="advancingSeatsCount" name="advancingSeatsCount" value="0">
 
                 <!-- ════════════════════════════════════════════════════════════════ -->
                 <!-- 1. SINGLE STAGE PANEL                                            -->
@@ -104,13 +106,13 @@
                             Thể thức giải đấu 1 giai đoạn:
                         </label>
                         <div class="format-pill-grid">
-                            <button type="button" class="format-pill-btn" id="pillSingleElim" onclick="selectFormat('SINGLE_ELIMINATION')">
+                            <button type="button" class="format-pill-btn" id="pillSingleElim" onclick="selectFormat('SINGLE_ELIMINATION', true)">
                                 Single Elimination
                             </button>
-                            <button type="button" class="format-pill-btn" id="pillDoubleElim" onclick="selectFormat('DOUBLE_ELIMINATION')">
+                            <button type="button" class="format-pill-btn" id="pillDoubleElim" onclick="selectFormat('DOUBLE_ELIMINATION', true)">
                                 Double Elimination
                             </button>
-                            <button type="button" class="format-pill-btn" id="pillRoundRobin" onclick="selectFormat('ROUND_ROBIN')">
+                            <button type="button" class="format-pill-btn" id="pillRoundRobin" onclick="selectFormat('ROUND_ROBIN', true)">
                                 Round Robin
                             </button>
                         </div>
@@ -157,19 +159,19 @@
                             Thể thức:
                         </label>
                         <div class="format-pill-grid" style="margin-bottom: 1rem;">
-                            <button type="button" class="format-pill-btn active" id="pillStage1RR" onclick="selectStage1Format('ROUND_ROBIN')">
+                            <button type="button" class="format-pill-btn active" id="pillStage1RR" onclick="selectStage1Format('ROUND_ROBIN', true)">
                                 Round Robin
                             </button>
-                            <button type="button" class="format-pill-btn" id="pillStage1GR" onclick="selectStage1Format('GROUP_STAGE')">
+                            <button type="button" class="format-pill-btn" id="pillStage1GR" onclick="selectStage1Format('GROUP_STAGE', true)">
                                 Group Stage
                             </button>
-                            <button type="button" class="format-pill-btn" id="pillStage1SE" onclick="selectStage1Format('SINGLE_ELIMINATION')">
+                            <button type="button" class="format-pill-btn" id="pillStage1SE" onclick="selectStage1Format('SINGLE_ELIMINATION', true)">
                                 Single Elimination
                             </button>
-                            <button type="button" class="format-pill-btn" id="pillStage1DE" onclick="selectStage1Format('DOUBLE_ELIMINATION')">
+                            <button type="button" class="format-pill-btn" id="pillStage1DE" onclick="selectStage1Format('DOUBLE_ELIMINATION', true)">
                                 Double Elimination
                             </button>
-                            <button type="button" class="format-pill-btn" id="pillStage1Swiss" onclick="selectStage1Format('SWISS_LITE')">
+                            <button type="button" class="format-pill-btn" id="pillStage1Swiss" onclick="selectStage1Format('SWISS_LITE', true)">
                                 Swiss System
                             </button>
                         </div>
@@ -281,13 +283,13 @@
                             Thể thức:
                         </label>
                         <div class="format-pill-grid" style="margin-bottom: 0.5rem;">
-                            <button type="button" class="format-pill-btn active" id="pillStage2SE" onclick="selectStage2Format('SINGLE_ELIMINATION')">
+                            <button type="button" class="format-pill-btn active" id="pillStage2SE" onclick="selectStage2Format('SINGLE_ELIMINATION', true)">
                                 Single Elimination
                             </button>
-                            <button type="button" class="format-pill-btn" id="pillStage2DE" onclick="selectStage2Format('DOUBLE_ELIMINATION')">
+                            <button type="button" class="format-pill-btn" id="pillStage2DE" onclick="selectStage2Format('DOUBLE_ELIMINATION', true)">
                                 Double Elimination
                             </button>
-                            <button type="button" class="format-pill-btn" id="pillStage2RR" onclick="selectStage2Format('ROUND_ROBIN')">
+                            <button type="button" class="format-pill-btn" id="pillStage2RR" onclick="selectStage2Format('ROUND_ROBIN', true)">
                                 Round Robin
                             </button>
                         </div>
@@ -474,8 +476,8 @@
         hasOngoingMatches = hasStage1Matches || hasStage2Matches;
 
         // Select Stage Model (SINGLE_STAGE vs MULTI_STAGE)
-        function selectStageType(typeValue) {
-            if (hasStage1Matches) {
+        function selectStageType(typeValue, isUserClick) {
+            if (isUserClick && hasStage1Matches) {
                 alert('🔒 Stage 1 đã có trận đấu diễn ra. Không thể thay đổi mô hình giải đấu!');
                 return;
             }
@@ -513,8 +515,8 @@
         }
 
         // Single Stage format selection
-        function selectFormat(formatValue) {
-            if (hasStage1Matches) {
+        function selectFormat(formatValue, isUserClick) {
+            if (isUserClick && hasStage1Matches) {
                 alert('🔒 Stage 1 đã có trận đấu diễn ra. Thể thức Stage 1 đã bị khóa!');
                 return;
             }
@@ -534,8 +536,8 @@
         }
 
         // Multi Stage: Stage 1 format selection
-        function selectStage1Format(formatVal) {
-            if (hasStage1Matches) {
+        function selectStage1Format(formatVal, isUserClick) {
+            if (isUserClick && hasStage1Matches) {
                 alert('🔒 Stage 1 đã có trận đấu diễn ra. Thể thức Stage 1 đã bị khóa!');
                 return;
             }
@@ -563,8 +565,8 @@
         }
 
         // Multi Stage: Stage 2 format selection (Can still be changed if Stage 2 has not started!)
-        function selectStage2Format(formatVal) {
-            if (hasStage2Matches) {
+        function selectStage2Format(formatVal, isUserClick) {
+            if (isUserClick && hasStage2Matches) {
                 alert('🔒 Stage 2 đã có trận đấu diễn ra. Thể thức Stage 2 đã bị khóa!');
                 return;
             }
@@ -633,6 +635,10 @@
 
                 if (advanceCountToSave > 0) {
                     localStorage.setItem('tourma_advance_count_' + tournamentId, advanceCountToSave);
+                    localStorage.setItem('tourma_cut_target_' + tournamentId, advanceCountToSave);
+                    // Also write to hidden form field so it gets saved to DB on next page
+                    var hiddenAdv = document.getElementById('advancingSeatsCount');
+                    if (hiddenAdv) hiddenAdv.value = advanceCountToSave;
                 }
             }
         }
@@ -830,7 +836,29 @@
             // Validate Multi Stage required fields for Stage 1
             if (currentType === 'MULTI_STAGE') {
                 var s1F = document.getElementById('stage1Format').value;
+                var s2F = document.getElementById('stage2Format').value;
                 if (!validateStageInputs(1, s1F, e)) return false;
+
+                // If Stage 2 is ROUND_ROBIN, advancing teams from Stage 1 MUST be <= 24!
+                if (s2F === 'ROUND_ROBIN') {
+                    var s1AdvCount = 0;
+                    var advInputEl = null;
+                    if (s1F === 'ROUND_ROBIN') advInputEl = document.getElementById('stage1AdvanceRR');
+                    else if (s1F === 'GROUP_STAGE') advInputEl = document.getElementById('stage1AdvanceGR');
+                    else if (s1F === 'SINGLE_ELIMINATION') advInputEl = document.getElementById('stage1AdvanceSE');
+                    else if (s1F === 'DOUBLE_ELIMINATION') advInputEl = document.getElementById('stage1AdvanceDE');
+
+                    if (advInputEl && advInputEl.value) {
+                        s1AdvCount = parseInt(advInputEl.value.trim(), 10) || 0;
+                    }
+
+                    if (s1AdvCount > 24) {
+                        if (e && e.preventDefault) e.preventDefault();
+                        alert('⚠️ Thể thức Vòng Tròn (Round Robin) ở Stage 2 chỉ hỗ trợ tối đa 24 đội tham gia!\n\nVui lòng nhập số đội đi tiếp từ Stage 1 tối đa là 24 đội (Hiện tại bạn đang nhập: ' + s1AdvCount + ' đội).');
+                        if (advInputEl) advInputEl.focus();
+                        return false;
+                    }
+                }
             }
 
             // If Stage 1 has started and Stage 1 format or type changed, block and show popup!

@@ -30,8 +30,14 @@
             var t1 = data.team1 || {};
             var t2 = data.team2 || {};
 
-            var t1Name = t1.name || defaultT1Name;
-            var t2Name = t2.name || defaultT2Name;
+            var resolveStrName = function(val, defaultVal) {
+                if (!val) return defaultVal;
+                if (typeof val === 'object') return val.name || val.rawName || defaultVal;
+                return String(val);
+            };
+
+            var t1Name = resolveStrName(t1.name, defaultT1Name);
+            var t2Name = resolveStrName(t2.name, defaultT2Name);
 
             var isT1Placeholder = !t1.name || t1Name.startsWith('W #') || t1Name.startsWith('L #');
             var isT2Placeholder = !t2.name || t2Name.startsWith('W #') || t2Name.startsWith('L #');
@@ -58,8 +64,14 @@
             var bType = (data.bracketType || '').toUpperCase();
             var bTypeClass = (bType === 'LOWER') ? ' lower' : ((bType === 'GRAND_FINAL' || bType === 'GF') ? ' grand-final' : '');
 
+            var themeClass = '';
+            if (data.themeColor === 'green' || data.isGreen) themeClass = ' swiss-card-green';
+            else if (data.themeColor === 'red' || data.isRed) themeClass = ' swiss-card-red';
+            else if (data.themeColor === 'gold' || data.isGold) themeClass = ' swiss-card-gold';
+            else if (data.themeColor === 'mint' || data.isMint) themeClass = ' swiss-card-mint';
+
             var card = document.createElement('div');
-            card.className = 'match-card-item' + bTypeClass + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-match-item' : '');
+            card.className = 'match-card-item' + bTypeClass + themeClass + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-match-item' : '');
             card.dataset.matchId = matchId;
             card.dataset.status = isDone ? 'COMPLETED' : 'SCHEDULED';
 

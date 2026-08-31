@@ -5,13 +5,32 @@
 <%
     String tournamentId = request.getParameter("id");
     String tourneyFormat = request.getParameter("format");
+    String advSeatsParam = request.getParameter("advancingSeatsCount");
+    String tournamentTypeParam = request.getParameter("tournamentType");
     List<Team> existingTeams = null;
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+        // Save tournament type (SINGLE_STAGE / MULTI_STAGE) to DB
+        if (tournamentTypeParam != null && !tournamentTypeParam.trim().isEmpty()) {
+            try {
+                dao.TournamentDAO tDaoType = new dao.TournamentDAO();
+                tDaoType.updateTournamentType(tournamentId, tournamentTypeParam.trim().toUpperCase());
+            } catch (Exception ignore) {}
+        }
         if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
             try {
                 dao.TournamentDAO tDao = new dao.TournamentDAO();
                 tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
             } catch(Exception ignore) {}
+        }
+        // Save advancingSeatsCount to DB if provided (from Multi-Stage format config)
+        if (advSeatsParam != null && !advSeatsParam.trim().isEmpty()) {
+            try {
+                int advCount = Integer.parseInt(advSeatsParam.trim());
+                if (advCount > 0) {
+                    dao.TournamentDAO tDao2 = new dao.TournamentDAO();
+                    tDao2.updateAdvancingSeatsCount(tournamentId, advCount);
+                }
+            } catch (Exception ignore) {}
         }
         ParticipantDAO pDao = new ParticipantDAO();
         existingTeams = pDao.getTeamsByTournamentId(tournamentId);
@@ -89,7 +108,7 @@
                                 </div>
 
                                 <div class="input-actions-bar">
-                                    <button type="button" class="btn btn-secondary" onclick="window.clearTextarea()">
+                                    <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15);" onclick="window.clearTextarea()">
                                         <i class="fa-solid fa-eraser"></i> Xóa Hết
                                     </button>
                                     <button type="button" class="btn btn-mint" onclick="window.addTeamsFromInput()">
@@ -109,12 +128,12 @@
 
                                 <div class="manage-toolbar">
                                     <div class="manage-toolbar-left">
-                                        <button type="button" class="btn btn-secondary" onclick="window.shuffleTeams()">
-                                            <i class="fa-solid fa-shuffle"></i> Xáo Trộn Ngẫu Nhiên
+                                        <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15);" onclick="window.shuffleTeams()">
+                                            <i class="fa-solid fa-shuffle text-mint"></i> Xáo Trộn Ngẫu Nhiên
                                         </button>
                                     </div>
                                     <div class="manage-toolbar-right">
-                                        <button type="button" class="btn btn-secondary" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" onclick="window.deleteSelectedTeams()">
+                                        <button type="button" class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);" onclick="window.deleteSelectedTeams()">
                                             <i class="fa-solid fa-trash-can"></i> Xóa Đã Chọn
                                         </button>
                                     </div>
@@ -228,29 +247,36 @@
             var tourneyFormatServer = "<%= (tourneyFormat != null) ? tourneyFormat.toUpperCase() : "" %>";
             var localStorageKey = "tourma_teams_" + tournamentId;
 
+            // Helper to get effective Stage 1 Format
+            function getStage1Format() {
+                if (tournamentId) {
+                    var tType = localStorage.getItem('tourma_type_' + tournamentId);
+                    var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
+                    if (tType === 'MULTI_STAGE' || multiCfgRaw) {
+                        try {
+                            var mCfg = JSON.parse(multiCfgRaw);
+                            if (mCfg && mCfg.stage1Format) return mCfg.stage1Format.toUpperCase();
+                        } catch (e) {}
+                    }
+                    var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
+                    if (localFmt) return localFmt.toUpperCase();
+                }
+                var urlFormat = new URLSearchParams(window.location.search).get('format');
+                if (urlFormat) return urlFormat.toUpperCase();
+                if (tourneyFormatServer) return tourneyFormatServer.toUpperCase();
+                return 'SINGLE_ELIMINATION';
+            }
+
             // Helper to check if format is Round Robin
             function checkIsRoundRobin() {
-                if (tourneyFormatServer === 'ROUND_ROBIN' || tourneyFormatServer === 'ROUNDROBIN') return true;
-                var urlFormat = new URLSearchParams(window.location.search).get('format');
-                if (urlFormat && (urlFormat.toUpperCase() === 'ROUND_ROBIN' || urlFormat.toUpperCase() === 'ROUNDROBIN')) return true;
-                if (tournamentId) {
-                    var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
-                    if (localFmt && localFmt.toUpperCase() === 'ROUND_ROBIN') return true;
-                    if (localStorage.getItem('tourma_rr_matches_' + tournamentId)) return true;
-                }
-                return false;
+                var fmt = getStage1Format();
+                return (fmt === 'ROUND_ROBIN' || fmt === 'ROUNDROBIN');
             }
 
             // Helper to check if format is Swiss System (Swiss Lite)
             function checkIsSwissFormat() {
-                if (tourneyFormatServer === 'SWISS_LITE' || tourneyFormatServer === 'SWISS') return true;
-                var urlFormat = new URLSearchParams(window.location.search).get('format');
-                if (urlFormat && (urlFormat.toUpperCase() === 'SWISS_LITE' || urlFormat.toUpperCase() === 'SWISS')) return true;
-                if (tournamentId) {
-                    var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
-                    if (localFmt && (localFmt.toUpperCase() === 'SWISS_LITE' || localFmt.toUpperCase() === 'SWISS')) return true;
-                }
-                return false;
+                var fmt = getStage1Format();
+                return (fmt === 'SWISS_LITE' || fmt === 'SWISS');
             }
 
             // Helper to check if two team lists contain the exact same team names (ignoring order)
@@ -279,6 +305,13 @@
                 %>
             ];
 
+            // Escape HTML helper
+            function escapeHtml(str) {
+                if (str === null || str === undefined) return '';
+                if (typeof str === 'object') str = str.name || str.rawName || '';
+                return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
             var currentTeamsList = [];
             var initialTeamsSnapshot = null;
 
@@ -293,7 +326,17 @@
             }
 
             if (localSavedTeams && Array.isArray(localSavedTeams) && localSavedTeams.length > 0) {
-                currentTeamsList = localSavedTeams;
+                currentTeamsList = localSavedTeams.map(function(t) {
+                    if (typeof t === 'object' && t !== null) return t.name || t.rawName || '';
+                    return String(t);
+                }).filter(function(n) { return n && n.trim().length > 0; });
+
+                if (checkIsSwissFormat() && currentTeamsList.length !== 16 && dbTeams.length === 16) {
+                    currentTeamsList = dbTeams;
+                    if (tournamentId) {
+                        try { localStorage.setItem(localStorageKey, JSON.stringify(currentTeamsList)); } catch(e) {}
+                    }
+                }
             } else if (dbTeams.length > 0) {
                 currentTeamsList = dbTeams;
             } else {
@@ -747,21 +790,15 @@
                 return true;
             };
 
-            function escapeHtml(text) {
-                return text
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            }
-
             function syncLatestStateOnNavigation() {
                 if (tournamentId && localStorage.getItem(localStorageKey)) {
                     try {
                         var latest = JSON.parse(localStorage.getItem(localStorageKey));
                         if (latest && Array.isArray(latest) && latest.length > 0) {
-                            currentTeamsList = latest;
+                            currentTeamsList = latest.map(function(t) {
+                                if (typeof t === 'object' && t !== null) return t.name || t.rawName || '';
+                                return String(t);
+                            }).filter(function(n) { return n && n.trim().length > 0; });
                             if (typeof window.renderTable === 'function') window.renderTable();
                             if (typeof window.handleTextareaTyping === 'function') window.handleTextareaTyping();
                         }

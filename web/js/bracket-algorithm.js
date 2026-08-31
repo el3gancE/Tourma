@@ -50,13 +50,21 @@
         /**
          * Standard International English Round Names (Dynamically supports up to Round of 1024 and beyond)
          */
-        getRoundTitle: function (r, totalRounds) {
+        getRoundTitle: function (r, totalRounds, isCutStage) {
             var diff = totalRounds - r;
-            if (diff === 0) return 'Finals';
-            if (diff === 1) return 'Semi Finals';
-            if (diff === 2) return 'Quarter Finals';
-
             var teamsInRound = Math.pow(2, diff + 1);
+
+            if (isCutStage) {
+                if (teamsInRound === 16) return 'Round of 16';
+                if (teamsInRound === 8) return 'Round of 8';
+                if (teamsInRound === 4) return 'Round of 4';
+                return 'Round of ' + teamsInRound;
+            }
+
+            if (diff === 0) return 'Final';
+            if (diff === 1) return 'Semi Final';
+            if (diff === 2) return 'Quarter Final';
+
             return 'Round of ' + teamsInRound;
         },
 
@@ -78,112 +86,192 @@
         /**
          * Generate Complete Single Elimination Structure for N teams with standard BYE placement
          */
-        generateSingleElimination: function (teamsList) {
+        generateSingleElimination: function (teamsList, cutTarget) {
             var numTeams = teamsList ? teamsList.length : 0;
             if (numTeams < 2) return { roundsList: [], matchesMap: {} };
 
-            var pow2 = this.calculatePowerOfTwo(numTeams);
-            var totalRounds = Math.log2(pow2);
-            var internalIdCounter = 1;
+            var cTarget = (cutTarget && parseInt(cutTarget, 10) > 1) ? parseInt(cutTarget, 10) : 0;
+            if (cTarget <= 0 || cTarget >= numTeams) {
+                cTarget = 1;
+            }
+
             var roundsList = [];
             var matchesMap = {};
+            var internalIdCounter = 1;
+            var previousRoundMatchIds = null;
 
-            // 1. Generate Round 1 (First Round with standard BYE placement)
-            var round1MatchesCount = pow2 / 2;
-            var round1 = { roundNumber: 1, title: this.getRoundTitle(1, totalRounds), matches: [] };
-            var seedPairs = this.generateSeedPairs(pow2);
+            var currentTeamPool = [];
+            for (var t = 0; t < numTeams; t++) {
+                var item = teamsList[t];
+                var tName = (typeof item === 'object' && item) ? (item.name || item.rawName || '') : (item || '');
+                currentTeamPool.push({ seed: t + 1, name: tName });
+            }
 
-            for (var i = 0; i < round1MatchesCount; i++) {
-                var pair = seedPairs[i];
-                var s1 = pair[0];
-                var s2 = pair[1];
+            var bracketSize = Math.pow(2, Math.ceil(Math.log2(numTeams)));
+            var totalEstimatedRounds = Math.ceil(Math.log2(bracketSize));
 
-                var t1Name = (s1 <= numTeams) ? teamsList[s1 - 1] : 'BYE';
-                var t2Name = (s2 <= numTeams) ? teamsList[s2 - 1] : 'BYE';
-                var isBye = (t1Name === 'BYE' || t2Name === 'BYE');
-                var mId = internalIdCounter++;
+            var currentTeamsInRound = bracketSize;
+            var currentRoundNumber = 1;
 
-                var match = {
-                    matchId: mId,
-                    matchNumber: null, // Computed contiguously
-                    roundNumber: 1,
-                    status: isBye ? 'COMPLETED' : 'SCHEDULED',
-                    team1: { name: t1Name, seed: (t1Name === 'BYE' ? '' : s1), score: '' },
-                    team2: { name: t2Name, seed: (t2Name === 'BYE' ? '' : s2), score: '' },
-                    winnerId: null,
-                    nextMatchId: null,
-                    nextMatchSlot: (i % 2 === 0) ? 1 : 2
-                };
+            while (currentTeamsInRound > cTarget) {
+                var half = currentTeamsInRound / 2;
+                var roundMatchesCount = 0;
+                var numByeTeams = 0;
+                var isPlayInCutRound = false;
 
-                // Handle BYE auto-advancement
-                if (t1Name === 'BYE' && t2Name !== 'BYE') {
-                    match.winnerId = 'team2';
-                } else if (t2Name === 'BYE' && t1Name !== 'BYE') {
-                    match.winnerId = 'team1';
+                if (half >= cTarget) {
+                    roundMatchesCount = half;
+                } else {
+                    roundMatchesCount = currentTeamsInRound - cTarget;
+                    numByeTeams = 2 * cTarget - currentTeamsInRound;
+                    isPlayInCutRound = true;
                 }
 
-                matchesMap[mId] = match;
-                round1.matches.push(match);
-            }
-            roundsList.push(round1);
+                var roundTitle = this.getRoundTitle(currentRoundNumber, totalEstimatedRounds, (cTarget > 1));
+                var roundObj = { roundNumber: currentRoundNumber, title: roundTitle, matches: [] };
 
-            // 2. Generate Subsequent Rounds (Round 2 to Finals)
-            var currentRoundMatches = round1MatchesCount;
-            var previousRoundMatchIds = round1.matches.map(function (m) { return m.matchId; });
+                if (isPlayInCutRound) {
+                    var parentStartIndex = (previousRoundMatchIds && previousRoundMatchIds.length >= 2 * roundMatchesCount)
+                        ? (previousRoundMatchIds.length - 2 * roundMatchesCount) : 0;
 
-            for (var r = 2; r <= totalRounds; r++) {
-                var roundMatchesCount = currentRoundMatches / 2;
-                var roundObj = { roundNumber: r, title: this.getRoundTitle(r, totalRounds), matches: [] };
-                var nextMatchIds = [];
+                    for (var i = 0; i < roundMatchesCount; i++) {
+                        var mId = internalIdCounter++;
+                        var t1Name = 'TBD';
+                        var t2Name = 'TBD';
+                        var s1 = '';
+                        var s2 = '';
 
-                for (var j = 0; j < roundMatchesCount; j++) {
-                    var mId = internalIdCounter++;
-                    var parent1Id = previousRoundMatchIds[j * 2];
-                    var parent2Id = previousRoundMatchIds[j * 2 + 1];
+                        if (previousRoundMatchIds && previousRoundMatchIds.length > 0) {
+                            var p1Id = previousRoundMatchIds[parentStartIndex + 2 * i];
+                            var p2Id = previousRoundMatchIds[parentStartIndex + 2 * i + 1];
 
-                    // Link parent matches to this next match
-                    if (matchesMap[parent1Id]) matchesMap[parent1Id].nextMatchId = mId;
-                    if (matchesMap[parent2Id]) matchesMap[parent2Id].nextMatchId = mId;
+                            if (p1Id && matchesMap[p1Id]) {
+                                matchesMap[p1Id].nextMatchId = mId;
+                                matchesMap[p1Id].nextMatchSlot = 1;
+                                t1Name = 'W #' + (matchesMap[p1Id].matchNumber || p1Id);
+                                s1 = matchesMap[p1Id].team1 ? matchesMap[p1Id].team1.seed : '';
+                            }
+                            if (p2Id && matchesMap[p2Id]) {
+                                matchesMap[p2Id].nextMatchId = mId;
+                                matchesMap[p2Id].nextMatchSlot = 2;
+                                t2Name = 'W #' + (matchesMap[p2Id].matchNumber || p2Id);
+                                s2 = matchesMap[p2Id].team2 ? matchesMap[p2Id].team2.seed : '';
+                            }
+                        } else {
+                            s1 = numByeTeams + 1 + i;
+                            s2 = currentTeamsInRound - i;
+                            var t1Obj = (s1 <= numTeams) ? currentTeamPool[s1 - 1] : { name: 'TBD', seed: s1 };
+                            var t2Obj = (s2 <= numTeams) ? currentTeamPool[s2 - 1] : { name: 'TBD', seed: s2 };
+                            t1Name = t1Obj.name;
+                            t2Name = t2Obj.name;
+                        }
 
-                    var parent1 = matchesMap[parent1Id];
-                    var parent2 = matchesMap[parent2Id];
+                        var match = {
+                            matchId: mId,
+                            matchNumber: mId,
+                            roundNumber: currentRoundNumber,
+                            status: 'SCHEDULED',
+                            team1: { name: t1Name, seed: s1, score: '' },
+                            team2: { name: t2Name, seed: s2, score: '' },
+                            winnerId: null,
+                            nextMatchId: null,
+                            nextMatchSlot: 1
+                        };
+                        matchesMap[mId] = match;
+                        roundObj.matches.push(match);
+                    }
+                    currentTeamsInRound = cTarget;
+                } else {
+                    var nextRoundMatchIds = [];
 
-                    var t1Placeholder = (parent1 && parent1.winnerId) ?
-                        (parent1.winnerId === 'team1' ? parent1.team1.name : parent1.team2.name) : ('W #' + parent1Id);
+                    if (currentRoundNumber === 1) {
+                        var seedPairs = this.generateSeedPairs(bracketSize);
+                        for (var i = 0; i < roundMatchesCount; i++) {
+                            var pair = seedPairs[i];
+                            var s1 = pair[0];
+                            var s2 = pair[1];
 
-                    var t2Placeholder = (parent2 && parent2.winnerId) ?
-                        (parent2.winnerId === 'team1' ? parent2.team1.name : parent2.team2.name) : ('W #' + parent2Id);
+                            var t1 = (s1 <= numTeams) ? currentTeamPool[s1 - 1] : { name: 'BYE', seed: s1 };
+                            var t2 = (s2 <= numTeams) ? currentTeamPool[s2 - 1] : { name: 'BYE', seed: s2 };
+                            var isBye = (t1.name === 'BYE' || t2.name === 'BYE');
 
-                    var t1Seed = (parent1 && parent1.winnerId) ?
-                        (parent1.winnerId === 'team1' ? parent1.team1.seed : parent1.team2.seed) : '';
-                    var t2Seed = (parent2 && parent2.winnerId) ?
-                        (parent2.winnerId === 'team1' ? parent2.team1.seed : parent2.team2.seed) : '';
+                            var mId = internalIdCounter++;
+                            var match = {
+                                matchId: mId,
+                                matchNumber: mId,
+                                roundNumber: currentRoundNumber,
+                                status: isBye ? 'COMPLETED' : 'SCHEDULED',
+                                team1: { name: t1.name, seed: (t1.name === 'BYE' ? '' : t1.seed), score: '' },
+                                team2: { name: t2.name, seed: (t2.name === 'BYE' ? '' : t2.seed), score: '' },
+                                winnerId: isBye ? (t1.name === 'BYE' ? 'team2' : 'team1') : null,
+                                nextMatchId: null,
+                                nextMatchSlot: (i % 2 === 0) ? 1 : 2
+                            };
+                            matchesMap[mId] = match;
+                            roundObj.matches.push(match);
+                            nextRoundMatchIds.push(mId);
+                        }
+                    } else {
+                        for (var i = 0; i < roundMatchesCount; i++) {
+                            var mId = internalIdCounter++;
+                            var p1Id = previousRoundMatchIds ? previousRoundMatchIds[2 * i] : null;
+                            var p2Id = previousRoundMatchIds ? previousRoundMatchIds[2 * i + 1] : null;
 
-                    var mObj = {
-                        matchId: mId,
-                        matchNumber: null, // Computed contiguously
-                        roundNumber: r,
-                        status: 'SCHEDULED',
-                        team1: { name: t1Placeholder, seed: t1Seed, score: '' },
-                        team2: { name: t2Placeholder, seed: t2Seed, score: '' },
-                        winnerId: null,
-                        nextMatchId: null,
-                        nextMatchSlot: (j % 2 === 0) ? 1 : 2
-                    };
+                            var t1Name = 'TBD';
+                            var t2Name = 'TBD';
+                            var s1 = '';
+                            var s2 = '';
 
-                    matchesMap[mId] = mObj;
-                    roundObj.matches.push(mObj);
-                    nextMatchIds.push(mId);
+                            if (p1Id && matchesMap[p1Id]) {
+                                matchesMap[p1Id].nextMatchId = mId;
+                                matchesMap[p1Id].nextMatchSlot = 1;
+                                if (matchesMap[p1Id].winnerId) {
+                                    var w1 = (matchesMap[p1Id].winnerId === 'team1') ? matchesMap[p1Id].team1 : matchesMap[p1Id].team2;
+                                    t1Name = (w1 && w1.name) ? w1.name : ('W #' + (matchesMap[p1Id].matchNumber || p1Id));
+                                    s1 = (w1 && w1.seed !== undefined && w1.seed !== null) ? w1.seed : '';
+                                } else {
+                                    t1Name = 'W #' + (matchesMap[p1Id].matchNumber || p1Id);
+                                    s1 = matchesMap[p1Id].team1 ? matchesMap[p1Id].team1.seed : '';
+                                }
+                            }
+                            if (p2Id && matchesMap[p2Id]) {
+                                matchesMap[p2Id].nextMatchId = mId;
+                                matchesMap[p2Id].nextMatchSlot = 2;
+                                if (matchesMap[p2Id].winnerId) {
+                                    var w2 = (matchesMap[p2Id].winnerId === 'team1') ? matchesMap[p2Id].team1 : matchesMap[p2Id].team2;
+                                    t2Name = (w2 && w2.name) ? w2.name : ('W #' + (matchesMap[p2Id].matchNumber || p2Id));
+                                    s2 = (w2 && w2.seed !== undefined && w2.seed !== null) ? w2.seed : '';
+                                } else {
+                                    t2Name = 'W #' + (matchesMap[p2Id].matchNumber || p2Id);
+                                    s2 = matchesMap[p2Id].team2 ? matchesMap[p2Id].team2.seed : '';
+                                }
+                            }
+
+                            var match = {
+                                matchId: mId,
+                                matchNumber: mId,
+                                roundNumber: currentRoundNumber,
+                                status: 'SCHEDULED',
+                                team1: { name: t1Name, seed: s1, score: '' },
+                                team2: { name: t2Name, seed: s2, score: '' },
+                                winnerId: null,
+                                nextMatchId: null,
+                                nextMatchSlot: (i % 2 === 0) ? 1 : 2
+                            };
+                            matchesMap[mId] = match;
+                            roundObj.matches.push(match);
+                            nextRoundMatchIds.push(mId);
+                        }
+                    }
+                    previousRoundMatchIds = nextRoundMatchIds;
+                    currentTeamsInRound = Math.floor(currentTeamsInRound / 2);
                 }
 
                 roundsList.push(roundObj);
-                previousRoundMatchIds = nextMatchIds;
-                currentRoundMatches = roundMatchesCount;
+                currentRoundNumber++;
             }
 
-            // 3. Renumber all playable matches strictly sequentially without skips
             this.renumberMatchesContiguously(roundsList, matchesMap);
-
             return { roundsList: roundsList, matchesMap: matchesMap };
         },
 
@@ -231,6 +319,23 @@
                     }
                 }
             }
+        },
+
+        /**
+         * Find the parent feeder match for a given target match and slot (1 or 2)
+         */
+        findParentMatch: function (matchesMap, childMatchId, slot) {
+            if (!matchesMap || !childMatchId) return null;
+            var keys = Object.keys(matchesMap);
+            for (var i = 0; i < keys.length; i++) {
+                var m = matchesMap[keys[i]];
+                if (m && String(m.nextMatchId) === String(childMatchId)) {
+                    if (slot === undefined || m.nextMatchSlot === slot) {
+                        return m;
+                    }
+                }
+            }
+            return null;
         },
 
         /**
@@ -315,10 +420,9 @@
                 }
             }
             var ratio = byeCount / totalR1;
-            // Few BYE matches (<= 50%): SHOW BYEs (true)
-            // Too many BYE matches (> 50%): HIDE BYEs (false)
-            // Exactly 50%: SHOW BYEs (true)
-            return ratio <= threshold;
+            // Few BYE matches (< 50%): SHOW BYEs (true)
+            // Many BYE matches (>= 50%): HIDE BYEs (false)
+            return ratio < threshold;
         },
 
         /**

@@ -29,6 +29,18 @@
                 lossPoints: (config && config.lossPoints !== undefined) ? Number(config.lossPoints) : 0
             };
 
+            var getItemName = function(item) {
+                if (!item) return '';
+                if (typeof item === 'object') return item.name || item.rawName || '';
+                return String(item);
+            };
+            var getItemSeed = function(item, defaultSeed) {
+                if (item && typeof item === 'object' && item.seed !== undefined && item.seed !== null && item.seed !== '') {
+                    return item.seed;
+                }
+                return defaultSeed;
+            };
+
             var workingTeams = teams.slice();
             var hasBye = (numTeams % 2 !== 0);
             if (hasBye) {
@@ -84,8 +96,13 @@
                             awayIdx = swap;
                         }
 
-                        var t1Name = workingTeams[homeIdx];
-                        var t2Name = workingTeams[awayIdx];
+                        var t1Item = workingTeams[homeIdx];
+                        var t2Item = workingTeams[awayIdx];
+                        var t1Name = getItemName(t1Item);
+                        var t2Name = getItemName(t2Item);
+                        var t1Seed = getItemSeed(t1Item, homeIdx + 1);
+                        var t2Seed = getItemSeed(t2Item, awayIdx + 1);
+
                         var isT1Bye = (t1Name === 'BYE');
                         var isT2Bye = (t2Name === 'BYE');
                         var isByeMatch = (isT1Bye || isT2Bye);
@@ -93,6 +110,8 @@
                         roundPairings.push({
                             t1Name: t1Name,
                             t2Name: t2Name,
+                            t1Seed: t1Seed,
+                            t2Seed: t2Seed,
                             homeIdx: homeIdx,
                             awayIdx: awayIdx,
                             isT1Bye: isT1Bye,
@@ -131,12 +150,12 @@
                             status: 'SCHEDULED',
                             team1: {
                                 name: pData.t1Name,
-                                seed: pData.homeIdx + 1,
+                                seed: pData.t1Seed,
                                 score: ''
                             },
                             team2: {
                                 name: pData.t2Name,
-                                seed: pData.awayIdx + 1,
+                                seed: pData.t2Seed,
                                 score: ''
                             },
                             winnerId: null
@@ -178,12 +197,26 @@
                 lossPoints: (config && config.lossPoints !== undefined) ? Number(config.lossPoints) : 0
             };
 
+            var getCleanName = function(val) {
+                if (!val) return '';
+                if (typeof val === 'object') return val.name || val.rawName || '';
+                return String(val);
+            };
+            var getCleanSeed = function(val, defSeed) {
+                if (val && typeof val === 'object' && val.seed !== undefined && val.seed !== null && val.seed !== '') {
+                    return val.seed;
+                }
+                return defSeed;
+            };
+
             var stats = {};
-            var ensureTeamStat = function (name, seedNum) {
-                if (!name || name === 'BYE' || stats[name]) return;
+            var ensureTeamStat = function (rawVal, seedNum) {
+                var name = getCleanName(rawVal);
+                if (!name || name === 'BYE' || name === '[object Object]' || stats[name]) return;
+                var seed = getCleanSeed(rawVal, seedNum || (Object.keys(stats).length + 1));
                 stats[name] = {
                     team: name,
-                    seed: seedNum || (Object.keys(stats).length + 1),
+                    seed: seed,
                     played: 0,
                     won: 0,
                     drawn: 0,
@@ -221,10 +254,10 @@
                     var isDone = (m.status === 'COMPLETED' || m.status === 'done' || (m.team1 && m.team1.score !== '' && m.team2 && m.team2.score !== ''));
                     if (!isDone) continue;
 
-                    var t1 = m.team1 ? m.team1.name : '';
-                    var t2 = m.team2 ? m.team2.name : '';
+                    var t1 = getCleanName(m.team1 ? m.team1.name : '');
+                    var t2 = getCleanName(m.team2 ? m.team2.name : '');
 
-                    if (!t1 || !t2 || t1 === 'BYE' || t2 === 'BYE') continue;
+                    if (!t1 || !t2 || t1 === 'BYE' || t2 === 'BYE' || t1 === '[object Object]' || t2 === '[object Object]') continue;
                     if (!stats[t1] || !stats[t2]) continue;
 
                     var s1 = (m.team1 && m.team1.score !== '' && m.team1.score !== null && !isNaN(Number(m.team1.score))) ? Number(m.team1.score) : null;
@@ -283,6 +316,7 @@
             var statKeys = Object.keys(stats);
             for (var sk = 0; sk < statKeys.length; sk++) {
                 var item = stats[statKeys[sk]];
+                if (!item || !item.team || item.team === 'BYE' || item.team === '[object Object]') continue;
                 item.goalDifference = item.goalsFor - item.goalsAgainst;
                 if (item.form.length > 5) {
                     item.form = item.form.slice(item.form.length - 5);
