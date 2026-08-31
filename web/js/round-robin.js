@@ -359,7 +359,20 @@
         },
 
         checkFinalStage: function () {
-            if (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1) return;
+            if (this.currentStage === 1) {
+                if (window.StageEndPopup) {
+                    window.StageEndPopup.update(
+                        this.tournamentId,
+                        'ROUND_ROBIN',
+                        this.matchesMap,
+                        this.teamsList,
+                        this.config,
+                        null,
+                        1
+                    );
+                }
+                if (this.cutTarget && this.cutTarget > 1) return;
+            }
             if (window.FinalStagePopup) {
                 window.FinalStagePopup.checkAndRender(
                     this.tournamentId,

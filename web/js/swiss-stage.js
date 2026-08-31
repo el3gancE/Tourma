@@ -544,7 +544,17 @@
               multiCfg.stage2MatchesCreated = true;
               localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(multiCfg));
             }
-          } catch(e) {}
+        // Multi-Stage Stage 1: Trigger StageEndPopup
+        if (window.StageEndPopup) {
+          window.StageEndPopup.update(
+            tournamentId,
+            'SWISS',
+            matchesMap,
+            teamsList,
+            null,
+            null,
+            1
+          );
         }
       } else {
         // Stage 2 Swiss or Single Stage Swiss -> Check FinalStagePopup

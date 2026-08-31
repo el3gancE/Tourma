@@ -35,6 +35,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/swiss-stage.css">
     </head>
@@ -44,6 +45,9 @@
 
         <!-- Final Stage Popup Banner -->
         <jsp:include page="/common/component/final-stage-popup.jsp"/>
+
+        <!-- Stage End Popup Component -->
+        <jsp:include page="/common/component/stage-end-popup.jsp"/>
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">

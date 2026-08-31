@@ -1280,8 +1280,21 @@
         },
 
         checkFinalStage: function () {
-            if (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1) {
-                return; // Stage 1 cut stage — NEVER trigger FinalStagePopup!
+            if (this.currentStage === 1) {
+                if (window.StageEndPopup) {
+                    window.StageEndPopup.update(
+                        this.tournamentId,
+                        'SINGLE_ELIMINATION',
+                        this.matchesMap,
+                        this.teamsList,
+                        { cutTarget: this.cutTarget },
+                        null,
+                        1
+                    );
+                }
+                if (this.cutTarget && this.cutTarget > 1) {
+                    return; // Stage 1 cut stage — NEVER trigger FinalStagePopup!
+                }
             }
             var self = this;
             if (window.FinalStagePopup) {

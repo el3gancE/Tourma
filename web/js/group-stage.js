@@ -402,6 +402,9 @@
                 localStorage.setItem('tourma_group_matches_' + this.tournamentId, JSON.stringify(this.groupMatches));
             } catch (e) {}
             this.checkAndTriggerStage2Cut();
+            if (window.StageEndPopup) {
+                window.StageEndPopup.update(this.tournamentId, 'GROUP_STAGE', this.matchesMap, this.teamsList, this.config, this.groupMatches, 1);
+            }
         },
 
         checkAndTriggerStage2Cut: function () {
@@ -430,13 +433,18 @@
                     if (!t1 || !t2 || t1 === 'BYE' || t2 === 'BYE') continue;
 
                     totalMatches++;
-                    if (match.status === 'COMPLETED' || (match.team1 && match.team1.score !== '' && match.team1.score != null && match.team2 && match.team2.score !== '' && match.team2.score != null)) {
+                    var s1 = (match.team1 && match.team1.score !== '' && match.team1.score != null && !isNaN(Number(match.team1.score))) ? Number(match.team1.score) : null;
+                    var s2 = (match.team2 && match.team2.score !== '' && match.team2.score != null && !isNaN(Number(match.team2.score))) ? Number(match.team2.score) : null;
+                    if (s1 !== null && s2 !== null) {
                         completedMatches++;
                     }
                 }
             }
 
             if (totalMatches === 0 || completedMatches < totalMatches) {
+                try {
+                    localStorage.removeItem('tourma_stage1_completed_' + this.tournamentId);
+                } catch(e) {}
                 return; // Not all group matches finished yet!
             }
 
@@ -699,6 +707,10 @@
             this.updateHeaderInfo();
             this.renderGroupSelectorBar();
             this.renderMatchesView();
+
+            if (window.StageEndPopup) {
+                window.StageEndPopup.update(this.tournamentId, 'GROUP_STAGE', this.matchesMap, this.teamsList, this.config, this.groupMatches, 1);
+            }
         },
 
         updateHeaderInfo: function () {

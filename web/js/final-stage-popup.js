@@ -71,16 +71,17 @@
 
                     var s1 = (t1.score !== '' && t1.score !== null && !isNaN(Number(t1.score))) ? Number(t1.score) : null;
                     var s2 = (t2.score !== '' && t2.score !== null && !isNaN(Number(t2.score))) ? Number(t2.score) : null;
-                    var isCompleted = (finalMatch.status === 'COMPLETED' || finalMatch.status === 'done');
 
-                    if (finalMatch.winnerId === 'team1' || (s1 !== null && s2 !== null && s1 > s2)) {
+                    // Match MUST have valid non-null scores entered!
+                    if (s1 === null || s2 === null || s1 === s2) {
+                        return null;
+                    }
+
+                    if (s1 > s2) {
                         return isRealTeam(t1Name) ? t1Name : null;
                     }
-                    if (finalMatch.winnerId === 'team2' || (s1 !== null && s2 !== null && s2 > s1)) {
+                    if (s2 > s1) {
                         return isRealTeam(t2Name) ? t2Name : null;
-                    }
-                    if (isCompleted && finalMatch.winner && isRealTeam(finalMatch.winner.name)) {
-                        return finalMatch.winner.name;
                     }
                 }
                 return null;
@@ -115,10 +116,11 @@
                     if (isRealTeam(rt1Name) && isRealTeam(rt2Name)) {
                         var rS1 = (rT1.score !== '' && rT1.score !== null && !isNaN(Number(rT1.score))) ? Number(rT1.score) : null;
                         var rS2 = (rT2.score !== '' && rT2.score !== null && !isNaN(Number(rT2.score))) ? Number(rT2.score) : null;
-                        var rDone = (gfReset.status === 'COMPLETED' || gfReset.status === 'done');
 
-                        if (gfReset.winnerId === 'team1' || (rS1 !== null && rS2 !== null && rS1 > rS2)) return rt1Name;
-                        if (gfReset.winnerId === 'team2' || (rS1 !== null && rS2 !== null && rS2 > rS1)) return rt2Name;
+                        if (rS1 !== null && rS2 !== null && rS1 !== rS2) {
+                            if (rS1 > rS2) return rt1Name;
+                            if (rS2 > rS1) return rt2Name;
+                        }
                     }
                     return null; // Waiting for reset match to finish
                 }
@@ -137,18 +139,19 @@
 
                     var gfS1 = (gfT1.score !== '' && gfT1.score !== null && !isNaN(Number(gfT1.score))) ? Number(gfT1.score) : null;
                     var gfS2 = (gfT2.score !== '' && gfT2.score !== null && !isNaN(Number(gfT2.score))) ? Number(gfT2.score) : null;
-                    var gfDone = (gfMain.status === 'COMPLETED' || gfMain.status === 'done');
 
-                    var isT1Win = (gfMain.winnerId === 'team1' || (gfS1 !== null && gfS2 !== null && gfS1 > gfS2));
-                    var isT2Win = (gfMain.winnerId === 'team2' || (gfS1 !== null && gfS2 !== null && gfS2 > gfS1));
+                    if (gfS1 === null || gfS2 === null || gfS1 === gfS2) {
+                        return null; // Not played yet!
+                    }
 
-                    if (isT1Win && (gfDone || (gfS1 !== null && gfS2 !== null))) {
-                        // Winner UB wins GF1 -> Tournament complete, Champion is Winner UB!
+                    // UB Winner (team1) won GF1 -> Champion directly!
+                    if (gfS1 > gfS2) {
                         return gft1Name;
-                    } else if (isT2Win && (gfDone || (gfS1 !== null && gfS2 !== null))) {
-                        // Winner LB wins GF1 -> If reset match exists & unlocked, must wait for GF2
+                    }
+                    // LB Winner (team2) won GF1 -> Triggered Reset match
+                    if (gfS2 > gfS1) {
                         if (gfReset && gfReset.isUnlocked) {
-                            return null;
+                            return null; // Must wait for reset match!
                         }
                         return gft2Name;
                     }

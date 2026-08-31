@@ -72,6 +72,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/double-elimination.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     </head>
     <body>
@@ -80,6 +81,9 @@
 
         <!-- Final Stage Popup Banner -->
         <jsp:include page="/common/component/final-stage-popup.jsp"/>
+
+        <!-- Stage End Popup Component -->
+        <jsp:include page="/common/component/stage-end-popup.jsp"/>
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">

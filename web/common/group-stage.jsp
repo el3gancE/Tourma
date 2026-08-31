@@ -38,8 +38,12 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-stage.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
 </head>
 <body style="background: #0b0d12; color: #f8fafc;">
+
+    <!-- Stage End Popup Component -->
+    <jsp:include page="/common/component/stage-end-popup.jsp"/>
 
     <!-- TOP NAVBAR & SIDEBAR -->
     <jsp:include page="/common/component/header.jsp">
