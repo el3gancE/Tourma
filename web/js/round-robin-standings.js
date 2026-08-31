@@ -18,11 +18,18 @@
         /**
          * Initialize Standings Page
          */
-        init: function (tourneyId, preloadedTeams, config) {
+        init: function (tourneyId, preloadedTeams, config, stage) {
             this.tournamentId = tourneyId || 'demo';
+            this.currentStage = (stage === 2 || stage === '2') ? 2 : 1;
             
             var storageKeyConfig = 'tourma_rr_config_' + this.tournamentId;
             var cfg = config;
+            if (this.currentStage === 2) {
+                try {
+                    var mCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + this.tournamentId));
+                    if (mCfg && mCfg.stage2Config) cfg = mCfg.stage2Config;
+                } catch (e) {}
+            }
             if (!cfg) {
                 try {
                     cfg = JSON.parse(localStorage.getItem(storageKeyConfig));
@@ -33,7 +40,7 @@
             this.config = cfg || { winPoints: 3, drawPoints: 1, lossPoints: 0, legsCount: 1 };
 
             // 1. Load Teams List
-            var storageKeyTeams = 'tourma_teams_' + this.tournamentId;
+            var storageKeyTeams = (this.currentStage === 2) ? ('tourma_stage2_teams_' + this.tournamentId) : ('tourma_teams_' + this.tournamentId);
             var teams = (preloadedTeams && preloadedTeams.length > 0) ? preloadedTeams : null;
             if (!teams) {
                 try {

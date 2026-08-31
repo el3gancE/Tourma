@@ -24,8 +24,9 @@
          * @param {Array} dbMatches - Preloaded matches (optional)
          * @param {Array} preloadedTeams - Preloaded teams from DB
          */
-        init: function (tourneyId, dbMatches, preloadedTeams) {
+        init: function (tourneyId, dbMatches, preloadedTeams, stage) {
             this.tournamentId = tourneyId || 'demo';
+            this.currentStage = (stage === 2 || stage === '2') ? 2 : 1;
 
             // Load saved round score inputs from localStorage
             try {
@@ -37,15 +38,23 @@
             // Load custom Round Robin score rules & legs count config
             var storageKeyConfig = 'tourma_rr_config_' + this.tournamentId;
             var cfg = null;
-            try {
-                cfg = JSON.parse(localStorage.getItem(storageKeyConfig));
-            } catch (e) {
-                cfg = null;
+            if (this.currentStage === 2) {
+                try {
+                    var mCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + this.tournamentId));
+                    if (mCfg && mCfg.stage2Config) cfg = mCfg.stage2Config;
+                } catch (e) {}
+            }
+            if (!cfg) {
+                try {
+                    cfg = JSON.parse(localStorage.getItem(storageKeyConfig));
+                } catch (e) {
+                    cfg = null;
+                }
             }
             this.config = cfg || { winPoints: 3, drawPoints: 1, lossPoints: 0, legsCount: 1 };
 
             // 1. Load Teams List
-            var storageKeyTeams = 'tourma_teams_' + this.tournamentId;
+            var storageKeyTeams = (this.currentStage === 2) ? ('tourma_stage2_teams_' + this.tournamentId) : ('tourma_teams_' + this.tournamentId);
             var teams = (preloadedTeams && preloadedTeams.length > 0) ? preloadedTeams : null;
             if (!teams) {
                 try {
@@ -95,13 +104,20 @@
                 savedData = null;
             }
 
+            // Helper to get string name
+            var getTeamName = function(t) {
+                if (!t) return '';
+                if (typeof t === 'object') return t.name || t.rawName || '';
+                return String(t);
+            };
+
             // Check if saved teams match current teams (same team count and same team names)
             var savedTeamsList = savedData ? (savedData.teamsList || []) : [];
             var isTeamsCountSame = (savedTeamsList.length === this.teamsList.length);
             var isTeamsSameSet = false;
             if (isTeamsCountSame && this.teamsList.length > 0) {
-                var sSet = savedTeamsList.slice().sort();
-                var cSet = this.teamsList.slice().sort();
+                var sSet = savedTeamsList.map(getTeamName).sort();
+                var cSet = this.teamsList.map(getTeamName).sort();
                 isTeamsSameSet = true;
                 for (var ti = 0; ti < sSet.length; ti++) {
                     if (sSet[ti] !== cSet[ti]) {
@@ -139,7 +155,7 @@
                 this.roundsList = savedData.rounds;
                 this.matchesMap = savedData.matchesMap || {};
 
-                // Re-link and merge matchesMap and roundsList
+                // Re-link, merge, and sanitize matchesMap and roundsList
                 for (var r = 0; r < this.roundsList.length; r++) {
                     var rd = this.roundsList[r];
                     if (rd && rd.matches) {
@@ -155,6 +171,11 @@
                             } else {
                                 this.matchesMap[mid] = rMatch;
                             }
+
+                            // Ensure team names are always strings (not objects)
+                            var mObj = this.matchesMap[mid] || rMatch;
+                            if (mObj.team1) mObj.team1.name = getTeamName(mObj.team1.name);
+                            if (mObj.team2) mObj.team2.name = getTeamName(mObj.team2.name);
                         }
                     }
                 }

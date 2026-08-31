@@ -10,6 +10,10 @@
     String safeTourneyId = (tourneyId != null) ? tourneyId : "";
     String tourneyName = "Giải Đấu Vòng Tròn Tính Điểm";
     String teamsJson = "[]";
+    String stageParam = request.getParameter("stage");
+    int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
+    String activeStepVal = (currentStage == 2) ? "stage2" : "bracket";
+
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
@@ -69,9 +73,9 @@
             <jsp:param name="active" value="tournaments"/>
         </jsp:include>
 
-        <!-- Sidebar Component (Step 3: Vòng Đấu) -->
+        <!-- Sidebar Component -->
         <jsp:include page="/common/component/sidebar.jsp">
-            <jsp:param name="activeStep" value="bracket"/>
+            <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
             <jsp:param name="format" value="ROUND_ROBIN"/>
             <jsp:param name="id" value="<%= safeTourneyId %>"/>
         </jsp:include>
@@ -86,7 +90,7 @@
                         <i class="fa-solid fa-trophy text-gold"></i> 
                         <span><%= tourneyName %></span>
                     </h1>
-                    <span class="format-badge-rr">Round Robin</span>
+                    <span class="format-badge-rr"><%= (currentStage == 2) ? "Stage 2: Round Robin" : "Round Robin" %></span>
                     <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
                 </div>
 
@@ -98,11 +102,11 @@
 
                     <!-- View Mode Segmented Toggle Buttons (Fixtures List ↔ Standings Table) -->
                     <div class="view-mode-toggle-group">
-                        <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=<%= safeTourneyId %>&format=ROUND_ROBIN" 
+                        <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=<%= safeTourneyId %>&format=ROUND_ROBIN<%= (currentStage == 2) ? "&stage=2" : "" %>" 
                            class="btn-view-toggle active" style="text-decoration: none;">
                             <i class="fa-solid fa-calendar-days"></i> Lịch Thi Đấu
                         </a>
-                        <a href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= safeTourneyId %>&format=ROUND_ROBIN" 
+                        <a href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= safeTourneyId %>&format=ROUND_ROBIN<%= (currentStage == 2) ? "&stage=2" : "" %>" 
                            class="btn-view-toggle" style="text-decoration: none;">
                             <i class="fa-solid fa-ranking-star"></i> Bảng Xếp Hạng
                         </a>
@@ -169,7 +173,16 @@
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var preloadedTeams = <%= teamsJson %>;
-                window.TourmaRoundRobin.init(tourneyId, null, preloadedTeams);
+                var currentStage = <%= currentStage %>;
+
+                if (currentStage === 2) {
+                    var s2TeamsRaw = null;
+                    try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                    if (s2TeamsRaw && s2TeamsRaw.length > 0) {
+                        preloadedTeams = s2TeamsRaw;
+                    }
+                }
+                window.TourmaRoundRobin.init(tourneyId, null, preloadedTeams, currentStage);
             });
         </script>
     </body>

@@ -247,29 +247,36 @@
             var tourneyFormatServer = "<%= (tourneyFormat != null) ? tourneyFormat.toUpperCase() : "" %>";
             var localStorageKey = "tourma_teams_" + tournamentId;
 
+            // Helper to get effective Stage 1 Format
+            function getStage1Format() {
+                if (tournamentId) {
+                    var tType = localStorage.getItem('tourma_type_' + tournamentId);
+                    var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
+                    if (tType === 'MULTI_STAGE' || multiCfgRaw) {
+                        try {
+                            var mCfg = JSON.parse(multiCfgRaw);
+                            if (mCfg && mCfg.stage1Format) return mCfg.stage1Format.toUpperCase();
+                        } catch (e) {}
+                    }
+                    var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
+                    if (localFmt) return localFmt.toUpperCase();
+                }
+                var urlFormat = new URLSearchParams(window.location.search).get('format');
+                if (urlFormat) return urlFormat.toUpperCase();
+                if (tourneyFormatServer) return tourneyFormatServer.toUpperCase();
+                return 'SINGLE_ELIMINATION';
+            }
+
             // Helper to check if format is Round Robin
             function checkIsRoundRobin() {
-                if (tourneyFormatServer === 'ROUND_ROBIN' || tourneyFormatServer === 'ROUNDROBIN') return true;
-                var urlFormat = new URLSearchParams(window.location.search).get('format');
-                if (urlFormat && (urlFormat.toUpperCase() === 'ROUND_ROBIN' || urlFormat.toUpperCase() === 'ROUNDROBIN')) return true;
-                if (tournamentId) {
-                    var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
-                    if (localFmt && localFmt.toUpperCase() === 'ROUND_ROBIN') return true;
-                    if (localStorage.getItem('tourma_rr_matches_' + tournamentId)) return true;
-                }
-                return false;
+                var fmt = getStage1Format();
+                return (fmt === 'ROUND_ROBIN' || fmt === 'ROUNDROBIN');
             }
 
             // Helper to check if format is Swiss System (Swiss Lite)
             function checkIsSwissFormat() {
-                if (tourneyFormatServer === 'SWISS_LITE' || tourneyFormatServer === 'SWISS') return true;
-                var urlFormat = new URLSearchParams(window.location.search).get('format');
-                if (urlFormat && (urlFormat.toUpperCase() === 'SWISS_LITE' || urlFormat.toUpperCase() === 'SWISS')) return true;
-                if (tournamentId) {
-                    var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
-                    if (localFmt && (localFmt.toUpperCase() === 'SWISS_LITE' || localFmt.toUpperCase() === 'SWISS')) return true;
-                }
-                return false;
+                var fmt = getStage1Format();
+                return (fmt === 'SWISS_LITE' || fmt === 'SWISS');
             }
 
             // Helper to check if two team lists contain the exact same team names (ignoring order)

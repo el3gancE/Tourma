@@ -836,7 +836,29 @@
             // Validate Multi Stage required fields for Stage 1
             if (currentType === 'MULTI_STAGE') {
                 var s1F = document.getElementById('stage1Format').value;
+                var s2F = document.getElementById('stage2Format').value;
                 if (!validateStageInputs(1, s1F, e)) return false;
+
+                // If Stage 2 is ROUND_ROBIN, advancing teams from Stage 1 MUST be <= 24!
+                if (s2F === 'ROUND_ROBIN') {
+                    var s1AdvCount = 0;
+                    var advInputEl = null;
+                    if (s1F === 'ROUND_ROBIN') advInputEl = document.getElementById('stage1AdvanceRR');
+                    else if (s1F === 'GROUP_STAGE') advInputEl = document.getElementById('stage1AdvanceGR');
+                    else if (s1F === 'SINGLE_ELIMINATION') advInputEl = document.getElementById('stage1AdvanceSE');
+                    else if (s1F === 'DOUBLE_ELIMINATION') advInputEl = document.getElementById('stage1AdvanceDE');
+
+                    if (advInputEl && advInputEl.value) {
+                        s1AdvCount = parseInt(advInputEl.value.trim(), 10) || 0;
+                    }
+
+                    if (s1AdvCount > 24) {
+                        if (e && e.preventDefault) e.preventDefault();
+                        alert('⚠️ Thể thức Vòng Tròn (Round Robin) ở Stage 2 chỉ hỗ trợ tối đa 24 đội tham gia!\n\nVui lòng nhập số đội đi tiếp từ Stage 1 tối đa là 24 đội (Hiện tại bạn đang nhập: ' + s1AdvCount + ' đội).');
+                        if (advInputEl) advInputEl.focus();
+                        return false;
+                    }
+                }
             }
 
             // If Stage 1 has started and Stage 1 format or type changed, block and show popup!
