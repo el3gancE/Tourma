@@ -98,9 +98,11 @@
          * Load Matches Data from LocalStorage
          */
         loadMatchesState: function () {
-            var storageKeyMatches = 'tourma_rr_matches_' + this.tournamentId;
+            var storageKeyRR = (this.currentStage === 2) ? ('tourma_rr_matches_stage2_' + this.tournamentId) : ('tourma_rr_matches_' + this.tournamentId);
+            var storageKeyMatches = (this.currentStage === 2) ? ('tourma_matches_stage2_' + this.tournamentId) : ('tourma_matches_' + this.tournamentId);
+
             try {
-                var saved = JSON.parse(localStorage.getItem(storageKeyMatches));
+                var saved = JSON.parse(localStorage.getItem(storageKeyRR));
                 if (saved) {
                     this.matchesMap = saved.matchesMap || {};
                     if (saved.teamsList && saved.teamsList.length > 0) {
@@ -121,7 +123,7 @@
                         }
                     }
                 } else {
-                    var universal = JSON.parse(localStorage.getItem('tourma_matches_' + this.tournamentId));
+                    var universal = JSON.parse(localStorage.getItem(storageKeyMatches));
                     this.matchesMap = universal || {};
                 }
             } catch (e) {
@@ -130,9 +132,9 @@
 
             // If empty, generate fresh matches structure
             if (!this.matchesMap || Object.keys(this.matchesMap).length === 0) {
-                if (window.TourmaRoundRobinAlgorithm) {
+                if (this.teamsList && this.teamsList.length > 0 && window.TourmaRoundRobinAlgorithm) {
                     var gen = window.TourmaRoundRobinAlgorithm.generateRoundRobin(this.teamsList, this.config);
-                    this.matchesMap = gen.matchesMap;
+                    this.matchesMap = gen.matchesMap || {};
                 }
             }
         },
@@ -172,9 +174,24 @@
                 this.config
             );
 
+            var isStage1WithCut = (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1);
+            var isFinalStage = !isStage1WithCut; // Single Stage RR or Stage 2 RR
+
             for (var i = 0; i < standings.length; i++) {
                 var row = standings[i];
                 var tr = document.createElement('tr');
+
+                var isAdvancingRow = false;
+
+                if (isStage1WithCut && row.rank <= this.cutTarget) {
+                    isAdvancingRow = true;
+                } else if (isFinalStage && row.rank === 1) {
+                    isAdvancingRow = true;
+                }
+
+                if (isAdvancingRow) {
+                    tr.className = 'rr-row-advancing-mint';
+                }
 
                 // Recent Form Badges HTML
                 var formHtml = '<div class="rr-form-group">';

@@ -12,6 +12,8 @@
     String teamsJson = "[]";
     String stageParam = request.getParameter("stage");
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
+    String activeStepVal = (currentStage == 2) ? "standings2" : "standings1";
+    String currentStageStr = (currentStage == 2) ? "2" : "1";
     int cutTarget = 0;
 
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
@@ -77,9 +79,10 @@
 
         <!-- Sidebar Component (Active: standings) -->
         <jsp:include page="/common/component/sidebar.jsp">
-            <jsp:param name="activeStep" value="standings"/>
+            <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
             <jsp:param name="format" value="ROUND_ROBIN"/>
             <jsp:param name="id" value="<%= safeTourneyId %>"/>
+            <jsp:param name="stage" value="<%= currentStageStr %>"/>
         </jsp:include>
 
         <!-- Main Content Area -->
@@ -169,11 +172,30 @@
                 var cutTarget = <%= cutTarget %>;
 
                 if (currentStage === 2) {
+                    var advCount = <%= cutTarget %>;
+                    if (!advCount || advCount <= 1) {
+                        try {
+                            var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
+                            if (multiCfg && multiCfg.stage1Config) {
+                                advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                            }
+                        } catch(e) {}
+                    }
+                    if (!advCount || advCount <= 1) {
+                        try {
+                            var rawAdv = localStorage.getItem('tourma_advance_count_' + tourneyId) || localStorage.getItem('tourma_cut_target_' + tourneyId);
+                            if (rawAdv) advCount = parseInt(rawAdv, 10);
+                        } catch(e) {}
+                    }
+
                     var s2TeamsRaw = null;
                     try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
                     if (s2TeamsRaw && s2TeamsRaw.length > 0) {
                         preloadedTeams = s2TeamsRaw;
+                    } else if (advCount && advCount > 1 && preloadedTeams && preloadedTeams.length > advCount) {
+                        preloadedTeams = preloadedTeams.slice(0, advCount);
                     }
+                    cutTarget = 0; // Stage 2 plays to find a champion!
                 }
                 window.TourmaRoundRobinStandings.init(tourneyId, preloadedTeams, null, currentStage, cutTarget);
             });

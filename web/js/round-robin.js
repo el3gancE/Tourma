@@ -125,7 +125,7 @@
          * Load from localStorage or Generate fresh Round Robin schedule
          */
         loadOrGenerateSchedule: function (dbMatches) {
-            var storageKeyMatches = 'tourma_rr_matches_' + this.tournamentId;
+            var storageKeyMatches = (this.currentStage === 2) ? ('tourma_rr_matches_stage2_' + this.tournamentId) : ('tourma_rr_matches_' + this.tournamentId);
             var savedData = null;
 
             try {
@@ -212,15 +212,16 @@
             } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaRoundRobinAlgorithm) {
                 // Clear stale cache and regenerate fresh schedule
                 try {
-                    localStorage.removeItem('tourma_rr_matches_' + this.tournamentId);
-                    localStorage.removeItem('tourma_matches_' + this.tournamentId);
+                    localStorage.removeItem(storageKeyMatches);
+                    if (this.currentStage === 1) localStorage.removeItem('tourma_matches_' + this.tournamentId);
+                    else localStorage.removeItem('tourma_matches_stage2_' + this.tournamentId);
                 } catch (e) {}
 
                 var generated = window.TourmaRoundRobinAlgorithm.generateRoundRobin(this.teamsList, this.config);
                 this.roundsList = generated.rounds;
                 this.matchesMap = generated.matchesMap;
 
-                if (dbMatches && dbMatches.length > 0) {
+                if (this.currentStage === 1 && dbMatches && dbMatches.length > 0) {
                     for (var i = 0; i < dbMatches.length; i++) {
                         var dbm = dbMatches[i];
                         if (this.matchesMap[dbm.id]) {
@@ -242,6 +243,8 @@
          * Persist matches to LocalStorage
          */
         persistLocal: function () {
+            var storageKeyRR = (this.currentStage === 2) ? ('tourma_rr_matches_stage2_' + this.tournamentId) : ('tourma_rr_matches_' + this.tournamentId);
+            var storageKeyMatches = (this.currentStage === 2) ? ('tourma_matches_stage2_' + this.tournamentId) : ('tourma_matches_' + this.tournamentId);
             try {
                 var payload = {
                     rounds: this.roundsList,
@@ -249,12 +252,10 @@
                     teamsList: this.teamsList,
                     config: this.config
                 };
-                localStorage.setItem('tourma_rr_matches_' + this.tournamentId, JSON.stringify(payload));
-                if (this.currentStage === 1) {
-                    localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
-                    if (this.teamsList && this.teamsList.length > 0) {
-                        localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
-                    }
+                localStorage.setItem(storageKeyRR, JSON.stringify(payload));
+                localStorage.setItem(storageKeyMatches, JSON.stringify(this.matchesMap));
+                if (this.currentStage === 1 && this.teamsList && this.teamsList.length > 0) {
+                    localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
                 }
             } catch (e) {}
             this.checkAndTriggerStage2Cut();
@@ -347,7 +348,8 @@
             } else if (s2Format === 'ROUND_ROBIN' && window.TourmaRoundRobinAlgorithm) {
                 var rrBracket = window.TourmaRoundRobinAlgorithm.generateRoundRobin(finalStage2Teams, multiCfg.stage2Config);
                 if (rrBracket) {
-                    localStorage.setItem('tourma_rr_matches_' + this.tournamentId, JSON.stringify(rrBracket));
+                    localStorage.setItem('tourma_rr_matches_stage2_' + this.tournamentId, JSON.stringify(rrBracket));
+                    localStorage.setItem('tourma_matches_stage2_' + this.tournamentId, JSON.stringify(rrBracket.matchesMap || {}));
                 }
             }
 

@@ -104,12 +104,30 @@
             </a>
         </li>
 
-        <!-- MỤC RIÊNG CHO ROUND ROBIN: BẢNG XẾP HẠNG -->
-        <li class="sidebar-menu-item" id="sidebarMenuRRStandings" style="<%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "" : "display: none;" %>">
+        <!-- MỤC RIÊNG CHO ROUND ROBIN: BẢNG XẾP HẠNG (Single Stage) -->
+        <li class="sidebar-menu-item" id="sidebarMenuRRStandings" style="<%= ("ROUND_ROBIN".equalsIgnoreCase(format) && !isMultiStage) ? "" : "display: none;" %>">
             <a id="sidebarLinkRRStandings" href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=<%= format %>"
-               class="sidebar-menu-link <%= "standings".equals(activeStep) ? "active" : "" %>">
+               class="sidebar-menu-link <%= ("standings".equals(activeStep) || "standings1".equals(activeStep)) && !isMultiStage ? "active" : "" %>">
                 <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
                 <span id="sidebarTextRRStandings">Bảng Xếp Hạng</span>
+            </a>
+        </li>
+
+        <!-- MULTI-STAGE: BXH VÒNG 1 (Khi Vòng 1 là Round Robin) -->
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings1" style="display: none;">
+            <a id="sidebarLinkRRStandings1" href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=ROUND_ROBIN&stage=1"
+               class="sidebar-menu-link <%= "standings1".equals(activeStep) || ("standings".equals(activeStep) && !"2".equals(request.getParameter("stage"))) ? "active" : "" %>">
+                <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
+                <span>BXH Vòng 1</span>
+            </a>
+        </li>
+
+        <!-- MULTI-STAGE: BXH VÒNG 2 (Khi Vòng 2 là Round Robin) -->
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings2" style="display: none;">
+            <a id="sidebarLinkRRStandings2" href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=ROUND_ROBIN&stage=2"
+               class="sidebar-menu-link <%= "standings2".equals(activeStep) || ("standings".equals(activeStep) && "2".equals(request.getParameter("stage"))) ? "active" : "" %>">
+                <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
+                <span>BXH Vòng 2</span>
             </a>
         </li>
 
@@ -149,13 +167,14 @@
         var link1 = document.getElementById('sidebarLinkStage1');
         var link2 = document.getElementById('sidebarLinkStage2');
         var menuRR = document.getElementById('sidebarMenuRRStandings');
-        var linkRR = document.getElementById('sidebarLinkRRStandings');
-        var textRR = document.getElementById('sidebarTextRRStandings');
+        var menuRR1 = document.getElementById('sidebarMenuRRStandings1');
+        var menuRR2 = document.getElementById('sidebarMenuRRStandings2');
 
         if (isMulti) {
             if (m1) m1.style.display = '';
             if (m2) m2.style.display = '';
             if (sSingle) sSingle.style.display = 'none';
+            if (menuRR) menuRR.style.display = 'none';
 
             if (multiCfgRaw) {
                 var mCfg = JSON.parse(multiCfgRaw);
@@ -174,21 +193,18 @@
                 if (link1) link1.href = '${pageContext.request.contextPath}/common/' + getPageForFormat(s1Format) + '?id=' + tid + '&stage=1';
                 if (link2) link2.href = '${pageContext.request.contextPath}/common/' + getPageForFormat(s2Format) + '?id=' + tid + '&stage=2';
 
-                // Check if Stage 2 or Stage 1 is Round Robin -> dynamically display Standings menu item!
-                if (s2Format === 'ROUND_ROBIN') {
-                    if (menuRR) {
-                        menuRR.style.display = '';
-                        if (linkRR) linkRR.href = '${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=' + tid + '&format=ROUND_ROBIN&stage=2';
-                        if (textRR) textRR.innerText = 'BXH Vòng 2';
-                    }
-                } else if (s1Format === 'ROUND_ROBIN') {
-                    if (menuRR) {
-                        menuRR.style.display = '';
-                        if (linkRR) linkRR.href = '${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=' + tid + '&format=ROUND_ROBIN&stage=1';
-                        if (textRR) textRR.innerText = 'BXH Vòng 1';
-                    }
-                } else {
-                    if (menuRR) menuRR.style.display = 'none';
+                // Display BXH Vong 1 if Stage 1 is Round Robin
+                if (s1Format === 'ROUND_ROBIN' && menuRR1) {
+                    menuRR1.style.display = '';
+                } else if (menuRR1) {
+                    menuRR1.style.display = 'none';
+                }
+
+                // Display BXH Vong 2 if Stage 2 is Round Robin
+                if (s2Format === 'ROUND_ROBIN' && menuRR2) {
+                    menuRR2.style.display = '';
+                } else if (menuRR2) {
+                    menuRR2.style.display = 'none';
                 }
             }
         }
