@@ -18,9 +18,16 @@
         /**
          * Initialize Standings Page
          */
-        init: function (tourneyId, preloadedTeams, config, stage) {
+        init: function (tourneyId, preloadedTeams, config, stage, cutTarget) {
             this.tournamentId = tourneyId || 'demo';
             this.currentStage = (stage === 2 || stage === '2') ? 2 : 1;
+            this.cutTarget = cutTarget || 0;
+
+            if (!this.cutTarget || this.cutTarget <= 1) {
+                var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
+                             localStorage.getItem('tourma_cut_target_' + this.tournamentId);
+                if (rawCut) this.cutTarget = parseInt(rawCut, 10);
+            }
             
             var storageKeyConfig = 'tourma_rr_config_' + this.tournamentId;
             var cfg = config;
@@ -72,6 +79,9 @@
         },
 
         checkFinalStage: function () {
+            if (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1) {
+                return; // Stage 1 cut stage — NEVER trigger FinalStagePopup / champion banner!
+            }
             if (window.FinalStagePopup) {
                 window.FinalStagePopup.checkAndRender(
                     this.tournamentId,

@@ -12,14 +12,20 @@
     String teamsJson = "[]";
     String stageParam = request.getParameter("stage");
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
-    String activeStepVal = (currentStage == 2) ? "stage2" : "bracket";
+    String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
+    int cutTarget = 0;
 
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId);
-            if (t != null && t.getName() != null && !t.getName().trim().isEmpty()) {
-                tourneyName = t.getName();
+            if (t != null) {
+                if (t.getName() != null && !t.getName().trim().isEmpty()) {
+                    tourneyName = t.getName();
+                }
+                if ("MULTI_STAGE".equals(t.getTournamentType()) && currentStage == 1) {
+                    cutTarget = t.getAdvancingSeatsCount();
+                }
             }
             ParticipantDAO pDao = new ParticipantDAO();
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
@@ -92,6 +98,10 @@
                     </h1>
                     <span class="format-badge-rr"><%= (currentStage == 2) ? "Stage 2: Round Robin" : "Round Robin" %></span>
                     <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
+                    <span id="rrAdvancingBadge" class="format-badge-pill" style="display: <%= (currentStage == 1 && cutTarget > 1) ? "inline-flex" : "none" %>; background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.35); color: #2dd4bf; border-radius: 9999px; font-weight: 800; font-size: 0.8rem; padding: 0.25rem 0.75rem; align-items: center; gap: 0.45rem;">
+                        <i class="fa-solid fa-trophy" style="color: #2dd4bf; font-size: 0.85rem;"></i>
+                        <span id="rrAdvancingText"><%= cutTarget %> Đội đi tiếp</span>
+                    </span>
                 </div>
 
                 <div class="rr-actions-group" style="display: flex; align-items: center; gap: 0.75rem;">
@@ -114,17 +124,17 @@
                 </div>
             </div>
 
-            <!-- Round Selector Tabs (Vòng 1, Vòng 2, ... Tất cả) -->
+            <!-- Horizontal Round Selector Bar (Pill Tabs) -->
             <div id="rrRoundSelectorBar" class="rr-round-selector-bar">
-                <!-- Dynamic Round Pills Rendered by JS -->
+                <!-- Injected via JavaScript -->
             </div>
 
-            <!-- Fixtures / Matches List Container -->
+            <!-- Fixtures Match Grid Container -->
             <div id="rrFixturesContainer" class="rr-fixtures-container">
-                <!-- Dynamic Match Cards by Round Rendered by JS -->
+                <!-- Dynamic Round Sections Injected by JS -->
             </div>
 
-            <!-- RESET CONFIRMATION MODAL -->
+            <!-- Confirmation Modal for Reset Tournament -->
             <div id="rrResetModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) window.TourmaRoundRobin.closeResetModal();">
                 <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
                     <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
@@ -136,10 +146,10 @@
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
-                    
+
                     <div class="modal-body-content" style="padding: 1.25rem 1rem;">
                         <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
-                            <strong style="color: #f43f5e;">⚠️ Cảnh báo:</strong><br>
+                            <strong style="color: #f43f5e;">⚠️ Cảnh báo quan trọng:</strong><br>
                             Hành động này sẽ <strong style="color: #ffffff;">XÓA TOÀN BỘ tỷ số và kết quả của tất cả các vòng</strong>, đưa Bảng Xếp Hạng về 0 điểm ban đầu.
                         </div>
                         <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
@@ -147,7 +157,7 @@
                         </p>
                     </div>
 
-                    <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem;">
+                    <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.75rem 1rem;">
                         <button type="button" class="btn btn-secondary" onclick="window.TourmaRoundRobin.closeResetModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
                         <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="window.TourmaRoundRobin.confirmResetTournament()">
                             <i class="fa-solid fa-rotate-right"></i> Xác Nhận Reset
@@ -162,6 +172,8 @@
         <jsp:include page="/common/component/popup.jsp"/>
 
         <!-- Scripts -->
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/popup.js"></script>
@@ -174,6 +186,7 @@
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var preloadedTeams = <%= teamsJson %>;
                 var currentStage = <%= currentStage %>;
+                var cutTarget = <%= cutTarget %>;
 
                 if (currentStage === 2) {
                     var s2TeamsRaw = null;
@@ -182,7 +195,7 @@
                         preloadedTeams = s2TeamsRaw;
                     }
                 }
-                window.TourmaRoundRobin.init(tourneyId, null, preloadedTeams, currentStage);
+                window.TourmaRoundRobin.init(tourneyId, null, preloadedTeams, currentStage, cutTarget);
             });
         </script>
     </body>

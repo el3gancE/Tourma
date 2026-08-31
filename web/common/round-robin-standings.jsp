@@ -12,13 +12,19 @@
     String teamsJson = "[]";
     String stageParam = request.getParameter("stage");
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
+    int cutTarget = 0;
 
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId);
-            if (t != null && t.getName() != null && !t.getName().trim().isEmpty()) {
-                tourneyName = t.getName();
+            if (t != null) {
+                if (t.getName() != null && !t.getName().trim().isEmpty()) {
+                    tourneyName = t.getName();
+                }
+                if ("MULTI_STAGE".equals(t.getTournamentType()) && currentStage == 1) {
+                    cutTarget = t.getAdvancingSeatsCount();
+                }
             }
             ParticipantDAO pDao = new ParticipantDAO();
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
@@ -88,6 +94,10 @@
                     </h1>
                     <span class="format-badge-rr"><%= (currentStage == 2) ? "Stage 2: Round Robin" : "Round Robin" %></span>
                     <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
+                    <span id="rrAdvancingBadge" class="format-badge-pill" style="display: <%= (currentStage == 1 && cutTarget > 1) ? "inline-flex" : "none" %>; background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.35); color: #2dd4bf; border-radius: 9999px; font-weight: 800; font-size: 0.8rem; padding: 0.25rem 0.75rem; align-items: center; gap: 0.45rem;">
+                        <i class="fa-solid fa-trophy" style="color: #2dd4bf; font-size: 0.85rem;"></i>
+                        <span id="rrAdvancingText"><%= cutTarget %> Đội đi tiếp</span>
+                    </span>
                 </div>
 
                 <div class="rr-actions-group" style="display: flex; align-items: center; gap: 0.75rem;">
@@ -108,36 +118,36 @@
             <!-- Standings Table Card -->
             <div class="rr-standings-card">
                 <div class="rr-standings-header-bar">
-                    <div class="rr-standings-title">
-                        <i class="fa-solid fa-chart-simple"></i>
-                        <span>Bảng Xếp Hạng Trực Tiếp</span>
+                    <div class="rr-standings-title-left">
+                        <i class="fa-solid fa-table-list text-mint"></i>
+                        <span>Bảng Điểm Chi Tiết</span>
                     </div>
-                    <div style="font-size: 0.76rem; color: #94a3b8;">
-                        <span style="margin-right: 0.85rem;"><strong style="color:#fbbf24;">Thắng:</strong> 3đ</span>
-                        <span style="margin-right: 0.85rem;"><strong style="color:#facc15;">Hòa:</strong> 1đ</span>
-                        <span><strong style="color:#f87171;">Thua:</strong> 0đ</span>
+                    <div class="rr-points-rule-legend">
+                        <span class="legend-item"><strong class="text-win">T</strong>: Thắng (3đ)</span>
+                        <span class="legend-item"><strong class="text-draw">H</strong>: Hòa (1đ)</span>
+                        <span class="legend-item"><strong class="text-loss">B</strong>: Bại (0đ)</span>
                     </div>
                 </div>
 
-                <div class="rr-standings-table-wrapper">
+                <div class="table-responsive">
                     <table class="rr-table">
                         <thead>
                             <tr>
-                                <th style="width: 50px;">Hạng</th>
-                                <th>Đội Tuyển</th>
-                                <th style="text-align: center; width: 60px;">Trận</th>
-                                <th style="text-align: center; width: 50px;">T</th>
-                                <th style="text-align: center; width: 50px;">H</th>
-                                <th style="text-align: center; width: 50px;">B</th>
-                                <th style="text-align: center; width: 50px;">BT</th>
-                                <th style="text-align: center; width: 50px;">BB</th>
-                                <th style="text-align: center; width: 60px;">HS</th>
-                                <th style="text-align: center; width: 60px;">Điểm</th>
-                                <th style="width: 140px;">5 Trận Gần Nhất</th>
+                                <th class="th-rank">#</th>
+                                <th class="th-team">Đội Tuyển</th>
+                                <th class="th-num" title="Số trận đã đấu">Trận</th>
+                                <th class="th-num" title="Thắng">T</th>
+                                <th class="th-num" title="Hòa">H</th>
+                                <th class="th-num" title="Bại">B</th>
+                                <th class="th-num" title="Bàn thắng / Điểm ghi được">BT</th>
+                                <th class="th-num" title="Bàn thua / Điểm bị ghi">BB</th>
+                                <th class="th-num" title="Hiệu số (BT - BB)">HS</th>
+                                <th class="th-pts" title="Tổng điểm">Điểm</th>
+                                <th class="th-form" title="Phong độ 5 trận gần nhất">Phong Độ</th>
                             </tr>
                         </thead>
                         <tbody id="rrStandingsTableBody">
-                            <!-- Dynamic Table Rows Rendered by JS Engine -->
+                            <!-- Dynamic Rows Rendered by JS -->
                         </tbody>
                     </table>
                 </div>
@@ -156,6 +166,7 @@
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var preloadedTeams = <%= teamsJson %>;
                 var currentStage = <%= currentStage %>;
+                var cutTarget = <%= cutTarget %>;
 
                 if (currentStage === 2) {
                     var s2TeamsRaw = null;
@@ -164,7 +175,7 @@
                         preloadedTeams = s2TeamsRaw;
                     }
                 }
-                window.TourmaRoundRobinStandings.init(tourneyId, preloadedTeams, null, currentStage);
+                window.TourmaRoundRobinStandings.init(tourneyId, preloadedTeams, null, currentStage, cutTarget);
             });
         </script>
     </body>

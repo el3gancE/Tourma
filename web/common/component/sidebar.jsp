@@ -80,7 +80,7 @@
         <!-- MULTI-STAGE: VÒNG 1 -->
         <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1" style="<%= isMultiStage ? "" : "display: none;" %>">
             <a id="sidebarLinkStage1" href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=<%= tournamentId %>&stage=1"
-               class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && !"2".equals(request.getParameter("stage")) && request.getRequestURI().contains("single-elimination")) ? "active" : "" %>">
+               class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && !"2".equals(request.getParameter("stage"))) ? "active" : "" %>">
                 <i class="fa-solid fa-trophy menu-icon"></i>
                 <span>Vòng 1</span>
             </a>
@@ -89,7 +89,7 @@
         <!-- MULTI-STAGE: VÒNG 2 -->
         <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2" style="<%= isMultiStage ? "" : "display: none;" %>">
             <a id="sidebarLinkStage2" href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=<%= tournamentId %>&stage=2"
-               class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && ("2".equals(request.getParameter("stage")) || request.getRequestURI().contains("double-elimination"))) ? "active" : "" %>">
+               class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && "2".equals(request.getParameter("stage"))) ? "active" : "" %>">
                 <i class="fa-solid fa-medal menu-icon text-mint"></i>
                 <span>Vòng 2</span>
             </a>

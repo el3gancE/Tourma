@@ -220,60 +220,62 @@
                 this.roundsList = generated.roundsList || [];
                 this.matchesMap = generated.matchesMap || {};
 
-                // Also check old key format for backward compatibility
-                var legacyMap = null;
-                try {
-                    var legacyRaw = localStorage.getItem('tourma_matches_' + this.tournamentId);
-                    if (legacyRaw) legacyMap = JSON.parse(legacyRaw);
-                } catch (e) {}
+                // For Stage 1 ONLY, check legacy key format if matches exist
+                if (this.currentStage === 1) {
+                    var legacyMap = null;
+                    try {
+                        var legacyRaw = localStorage.getItem('tourma_matches_' + this.tournamentId);
+                        if (legacyRaw) legacyMap = JSON.parse(legacyRaw);
+                    } catch (e) {}
 
-                var oldMap = legacyMap;
-                if (oldMap && Object.keys(oldMap).length > 0) {
-                    for (var r = 0; r < this.roundsList.length; r++) {
-                        var rMatches = this.roundsList[r].matches;
-                        for (var m = 0; m < rMatches.length; m++) {
-                            var currMatch = rMatches[m];
-                            var oldM = oldMap[currMatch.matchId];
-                            if (!oldM) continue;
-                            if (oldM.team1 && oldM.team1.name && !oldM.team1.name.startsWith('W #')) {
-                                currMatch.team1.name = oldM.team1.name;
-                                currMatch.team1.seed = oldM.team1.seed;
-                            }
-                            if (oldM.team2 && oldM.team2.name && !oldM.team2.name.startsWith('W #')) {
-                                currMatch.team2.name = oldM.team2.name;
-                                currMatch.team2.seed = oldM.team2.seed;
-                            }
-                            if (oldM.team1 && oldM.team1.score !== undefined && oldM.team1.score !== '') currMatch.team1.score = oldM.team1.score;
-                            if (oldM.team2 && oldM.team2.score !== undefined && oldM.team2.score !== '') currMatch.team2.score = oldM.team2.score;
-                            if (oldM.winnerId) {
-                                currMatch.winnerId = oldM.winnerId;
-                                currMatch.status = oldM.status || 'COMPLETED';
-                                if (currMatch.nextMatchId && this.matchesMap[currMatch.nextMatchId]) {
-                                    var isT1W = (oldM.winnerId === 'team1');
-                                    var nMatch = this.matchesMap[currMatch.nextMatchId];
-                                    var wN = isT1W ? currMatch.team1.name : currMatch.team2.name;
-                                    var wS = isT1W ? currMatch.team1.seed : currMatch.team2.seed;
-                                    if (currMatch.nextMatchSlot === 1) { nMatch.team1.name = wN; nMatch.team1.seed = wS; }
-                                    else { nMatch.team2.name = wN; nMatch.team2.seed = wS; }
+                    var oldMap = legacyMap;
+                    if (oldMap && Object.keys(oldMap).length > 0) {
+                        for (var r = 0; r < this.roundsList.length; r++) {
+                            var rMatches = this.roundsList[r].matches;
+                            for (var m = 0; m < rMatches.length; m++) {
+                                var currMatch = rMatches[m];
+                                var oldM = oldMap[currMatch.matchId];
+                                if (!oldM) continue;
+                                if (oldM.team1 && oldM.team1.name && !oldM.team1.name.startsWith('W #')) {
+                                    currMatch.team1.name = oldM.team1.name;
+                                    currMatch.team1.seed = oldM.team1.seed;
                                 }
-                            } else if (oldM.status) {
-                                currMatch.status = oldM.status;
+                                if (oldM.team2 && oldM.team2.name && !oldM.team2.name.startsWith('W #')) {
+                                    currMatch.team2.name = oldM.team2.name;
+                                    currMatch.team2.seed = oldM.team2.seed;
+                                }
+                                if (oldM.team1 && oldM.team1.score !== undefined && oldM.team1.score !== '') currMatch.team1.score = oldM.team1.score;
+                                if (oldM.team2 && oldM.team2.score !== undefined && oldM.team2.score !== '') currMatch.team2.score = oldM.team2.score;
+                                if (oldM.winnerId) {
+                                    currMatch.winnerId = oldM.winnerId;
+                                    currMatch.status = oldM.status || 'COMPLETED';
+                                    if (currMatch.nextMatchId && this.matchesMap[currMatch.nextMatchId]) {
+                                        var isT1W = (oldM.winnerId === 'team1');
+                                        var nMatch = this.matchesMap[currMatch.nextMatchId];
+                                        var wN = isT1W ? currMatch.team1.name : currMatch.team2.name;
+                                        var wS = isT1W ? currMatch.team1.seed : currMatch.team2.seed;
+                                        if (currMatch.nextMatchSlot === 1) { nMatch.team1.name = wN; nMatch.team1.seed = wS; }
+                                        else { nMatch.team2.name = wN; nMatch.team2.seed = wS; }
+                                    }
+                                } else if (oldM.status) {
+                                    currMatch.status = oldM.status;
+                                }
                             }
                         }
                     }
-                }
 
-                // Merge from dbMatches if provided
-                if (dbMatches && dbMatches.length > 0) {
-                    for (var i = 0; i < dbMatches.length; i++) {
-                        var dbm = dbMatches[i];
-                        var targetM = this.matchesMap[dbm.id || dbm.matchId];
-                        if (targetM) {
-                            targetM.status = dbm.status;
-                            if (targetM.team1) targetM.team1.score = dbm.team1Score;
-                            if (targetM.team2) targetM.team2.score = dbm.team2Score;
-                            if (dbm.winnerId && targetM.team1) {
-                                targetM.winnerId = (dbm.winnerId === targetM.team1.name) ? 'team1' : 'team2';
+                    // Merge from dbMatches if provided (Stage 1 only)
+                    if (dbMatches && dbMatches.length > 0) {
+                        for (var i = 0; i < dbMatches.length; i++) {
+                            var dbm = dbMatches[i];
+                            var targetM = this.matchesMap[dbm.id || dbm.matchId];
+                            if (targetM) {
+                                targetM.status = dbm.status;
+                                if (targetM.team1) targetM.team1.score = dbm.team1Score;
+                                if (targetM.team2) targetM.team2.score = dbm.team2Score;
+                                if (dbm.winnerId && targetM.team1) {
+                                    targetM.winnerId = (dbm.winnerId === targetM.team1.name) ? 'team1' : 'team2';
+                                }
                             }
                         }
                     }
@@ -1247,6 +1249,60 @@
                         }
                     }
                 );
+            }
+        },
+
+        openResetModal: function () {
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset nhánh đấu.');
+                return;
+            }
+            var modal = document.getElementById('seResetModalBackdrop');
+            if (modal) {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        },
+
+        closeResetModal: function () {
+            var modal = document.getElementById('seResetModalBackdrop');
+            if (modal) {
+                modal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        },
+
+        confirmResetBracket: function () {
+            this.closeResetModal();
+            this.roundRandomInputs = {};
+            try {
+                localStorage.removeItem(this.getStorageKeyBracket());
+                localStorage.removeItem(this.getStorageKeyMatches());
+                localStorage.removeItem('tourma_round_inputs_' + this.tournamentId);
+                if (this.currentStage === 1) {
+                    localStorage.removeItem('tourma_stage2_teams_' + this.tournamentId);
+                    localStorage.removeItem('tourma_bracket_stage2_' + this.tournamentId);
+                    localStorage.removeItem('tourma_matches_stage2_' + this.tournamentId);
+                    localStorage.removeItem('tourma_de_matches_stage2_' + this.tournamentId);
+                    localStorage.removeItem('tourma_stage1_completed_' + this.tournamentId);
+                    var mCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + this.tournamentId)) || {};
+                    mCfg.stage2MatchesCreated = false;
+                    localStorage.setItem('tourma_multi_config_' + this.tournamentId, JSON.stringify(mCfg));
+                }
+            } catch (e) {}
+
+            if (window.TourmaBracketAlgorithm) {
+                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
+                this.bracketData = generated;
+                this.roundsList = generated.roundsList || [];
+                this.matchesMap = generated.matchesMap || {};
+                this.persistMatches();
+                this.renderBracketView();
+                this.renderListView();
+                var self = this;
+                setTimeout(function () {
+                    self.drawTreeConnectors();
+                }, 100);
             }
         },
 
