@@ -305,6 +305,13 @@
                 %>
             ];
 
+            // Escape HTML helper
+            function escapeHtml(str) {
+                if (str === null || str === undefined) return '';
+                if (typeof str === 'object') str = str.name || str.rawName || '';
+                return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
             var currentTeamsList = [];
             var initialTeamsSnapshot = null;
 
@@ -319,7 +326,17 @@
             }
 
             if (localSavedTeams && Array.isArray(localSavedTeams) && localSavedTeams.length > 0) {
-                currentTeamsList = localSavedTeams;
+                currentTeamsList = localSavedTeams.map(function(t) {
+                    if (typeof t === 'object' && t !== null) return t.name || t.rawName || '';
+                    return String(t);
+                }).filter(function(n) { return n && n.trim().length > 0; });
+
+                if (checkIsSwissFormat() && currentTeamsList.length !== 16 && dbTeams.length === 16) {
+                    currentTeamsList = dbTeams;
+                    if (tournamentId) {
+                        try { localStorage.setItem(localStorageKey, JSON.stringify(currentTeamsList)); } catch(e) {}
+                    }
+                }
             } else if (dbTeams.length > 0) {
                 currentTeamsList = dbTeams;
             } else {

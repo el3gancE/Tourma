@@ -31,8 +31,17 @@
                 this.tournamentName = config.tournamentName || 'Giải Đấu Double Elimination';
                 this.cutTarget = config.cutTarget || 0;
                 this.tournamentType = config.tournamentType || 'SINGLE_STAGE';
-                // preloadedTeams from JSP = full team list (already cut-limited by server)
                 this._preloadedTeams = config.teamsList || [];
+                this.currentStage = (config.stage === 2 || config.stage === '2') ? 2 : 1;
+            }
+
+            var stageParam = new URLSearchParams(window.location.search).get('stage');
+            if (stageParam === '2' || stageParam === 2) {
+                this.currentStage = 2;
+            } else if (stageParam === '1' || stageParam === 1) {
+                this.currentStage = 1;
+            } else if (!this.currentStage) {
+                this.currentStage = 1;
             }
 
             if (!this.cutTarget) {
@@ -184,8 +193,19 @@
                     if (t2 && t2 !== 'BYE' && !t2.startsWith('W #') && !t2.startsWith('L #') && t2 !== 'Winner UB' && t2 !== 'Winner LB') savedTeamNames[t2] = 1;
                 }
                 var savedTeamCount = Object.keys(savedTeamNames).length;
-                // Accept saved bracket if team count matches (within ±1 for BYE rounding)
-                savedBracketValid = (savedTeamCount === 0 || savedTeamCount === this.teamsList.length || Math.abs(savedTeamCount - this.teamsList.length) <= 1);
+                var isAllMatch = true;
+                if (this.teamsList && this.teamsList.length > 0) {
+                    for (var ti = 0; ti < this.teamsList.length; ti++) {
+                        var tm = this.teamsList[ti];
+                        var tmName = (typeof tm === 'object') ? (tm.name || tm.rawName) : tm;
+                        if (tmName && !savedTeamNames[tmName]) {
+                            isAllMatch = false;
+                            break;
+                        }
+                    }
+                }
+                // Accept saved bracket only if every team matches and team count matches
+                savedBracketValid = isAllMatch && (savedTeamCount === 0 || savedTeamCount === this.teamsList.length || Math.abs(savedTeamCount - this.teamsList.length) <= 1);
             }
 
             if (savedBracketValid && savedBracket) {
@@ -1225,9 +1245,11 @@
         persistLocal: function () {
             try {
                 localStorage.setItem('tourma_de_matches_' + this.tournamentId, JSON.stringify(this.bracketData));
-                localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
-                if (this.teamsList && this.teamsList.length > 0) {
-                    localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                if (this.currentStage === 1) {
+                    localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
+                    if (this.teamsList && this.teamsList.length > 0) {
+                        localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                    }
                 }
             } catch (e) {}
             this.checkFinalStage();

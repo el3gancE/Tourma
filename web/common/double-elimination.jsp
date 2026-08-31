@@ -7,6 +7,9 @@
 <%@page import="java.util.List"%>
 <%
     String tourneyId = request.getParameter("id");
+    String stageParam = request.getParameter("stage");
+    int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
+    String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
     String tourneyName = "Giải Đấu Double Elimination";
     String deTeamsJson = "[]";
     int cutTarget = 0;
@@ -23,13 +26,17 @@
                 if (t.getTournamentType() != null) {
                     tournamentType = t.getTournamentType();
                 }
-                cutTarget = t.getAdvancingSeatsCount();
+                if ("MULTI_STAGE".equals(tournamentType) && currentStage == 1) {
+                    cutTarget = t.getAdvancingSeatsCount();
+                } else {
+                    cutTarget = 0;
+                }
             }
             ParticipantDAO pDao = new ParticipantDAO();
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
             if (plist != null && !plist.isEmpty()) {
                 int takeCount = plist.size();
-                if ("MULTI_STAGE".equalsIgnoreCase(tournamentType) && cutTarget > 1 && cutTarget < takeCount) {
+                if ("MULTI_STAGE".equalsIgnoreCase(tournamentType) && currentStage == 1 && cutTarget > 1 && cutTarget < takeCount) {
                     takeCount = cutTarget;
                 }
                 StringBuilder sb = new StringBuilder("[");
@@ -82,9 +89,9 @@
             <jsp:param name="active" value="tournaments"/>
         </jsp:include>
 
-        <!-- Sidebar Component (Step 4: Vòng Đấu) -->
+        <!-- Sidebar Component -->
         <jsp:include page="/common/component/sidebar.jsp">
-            <jsp:param name="activeStep" value="stage2"/>
+            <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
             <jsp:param name="id" value="${not empty param.id ? param.id : (tournament != null ? tournament.id : '')}"/>
         </jsp:include>
 
@@ -98,7 +105,7 @@
                         <i class="fa-solid fa-trophy text-gold"></i> 
                         <span id="deTournamentTitle"><%= tourneyName %></span>
                     </h1>
-                    <span id="deFormatBadge" class="format-badge-single" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.35);">Double Elimination</span>
+                    <span id="deFormatBadge" class="format-badge-single" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.35);"><%= (currentStage == 2) ? "STAGE 2: DOUBLE ELIMINATION" : "DOUBLE ELIMINATION" %></span>
                     <span id="deTeamCountBadge" class="team-count-badge">0 Đội</span>
                 </div>
 

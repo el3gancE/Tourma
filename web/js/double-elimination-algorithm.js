@@ -864,4 +864,6 @@
         }
     };
 
+    window.TourmaDoubleEliminationAlgorithm = window.TourmaDoubleElimAlgorithm;
+
 })();
