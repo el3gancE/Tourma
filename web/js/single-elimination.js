@@ -107,63 +107,139 @@
 
             // Check Final Stage conclusion & render top banner if complete
             this.checkFinalStage();
+
+            // Check and trigger Stage 2 generation if cut round is complete
+            this.checkAndTriggerStage2Cut();
         },
 
         /**
          * Generate or Restore Matches Structure
          */
         generateMatchesStructure: function (dbMatches) {
-            var storageKeyMatches = 'tourma_matches_' + this.tournamentId;
-            var savedMatches = null;
+            var storageKey = 'tourma_bracket_' + this.tournamentId;
+            var savedBracket = null;
 
             if (this.tournamentId) {
                 try {
-                    savedMatches = JSON.parse(localStorage.getItem(storageKeyMatches));
+                    savedBracket = JSON.parse(localStorage.getItem(storageKey));
                 } catch (e) {
-                    savedMatches = null;
+                    savedBracket = null;
                 }
             }
 
-            // Always generate fresh structure from algorithm to ensure valid nextMatchId graph links
-            if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
+            // Check if savedBracket belongs to the same team configuration
+            var savedValid = false;
+            if (savedBracket && savedBracket.matchesMap && savedBracket.roundsList) {
+                var savedKeys = Object.keys(savedBracket.matchesMap);
+                if (savedKeys.length > 0) {
+                    savedValid = true;
+                }
+            }
+
+            if (savedValid) {
+                // DIRECT RESTORE - no merge needed
+                this.matchesMap = savedBracket.matchesMap;
+                this.roundsList = savedBracket.roundsList;
+                this.bracketData = savedBracket;
+
+                // Re-link roundsList match references to matchesMap objects
+                for (var r = 0; r < this.roundsList.length; r++) {
+                    for (var m = 0; m < this.roundsList[r].matches.length; m++) {
+                        var mRef = this.roundsList[r].matches[m];
+                        if (mRef && this.matchesMap[mRef.matchId]) {
+                            this.roundsList[r].matches[m] = this.matchesMap[mRef.matchId];
+                        }
+                    }
+                }
+
+                // Re-sync correct original seeds from this.teamsList
+                if (this.teamsList && this.teamsList.length > 0) {
+                    var seedLookup = {};
+                    for (var s = 0; s < this.teamsList.length; s++) {
+                        var st = this.teamsList[s];
+                        var sName = (typeof st === 'object') ? (st.name || st.rawName) : st;
+                        var sSeed = (typeof st === 'object' && st.seed !== undefined && st.seed !== null) ? st.seed : (s + 1);
+                        if (sName) seedLookup[sName] = sSeed;
+                    }
+                    var mKeys = Object.keys(this.matchesMap);
+                    for (var k = 0; k < mKeys.length; k++) {
+                        var mat = this.matchesMap[mKeys[k]];
+                        if (mat.team1 && mat.team1.name && seedLookup[mat.team1.name] !== undefined) {
+                            mat.team1.seed = seedLookup[mat.team1.name];
+                        }
+                        if (mat.team2 && mat.team2.name && seedLookup[mat.team2.name] !== undefined) {
+                            mat.team2.seed = seedLookup[mat.team2.name];
+                        }
+                    }
+                }
+            } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
+                // GENERATE FRESH BRACKET
                 var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
                 this.bracketData = generated;
                 this.roundsList = generated.roundsList || [];
                 this.matchesMap = generated.matchesMap || {};
 
-                // Merge completed scores/statuses from savedMatches if available
-                if (savedMatches) {
-                    var oldMap = savedMatches.matchesMap || savedMatches;
-                    var oldKeys = Object.keys(oldMap);
-                    for (var k = 0; k < oldKeys.length; k++) {
-                        var oldM = oldMap[oldKeys[k]];
-                        if (oldM && this.matchesMap[oldM.matchId]) {
-                            var targetM = this.matchesMap[oldM.matchId];
-                            if (oldM.status) targetM.status = oldM.status;
-                            if (oldM.team1 && oldM.team1.score !== undefined) targetM.team1.score = oldM.team1.score;
-                            if (oldM.team2 && oldM.team2.score !== undefined) targetM.team2.score = oldM.team2.score;
-                            if (oldM.winnerId) targetM.winnerId = oldM.winnerId;
-                        }
-                    }
-                }
+                // Also check old key format for backward compatibility
+                var legacyMap = null;
+                try {
+                    var legacyRaw = localStorage.getItem('tourma_matches_' + this.tournamentId);
+                    if (legacyRaw) legacyMap = JSON.parse(legacyRaw);
+                } catch (e) {}
 
-                // Merge completed scores/statuses from dbMatches if available
-                if (dbMatches && dbMatches.length > 0) {
-                    for (var i = 0; i < dbMatches.length; i++) {
-                        var dbm = dbMatches[i];
-                        if (this.matchesMap[dbm.id || dbm.matchId]) {
-                            var localM = this.matchesMap[dbm.id || dbm.matchId];
-                            localM.status = dbm.status;
-                            if (localM.team1) localM.team1.score = dbm.team1Score;
-                            if (localM.team2) localM.team2.score = dbm.team2Score;
-                            if (dbm.winnerId && localM.team1) {
-                                localM.winnerId = (dbm.winnerId === localM.team1.name) ? 'team1' : 'team2';
+                var oldMap = legacyMap;
+                if (oldMap && Object.keys(oldMap).length > 0) {
+                    for (var r = 0; r < this.roundsList.length; r++) {
+                        var rMatches = this.roundsList[r].matches;
+                        for (var m = 0; m < rMatches.length; m++) {
+                            var currMatch = rMatches[m];
+                            var oldM = oldMap[currMatch.matchId];
+                            if (!oldM) continue;
+                            if (oldM.team1 && oldM.team1.name && !oldM.team1.name.startsWith('W #')) {
+                                currMatch.team1.name = oldM.team1.name;
+                                currMatch.team1.seed = oldM.team1.seed;
+                            }
+                            if (oldM.team2 && oldM.team2.name && !oldM.team2.name.startsWith('W #')) {
+                                currMatch.team2.name = oldM.team2.name;
+                                currMatch.team2.seed = oldM.team2.seed;
+                            }
+                            if (oldM.team1 && oldM.team1.score !== undefined && oldM.team1.score !== '') currMatch.team1.score = oldM.team1.score;
+                            if (oldM.team2 && oldM.team2.score !== undefined && oldM.team2.score !== '') currMatch.team2.score = oldM.team2.score;
+                            if (oldM.winnerId) {
+                                currMatch.winnerId = oldM.winnerId;
+                                currMatch.status = oldM.status || 'COMPLETED';
+                                if (currMatch.nextMatchId && this.matchesMap[currMatch.nextMatchId]) {
+                                    var isT1W = (oldM.winnerId === 'team1');
+                                    var nMatch = this.matchesMap[currMatch.nextMatchId];
+                                    var wN = isT1W ? currMatch.team1.name : currMatch.team2.name;
+                                    var wS = isT1W ? currMatch.team1.seed : currMatch.team2.seed;
+                                    if (currMatch.nextMatchSlot === 1) { nMatch.team1.name = wN; nMatch.team1.seed = wS; }
+                                    else { nMatch.team2.name = wN; nMatch.team2.seed = wS; }
+                                }
+                            } else if (oldM.status) {
+                                currMatch.status = oldM.status;
                             }
                         }
                     }
                 }
-                this.persistMatches();
+
+                // Merge from dbMatches if provided
+                if (dbMatches && dbMatches.length > 0) {
+                    for (var i = 0; i < dbMatches.length; i++) {
+                        var dbm = dbMatches[i];
+                        var targetM = this.matchesMap[dbm.id || dbm.matchId];
+                        if (targetM) {
+                            targetM.status = dbm.status;
+                            if (targetM.team1) targetM.team1.score = dbm.team1Score;
+                            if (targetM.team2) targetM.team2.score = dbm.team2Score;
+                            if (dbm.winnerId && targetM.team1) {
+                                targetM.winnerId = (dbm.winnerId === targetM.team1.name) ? 'team1' : 'team2';
+                            }
+                        }
+                    }
+                }
             }
+
+            this.persistMatches();
         },
 
         renderEmptyState: function (containerElem) {
@@ -877,6 +953,9 @@
                     localStorage.removeItem('tourma_matches_' + this.tournamentId);
                     localStorage.removeItem('tourma_matches_demo');
                     localStorage.removeItem('tourma_round_inputs_' + this.tournamentId);
+                    localStorage.removeItem('tourma_stage2_teams_' + this.tournamentId);
+                    localStorage.removeItem('tourma_de_matches_' + this.tournamentId);
+                    localStorage.removeItem('tourma_stage1_completed_' + this.tournamentId);
                 } catch (e) {}
             }
 
@@ -895,19 +974,194 @@
         },
 
         /**
-         * Persist matches map to localStorage
+         * Persist matches map (and full bracket structure) to localStorage
          */
         persistMatches: function () {
             if (this.tournamentId) {
-                var storageKeyMatches = 'tourma_matches_' + this.tournamentId;
                 try {
-                    localStorage.setItem(storageKeyMatches, JSON.stringify(this.matchesMap));
+                    // Save full bracket (roundsList + matchesMap) so restoration is direct
+                    localStorage.setItem('tourma_bracket_' + this.tournamentId, JSON.stringify({
+                        roundsList: this.roundsList,
+                        matchesMap: this.matchesMap
+                    }));
+                    // Keep legacy key for backward compat
+                    localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
                     if (this.teamsList && this.teamsList.length > 0) {
                         localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
                     }
                 } catch (e) {}
             }
+            this.checkAndTriggerStage2Cut();
             this.checkFinalStage();
+        },
+
+        /**
+         * Recursively trace upstream to resolve the actual winning team name
+         */
+        resolveActualTeamWinner: function (match) {
+            if (!match || !match.winnerId) return null;
+            var winner = (match.winnerId === 'team1') ? match.team1 : ((match.winnerId === 'team2') ? match.team2 : null);
+            if (!winner || !winner.name || winner.name === 'BYE' || winner.name === 'TBD') return null;
+
+            var wName = winner.name;
+            var wSeed = winner.seed;
+
+            // Trace upstream if name is a placeholder (e.g. 'W #33')
+            var depth = 0;
+            while (wName && wName.startsWith('W #') && depth < 10) {
+                depth++;
+                var pMatchNum = parseInt(wName.replace('W #', ''), 10);
+                var foundParent = null;
+                var keys = Object.keys(this.matchesMap || {});
+                for (var i = 0; i < keys.length; i++) {
+                    var pm = this.matchesMap[keys[i]];
+                    if (pm && (pm.matchNumber === pMatchNum || pm.matchId === pMatchNum)) {
+                        foundParent = pm;
+                        break;
+                    }
+                }
+                if (foundParent && foundParent.winnerId) {
+                    var pw = (foundParent.winnerId === 'team1') ? foundParent.team1 : foundParent.team2;
+                    if (pw && pw.name) {
+                        wName = pw.name;
+                        wSeed = (pw.seed !== undefined && pw.seed !== null && pw.seed !== '') ? pw.seed : wSeed;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            // Look up original seed from this.teamsList if not set
+            if ((wSeed === undefined || wSeed === null || wSeed === '') && this.teamsList) {
+                for (var s = 0; s < this.teamsList.length; s++) {
+                    var tObj = this.teamsList[s];
+                    var tName = (typeof tObj === 'object') ? (tObj.name || tObj.rawName) : tObj;
+                    if (tName === wName) {
+                        wSeed = (typeof tObj === 'object' && tObj.seed !== undefined && tObj.seed !== null) ? tObj.seed : (s + 1);
+                        break;
+                    }
+                }
+            }
+
+            return { name: wName, rawName: wName, seed: wSeed };
+        },
+
+        /**
+         * Automatically extract qualified winners and generate Stage 2 Double Elimination matches
+         * when the stopping round in Stage 1 is fully completed.
+         */
+        checkAndTriggerStage2Cut: function () {
+            if (!this.roundsList || this.roundsList.length === 0) return;
+
+            var cutTarget = this.cutTarget;
+            if (!cutTarget || cutTarget <= 1) {
+                try {
+                    var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
+                                 localStorage.getItem('tourma_cut_target_' + this.tournamentId);
+                    if (rawCut) cutTarget = parseInt(rawCut, 10);
+                } catch (e) {}
+            }
+
+            var multiCfg = null;
+            try {
+                multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + this.tournamentId));
+            } catch (e) {}
+
+            var isMultiStage = (localStorage.getItem('tourma_type_' + this.tournamentId) === 'MULTI_STAGE' || !!multiCfg || (cutTarget > 1));
+            if (!isMultiStage) return;
+
+            var lastRound = this.roundsList[this.roundsList.length - 1];
+            if (!lastRound || !lastRound.matches || lastRound.matches.length === 0) return;
+
+            var allCompleted = true;
+            for (var m = 0; m < lastRound.matches.length; m++) {
+                var mId = lastRound.matches[m].matchId;
+                var match = this.matchesMap[mId] || lastRound.matches[m];
+                var t1Name = match.team1 ? match.team1.name : '';
+                var t2Name = match.team2 ? match.team2.name : '';
+                var isBye = (t1Name === 'BYE' || t2Name === 'BYE');
+
+                if (!isBye && match.status !== 'COMPLETED' && !match.winnerId) {
+                    allCompleted = false;
+                    break;
+                }
+            }
+
+            if (!allCompleted) return;
+
+            // Extract all qualified winners
+            var qualifiedTeams = [];
+
+            // Helper to get definitive original seed
+            var self = this;
+            var getDefinitiveSeed = function(teamName, fallbackSeed) {
+                if (self.teamsList) {
+                    for (var s = 0; s < self.teamsList.length; s++) {
+                        var tObj = self.teamsList[s];
+                        var tName = (typeof tObj === 'object') ? (tObj.name || tObj.rawName) : tObj;
+                        if (tName === teamName) {
+                            return (typeof tObj === 'object' && tObj.seed !== undefined && tObj.seed !== null) ? tObj.seed : (s + 1);
+                        }
+                    }
+                }
+                return fallbackSeed;
+            };
+
+            // 1. Winners from stopping round matches
+            for (var m = 0; m < lastRound.matches.length; m++) {
+                var mId = lastRound.matches[m].matchId;
+                var match = this.matchesMap[mId] || lastRound.matches[m];
+                var wObj = this.resolveActualTeamWinner(match);
+                if (wObj && wObj.name && wObj.name !== 'BYE' && wObj.name !== 'TBD') {
+                    var defSeed = getDefinitiveSeed(wObj.name, wObj.seed);
+                    qualifiedTeams.push({ name: wObj.name, rawName: wObj.name, seed: defSeed });
+                }
+            }
+
+            // 2. Winners from earlier rounds who had direct BYEs to cut stage
+            for (var r = 0; r < this.roundsList.length - 1; r++) {
+                var rMatches = this.roundsList[r].matches;
+                for (var i = 0; i < rMatches.length; i++) {
+                    var mId = rMatches[i].matchId;
+                    var rm = this.matchesMap[mId] || rMatches[i];
+                    if (!rm.nextMatchId && (rm.status === 'COMPLETED' || rm.winnerId)) {
+                        var wObj = this.resolveActualTeamWinner(rm);
+                        if (wObj && wObj.name && wObj.name !== 'BYE' && wObj.name !== 'TBD') {
+                            var alreadyIn = qualifiedTeams.some(function (t) { return t.name === wObj.name; });
+                            if (!alreadyIn) {
+                                var defSeed = getDefinitiveSeed(wObj.name, wObj.seed);
+                                qualifiedTeams.unshift({ name: wObj.name, rawName: wObj.name, seed: defSeed });
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (qualifiedTeams.length < 2) return;
+
+            // 3. Shuffle randomly for Stage 2 (100% Random rule for SE -> DE pairing)
+            // KEEP each participant's original seed!
+            var shuffledStage2Teams = qualifiedTeams.slice();
+            for (var i = shuffledStage2Teams.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = shuffledStage2Teams[i];
+                shuffledStage2Teams[i] = shuffledStage2Teams[j];
+                shuffledStage2Teams[j] = temp;
+            }
+
+            // Save to LocalStorage
+            localStorage.setItem('tourma_stage2_teams_' + this.tournamentId, JSON.stringify(shuffledStage2Teams));
+            localStorage.setItem('tourma_stage1_completed_' + this.tournamentId, 'true');
+
+            // Generate Double Elimination bracket structure for Stage 2
+            if (window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.generateDoubleElimination === 'function') {
+                var deBracket = window.TourmaDoubleElimAlgorithm.generateDoubleElimination(shuffledStage2Teams);
+                if (deBracket) {
+                    localStorage.setItem('tourma_de_matches_' + this.tournamentId, JSON.stringify(deBracket));
+                }
+            }
         },
 
         checkFinalStage: function () {

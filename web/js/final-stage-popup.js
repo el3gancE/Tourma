@@ -26,6 +26,16 @@
             var keys = Object.keys(matchesMap);
             if (keys.length === 0) return null;
 
+            // Helper to check if a team name is a real confirmed participant (not a placeholder or BYE)
+            var isRealTeam = function (name) {
+                if (!name || typeof name !== 'string') return false;
+                var trimmed = name.trim();
+                if (!trimmed || trimmed === 'BYE' || trimmed === 'TBD') return false;
+                if (trimmed.startsWith('W #') || trimmed.startsWith('L #')) return false;
+                if (trimmed.startsWith('Winner ') || trimmed === 'Winner UB' || trimmed === 'Winner LB') return false;
+                return true;
+            };
+
             // 1. SINGLE ELIMINATION
             if (format === 'SINGLE_ELIMINATION') {
                 var finalMatch = null;
@@ -49,19 +59,28 @@
                 }
 
                 if (finalMatch) {
-                    var isCompleted = (finalMatch.status === 'COMPLETED' || finalMatch.status === 'done');
                     var t1 = finalMatch.team1 || {};
                     var t2 = finalMatch.team2 || {};
+                    var t1Name = t1.name || '';
+                    var t2Name = t2.name || '';
+
+                    // Both finalists must be confirmed real teams!
+                    if (!isRealTeam(t1Name) || !isRealTeam(t2Name)) {
+                        return null;
+                    }
+
                     var s1 = (t1.score !== '' && t1.score !== null && !isNaN(Number(t1.score))) ? Number(t1.score) : null;
                     var s2 = (t2.score !== '' && t2.score !== null && !isNaN(Number(t2.score))) ? Number(t2.score) : null;
+                    var isCompleted = (finalMatch.status === 'COMPLETED' || finalMatch.status === 'done');
 
-                    if (isCompleted || (s1 !== null && s2 !== null && s1 !== s2)) {
-                        if (finalMatch.winner && finalMatch.winner.name) {
-                            return finalMatch.winner.name;
-                        }
-                        if (s1 !== null && s2 !== null) {
-                            return (s1 > s2) ? t1.name : t2.name;
-                        }
+                    if (finalMatch.winnerId === 'team1' || (s1 !== null && s2 !== null && s1 > s2)) {
+                        return isRealTeam(t1Name) ? t1Name : null;
+                    }
+                    if (finalMatch.winnerId === 'team2' || (s1 !== null && s2 !== null && s2 > s1)) {
+                        return isRealTeam(t2Name) ? t2Name : null;
+                    }
+                    if (isCompleted && finalMatch.winner && isRealTeam(finalMatch.winner.name)) {
+                        return finalMatch.winner.name;
                     }
                 }
                 return null;
@@ -90,16 +109,16 @@
                 if (gfReset && gfReset.isUnlocked) {
                     var rT1 = gfReset.team1 || {};
                     var rT2 = gfReset.team2 || {};
-                    var rS1 = (rT1.score !== '' && rT1.score !== null && !isNaN(Number(rT1.score))) ? Number(rT1.score) : null;
-                    var rS2 = (rT2.score !== '' && rT2.score !== null && !isNaN(Number(rT2.score))) ? Number(rT2.score) : null;
-                    var rDone = (gfReset.status === 'COMPLETED' || gfReset.status === 'done');
+                    var rt1Name = rT1.name || '';
+                    var rt2Name = rT2.name || '';
 
-                    if (rDone || gfReset.winnerId || (rS1 !== null && rS2 !== null && rS1 !== rS2)) {
-                        if (gfReset.winnerId === 'team1') return rT1.name;
-                        if (gfReset.winnerId === 'team2') return rT2.name;
-                        if (rS1 !== null && rS2 !== null && rS1 !== rS2) {
-                            return (rS1 > rS2) ? rT1.name : rT2.name;
-                        }
+                    if (isRealTeam(rt1Name) && isRealTeam(rt2Name)) {
+                        var rS1 = (rT1.score !== '' && rT1.score !== null && !isNaN(Number(rT1.score))) ? Number(rT1.score) : null;
+                        var rS2 = (rT2.score !== '' && rT2.score !== null && !isNaN(Number(rT2.score))) ? Number(rT2.score) : null;
+                        var rDone = (gfReset.status === 'COMPLETED' || gfReset.status === 'done');
+
+                        if (gfReset.winnerId === 'team1' || (rS1 !== null && rS2 !== null && rS1 > rS2)) return rt1Name;
+                        if (gfReset.winnerId === 'team2' || (rS1 !== null && rS2 !== null && rS2 > rS1)) return rt2Name;
                     }
                     return null; // Waiting for reset match to finish
                 }
@@ -108,6 +127,14 @@
                 if (gfMain) {
                     var gfT1 = gfMain.team1 || {};
                     var gfT2 = gfMain.team2 || {};
+                    var gft1Name = gfT1.name || '';
+                    var gft2Name = gfT2.name || '';
+
+                    // Both Grand Finalists must be confirmed real teams!
+                    if (!isRealTeam(gft1Name) || !isRealTeam(gft2Name)) {
+                        return null;
+                    }
+
                     var gfS1 = (gfT1.score !== '' && gfT1.score !== null && !isNaN(Number(gfT1.score))) ? Number(gfT1.score) : null;
                     var gfS2 = (gfT2.score !== '' && gfT2.score !== null && !isNaN(Number(gfT2.score))) ? Number(gfT2.score) : null;
                     var gfDone = (gfMain.status === 'COMPLETED' || gfMain.status === 'done');
@@ -115,15 +142,15 @@
                     var isT1Win = (gfMain.winnerId === 'team1' || (gfS1 !== null && gfS2 !== null && gfS1 > gfS2));
                     var isT2Win = (gfMain.winnerId === 'team2' || (gfS1 !== null && gfS2 !== null && gfS2 > gfS1));
 
-                    if (isT1Win) {
+                    if (isT1Win && (gfDone || (gfS1 !== null && gfS2 !== null))) {
                         // Winner UB wins GF1 -> Tournament complete, Champion is Winner UB!
-                        return gfT1.name;
-                    } else if (isT2Win) {
+                        return gft1Name;
+                    } else if (isT2Win && (gfDone || (gfS1 !== null && gfS2 !== null))) {
                         // Winner LB wins GF1 -> If reset match exists & unlocked, must wait for GF2
                         if (gfReset && gfReset.isUnlocked) {
                             return null;
                         }
-                        return gfT2.name;
+                        return gft2Name;
                     }
                 }
                 return null;
@@ -245,12 +272,19 @@
             this.isLocked = this.isTournamentLocked(tournamentId);
 
             if (this.isLocked) {
-                // If tournament is already locked, notify caller to disable edit modes
-                if (typeof this.onLockCallback === 'function') {
-                    this.onLockCallback(true);
-                }
-
-                if (this.championName) {
+                if (!this.championName) {
+                    // Stale lock from another stage or reset! Auto-unlock so editing is enabled.
+                    this.isLocked = false;
+                    try { localStorage.removeItem('tourma_final_locked_' + tournamentId); } catch(e) {}
+                    if (typeof this.onLockCallback === 'function') {
+                        this.onLockCallback(false);
+                    }
+                    banner.style.display = 'none';
+                } else {
+                    // If tournament is already locked and champion exists, notify caller to disable edit modes
+                    if (typeof this.onLockCallback === 'function') {
+                        this.onLockCallback(true);
+                    }
                     textEl.innerHTML = 
                         '<div class="final-stage-title-line">Giải đấu đã kết thúc</div>' +
                         '<div class="final-stage-champion-line">Nhà vô địch: <span class="final-stage-champion-name">' + this.championName + '</span></div>';
@@ -259,10 +293,8 @@
                     if (closeBtn) closeBtn.style.display = 'inline-block';
                     banner.classList.add('is-locked');
                     banner.style.display = 'flex';
-                } else {
-                    banner.style.display = 'none';
+                    return;
                 }
-                return;
             }
 
             // Tournament is NOT locked yet

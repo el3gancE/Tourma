@@ -9,18 +9,31 @@
     String tourneyId = request.getParameter("id");
     String tourneyName = "Giải Đấu Double Elimination";
     String deTeamsJson = "[]";
+    int cutTarget = 0;
+    String tournamentType = "SINGLE_STAGE";
+
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId);
-            if (t != null && t.getName() != null && !t.getName().trim().isEmpty()) {
-                tourneyName = t.getName();
+            if (t != null) {
+                if (t.getName() != null && !t.getName().trim().isEmpty()) {
+                    tourneyName = t.getName();
+                }
+                if (t.getTournamentType() != null) {
+                    tournamentType = t.getTournamentType();
+                }
+                cutTarget = t.getAdvancingSeatsCount();
             }
             ParticipantDAO pDao = new ParticipantDAO();
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
             if (plist != null && !plist.isEmpty()) {
+                int takeCount = plist.size();
+                if ("MULTI_STAGE".equalsIgnoreCase(tournamentType) && cutTarget > 1 && cutTarget < takeCount) {
+                    takeCount = cutTarget;
+                }
                 StringBuilder sb = new StringBuilder("[");
-                for (int i = 0; i < plist.size(); i++) {
+                for (int i = 0; i < takeCount; i++) {
                     if (i > 0) sb.append(",");
                     sb.append("\"").append(plist.get(i).getRawName().replace("\"", "\\\"")).append("\"");
                 }
@@ -71,7 +84,7 @@
 
         <!-- Sidebar Component (Step 4: Vòng Đấu) -->
         <jsp:include page="/common/component/sidebar.jsp">
-            <jsp:param name="activeStep" value="bracket"/>
+            <jsp:param name="activeStep" value="stage2"/>
             <jsp:param name="id" value="${not empty param.id ? param.id : (tournament != null ? tournament.id : '')}"/>
         </jsp:include>
 
@@ -247,11 +260,53 @@
                 var tourneyId = '<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>';
                 var tourneyName = '<%= tourneyName %>';
                 var preloadedTeams = <%= deTeamsJson %>;
+                var cutTarget = <%= cutTarget %>;
+                var tournamentType = '<%= tournamentType %>';
+
+                // --- DEBUG ---
+                console.group('[DE Init Debug]');
+                console.log('tourneyId:', tourneyId);
+                console.log('cutTarget from DB:', cutTarget);
+                console.log('tournamentType:', tournamentType);
+                console.log('preloadedTeams count:', preloadedTeams.length, preloadedTeams);
+                console.log('tourma_stage2_teams_ LS:', localStorage.getItem('tourma_stage2_teams_' + tourneyId));
+                console.log('tourma_de_matches_ LS key exists:', !!localStorage.getItem('tourma_de_matches_' + tourneyId));
+                console.log('tourma_advance_count_ LS:', localStorage.getItem('tourma_advance_count_' + tourneyId));
+                console.groupEnd();
+                // --- END DEBUG ---
+
+                // Resolve cutTarget from DB or localStorage first
+                if (!cutTarget || cutTarget <= 1) {
+                    var rawCut = localStorage.getItem('tourma_advance_count_' + tourneyId) ||
+                                 localStorage.getItem('tourma_cut_target_' + tourneyId);
+                    if (rawCut) cutTarget = parseInt(rawCut, 10);
+                }
+
+                // Check stage2Teams from localStorage
+                var stage2TeamsRaw = null;
+                try { stage2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+
+                var finalTeams = [];
+                if (stage2TeamsRaw && stage2TeamsRaw.length > 0) {
+                    finalTeams = stage2TeamsRaw;
+                } else if (preloadedTeams && preloadedTeams.length > 0) {
+                    finalTeams = preloadedTeams;
+                }
+
+                // Enforce cutTarget limit strictly in Stage 2
+                if (cutTarget && cutTarget > 1 && finalTeams.length > cutTarget) {
+                    finalTeams = finalTeams.slice(0, cutTarget);
+                    try { localStorage.setItem('tourma_stage2_teams_' + tourneyId, JSON.stringify(finalTeams)); } catch(e) {}
+                }
+
+                console.log('[DE Init] finalTeams count:', finalTeams.length, '| cutTarget resolved:', cutTarget);
 
                 window.TourmaDoubleElimination.init({
                     tournamentId: tourneyId,
                     tournamentName: tourneyName,
-                    teamsList: preloadedTeams
+                    teamsList: finalTeams,
+                    cutTarget: cutTarget,
+                    tournamentType: tournamentType
                 });
             });
         </script>

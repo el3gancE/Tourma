@@ -104,11 +104,15 @@
                 var pair = seedPairs[i];
                 var s1 = pair[0];
                 var s2 = pair[1];
-
-                var t1Name = (s1 <= numTeams) ? teamsList[s1 - 1] : 'BYE';
-                var t2Name = (s2 <= numTeams) ? teamsList[s2 - 1] : 'BYE';
+                var item1 = (s1 <= numTeams) ? teamsList[s1 - 1] : null;
+                var t1Name = item1 ? (typeof item1 === 'object' ? (item1.name || item1.rawName || '') : String(item1)) : 'BYE';
+                var item2 = (s2 <= numTeams) ? teamsList[s2 - 1] : null;
+                var t2Name = item2 ? (typeof item2 === 'object' ? (item2.name || item2.rawName || '') : String(item2)) : 'BYE';
                 var isBye = (t1Name === 'BYE' || t2Name === 'BYE');
                 var mId = internalIdCounter++;
+
+                var t1Seed = (t1Name === 'BYE') ? '' : (item1 && typeof item1 === 'object' && item1.seed !== undefined && item1.seed !== null && item1.seed !== '' ? item1.seed : s1);
+                var t2Seed = (t2Name === 'BYE') ? '' : (item2 && typeof item2 === 'object' && item2.seed !== undefined && item2.seed !== null && item2.seed !== '' ? item2.seed : s2);
 
                 var match = {
                     matchId: mId,
@@ -116,8 +120,8 @@
                     bracketType: 'UPPER',
                     roundNumber: 1,
                     status: isBye ? 'COMPLETED' : 'SCHEDULED',
-                    team1: { name: t1Name, seed: (t1Name === 'BYE' ? '' : s1), score: '' },
-                    team2: { name: t2Name, seed: (t2Name === 'BYE' ? '' : s2), score: '' },
+                    team1: { name: t1Name, seed: t1Seed, score: '' },
+                    team2: { name: t2Name, seed: t2Seed, score: '' },
                     winnerId: null,
                     nextMatchId: null,
                     nextMatchSlot: (i % 2 === 0) ? 1 : 2,

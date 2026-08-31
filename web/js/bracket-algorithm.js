@@ -310,6 +310,23 @@
         },
 
         /**
+         * Find the parent feeder match for a given target match and slot (1 or 2)
+         */
+        findParentMatch: function (matchesMap, childMatchId, slot) {
+            if (!matchesMap || !childMatchId) return null;
+            var keys = Object.keys(matchesMap);
+            for (var i = 0; i < keys.length; i++) {
+                var m = matchesMap[keys[i]];
+                if (m && String(m.nextMatchId) === String(childMatchId)) {
+                    if (slot === undefined || m.nextMatchSlot === slot) {
+                        return m;
+                    }
+                }
+            }
+            return null;
+        },
+
+        /**
          * Propagate winning team to downstream match and reset all subsequent matches downstream
          */
         propagateAndResetDownstream: function (matchesMap, matchId, winnerId, isT1Winner) {

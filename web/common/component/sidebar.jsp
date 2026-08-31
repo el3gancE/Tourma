@@ -11,19 +11,23 @@
     if (tournamentId == null) tournamentId = "";
 
     String format = request.getParameter("format");
+    String tournamentName = "";
+    String tournamentType = "SINGLE_STAGE";
+
+    if (!tournamentId.trim().isEmpty()) {
+        try {
+            TournamentDAO tDao = new TournamentDAO();
+            Tournament t = tDao.getTournamentById(tournamentId);
+            if (t != null) {
+                if (t.getName() != null) tournamentName = t.getName();
+                if (t.getFormat() != null) format = t.getFormat();
+                if (t.getTournamentType() != null) tournamentType = t.getTournamentType();
+            }
+        } catch (Exception e) {}
+    }
+
     if (format == null || format.trim().isEmpty()) {
         format = "SINGLE_ELIMINATION";
-        if (!tournamentId.trim().isEmpty()) {
-            try {
-                TournamentDAO tDao = new TournamentDAO();
-                Tournament t = tDao.getTournamentById(tournamentId);
-                if (t != null && t.getFormat() != null) {
-                    format = t.getFormat();
-                }
-            } catch (Exception e) {
-                // Keep default
-            }
-        }
     }
 
     String targetBracketUrl = "single-elimination.jsp";
@@ -37,18 +41,7 @@
         targetBracketUrl = "swiss-stage.jsp";
     }
 
-    String tournamentName = "Giải Đấu Tourma";
-    if (!tournamentId.trim().isEmpty()) {
-        try {
-            TournamentDAO tDao = new TournamentDAO();
-            Tournament t = tDao.getTournamentById(tournamentId);
-            if (t != null && t.getName() != null) {
-                tournamentName = t.getName();
-            }
-        } catch (Exception e) {
-            // Keep default name
-        }
-    }
+    boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType);
 %>
 
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
@@ -84,8 +77,26 @@
             </a>
         </li>
 
-        <!-- BƯỚC 3: VÒNG ĐẤU / LỊCH THI ĐẤU / VÒNG BẢNG / VÒNG SWISS -->
-        <li class="sidebar-menu-item">
+        <!-- MULTI-STAGE: VÒNG 1 -->
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1" style="<%= isMultiStage ? "" : "display: none;" %>">
+            <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=<%= tournamentId %>&stage=1"
+               class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && request.getRequestURI().contains("single-elimination")) ? "active" : "" %>">
+                <i class="fa-solid fa-trophy menu-icon"></i>
+                <span>Vòng 1</span>
+            </a>
+        </li>
+
+        <!-- MULTI-STAGE: VÒNG 2 -->
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2" style="<%= isMultiStage ? "" : "display: none;" %>">
+            <a href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=<%= tournamentId %>&stage=2"
+               class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && request.getRequestURI().contains("double-elimination")) ? "active" : "" %>">
+                <i class="fa-solid fa-medal menu-icon text-mint"></i>
+                <span>Vòng 2</span>
+            </a>
+        </li>
+
+        <!-- SINGLE-STAGE: SƠ ĐỒ NHÁNH / LỊCH ĐẤU -->
+        <li class="sidebar-menu-item" id="sidebarMenuSingleStage" style="<%= isMultiStage ? "display: none;" : "" %>">
             <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %>"
                class="sidebar-menu-link <%= "bracket".equals(activeStep) || "step3".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "fa-layer-group" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "fa-diagram-project" : "fa-diagram-project")) %> menu-icon"></i>
@@ -125,3 +136,23 @@
         <% } %>
     </ul>
 </aside>
+
+<script>
+(function() {
+    var tid = '<%= tournamentId %>';
+    if (!tid) return;
+    try {
+        var tType = localStorage.getItem('tourma_type_' + tid);
+        var multiCfg = localStorage.getItem('tourma_multi_config_' + tid);
+        var isMulti = (tType === 'MULTI_STAGE' || !!multiCfg);
+        var m1 = document.getElementById('sidebarMenuStage1');
+        var m2 = document.getElementById('sidebarMenuStage2');
+        var sSingle = document.getElementById('sidebarMenuSingleStage');
+        if (isMulti) {
+            if (m1) m1.style.display = '';
+            if (m2) m2.style.display = '';
+            if (sSingle) sSingle.style.display = 'none';
+        }
+    } catch (e) {}
+})();
+</script>

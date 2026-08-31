@@ -82,7 +82,7 @@
 
         <!-- Sidebar Component (Step 4: Vòng Đấu) -->
         <jsp:include page="/common/component/sidebar.jsp">
-            <jsp:param name="activeStep" value="bracket"/>
+            <jsp:param name="activeStep" value="stage1"/>
             <jsp:param name="id" value="${not empty param.id ? param.id : (tournament != null ? tournament.id : '')}"/>
         </jsp:include>
 
