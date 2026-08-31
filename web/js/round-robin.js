@@ -220,9 +220,11 @@
                     config: this.config
                 };
                 localStorage.setItem('tourma_rr_matches_' + this.tournamentId, JSON.stringify(payload));
-                localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
-                if (this.teamsList && this.teamsList.length > 0) {
-                    localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                if (this.currentStage === 1) {
+                    localStorage.setItem('tourma_matches_' + this.tournamentId, JSON.stringify(this.matchesMap));
+                    if (this.teamsList && this.teamsList.length > 0) {
+                        localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                    }
                 }
             } catch (e) {}
             this.checkFinalStage();
