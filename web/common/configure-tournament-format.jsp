@@ -94,6 +94,8 @@
                 <!-- Multi-stage specific hidden values -->
                 <input type="hidden" id="stage1Format" name="stage1Format" value="ROUND_ROBIN">
                 <input type="hidden" id="stage2Format" name="stage2Format" value="SINGLE_ELIMINATION">
+                <!-- advancingSeatsCount: populated by JS before form submit -->
+                <input type="hidden" id="advancingSeatsCount" name="advancingSeatsCount" value="0">
 
                 <!-- ════════════════════════════════════════════════════════════════ -->
                 <!-- 1. SINGLE STAGE PANEL                                            -->
@@ -633,6 +635,10 @@
 
                 if (advanceCountToSave > 0) {
                     localStorage.setItem('tourma_advance_count_' + tournamentId, advanceCountToSave);
+                    localStorage.setItem('tourma_cut_target_' + tournamentId, advanceCountToSave);
+                    // Also write to hidden form field so it gets saved to DB on next page
+                    var hiddenAdv = document.getElementById('advancingSeatsCount');
+                    if (hiddenAdv) hiddenAdv.value = advanceCountToSave;
                 }
             }
         }

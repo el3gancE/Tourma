@@ -19,6 +19,9 @@
          * Determine if the tournament is completed and get the champion team name
          */
         checkChampion: function (format, matchesMap, teamsList, config) {
+            if (config && (config.isCutStage || (config.cutTarget && config.cutTarget > 1))) {
+                return null;
+            }
             if (!matchesMap || typeof matchesMap !== 'object') return null;
             var keys = Object.keys(matchesMap);
             if (keys.length === 0) return null;

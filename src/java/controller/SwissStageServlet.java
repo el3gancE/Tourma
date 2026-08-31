@@ -51,7 +51,7 @@ public class SwissStageServlet extends HttpServlet {
         }
 
         // Fetch participant teams from DB
-        List<Team> dbTeamsList = participantDAO.getTeamsByTournamentId(intTourneyId);
+        List<Team> dbTeamsList = participantDAO.getTeamsByTournamentId(tournamentId);
 
         // Fetch round map for Swiss system from DB
         Map<Integer, List<Match>> roundMap = swissDAO.getSwissRounds(intTourneyId);

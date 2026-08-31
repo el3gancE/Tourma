@@ -183,6 +183,44 @@ public class TournamentDAO {
         return false;
     }
 
+    /**
+     * Updates the advancingSeatsCount field of a tournament.
+     * Used when format configuration is saved to persist cut target to DB.
+     */
+    public boolean updateAdvancingSeatsCount(String tournamentId, int advancingSeatsCount) {
+        if (tournamentId == null || advancingSeatsCount < 1) return false;
+        String sql = "UPDATE tournaments SET advancing_seats_count = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, advancingSeatsCount);
+            ps.setString(2, tournamentId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Updates tournament_type field (SINGLE_STAGE or MULTI_STAGE).
+     */
+    public boolean updateTournamentType(String tournamentId, String tournamentType) {
+        if (tournamentId == null || tournamentType == null) return false;
+        if (!tournamentType.equals("SINGLE_STAGE") && !tournamentType.equals("MULTI_STAGE")) return false;
+        String sql = "UPDATE tournaments SET tournament_type = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentType);
+            ps.setString(2, tournamentId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public boolean deleteTournament(String id) {
         String sqlStages = "DELETE FROM tournament_stages WHERE tournament_id = ?";
         String sqlMatches = "DELETE FROM matches WHERE tournament_id = ?";

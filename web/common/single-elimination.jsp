@@ -9,12 +9,24 @@
     String tourneyId = request.getParameter("id");
     String tourneyName = "Giải Đấu Single Elimination";
     String teamsJson = "[]";
+    int cutTarget = 0;
+    String tournamentType = "SINGLE_STAGE";
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId);
-            if (t != null && t.getName() != null && !t.getName().trim().isEmpty()) {
-                tourneyName = t.getName();
+            if (t != null) {
+                if (t.getName() != null && !t.getName().trim().isEmpty()) {
+                    tourneyName = t.getName();
+                }
+                // cutTarget only applies to MULTI_STAGE (Stage 1 → Stage 2 cut)
+                // Single Stage always plays all rounds to find a champion
+                if (t.getTournamentType() != null) {
+                    tournamentType = t.getTournamentType();
+                }
+                if ("MULTI_STAGE".equals(tournamentType)) {
+                    cutTarget = t.getAdvancingSeatsCount();
+                }
             }
             ParticipantDAO pDao = new ParticipantDAO();
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
@@ -86,6 +98,9 @@
                     </h1>
                     <span class="format-badge-single">Single Elimination</span>
                     <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
+                    <span id="tournamentAdvancingBadge" class="advancing-count-badge" style="background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.65rem; border-radius: 20px; display: inline-flex; align-items: center; gap: 0.4rem; <%= ("MULTI_STAGE".equals(tournamentType) && cutTarget > 1) ? "" : "display: none;" %>">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> <%= cutTarget %> Đội đi tiếp
+                    </span>
                 </div>
 
                 <!-- Right Action Bar: Standalone Reset Button + Quick Mode Toggle + View Mode Toggle Buttons -->
@@ -199,7 +214,45 @@
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var preloadedTeams = <%= teamsJson %>;
-                window.SingleEliminationEngine.init(tourneyId, null, preloadedTeams);
+                var cutTarget = <%= cutTarget %>; // from DB
+                var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
+
+                if (!isMultiStage) {
+                    // Single Stage = tìm vô địch, chơi hết rounds — clear stale cut config
+                    try { localStorage.removeItem('tourma_advance_count_' + tourneyId); } catch(e) {}
+                    try { localStorage.removeItem('tourma_cut_target_' + tourneyId); } catch(e) {}
+                    cutTarget = 0;
+                } else {
+                    // Multi-Stage: read cutTarget from tourma_multi_config_ localStorage (most reliable source)
+                    try {
+                        var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
+                        if (multiCfg && multiCfg.stage1Config) {
+                            var cfgAdv = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                            if (cfgAdv > 1) {
+                                cutTarget = cfgAdv;
+                                // Sync to the simple keys too
+                                localStorage.setItem('tourma_advance_count_' + tourneyId, cfgAdv);
+                                localStorage.setItem('tourma_cut_target_' + tourneyId, cfgAdv);
+                            }
+                        }
+                    } catch(e) {}
+                    // Fallback: try tourma_advance_count_ key
+                    if (!cutTarget || cutTarget <= 1) {
+                        try {
+                            var adv = localStorage.getItem('tourma_advance_count_' + tourneyId)
+                                   || localStorage.getItem('tourma_cut_target_' + tourneyId);
+                            if (adv) cutTarget = parseInt(adv, 10);
+                        } catch(e) {}
+                    }
+                }
+                // DEBUG
+                console.log('[JSP init] tourneyId=', tourneyId,
+                    '| isMultiStage=', isMultiStage,
+                    '| cutTarget(DB)=', <%= cutTarget %>,
+                    '| tourma_multi_config_=', localStorage.getItem('tourma_multi_config_' + tourneyId),
+                    '| tourma_advance_count_=', localStorage.getItem('tourma_advance_count_' + tourneyId));
+                window.SingleEliminationEngine.init(tourneyId, null, preloadedTeams, cutTarget);
+                console.log('[JSP init] final cutTarget passed to engine=', cutTarget);
             });
         </script>
     </body>

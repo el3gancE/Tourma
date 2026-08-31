@@ -57,9 +57,43 @@
             var isT2Loser = isDone && !hasBye && !isT2Winner && isT1Winner;
 
             var hideByeSlot = data.hideByeSlot === true;
+
+            // Play-In BYE: both teams auto-advance, render special card
+            if (data.isPlayInBye === true) {
+                var byeCard = document.createElement('div');
+                byeCard.className = 'bracket-node-card play-in-bye-card';
+                byeCard.dataset.matchId = matchId;
+                byeCard.setAttribute('data-match-id', String(matchId));
+                byeCard.innerHTML =
+                    '<div class="bracket-node-header">' +
+                        '<span class="bracket-match-id" style="color:#2dd4bf;">AUTO</span>' +
+                        '<span class="bracket-status-badge" style="background:rgba(45,212,191,0.2);color:#2dd4bf;border-color:rgba(45,212,191,0.4);">BYE</span>' +
+                    '</div>' +
+                    '<div class="bracket-teams-box">' +
+                        '<div class="bracket-team-row winner" data-team-name="' + t1Name + '">' +
+                            '<div class="bracket-team-info">' +
+                                (seed1 ? ('<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.25);color:#2dd4bf;">' + seed1 + '</span>') : '') +
+                                '<span class="bracket-team-name" title="' + t1Name + '">' + t1Name + '</span>' +
+                            '</div>' +
+                            '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
+                        '</div>' +
+                        '<div class="bracket-team-row winner" data-team-name="' + t2Name + '">' +
+                            '<div class="bracket-team-info">' +
+                                (seed2 ? ('<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.25);color:#2dd4bf;">' + seed2 + '</span>') : '') +
+                                '<span class="bracket-team-name" title="' + t2Name + '">' + t2Name + '</span>' +
+                            '</div>' +
+                            '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
+                        '</div>' +
+                    '</div>';
+                return byeCard;
+            }
+
             var card = document.createElement('div');
             card.className = 'bracket-node-card' + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-node-card' : '') + (hideByeSlot ? ' bye-empty-slot' : '');
             card.dataset.matchId = matchId;
+            card.setAttribute('data-match-id', String(matchId));
+            card.id = 'bracket-match-' + matchId;
+
 
             var t1RowClass = 'bracket-team-row ' + (isT1Winner ? 'winner ' : '') + (isT1Loser ? 'loser ' : '') + (isT1Bye ? 'bye-row ' : '');
             var t2RowClass = 'bracket-team-row ' + (isT2Winner ? 'winner ' : '') + (isT2Loser ? 'loser ' : '') + (isT2Bye ? 'bye-row ' : '');

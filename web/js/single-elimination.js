@@ -20,8 +20,19 @@
          * @param {string} tourneyId - Tournament ID from server
          * @param {Array} dbMatches - Matches preloaded from database (optional)
          */
-        init: function (tourneyId, dbMatches, preloadedTeams) {
+        init: function (tourneyId, dbMatches, preloadedTeams, cutTarget) {
             this.tournamentId = tourneyId || 'demo';
+
+            // JSP already resolved the correct cutTarget (from tourma_multi_config_ / DB / etc.)
+            // cutTarget=0 means Single Stage (play all rounds), cutTarget>1 means Multi-Stage cut
+            var target = (cutTarget && parseInt(cutTarget, 10) > 1) ? parseInt(cutTarget, 10) : null;
+
+            if (target) {
+                this.cutTarget = target;
+            } else {
+                this.cutTarget = null;
+            }
+
 
             // 1. Load Teams List
             var storageKeyTeams = 'tourma_teams_' + this.tournamentId;
@@ -43,6 +54,17 @@
             var countBadge = document.getElementById('tournamentTeamCountBadge');
             if (countBadge) {
                 countBadge.innerText = this.teamsList.length + ' Đội';
+            }
+
+            // Update advancing team count badge in top toolbar
+            var advBadge = document.getElementById('tournamentAdvancingBadge');
+            if (advBadge) {
+                if (this.cutTarget && this.cutTarget > 1) {
+                    advBadge.style.display = 'inline-flex';
+                    advBadge.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> ' + this.cutTarget + ' Đội đi tiếp';
+                } else {
+                    advBadge.style.display = 'none';
+                }
             }
 
             // Restore round random inputs
@@ -102,32 +124,39 @@
                 }
             }
 
-            if (savedMatches && Object.keys(savedMatches).length > 0) {
-                if (savedMatches.matchesMap) {
-                    this.matchesMap = savedMatches.matchesMap;
-                    this.roundsList = savedMatches.roundsList || savedMatches.rounds || [];
-                } else {
-                    this.matchesMap = savedMatches;
-                    this.buildRoundsFromMap();
-                }
-                if (window.TourmaBracketAlgorithm) {
-                    window.TourmaBracketAlgorithm.renumberMatchesContiguously(this.roundsList, this.matchesMap);
-                }
-            } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
-                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList);
+            // Always generate fresh structure from algorithm to ensure valid nextMatchId graph links
+            if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
+                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
                 this.bracketData = generated;
                 this.roundsList = generated.roundsList || [];
                 this.matchesMap = generated.matchesMap || {};
 
+                // Merge completed scores/statuses from savedMatches if available
+                if (savedMatches) {
+                    var oldMap = savedMatches.matchesMap || savedMatches;
+                    var oldKeys = Object.keys(oldMap);
+                    for (var k = 0; k < oldKeys.length; k++) {
+                        var oldM = oldMap[oldKeys[k]];
+                        if (oldM && this.matchesMap[oldM.matchId]) {
+                            var targetM = this.matchesMap[oldM.matchId];
+                            if (oldM.status) targetM.status = oldM.status;
+                            if (oldM.team1 && oldM.team1.score !== undefined) targetM.team1.score = oldM.team1.score;
+                            if (oldM.team2 && oldM.team2.score !== undefined) targetM.team2.score = oldM.team2.score;
+                            if (oldM.winnerId) targetM.winnerId = oldM.winnerId;
+                        }
+                    }
+                }
+
+                // Merge completed scores/statuses from dbMatches if available
                 if (dbMatches && dbMatches.length > 0) {
                     for (var i = 0; i < dbMatches.length; i++) {
                         var dbm = dbMatches[i];
-                        if (this.matchesMap[dbm.id]) {
-                            var localM = this.matchesMap[dbm.id];
+                        if (this.matchesMap[dbm.id || dbm.matchId]) {
+                            var localM = this.matchesMap[dbm.id || dbm.matchId];
                             localM.status = dbm.status;
-                            localM.team1.score = dbm.team1Score;
-                            localM.team2.score = dbm.team2Score;
-                            if (dbm.winnerId) {
+                            if (localM.team1) localM.team1.score = dbm.team1Score;
+                            if (localM.team2) localM.team2.score = dbm.team2Score;
+                            if (dbm.winnerId && localM.team1) {
                                 localM.winnerId = (dbm.winnerId === localM.team1.name) ? 'team1' : 'team2';
                             }
                         }
@@ -168,9 +197,24 @@
                 }
                 return;
             } else {
-                if (viewportFrame) viewportFrame.style.display = 'block';
+                if (viewportFrame && this.currentViewMode !== 'list') viewportFrame.style.display = 'block';
                 if (alertContainer) alertContainer.style.display = 'none';
             }
+
+            // 1. Calculate Cut Target and Stopping Round threshold
+            var cutTarget = this.cutTarget;
+            if (!cutTarget || cutTarget <= 1) {
+                try {
+                    var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) || localStorage.getItem('tourma_cut_target_' + this.tournamentId);
+                    if (rawCut) cutTarget = parseInt(rawCut, 10);
+                } catch (e) {
+                    cutTarget = null;
+                }
+            }
+            // DEBUG
+            console.log('[renderBracket] cutTarget=', cutTarget, '| this.cutTarget=', this.cutTarget,
+                        '| localStorage adv=', localStorage.getItem('tourma_advance_count_' + this.tournamentId),
+                        '| teamCount=', teamCount, '| totalRounds=', this.roundsList.length);
 
             for (var r = 0; r < this.roundsList.length; r++) {
                 var roundObj = this.roundsList[r];
@@ -252,6 +296,7 @@
                 var box = document.createElement('div');
                 box.className = 'single-round-matches-box';
 
+                var prevRoundMatches = (r > 0 && self.roundsList[r - 1]) ? self.roundsList[r - 1].matches : [];
                 var showRound1Byes = window.TourmaBracketAlgorithm ? window.TourmaBracketAlgorithm.shouldShowRound1Byes(self.roundsList, 0.50) : true;
 
                 for (var m = 0; m < roundObj.matches.length; m++) {
@@ -272,9 +317,77 @@
                 canvasWrapper.appendChild(col);
             }
 
-            requestAnimationFrame(function () { self.drawTreeConnectors(); });
-            setTimeout(function () { self.drawTreeConnectors(); }, 60);
-            setTimeout(function () { self.drawTreeConnectors(); }, 250);
+            self.alignTreeCards();
+            requestAnimationFrame(function () { self.alignTreeCards(); self.drawTreeConnectors(); });
+            setTimeout(function () { self.alignTreeCards(); self.drawTreeConnectors(); }, 60);
+            setTimeout(function () { self.alignTreeCards(); self.drawTreeConnectors(); }, 250);
+        },
+
+        alignTreeCards: function () {
+            var wrapper = document.getElementById('singleBracketColumnsWrapper');
+            if (!wrapper) return;
+
+            var cols = wrapper.querySelectorAll('.single-round-column');
+            if (cols.length < 2) return;
+
+            var self = this;
+            for (var c = 1; c < cols.length; c++) {
+                var prevCol = cols[c - 1];
+                var curCol = cols[c];
+
+                var prevBox = prevCol.querySelector('.single-round-matches-box');
+                var curBox = curCol.querySelector('.single-round-matches-box');
+                if (!prevBox || !curBox) continue;
+
+                prevBox.style.position = 'relative';
+                curBox.style.position = 'relative';
+                if (prevBox.offsetHeight > 0) {
+                    curBox.style.minHeight = prevBox.offsetHeight + 'px';
+                }
+
+                var prevCards = prevBox.querySelectorAll('.bracket-node-card:not(.bye-empty-slot)');
+                var curCards = curBox.querySelectorAll('.bracket-node-card:not(.bye-empty-slot)');
+                if (!curCards || curCards.length === 0) continue;
+
+                var prevCardMap = {};
+                for (var p = 0; p < prevCards.length; p++) {
+                    var pid = prevCards[p].getAttribute('data-match-id') || prevCards[p].dataset.matchId;
+                    if (pid) prevCardMap[String(pid)] = prevCards[p];
+                }
+
+                for (var k = 0; k < curCards.length; k++) {
+                    var curCard = curCards[k];
+                    var mId = curCard.getAttribute('data-match-id') || curCard.dataset.matchId;
+                    if (!mId) continue;
+
+                    var parentCards = [];
+                    var keys = Object.keys(self.matchesMap || {});
+                    for (var i = 0; i < keys.length; i++) {
+                        var m = self.matchesMap[keys[i]];
+                        if (m && String(m.nextMatchId) === String(mId)) {
+                            var pCard = prevCardMap[String(m.matchId)];
+                            if (pCard) parentCards.push(pCard);
+                        }
+                    }
+
+                    if (parentCards.length > 0) {
+                        var sumY = 0;
+                        for (var j = 0; j < parentCards.length; j++) {
+                            var pc = parentCards[j];
+                            sumY += pc.offsetTop + (pc.offsetHeight / 2);
+                        }
+                        var targetMidY = sumY / parentCards.length;
+                        var cardH = curCard.offsetHeight || 66;
+                        var desiredTop = targetMidY - (cardH / 2);
+
+                        curCard.style.position = 'absolute';
+                        curCard.style.top = Math.max(0, desiredTop).toFixed(1) + 'px';
+                        curCard.style.left = '0';
+                        curCard.style.right = '0';
+                        curCard.style.margin = '0 auto';
+                    }
+                }
+            }
         },
 
         /**
@@ -769,7 +882,7 @@
 
             // Regenerate fresh initial bracket
             if (window.TourmaBracketAlgorithm && typeof window.TourmaBracketAlgorithm.generateSingleElimination === 'function') {
-                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList);
+                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
                 this.bracketData = generated;
                 this.roundsList = generated.roundsList || [];
                 this.matchesMap = generated.matchesMap || {};
@@ -777,10 +890,7 @@
                 this.persistMatches();
                 this.renderBracketView();
                 this.renderListView();
-                var self = this;
-                setTimeout(function () {
-                    self.drawTreeConnectors();
-                }, 50);
+                this.switchViewMode(this.currentViewMode || 'bracket');
             }
         },
 
@@ -801,6 +911,16 @@
         },
 
         checkFinalStage: function () {
+            var cutTarget = this.cutTarget;
+            if (!cutTarget || cutTarget <= 1) {
+                try {
+                    var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) || localStorage.getItem('tourma_cut_target_' + this.tournamentId);
+                    if (rawCut) cutTarget = parseInt(rawCut, 10);
+                } catch (e) {}
+            }
+            if (cutTarget && cutTarget > 1) {
+                return; // Multi-Stage cut stage — NEVER trigger FinalStagePopup!
+            }
             var self = this;
             if (window.FinalStagePopup) {
                 window.FinalStagePopup.checkAndRender(

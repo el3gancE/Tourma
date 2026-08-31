@@ -128,20 +128,27 @@
          * Get element position relative to canvas container (independent of scroll/zoom)
          */
         getRelativePos: function (elem, root) {
+            if (!elem) return { left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 };
+            root = root || document.getElementById('bracketViewportCanvas');
+
             var x = 0, y = 0;
             var curr = elem;
-            while (curr && curr !== root) {
+            while (curr && curr !== root && curr !== document.body) {
                 x += curr.offsetLeft;
                 y += curr.offsetTop;
                 curr = curr.offsetParent;
             }
+
+            var w = elem.offsetWidth || 200;
+            var h = elem.offsetHeight || 70;
+
             return {
                 left: x,
                 top: y,
-                width: elem.offsetWidth,
-                height: elem.offsetHeight,
-                right: x + elem.offsetWidth,
-                bottom: y + elem.offsetHeight
+                width: w,
+                height: h,
+                right: x + w,
+                bottom: y + h
             };
         },
 
@@ -229,7 +236,7 @@
 
         /**
          * UNIVERSAL ORTHOGONAL SVG CONNECTOR DRAWING ENGINE
-         * Automatically calculates center-right to entry-left (M x1 y1 H midX V y2 H x2)
+         * Group parents by target match and draw clean bracket forks ( ]-- )
          */
         drawConnectors: function (canvasElem, wrapperElem, matchesMap, scale) {
             if (!canvasElem || !wrapperElem || !matchesMap) return;
@@ -238,73 +245,120 @@
             if (!svg) {
                 svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('class', 'bracket-svg-connectors');
-                svg.setAttribute('style', 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: visible;');
+                svg.setAttribute('style', 'position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; overflow: visible;');
                 canvasElem.insertBefore(svg, canvasElem.firstChild);
             }
 
-            var w = Math.max(canvasElem.offsetWidth, wrapperElem.offsetWidth + 100);
-            var h = Math.max(canvasElem.offsetHeight, wrapperElem.offsetHeight + 100);
+            var w = Math.max(wrapperElem.offsetWidth || 0, canvasElem.offsetWidth || 0, 1000);
+            var h = Math.max(wrapperElem.offsetHeight || 0, canvasElem.offsetHeight || 0, 600);
             svg.setAttribute('width', w);
             svg.setAttribute('height', h);
+            svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+            svg.style.width = w + 'px';
+            svg.style.height = h + 'px';
             svg.innerHTML = '';
 
             var cards = wrapperElem.querySelectorAll('.bracket-node-card');
             var cardMap = {};
             for (var c = 0; c < cards.length; c++) {
-                var mId = cards[c].dataset.matchId;
+                var mId = cards[c].getAttribute('data-match-id') || (cards[c].dataset ? cards[c].dataset.matchId : null);
                 if (mId) cardMap[String(mId)] = cards[c];
             }
 
+            // Group source matches by nextMatchId
+            var targetGroups = {};
             var keys = Object.keys(matchesMap);
             for (var i = 0; i < keys.length; i++) {
                 var m = matchesMap[keys[i]];
                 if (!m || !m.nextMatchId) continue;
+                var targetId = String(m.nextMatchId);
+                if (!targetGroups[targetId]) targetGroups[targetId] = [];
+                targetGroups[targetId].push(m);
+            }
 
-                var sourceCard = cardMap[String(m.matchId)];
-                var targetCard = cardMap[String(m.nextMatchId)];
-                if (!sourceCard || !targetCard) continue;
+            var targetIds = Object.keys(targetGroups);
+            for (var t = 0; t < targetIds.length; t++) {
+                var targetId = targetIds[t];
+                var sources = targetGroups[targetId];
+                var targetCard = cardMap[targetId];
+                if (!targetCard) continue;
 
-                if (sourceCard.classList.contains('bye-empty-slot')) {
-                    continue;
-                }
-
-                var srcPos = this.getRelativePos(sourceCard, canvasElem);
                 var tgtPos = this.getRelativePos(targetCard, canvasElem);
-
-                var x1 = srcPos.right;
-                var y1 = srcPos.top + srcPos.height / 2;
-
-                var slot = m.nextMatchSlot || 1;
                 var x2 = tgtPos.left;
-                var y2 = tgtPos.top + (slot === 1 ? (tgtPos.height * 0.42) : (tgtPos.height * 0.72));
+                var yTargetCenter = tgtPos.top + (tgtPos.height / 2);
 
-                var midX = x1 + (x2 - x1) / 2;
-                var isCompleted = (m.status === 'COMPLETED' || m.status === 'done');
+                sources.sort(function (a, b) {
+                    return (a.nextMatchSlot || 1) - (b.nextMatchSlot || 1);
+                });
 
-                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                var d = 'M ' + x1.toFixed(1) + ' ' + y1.toFixed(1) +
-                        ' H ' + midX.toFixed(1) +
-                        ' V ' + y2.toFixed(1) +
-                        ' H ' + x2.toFixed(1);
-
-                path.setAttribute('d', d);
-                path.setAttribute('fill', 'none');
-                path.setAttribute('stroke', isCompleted ? '#2dd4bf' : 'rgba(255, 255, 255, 0.2)');
-                path.setAttribute('stroke-width', isCompleted ? '2.2' : '1.5');
-                path.setAttribute('stroke-linecap', 'round');
-                path.setAttribute('stroke-linejoin', 'round');
-                var t1Name = m.team1 ? m.team1.name : '';
-                var t2Name = m.team2 ? m.team2.name : '';
-                var isT1Win = (m.winnerId === 'team1');
-                var isT2Win = (m.winnerId === 'team2');
-                var winnerName = isT1Win ? t1Name : (isT2Win ? t2Name : '');
-
-                path.setAttribute('data-teams', t1Name + '|' + t2Name);
-                if (winnerName) {
-                    path.setAttribute('data-winner', winnerName);
+                var validSources = [];
+                for (var s = 0; s < sources.length; s++) {
+                    var srcMatch = sources[s];
+                    var srcCard = cardMap[String(srcMatch.matchId)];
+                    if (srcCard && !srcCard.classList.contains('bye-empty-slot')) {
+                        var srcPos = this.getRelativePos(srcCard, canvasElem);
+                        validSources.push({
+                            match: srcMatch,
+                            card: srcCard,
+                            pos: srcPos,
+                            x1: srcPos.right,
+                            y1: srcPos.top + (srcPos.height / 2)
+                        });
+                    }
                 }
 
-                svg.appendChild(path);
+                if (validSources.length === 0) continue;
+
+                if (validSources.length === 2) {
+                    // Standard Bracket Fork ( ]-- )
+                    var s1 = validSources[0];
+                    var s2 = validSources[1];
+                    var maxX1 = Math.max(s1.x1, s2.x1);
+                    var midX = maxX1 + (x2 - maxX1) / 2;
+
+                    var minY = Math.min(s1.y1, s2.y1);
+                    var maxY = Math.max(s1.y1, s2.y1);
+
+                    var isBothDone = (s1.match.status === 'COMPLETED' || s1.match.status === 'done') &&
+                                     (s2.match.status === 'COMPLETED' || s2.match.status === 'done');
+                    var strokeColor = isBothDone ? '#2dd4bf' : 'rgba(255, 255, 255, 0.4)';
+                    var strokeWidth = isBothDone ? '2.2' : '1.6';
+
+                    var d = 'M ' + s1.x1.toFixed(1) + ' ' + s1.y1.toFixed(1) + ' H ' + midX.toFixed(1) + ' ' +
+                            'M ' + s2.x1.toFixed(1) + ' ' + s2.y1.toFixed(1) + ' H ' + midX.toFixed(1) + ' ' +
+                            'M ' + midX.toFixed(1) + ' ' + minY.toFixed(1) + ' V ' + maxY.toFixed(1) + ' ' +
+                            'M ' + midX.toFixed(1) + ' ' + yTargetCenter.toFixed(1) + ' H ' + x2.toFixed(1);
+
+                    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', d);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke', strokeColor);
+                    path.setAttribute('stroke-width', strokeWidth);
+                    path.setAttribute('stroke-linecap', 'round');
+                    path.setAttribute('stroke-linejoin', 'round');
+
+                    svg.appendChild(path);
+                } else {
+                    // Single feeder match line
+                    var s = validSources[0];
+                    var midX = s.x1 + (x2 - s.x1) / 2;
+                    var isDone = (s.match.status === 'COMPLETED' || s.match.status === 'done');
+
+                    var d = 'M ' + s.x1.toFixed(1) + ' ' + s.y1.toFixed(1) +
+                            ' H ' + midX.toFixed(1) +
+                            ' V ' + yTargetCenter.toFixed(1) +
+                            ' H ' + x2.toFixed(1);
+
+                    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', d);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke', isDone ? '#2dd4bf' : 'rgba(255, 255, 255, 0.4)');
+                    path.setAttribute('stroke-width', isDone ? '2.2' : '1.6');
+                    path.setAttribute('stroke-linecap', 'round');
+                    path.setAttribute('stroke-linejoin', 'round');
+
+                    svg.appendChild(path);
+                }
             }
         }
     };
