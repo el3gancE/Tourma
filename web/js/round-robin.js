@@ -30,6 +30,19 @@
             this.cutTarget = cutTarget || 0;
 
             if (!this.cutTarget || this.cutTarget <= 1) {
+                try {
+                    var mCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + this.tournamentId));
+                    if (mCfg && mCfg.stage1Config) {
+                        var cfgAdv = mCfg.stage1Config.advanceCount || mCfg.stage1Config.totalAdvanceCount || 0;
+                        if (cfgAdv > 1) {
+                            this.cutTarget = cfgAdv;
+                            localStorage.setItem('tourma_advance_count_' + this.tournamentId, cfgAdv);
+                            localStorage.setItem('tourma_cut_target_' + this.tournamentId, cfgAdv);
+                        }
+                    }
+                } catch(e) {}
+            }
+            if (!this.cutTarget || this.cutTarget <= 1) {
                 var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
                              localStorage.getItem('tourma_cut_target_' + this.tournamentId);
                 if (rawCut) this.cutTarget = parseInt(rawCut, 10);

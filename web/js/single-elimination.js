@@ -47,6 +47,23 @@
             if (!teams) {
                 teams = [];
             }
+
+            // In Stage 2, enforce advanceCount limit if teams length exceeds advanceCount
+            if (this.currentStage === 2) {
+                var advCount = 0;
+                try {
+                    var mCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + this.tournamentId));
+                    if (mCfg && mCfg.stage1Config) advCount = mCfg.stage1Config.advanceCount || mCfg.stage1Config.totalAdvanceCount || 0;
+                } catch (e) {}
+                if (!advCount || advCount <= 1) {
+                    var rawAdv = localStorage.getItem('tourma_advance_count_' + this.tournamentId) || localStorage.getItem('tourma_cut_target_' + this.tournamentId);
+                    if (rawAdv) advCount = parseInt(rawAdv, 10);
+                }
+                if (advCount && advCount > 1 && teams.length > advCount) {
+                    teams = teams.slice(0, advCount);
+                }
+            }
+
             this.teamsList = teams;
 
             // Update team count badge in top toolbar
@@ -174,6 +191,21 @@
                     } else {
                         savedValid = true;
                     }
+                }
+            }
+
+            // Strict structural validation for Single Elimination:
+            // 1. Total rounds must not exceed ceil(log2(numTeams)) + 1
+            // 2. The Final round must have exactly 1 match (unlike Round Robin which has N/2 matches)
+            if (savedValid && savedBracket && savedBracket.roundsList && savedBracket.roundsList.length > 0) {
+                var numTms = this.teamsList ? this.teamsList.length : 0;
+                var maxRounds = (numTms > 1) ? Math.ceil(Math.log2(numTms)) : 1;
+                var rList = savedBracket.roundsList;
+                var lastRd = rList[rList.length - 1];
+                var lastMatches = (lastRd && lastRd.matches) ? lastRd.matches.length : 0;
+
+                if (rList.length > maxRounds || lastMatches !== 1) {
+                    savedValid = false; // Corrupted / stale Round Robin data
                 }
             }
 
