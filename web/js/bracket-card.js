@@ -89,10 +89,16 @@
             }
 
             var themeClass = '';
-            if (data.themeColor === 'green' || data.isGreen) themeClass = ' swiss-card-green';
-            else if (data.themeColor === 'red' || data.isRed || data.bracketType === 'LOWER') themeClass = ' lower-bracket-card';
-            else if (data.themeColor === 'gold' || data.isGold) themeClass = ' swiss-card-gold';
-            else if (data.themeColor === 'mint' || data.isMint) themeClass = ' swiss-card-mint';
+            var bType = (data.bracketType || '').toUpperCase();
+            if (bType === 'GRAND_FINAL' || bType === 'GF' || data.isGrandFinal || data.themeColor === 'gold' || data.isGold) {
+                themeClass = ' swiss-card-gold';
+            } else if (data.themeColor === 'green' || data.isGreen) {
+                themeClass = ' swiss-card-green';
+            } else if (data.themeColor === 'red' || data.isRed || bType === 'LOWER') {
+                themeClass = ' lower-bracket-card';
+            } else if (data.themeColor === 'mint' || data.isMint) {
+                themeClass = ' swiss-card-mint';
+            }
 
             var card = document.createElement('div');
             card.className = 'bracket-node-card' + themeClass + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-node-card' : '') + (hideByeSlot ? ' bye-empty-slot' : '');

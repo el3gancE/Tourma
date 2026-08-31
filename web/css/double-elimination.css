@@ -193,7 +193,7 @@ body, button, input, select, textarea, .bracket-header-title, .de-viewport-title
 .de-round-column {
     display: flex;
     flex-direction: column;
-    width: 195px;
+    width: 220px;
     flex-shrink: 0;
 }
 

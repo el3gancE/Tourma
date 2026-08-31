@@ -48,18 +48,18 @@
         },
 
         /**
-         * Standard Round Titles for Upper Bracket: UB Round 1, UB Round 2, ... UB Finals
+         * Standard Round Titles for Upper Bracket: UB Round 1, UB Round 2, ... UB Final
          */
         getUpperRoundTitle: function (r, totalUbRounds) {
-            if (r === totalUbRounds) return 'UB Finals';
+            if (r === totalUbRounds) return 'UB Final';
             return 'UB Round ' + r;
         },
 
         /**
-         * Standard Round Titles for Lower Bracket: LB Round 1, LB Round 2, ... LB Finals
+         * Standard Round Titles for Lower Bracket: LB Round 1, LB Round 2, ... LB Final
          */
         getLowerRoundTitle: function (r, totalLbRounds) {
-            if (r === totalLbRounds) return 'LB Finals';
+            if (r === totalLbRounds) return 'LB Final';
             return 'LB Round ' + r;
         },
 
@@ -440,7 +440,7 @@
                 grandFinalsRound = {
                     roundNumber: totalUbRounds + 1,
                     bracketType: 'GRAND_FINAL',
-                    title: 'Grand Finals',
+                    title: 'Grand Final',
                     matches: [grandFinal1]
                 };
             }

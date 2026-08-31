@@ -61,9 +61,9 @@
                 return 'Round of ' + teamsInRound;
             }
 
-            if (diff === 0) return 'Finals';
-            if (diff === 1) return 'Semi Finals';
-            if (diff === 2) return 'Quarter Finals';
+            if (diff === 0) return 'Final';
+            if (diff === 1) return 'Semi Final';
+            if (diff === 2) return 'Quarter Final';
 
             return 'Round of ' + teamsInRound;
         },

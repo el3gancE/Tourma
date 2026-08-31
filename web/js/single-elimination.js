@@ -533,10 +533,10 @@
             if (t.includes('16') || t.includes('ro16')) return 'RO16';
             if (t.includes('tứ kết') || t.includes('quarter') || t.includes('ro8') || t.includes('qf')) return 'QF';
             if (t.includes('bán kết') || t.includes('semi') || t.includes('ro4') || t.includes('sf')) return 'SF';
-            if (t.includes('chung kết') || t.includes('final')) return 'Finals';
+            if (t.includes('chung kết') || t.includes('final')) return 'Final';
 
             var fromEnd = totalRounds - roundObj.roundNumber;
-            if (fromEnd === 0) return 'Finals';
+            if (fromEnd === 0) return 'Final';
             if (fromEnd === 1) return 'SF';
             if (fromEnd === 2) return 'QF';
             if (fromEnd === 3) return 'RO16';
