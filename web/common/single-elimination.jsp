@@ -11,6 +11,10 @@
     String teamsJson = "[]";
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
+    String stageParam = request.getParameter("stage");
+    int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
+    String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
+
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
@@ -19,12 +23,12 @@
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
                 }
-                // cutTarget only applies to MULTI_STAGE (Stage 1 → Stage 2 cut)
-                // Single Stage always plays all rounds to find a champion
+                // cutTarget only applies to MULTI_STAGE Stage 1 (Stage 1 → Stage 2 cut)
+                // Single Stage & Stage 2 always play all rounds to find a champion
                 if (t.getTournamentType() != null) {
                     tournamentType = t.getTournamentType();
                 }
-                if ("MULTI_STAGE".equals(tournamentType)) {
+                if ("MULTI_STAGE".equals(tournamentType) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
                 }
             }
@@ -82,7 +86,7 @@
 
         <!-- Sidebar Component (Step 4: Vòng Đấu) -->
         <jsp:include page="/common/component/sidebar.jsp">
-            <jsp:param name="activeStep" value="stage1"/>
+            <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
             <jsp:param name="id" value="${not empty param.id ? param.id : (tournament != null ? tournament.id : '')}"/>
         </jsp:include>
 
@@ -216,14 +220,23 @@
                 var preloadedTeams = <%= teamsJson %>;
                 var cutTarget = <%= cutTarget %>; // from DB
                 var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
+                var currentStage = <%= currentStage %>;
 
-                if (!isMultiStage) {
+                if (currentStage === 2) {
+                    // Stage 2 SE: Load qualified teams from Stage 1 completion
+                    var s2TeamsRaw = null;
+                    try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                    if (s2TeamsRaw && s2TeamsRaw.length > 0) {
+                        preloadedTeams = s2TeamsRaw;
+                    }
+                    cutTarget = 0; // Stage 2 always plays to find a champion!
+                } else if (!isMultiStage) {
                     // Single Stage = tìm vô địch, chơi hết rounds — clear stale cut config
                     try { localStorage.removeItem('tourma_advance_count_' + tourneyId); } catch(e) {}
                     try { localStorage.removeItem('tourma_cut_target_' + tourneyId); } catch(e) {}
                     cutTarget = 0;
                 } else {
-                    // Multi-Stage: read cutTarget from tourma_multi_config_ localStorage (most reliable source)
+                    // Multi-Stage Stage 1: read cutTarget from tourma_multi_config_ localStorage (most reliable source)
                     try {
                         var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
                         if (multiCfg && multiCfg.stage1Config) {
@@ -247,11 +260,12 @@
                 }
                 // DEBUG
                 console.log('[JSP init] tourneyId=', tourneyId,
+                    '| stage=', currentStage,
                     '| isMultiStage=', isMultiStage,
                     '| cutTarget(DB)=', <%= cutTarget %>,
                     '| tourma_multi_config_=', localStorage.getItem('tourma_multi_config_' + tourneyId),
                     '| tourma_advance_count_=', localStorage.getItem('tourma_advance_count_' + tourneyId));
-                window.SingleEliminationEngine.init(tourneyId, null, preloadedTeams, cutTarget);
+                window.SingleEliminationEngine.init(tourneyId, null, preloadedTeams, cutTarget, currentStage);
                 console.log('[JSP init] final cutTarget passed to engine=', cutTarget);
             });
         </script>

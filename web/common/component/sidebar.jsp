@@ -79,8 +79,8 @@
 
         <!-- MULTI-STAGE: VÒNG 1 -->
         <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1" style="<%= isMultiStage ? "" : "display: none;" %>">
-            <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=<%= tournamentId %>&stage=1"
-               class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && request.getRequestURI().contains("single-elimination")) ? "active" : "" %>">
+            <a id="sidebarLinkStage1" href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=<%= tournamentId %>&stage=1"
+               class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && !"2".equals(request.getParameter("stage")) && request.getRequestURI().contains("single-elimination")) ? "active" : "" %>">
                 <i class="fa-solid fa-trophy menu-icon"></i>
                 <span>Vòng 1</span>
             </a>
@@ -88,8 +88,8 @@
 
         <!-- MULTI-STAGE: VÒNG 2 -->
         <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2" style="<%= isMultiStage ? "" : "display: none;" %>">
-            <a href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=<%= tournamentId %>&stage=2"
-               class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && request.getRequestURI().contains("double-elimination")) ? "active" : "" %>">
+            <a id="sidebarLinkStage2" href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=<%= tournamentId %>&stage=2"
+               class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && ("2".equals(request.getParameter("stage")) || request.getRequestURI().contains("double-elimination"))) ? "active" : "" %>">
                 <i class="fa-solid fa-medal menu-icon text-mint"></i>
                 <span>Vòng 2</span>
             </a>
@@ -143,15 +143,36 @@
     if (!tid) return;
     try {
         var tType = localStorage.getItem('tourma_type_' + tid);
-        var multiCfg = localStorage.getItem('tourma_multi_config_' + tid);
-        var isMulti = (tType === 'MULTI_STAGE' || !!multiCfg);
+        var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tid);
+        var isMulti = (tType === 'MULTI_STAGE' || !!multiCfgRaw);
         var m1 = document.getElementById('sidebarMenuStage1');
         var m2 = document.getElementById('sidebarMenuStage2');
         var sSingle = document.getElementById('sidebarMenuSingleStage');
+        var link1 = document.getElementById('sidebarLinkStage1');
+        var link2 = document.getElementById('sidebarLinkStage2');
+
         if (isMulti) {
             if (m1) m1.style.display = '';
             if (m2) m2.style.display = '';
             if (sSingle) sSingle.style.display = 'none';
+
+            if (multiCfgRaw) {
+                var mCfg = JSON.parse(multiCfgRaw);
+                var s1Format = mCfg.stage1Format || 'SINGLE_ELIMINATION';
+                var s2Format = mCfg.stage2Format || 'DOUBLE_ELIMINATION';
+
+                var getPageForFormat = function(fmt) {
+                    if (fmt === 'SINGLE_ELIMINATION') return 'single-elimination.jsp';
+                    if (fmt === 'DOUBLE_ELIMINATION') return 'double-elimination.jsp';
+                    if (fmt === 'ROUND_ROBIN') return 'round-robin.jsp';
+                    if (fmt === 'GROUP_STAGE') return 'group-stage.jsp';
+                    if (fmt === 'SWISS_LITE') return 'swiss-stage.jsp';
+                    return 'single-elimination.jsp';
+                };
+
+                if (link1) link1.href = '${pageContext.request.contextPath}/common/' + getPageForFormat(s1Format) + '?id=' + tid + '&stage=1';
+                if (link2) link2.href = '${pageContext.request.contextPath}/common/' + getPageForFormat(s2Format) + '?id=' + tid + '&stage=2';
+            }
         }
     } catch (e) {}
 })();
