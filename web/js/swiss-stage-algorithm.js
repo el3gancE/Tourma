@@ -100,14 +100,30 @@
         }
       });
 
-      // 4. Sort Standings: Points DESC -> Buchholz DESC -> Goal Diff DESC -> Wins DESC
+      // 4. Sort Standings:
+      // Primary: Qualified status / Wins - Losses record (3-0 > 3-1 > 3-2 > other records)
+      // When both qualified (wins >= 3): Losses ASC (0 losses [3-0] > 1 loss [3-1] > 2 losses [3-2])
+      // When active: Wins DESC -> Losses ASC -> Buchholz DESC -> Diff DESC
       var standingsArr = Object.keys(stats).map(function (k) { return stats[k]; });
 
       standingsArr.sort(function (a, b) {
-        if (b.points !== a.points) return b.points - a.points;
+        if (a.qualified && !b.qualified) return -1;
+        if (!a.qualified && b.qualified) return 1;
+        if (a.qualified && b.qualified) {
+          if (a.losses !== b.losses) return a.losses - b.losses; // 0 losses (3-0) < 1 loss (3-1) < 2 losses (3-2)
+          if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
+          if (b.diff !== a.diff) return b.diff - a.diff;
+          return b.scoresFor - a.scoresFor;
+        }
+
+        if (a.eliminated && !b.eliminated) return 1;
+        if (!a.eliminated && b.eliminated) return -1;
+
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        if (a.losses !== b.losses) return a.losses - b.losses;
         if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
         if (b.diff !== a.diff) return b.diff - a.diff;
-        return b.wins - a.wins;
+        return b.scoresFor - a.scoresFor;
       });
 
       return standingsArr;
@@ -122,6 +138,49 @@
         pools[recKey].push(st);
       });
       return pools;
+    },
+
+    // Robust Backtracking Matchmaker for a Pool
+    pairPool: function (pool) {
+      if (!pool || pool.length < 2) return [];
+
+      // Try multiple randomized orders with backtracking to find a 100% valid rematch-free pairing
+      for (var attempt = 0; attempt < 25; attempt++) {
+        var shuffled = pool.slice().sort(function () { return 0.5 - Math.random(); });
+        var result = this._backtrackPairing(shuffled, []);
+        if (result !== null) {
+          return result;
+        }
+      }
+
+      // If strict rematch-free pairing was not found after attempts, pair greedily ignoring rematches as absolute fallback
+      var fallback = [];
+      var remaining = pool.slice().sort(function () { return 0.5 - Math.random(); });
+      while (remaining.length >= 2) {
+        var a = remaining.shift();
+        var b = remaining.shift();
+        fallback.push([a, b]);
+      }
+      return fallback;
+    },
+
+    _backtrackPairing: function (teams, currentPairs) {
+      if (teams.length === 0) return currentPairs;
+      if (teams.length === 1) return null; // Odd team cannot be paired
+
+      var first = teams[0];
+      var rest = teams.slice(1);
+
+      for (var i = 0; i < rest.length; i++) {
+        var candidate = rest[i];
+        var isRematch = (first.opponents && first.opponents.indexOf(candidate.name) !== -1);
+        if (!isRematch) {
+          var nextTeams = rest.slice(0, i).concat(rest.slice(i + 1));
+          var subResult = this._backtrackPairing(nextTeams, currentPairs.concat([[first, candidate]]));
+          if (subResult !== null) return subResult;
+        }
+      }
+      return null;
     },
 
     // Generate Next Swiss Round Pairings with Dynamic Pool Shuffling & Strict Non-Rematch Rule
@@ -140,47 +199,27 @@
 
       var newMatches = [];
       var matchCounter = 1;
-      var floatedTeams = [];
+      var self = this;
 
       recordKeys.forEach(function (recKey) {
-        // RANDOM SHUFFLE pool teams to maximize dynamic pairing variety on every recalculation!
-        var pool = pools[recKey].slice().sort(function () { return 0.5 - Math.random(); }).concat(floatedTeams);
-        floatedTeams = [];
+        var poolTeams = pools[recKey] || [];
+        var pairs = self.pairPool(poolTeams);
 
-        while (pool.length >= 2) {
-          var t1 = pool.shift();
-          var t2Index = -1;
-
-          // Find opponent t2 in randomized pool that t1 has NOT played against yet
-          for (var i = 0; i < pool.length; i++) {
-            if (t1.opponents.indexOf(pool[i].name) === -1) {
-              t2Index = i;
-              break;
-            }
-          }
-
-          if (t2Index !== -1) {
-            var t2 = pool.splice(t2Index, 1)[0];
-            newMatches.push({
-              matchKey: 'R' + currentRound + '_M' + matchCounter,
-              roundIndex: currentRound,
-              matchNumber: matchCounter++,
-              recordPool: recKey,
-              team1: { name: t1.name },
-              team2: { name: t2.name },
-              team1Score: 0,
-              team2Score: 0,
-              status: 'READY'
-            });
-          } else {
-            // Cannot pair in this pool without rematch; float t1 down
-            floatedTeams.push(t1);
-          }
-        }
-
-        if (pool.length === 1) {
-          floatedTeams.push(pool.shift());
-        }
+        pairs.forEach(function (pair) {
+          var t1 = pair[0];
+          var t2 = pair[1];
+          newMatches.push({
+            matchKey: 'R' + currentRound + '_M' + matchCounter,
+            roundIndex: currentRound,
+            matchNumber: matchCounter++,
+            recordPool: recKey,
+            team1: { name: t1.name },
+            team2: { name: t2.name },
+            team1Score: 0,
+            team2Score: 0,
+            status: 'READY'
+          });
+        });
       });
 
       return newMatches;

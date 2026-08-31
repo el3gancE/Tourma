@@ -167,7 +167,7 @@
                     if (fmt === 'DOUBLE_ELIMINATION') return 'double-elimination.jsp';
                     if (fmt === 'ROUND_ROBIN') return 'round-robin.jsp';
                     if (fmt === 'GROUP_STAGE') return 'group-stage.jsp';
-                    if (fmt === 'SWISS_LITE') return 'swiss-stage.jsp';
+                    if (fmt === 'SWISS_LITE' || fmt === 'SWISS') return 'swiss-stage.jsp';
                     return 'single-elimination.jsp';
                 };
 

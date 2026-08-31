@@ -184,27 +184,36 @@
         var standings = window.TourmaSwissAlgorithm.calculateStandings(teamsList, matchesMap);
         var newMatches = window.TourmaSwissAlgorithm.generateNextRound(standings, matchesMap, nextRoundNumber);
         if (newMatches && newMatches.length > 0) {
+          // Group new matches by recordPool
+          var byPool = {};
           newMatches.forEach(function (nm) {
-            // Find existing TBD match slot in nextRoundNumber with matching recordPool
-            var targetKey = null;
-            Object.keys(matchesMap).forEach(function(k) {
+            if (!byPool[nm.recordPool]) byPool[nm.recordPool] = [];
+            byPool[nm.recordPool].push(nm);
+          });
+
+          Object.keys(byPool).forEach(function (pKey) {
+            var poolMatches = byPool[pKey];
+            var targetSlots = [];
+            Object.keys(matchesMap).forEach(function (k) {
               var existing = matchesMap[k];
               if (existing && existing.roundIndex === nextRoundNumber && 
-                  existing.recordPool === nm.recordPool && 
-                  (existing.team1.name === 'TBD' || existing.status === 'PENDING') &&
-                  !targetKey) {
-                targetKey = k;
+                  (existing.recordPool === pKey || (nextRoundNumber === 1 && pKey === '0-0'))) {
+                targetSlots.push(existing);
               }
             });
 
-            if (targetKey && matchesMap[targetKey]) {
-              matchesMap[targetKey].team1 = nm.team1;
-              matchesMap[targetKey].team2 = nm.team2;
-              matchesMap[targetKey].team1Score = 0;
-              matchesMap[targetKey].team2Score = 0;
-              matchesMap[targetKey].status = 'READY';
-            } else {
-              matchesMap[nm.matchKey] = nm;
+            // Assign pairings into pre-allocated match slots
+            for (var pIdx = 0; pIdx < poolMatches.length; pIdx++) {
+              var pMatch = poolMatches[pIdx];
+              if (pIdx < targetSlots.length) {
+                targetSlots[pIdx].team1 = pMatch.team1;
+                targetSlots[pIdx].team2 = pMatch.team2;
+                targetSlots[pIdx].team1Score = 0;
+                targetSlots[pIdx].team2Score = 0;
+                targetSlots[pIdx].status = 'READY';
+              } else {
+                matchesMap[pMatch.matchKey] = pMatch;
+              }
             }
           });
         }
@@ -437,6 +446,118 @@
     }
   }
 
+  // Check Swiss Stage Completion and Trigger Multi-Stage Pipeline or Final Popup
+  function checkSwissStageCompletion() {
+    if (!window.TourmaSwissAlgorithm || !teamsList || teamsList.length === 0) return;
+    var standings = window.TourmaSwissAlgorithm.calculateStandings(teamsList, matchesMap);
+    var qualifiedTeams = standings.filter(function(st) { return st.qualified; });
+
+    var stageParam = new URLSearchParams(window.location.search).get('stage');
+    var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
+
+    // Check if 8 teams qualified
+    if (qualifiedTeams.length === 8) {
+      if (currentStage === 1) {
+        var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
+        if (multiCfgRaw) {
+          try {
+            var multiCfg = JSON.parse(multiCfgRaw);
+
+            // Group qualified teams strictly by Record Pool:
+            // Pool 3-0 (2 teams) -> Seeds 1, 2
+            // Pool 3-1 (3 teams) -> Seeds 3, 4, 5
+            // Pool 3-2 (3 teams) -> Seeds 6, 7, 8
+            var pool30 = standings.filter(function(st) { return st.wins === 3 && st.losses === 0; });
+            var pool31 = standings.filter(function(st) { return st.wins === 3 && st.losses === 1; });
+            var pool32 = standings.filter(function(st) { return st.wins === 3 && st.losses === 2; });
+
+            // Sort within each pool by Buchholz / Diff DESC
+            var sortByBuchholz = function(a, b) {
+              if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
+              if (b.diff !== a.diff) return b.diff - a.diff;
+              return b.scoresFor - a.scoresFor;
+            };
+            pool30.sort(sortByBuchholz);
+            pool31.sort(sortByBuchholz);
+            pool32.sort(sortByBuchholz);
+
+            var finalSeededTeams = [].concat(pool30, pool31, pool32);
+            if (finalSeededTeams.length !== 8) {
+              finalSeededTeams = qualifiedTeams;
+            }
+
+            var shuffledStage2Teams = finalSeededTeams.map(function(t, idx) {
+              return {
+                name: t.name,
+                rawName: t.name,
+                seed: idx + 1
+              };
+            });
+            localStorage.setItem('tourma_stage2_teams_' + tournamentId, JSON.stringify(shuffledStage2Teams));
+
+            var s2Format = multiCfg.stage2Format || 'SINGLE_ELIMINATION';
+            if (s2Format === 'SINGLE_ELIMINATION') {
+              if (window.TourmaBracketAlgorithm) {
+                var seBracket = window.TourmaBracketAlgorithm.generateBracketTree(shuffledStage2Teams);
+                localStorage.setItem('tourma_bracket_stage2_' + tournamentId, JSON.stringify(seBracket.bracketTree));
+                localStorage.setItem('tourma_matches_stage2_' + tournamentId, JSON.stringify(seBracket.matchesMap));
+              }
+            } else if (s2Format === 'DOUBLE_ELIMINATION') {
+              if (window.TourmaDoubleEliminationAlgorithm) {
+                var deBracket = window.TourmaDoubleEliminationAlgorithm.generateDoubleEliminationMatches(shuffledStage2Teams);
+                localStorage.setItem('tourma_de_matches_' + tournamentId, JSON.stringify(deBracket));
+              }
+            } else if (s2Format === 'ROUND_ROBIN') {
+              if (window.TourmaRoundRobinAlgorithm) {
+                var rrBracket = window.TourmaRoundRobinAlgorithm.generateRoundRobin(shuffledStage2Teams, multiCfg.stage2Config);
+                localStorage.setItem('tourma_rr_matches_' + tournamentId, JSON.stringify(rrBracket));
+              }
+            }
+
+            multiCfg.stage2MatchesCreated = true;
+            localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(multiCfg));
+          } catch(e) {}
+        }
+      } else {
+        // Stage 2 Swiss or Single Stage Swiss -> Check FinalStagePopup
+        if (window.FinalStagePopup && standings.length > 0) {
+          window.FinalStagePopup.checkAndRender(
+            tournamentId,
+            'SWISS',
+            matchesMap,
+            teamsList,
+            null,
+            null
+          );
+        }
+      }
+    }
+  }
+
+  // Standalone Reset Matches Handler
+  window.resetSwissMatches = function () {
+    initFullSwissMatchesStructure();
+    var stageParam = new URLSearchParams(window.location.search).get('stage');
+    var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
+    if (currentStage === 1) {
+      try {
+        localStorage.removeItem('tourma_stage2_teams_' + tournamentId);
+        localStorage.removeItem('tourma_bracket_stage2_' + tournamentId);
+        localStorage.removeItem('tourma_matches_stage2_' + tournamentId);
+        localStorage.removeItem('tourma_de_matches_' + tournamentId);
+        localStorage.removeItem('tourma_rr_matches_' + tournamentId);
+        var mCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
+        if (mCfgRaw) {
+          var mCfg = JSON.parse(mCfgRaw);
+          mCfg.stage2MatchesCreated = false;
+          localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(mCfg));
+        }
+      } catch(e) {}
+    }
+    if (currentViewMode === 'LIST') renderListView();
+    else renderBracketView();
+  };
+
   // Initialize Swiss Engine
   function initSwissEngine() {
     if (!tournamentId || tournamentId === 'demo') {
@@ -447,6 +568,11 @@
         window.swissTournamentId = tournamentId;
       }
     }
+
+    var stageParam = new URLSearchParams(window.location.search).get('stage');
+    var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
+    var storageKeyTeams = (currentStage === 2) ? ("tourma_stage2_teams_" + tournamentId) : ("tourma_teams_" + tournamentId);
+    var storageKeyMatches = (currentStage === 2) ? ("tourma_swiss_matches_stage2_" + tournamentId) : ("tourma_swiss_matches_" + tournamentId);
 
     // Restore persisted View Mode from localStorage
     try {
@@ -470,7 +596,7 @@
     teamsList = [];
     
     try {
-      var rawTeams = localStorage.getItem("tourma_teams_" + tournamentId);
+      var rawTeams = localStorage.getItem(storageKeyTeams);
       if (rawTeams) {
         var parsed = JSON.parse(rawTeams);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -540,7 +666,7 @@
 
     // 3. Matches Loading
     try {
-      var rawM = localStorage.getItem("tourma_swiss_matches_" + tournamentId);
+      var rawM = localStorage.getItem(storageKeyMatches);
       if (rawM) {
         matchesMap = JSON.parse(rawM);
       }
@@ -551,12 +677,17 @@
 
     // Render initial view mode
     switchSwissViewMode(currentViewMode);
+    checkSwissStageCompletion();
   }
 
   function saveSwissMatches() {
     try {
       checkAndAutoAdvanceRound(); // AUTO GENERATE NEXT ROUND UPON COMPLETION!
-      localStorage.setItem("tourma_swiss_matches_" + tournamentId, JSON.stringify(matchesMap));
+      var stageParam = new URLSearchParams(window.location.search).get('stage');
+      var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
+      var storageKey = (currentStage === 2) ? ("tourma_swiss_matches_stage2_" + tournamentId) : ("tourma_swiss_matches_" + tournamentId);
+      localStorage.setItem(storageKey, JSON.stringify(matchesMap));
+      checkSwissStageCompletion();
     } catch (e) {}
   }
 

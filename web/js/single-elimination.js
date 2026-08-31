@@ -134,12 +134,46 @@
                 }
             }
 
+            // Helper to get string name
+            var getTeamName = function(t) {
+                if (!t) return '';
+                if (typeof t === 'object') return t.name || t.rawName || '';
+                return String(t);
+            };
+
             // Check if savedBracket belongs to the same team configuration
             var savedValid = false;
-            if (savedBracket && savedBracket.matchesMap && savedBracket.roundsList) {
+            if (savedBracket && savedBracket.matchesMap && savedBracket.roundsList && savedBracket.roundsList.length > 0) {
                 var savedKeys = Object.keys(savedBracket.matchesMap);
                 if (savedKeys.length > 0) {
-                    savedValid = true;
+                    if (this.teamsList && this.teamsList.length > 0) {
+                        var currentTeamNames = this.teamsList.map(getTeamName);
+                        var savedR1Teams = [];
+                        var r0Matches = savedBracket.roundsList[0].matches || [];
+                        for (var mi = 0; mi < r0Matches.length; mi++) {
+                            var sm = r0Matches[mi];
+                            if (sm.team1 && sm.team1.name && sm.team1.name !== 'BYE' && !sm.team1.name.startsWith('W #')) {
+                                savedR1Teams.push(sm.team1.name);
+                            }
+                            if (sm.team2 && sm.team2.name && sm.team2.name !== 'BYE' && !sm.team2.name.startsWith('W #')) {
+                                savedR1Teams.push(sm.team2.name);
+                            }
+                        }
+                        if (savedR1Teams.length === currentTeamNames.length) {
+                            var isAllMatch = true;
+                            for (var ti = 0; ti < currentTeamNames.length; ti++) {
+                                if (savedR1Teams.indexOf(currentTeamNames[ti]) === -1) {
+                                    isAllMatch = false;
+                                    break;
+                                }
+                            }
+                            if (isAllMatch) {
+                                savedValid = true;
+                            }
+                        }
+                    } else {
+                        savedValid = true;
+                    }
                 }
             }
 

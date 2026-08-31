@@ -4,6 +4,13 @@
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%
     List<Team> dbTeamsList = (List<Team>) request.getAttribute("dbTeamsList");
+    String stageParam = request.getParameter("stage");
+    int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
+    String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
+    String safeTourneyId = request.getParameter("id");
+    if (safeTourneyId == null || safeTourneyId.trim().isEmpty()) {
+        safeTourneyId = "";
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -27,21 +34,25 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/swiss-stage.css">
     </head>
     <body>
-        <!-- Shared Empty Team Alert Component -->
+        <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp"/>
+
+        <!-- Final Stage Popup Banner -->
+        <jsp:include page="/common/component/final-stage-popup.jsp"/>
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="my-tournaments"/>
+            <jsp:param name="active" value="tournaments"/>
         </jsp:include>
 
-        <!-- Sidebar Component (Step 3: Vòng Swiss) -->
+        <!-- Sidebar Component -->
         <jsp:include page="/common/component/sidebar.jsp">
-            <jsp:param name="activeStep" value="bracket"/>
+            <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
             <jsp:param name="id" value="${not empty param.id ? param.id : (tournament != null ? tournament.id : '')}"/>
         </jsp:include>
 
@@ -54,7 +65,7 @@
                     <h1 class="tournament-name-title">
                         <i class="fa-solid fa-diagram-project text-mint"></i> ${tournament.name}
                     </h1>
-                    <span class="format-badge-swiss">SWISS SYSTEM</span>
+                    <span class="format-badge-swiss"><%= (currentStage == 2) ? "STAGE 2: SWISS SYSTEM" : "SWISS SYSTEM" %></span>
                     <span id="swissTeamCountBadge" class="team-count-badge">16 Đội</span>
                     <span class="qualified-count-badge"><i class="fa-solid fa-trophy"></i> 8 Đội Đi Tiếp</span>
                 </div>
@@ -178,6 +189,10 @@
                 } %>
             ];
         </script>
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/bracket-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/popup.js"></script>
