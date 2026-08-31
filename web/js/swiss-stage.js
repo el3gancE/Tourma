@@ -958,6 +958,9 @@
         poolHeader.appendChild(poolControls);
         poolBox.appendChild(poolHeader);
 
+        var cardColorClass = getPoolCardClass(pKey);
+        var themeColor = (pKey === '2-0' || pKey === '2-1') ? 'green' : ((pKey === '0-2' || pKey === '1-2') ? 'red' : ((pKey === '2-2') ? 'gold' : 'mint'));
+
         var grid = document.createElement('div');
         grid.className = 'swiss-list-matches-grid';
 
@@ -981,6 +984,7 @@
               team1: { name: t1Name, score: m.team1Score },
               team2: { name: t2Name, score: m.team2Score },
               winnerId: winnerId,
+              themeColor: themeColor,
               hideSeeds: true
             });
           }
@@ -1165,7 +1169,8 @@
 
           poolHeader.appendChild(poolTitle);
           poolHeader.appendChild(poolControls);
-          poolCard.appendChild(poolHeader);
+          var cardColorClass = getPoolCardClass(pKey);
+          var themeColor = (pKey === '2-0' || pKey === '2-1') ? 'green' : ((pKey === '0-2' || pKey === '1-2') ? 'red' : ((pKey === '2-2') ? 'gold' : 'mint'));
 
           poolMatches.forEach(function (m) {
             var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
@@ -1187,6 +1192,7 @@
                 team1: { name: t1Name, score: m.team1Score },
                 team2: { name: t2Name, score: m.team2Score },
                 winnerId: winnerId,
+                themeColor: themeColor,
                 hideSeeds: true
               });
             }

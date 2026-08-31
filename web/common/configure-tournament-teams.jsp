@@ -108,7 +108,7 @@
                                 </div>
 
                                 <div class="input-actions-bar">
-                                    <button type="button" class="btn btn-secondary" onclick="window.clearTextarea()">
+                                    <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15);" onclick="window.clearTextarea()">
                                         <i class="fa-solid fa-eraser"></i> Xóa Hết
                                     </button>
                                     <button type="button" class="btn btn-mint" onclick="window.addTeamsFromInput()">
@@ -128,12 +128,12 @@
 
                                 <div class="manage-toolbar">
                                     <div class="manage-toolbar-left">
-                                        <button type="button" class="btn btn-secondary" onclick="window.shuffleTeams()">
-                                            <i class="fa-solid fa-shuffle"></i> Xáo Trộn Ngẫu Nhiên
+                                        <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15);" onclick="window.shuffleTeams()">
+                                            <i class="fa-solid fa-shuffle text-mint"></i> Xáo Trộn Ngẫu Nhiên
                                         </button>
                                     </div>
                                     <div class="manage-toolbar-right">
-                                        <button type="button" class="btn btn-secondary" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" onclick="window.deleteSelectedTeams()">
+                                        <button type="button" class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);" onclick="window.deleteSelectedTeams()">
                                             <i class="fa-solid fa-trash-can"></i> Xóa Đã Chọn
                                         </button>
                                     </div>
@@ -790,21 +790,15 @@
                 return true;
             };
 
-            function escapeHtml(text) {
-                return text
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            }
-
             function syncLatestStateOnNavigation() {
                 if (tournamentId && localStorage.getItem(localStorageKey)) {
                     try {
                         var latest = JSON.parse(localStorage.getItem(localStorageKey));
                         if (latest && Array.isArray(latest) && latest.length > 0) {
-                            currentTeamsList = latest;
+                            currentTeamsList = latest.map(function(t) {
+                                if (typeof t === 'object' && t !== null) return t.name || t.rawName || '';
+                                return String(t);
+                            }).filter(function(n) { return n && n.trim().length > 0; });
                             if (typeof window.renderTable === 'function') window.renderTable();
                             if (typeof window.handleTextareaTyping === 'function') window.handleTextareaTyping();
                         }

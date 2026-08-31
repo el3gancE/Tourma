@@ -64,8 +64,14 @@
             var bType = (data.bracketType || '').toUpperCase();
             var bTypeClass = (bType === 'LOWER') ? ' lower' : ((bType === 'GRAND_FINAL' || bType === 'GF') ? ' grand-final' : '');
 
+            var themeClass = '';
+            if (data.themeColor === 'green' || data.isGreen) themeClass = ' swiss-card-green';
+            else if (data.themeColor === 'red' || data.isRed) themeClass = ' swiss-card-red';
+            else if (data.themeColor === 'gold' || data.isGold) themeClass = ' swiss-card-gold';
+            else if (data.themeColor === 'mint' || data.isMint) themeClass = ' swiss-card-mint';
+
             var card = document.createElement('div');
-            card.className = 'match-card-item' + bTypeClass + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-match-item' : '');
+            card.className = 'match-card-item' + bTypeClass + themeClass + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-match-item' : '');
             card.dataset.matchId = matchId;
             card.dataset.status = isDone ? 'COMPLETED' : 'SCHEDULED';
 

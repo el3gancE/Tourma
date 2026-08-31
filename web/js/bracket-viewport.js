@@ -319,9 +319,12 @@
                     var minY = Math.min(s1.y1, s2.y1);
                     var maxY = Math.max(s1.y1, s2.y1);
 
+                    var isLb = (s1.match.bracketType === 'LOWER' || s2.match.bracketType === 'LOWER' || (canvasElem && canvasElem.id === 'lowerViewportCanvas'));
+                    var doneColor = isLb ? '#f43f5e' : '#2dd4bf';
+
                     var isBothDone = (s1.match.status === 'COMPLETED' || s1.match.status === 'done') &&
                                      (s2.match.status === 'COMPLETED' || s2.match.status === 'done');
-                    var strokeColor = isBothDone ? '#2dd4bf' : 'rgba(255, 255, 255, 0.4)';
+                    var strokeColor = isBothDone ? doneColor : 'rgba(255, 255, 255, 0.4)';
                     var strokeWidth = isBothDone ? '2.2' : '1.6';
 
                     var d = 'M ' + s1.x1.toFixed(1) + ' ' + s1.y1.toFixed(1) + ' H ' + midX.toFixed(1) + ' ' +
@@ -339,20 +342,29 @@
 
                     svg.appendChild(path);
                 } else {
-                    // Single feeder match line
+                    // Single feeder match line (1-to-1 connector)
                     var s = validSources[0];
-                    var midX = s.x1 + (x2 - s.x1) / 2;
+                    var isLb = (s.match.bracketType === 'LOWER' || (canvasElem && canvasElem.id === 'lowerViewportCanvas'));
+                    var doneColor = isLb ? '#f43f5e' : '#2dd4bf';
                     var isDone = (s.match.status === 'COMPLETED' || s.match.status === 'done');
+                    var d = '';
 
-                    var d = 'M ' + s.x1.toFixed(1) + ' ' + s.y1.toFixed(1) +
+                    // If almost horizontal (difference <= 8px), draw a 100% clean straight horizontal line!
+                    if (Math.abs(s.y1 - yTargetCenter) <= 8) {
+                        d = 'M ' + s.x1.toFixed(1) + ' ' + yTargetCenter.toFixed(1) +
+                            ' H ' + x2.toFixed(1);
+                    } else {
+                        var midX = s.x1 + (x2 - s.x1) / 2;
+                        d = 'M ' + s.x1.toFixed(1) + ' ' + s.y1.toFixed(1) +
                             ' H ' + midX.toFixed(1) +
                             ' V ' + yTargetCenter.toFixed(1) +
                             ' H ' + x2.toFixed(1);
+                    }
 
                     var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.setAttribute('d', d);
                     path.setAttribute('fill', 'none');
-                    path.setAttribute('stroke', isDone ? '#2dd4bf' : 'rgba(255, 255, 255, 0.4)');
+                    path.setAttribute('stroke', isDone ? doneColor : 'rgba(255, 255, 255, 0.4)');
                     path.setAttribute('stroke-width', isDone ? '2.2' : '1.6');
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');

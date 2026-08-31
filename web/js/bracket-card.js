@@ -88,8 +88,14 @@
                 return byeCard;
             }
 
+            var themeClass = '';
+            if (data.themeColor === 'green' || data.isGreen) themeClass = ' swiss-card-green';
+            else if (data.themeColor === 'red' || data.isRed || data.bracketType === 'LOWER') themeClass = ' lower-bracket-card';
+            else if (data.themeColor === 'gold' || data.isGold) themeClass = ' swiss-card-gold';
+            else if (data.themeColor === 'mint' || data.isMint) themeClass = ' swiss-card-mint';
+
             var card = document.createElement('div');
-            card.className = 'bracket-node-card' + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-node-card' : '') + (hideByeSlot ? ' bye-empty-slot' : '');
+            card.className = 'bracket-node-card' + themeClass + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-node-card' : '') + (hideByeSlot ? ' bye-empty-slot' : '');
             card.dataset.matchId = matchId;
             card.setAttribute('data-match-id', String(matchId));
             card.id = 'bracket-match-' + matchId;
@@ -101,10 +107,18 @@
             var t1SeedHtml = (isT1Bye || !seed1) ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : ('<span class="bracket-seed-badge">' + seed1 + '</span>');
             var t2SeedHtml = (isT2Bye || !seed2) ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : ('<span class="bracket-seed-badge">' + seed2 + '</span>');
 
+            var matchHeaderContent = matchHeaderLabel ? 
+                ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') : 
+                (hasBye ? '<span class="bracket-match-id" style="color: #64748b; font-style: italic; font-size: 0.65rem;">BYE</span>' : '<span class="bracket-match-id">&nbsp;</span>');
+
+            var statusBadgeContent = hasBye ? 
+                '<span class="bracket-status-badge" style="visibility: hidden;">BYE</span>' : 
+                ('<span class="bracket-status-badge ' + statusClass + '">' + statusLabel + '</span>');
+
             card.innerHTML =
                 '<div class="bracket-node-header">' +
-                    (matchHeaderLabel ? ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') : '<span></span>') +
-                    (hasBye ? '' : ('<span class="bracket-status-badge ' + statusClass + '">' + statusLabel + '</span>')) +
+                    matchHeaderContent +
+                    statusBadgeContent +
                 '</div>' +
                 '<div class="bracket-teams-box">' +
                     '<div class="' + t1RowClass + '" data-team-name="' + t1Name + '">' +

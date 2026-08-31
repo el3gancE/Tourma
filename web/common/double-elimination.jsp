@@ -36,9 +36,6 @@
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
             if (plist != null && !plist.isEmpty()) {
                 int takeCount = plist.size();
-                if ("MULTI_STAGE".equalsIgnoreCase(tournamentType) && currentStage == 1 && cutTarget > 1 && cutTarget < takeCount) {
-                    takeCount = cutTarget;
-                }
                 StringBuilder sb = new StringBuilder("[");
                 for (int i = 0; i < takeCount; i++) {
                     if (i > 0) sb.append(",");
@@ -107,6 +104,9 @@
                     </h1>
                     <span id="deFormatBadge" class="format-badge-single" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.35);"><%= (currentStage == 2) ? "STAGE 2: DOUBLE ELIMINATION" : "DOUBLE ELIMINATION" %></span>
                     <span id="deTeamCountBadge" class="team-count-badge">0 Đội</span>
+                    <span id="deAdvancingBadge" class="advancing-count-badge" style="display: none; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.35); font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 9999px; align-items: center; gap: 0.45rem; line-height: 1;">
+                        <i class="fa-solid fa-arrow-right-to-bracket" style="font-size: 0.75rem;"></i> <span id="deAdvancingText">8 Đội đi tiếp</span>
+                    </span>
                 </div>
 
                 <!-- Right Action Bar: Standalone Reset Button + Quick Mode Toggle + View Mode Toggle Buttons -->
@@ -253,6 +253,8 @@
         <!-- Engine Scripts -->
         <script src="${pageContext.request.contextPath}/js/bracket-viewport.js"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
         <script src="${pageContext.request.contextPath}/js/bracket-card.js"></script>
         <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
@@ -269,18 +271,7 @@
                 var preloadedTeams = <%= deTeamsJson %>;
                 var cutTarget = <%= cutTarget %>;
                 var tournamentType = '<%= tournamentType %>';
-
-                // --- DEBUG ---
-                console.group('[DE Init Debug]');
-                console.log('tourneyId:', tourneyId);
-                console.log('cutTarget from DB:', cutTarget);
-                console.log('tournamentType:', tournamentType);
-                console.log('preloadedTeams count:', preloadedTeams.length, preloadedTeams);
-                console.log('tourma_stage2_teams_ LS:', localStorage.getItem('tourma_stage2_teams_' + tourneyId));
-                console.log('tourma_de_matches_ LS key exists:', !!localStorage.getItem('tourma_de_matches_' + tourneyId));
-                console.log('tourma_advance_count_ LS:', localStorage.getItem('tourma_advance_count_' + tourneyId));
-                console.groupEnd();
-                // --- END DEBUG ---
+                var currentStage = <%= currentStage %>;
 
                 // Resolve cutTarget from DB or localStorage first
                 if (!cutTarget || cutTarget <= 1) {
@@ -294,26 +285,25 @@
                 try { stage2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
 
                 var finalTeams = [];
-                if (stage2TeamsRaw && stage2TeamsRaw.length > 0) {
+                if (currentStage === 2 && stage2TeamsRaw && stage2TeamsRaw.length > 0) {
                     finalTeams = stage2TeamsRaw;
                 } else if (preloadedTeams && preloadedTeams.length > 0) {
                     finalTeams = preloadedTeams;
                 }
 
                 // Enforce cutTarget limit strictly in Stage 2
-                if (cutTarget && cutTarget > 1 && finalTeams.length > cutTarget) {
+                if (currentStage === 2 && cutTarget && cutTarget > 1 && finalTeams.length > cutTarget) {
                     finalTeams = finalTeams.slice(0, cutTarget);
                     try { localStorage.setItem('tourma_stage2_teams_' + tourneyId, JSON.stringify(finalTeams)); } catch(e) {}
                 }
-
-                console.log('[DE Init] finalTeams count:', finalTeams.length, '| cutTarget resolved:', cutTarget);
 
                 window.TourmaDoubleElimination.init({
                     tournamentId: tourneyId,
                     tournamentName: tourneyName,
                     teamsList: finalTeams,
                     cutTarget: cutTarget,
-                    tournamentType: tournamentType
+                    tournamentType: tournamentType,
+                    stage: currentStage
                 });
             });
         </script>
