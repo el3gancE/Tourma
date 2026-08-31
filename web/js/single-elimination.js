@@ -28,6 +28,19 @@
             // cutTarget=0 means Single Stage / Stage 2 (play all rounds), cutTarget>1 means Multi-Stage cut
             if (this.currentStage === 2) {
                 this.cutTarget = null;
+                // Check Stage 2 Lock immediately
+                if (window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+                    var isBlocked = window.StageFinishAlert.checkAndRender(this.tournamentId, 2, 'singleEmptyAlertContainer');
+                    if (isBlocked) {
+                        var vpFrame = document.getElementById('bracketViewportFrame');
+                        if (vpFrame) vpFrame.style.display = 'none';
+                        var listV = document.getElementById('singleListViewContainer');
+                        if (listV) listV.style.display = 'none';
+                        var emptyC = document.getElementById('singleEmptyAlertContainer');
+                        if (emptyC) emptyC.style.display = 'flex';
+                        return; // Stop initialization completely!
+                    }
+                }
             } else {
                 var target = (cutTarget && parseInt(cutTarget, 10) > 1) ? parseInt(cutTarget, 10) : null;
                 this.cutTarget = target;
@@ -158,54 +171,61 @@
                 return String(t);
             };
 
-            // Check if savedBracket belongs to the same team configuration
+            // Validate saved bracket by directly comparing saved teamsList (most reliable)
             var savedValid = false;
             if (savedBracket && savedBracket.matchesMap && savedBracket.roundsList && savedBracket.roundsList.length > 0) {
                 var savedKeys = Object.keys(savedBracket.matchesMap);
                 if (savedKeys.length > 0) {
                     if (this.teamsList && this.teamsList.length > 0) {
-                        var currentTeamNames = this.teamsList.map(getTeamName);
-                        var savedR1Teams = [];
-                        var r0Matches = savedBracket.roundsList[0].matches || [];
-                        for (var mi = 0; mi < r0Matches.length; mi++) {
-                            var sm = r0Matches[mi];
-                            if (sm.team1 && sm.team1.name && sm.team1.name !== 'BYE' && !sm.team1.name.startsWith('W #')) {
-                                savedR1Teams.push(sm.team1.name);
-                            }
-                            if (sm.team2 && sm.team2.name && sm.team2.name !== 'BYE' && !sm.team2.name.startsWith('W #')) {
-                                savedR1Teams.push(sm.team2.name);
-                            }
+                        var currentTeamNames = this.teamsList.map(getTeamName).filter(function(n) { return !!n; });
+
+                        // PRIMARY: use saved teamsList if available (set by persistMatches)
+                        var savedTeamNamesFromList = [];
+                        if (savedBracket.teamsList && savedBracket.teamsList.length > 0) {
+                            savedTeamNamesFromList = savedBracket.teamsList.map(getTeamName).filter(function(n) { return !!n; });
                         }
-                        if (savedR1Teams.length === currentTeamNames.length) {
-                            var isAllMatch = true;
-                            for (var ti = 0; ti < currentTeamNames.length; ti++) {
-                                if (savedR1Teams.indexOf(currentTeamNames[ti]) === -1) {
-                                    isAllMatch = false;
-                                    break;
+
+                        if (savedTeamNamesFromList.length > 0) {
+                            // Fast path: compare saved teamsList directly
+                            if (savedTeamNamesFromList.length === currentTeamNames.length) {
+                                var allMatch = true;
+                                for (var ti = 0; ti < currentTeamNames.length; ti++) {
+                                    if (savedTeamNamesFromList.indexOf(currentTeamNames[ti]) === -1) {
+                                        allMatch = false; break;
+                                    }
+                                }
+                                savedValid = allMatch;
+                            }
+                        } else {
+                            // Fallback: count unique non-placeholder teams from Round 1 matches only
+                            var r1Matches = savedBracket.roundsList[0].matches || [];
+                            var r1Teams = [];
+                            for (var mi = 0; mi < r1Matches.length; mi++) {
+                                var smatch = r1Matches[mi];
+                                var sn1 = smatch.team1 ? (smatch.team1.name || smatch.team1) : '';
+                                var sn2 = smatch.team2 ? (smatch.team2.name || smatch.team2) : '';
+                                if (sn1 && sn1 !== 'BYE' && sn1 !== 'TBD' && !sn1.startsWith('W #')) {
+                                    if (r1Teams.indexOf(sn1) === -1) r1Teams.push(sn1);
+                                }
+                                if (sn2 && sn2 !== 'BYE' && sn2 !== 'TBD' && !sn2.startsWith('W #')) {
+                                    if (r1Teams.indexOf(sn2) === -1) r1Teams.push(sn2);
                                 }
                             }
-                            if (isAllMatch) {
-                                savedValid = true;
+                            // In brackets with BYEs, round 1 may have fewer teams than total.
+                            // Accept if all r1Teams exist in currentTeamNames.
+                            if (r1Teams.length > 0 && r1Teams.length <= currentTeamNames.length) {
+                                var r1AllIn = true;
+                                for (var ri = 0; ri < r1Teams.length; ri++) {
+                                    if (currentTeamNames.indexOf(r1Teams[ri]) === -1) {
+                                        r1AllIn = false; break;
+                                    }
+                                }
+                                savedValid = r1AllIn;
                             }
                         }
                     } else {
-                        savedValid = true;
+                        savedValid = true; // No teams = any saved bracket is fine
                     }
-                }
-            }
-
-            // Strict structural validation for Single Elimination:
-            // 1. Total rounds must not exceed ceil(log2(numTeams)) + 1
-            // 2. The Final round must have exactly 1 match (unlike Round Robin which has N/2 matches)
-            if (savedValid && savedBracket && savedBracket.roundsList && savedBracket.roundsList.length > 0) {
-                var numTms = this.teamsList ? this.teamsList.length : 0;
-                var maxRounds = (numTms > 1) ? Math.ceil(Math.log2(numTms)) : 1;
-                var rList = savedBracket.roundsList;
-                var lastRd = rList[rList.length - 1];
-                var lastMatches = (lastRd && lastRd.matches) ? lastRd.matches.length : 0;
-
-                if (rList.length > maxRounds || lastMatches !== 1) {
-                    savedValid = false; // Corrupted / stale Round Robin data
                 }
             }
 
@@ -356,6 +376,18 @@
             var self = this;
 
             var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+
+            // Check if Stage 2 is locked (Stage 1 not yet completed or not confirmed)
+            if (window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+                var isStage2Locked = window.StageFinishAlert.checkAndRender(this.tournamentId, this.currentStage, alertContainer || canvasWrapper);
+                if (isStage2Locked) {
+                    if (viewportFrame) viewportFrame.style.display = 'none';
+                    if (alertContainer) alertContainer.style.display = 'flex';
+                    var listView = document.getElementById('singleListViewContainer');
+                    if (listView) listView.style.display = 'none';
+                    return; // Stop rendering Stage 2 viewport!
+                }
+            }
 
             if (teamCount < 2 || !this.roundsList || this.roundsList.length === 0) {
                 if (viewportFrame) viewportFrame.style.display = 'none';
@@ -515,7 +547,8 @@
                     curBox.style.minHeight = prevBox.offsetHeight + 'px';
                 }
 
-                var prevCards = prevBox.querySelectorAll('.bracket-node-card:not(.bye-empty-slot)');
+                // Include bye-empty-slot so BYE matches contribute to child positioning
+                var prevCards = prevBox.querySelectorAll('.bracket-node-card');
                 var curCards = curBox.querySelectorAll('.bracket-node-card:not(.bye-empty-slot)');
                 if (!curCards || curCards.length === 0) continue;
 
@@ -1076,10 +1109,11 @@
         persistMatches: function () {
             if (this.tournamentId) {
                 try {
-                    // Save full bracket (roundsList + matchesMap) so restoration is direct
+                    // Save full bracket (roundsList + matchesMap + teamsList) so restoration is direct
                     localStorage.setItem(this.getStorageKeyBracket(), JSON.stringify({
                         roundsList: this.roundsList,
-                        matchesMap: this.matchesMap
+                        matchesMap: this.matchesMap,
+                        teamsList: this.teamsList
                     }));
                     // Keep legacy/matches key
                     localStorage.setItem(this.getStorageKeyMatches(), JSON.stringify(this.matchesMap));

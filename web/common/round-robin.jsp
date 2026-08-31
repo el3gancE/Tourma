@@ -78,6 +78,9 @@
         <!-- Stage End Popup Component -->
         <jsp:include page="/common/component/stage-end-popup.jsp"/>
 
+        <!-- Stage Finish Alert Component (Locked Stage 2) -->
+        <jsp:include page="/common/component/stage-finish-alert.jsp"/>
+
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="tournaments"/>

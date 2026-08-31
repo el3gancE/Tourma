@@ -36,6 +36,13 @@
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
             if (plist != null && !plist.isEmpty()) {
                 int takeCount = plist.size();
+                // For multi-stage stage 2: server only sends the advancingSeatsCount teams
+                if ("MULTI_STAGE".equals(tournamentType) && currentStage == 2 && t != null) {
+                    int advSeats = t.getAdvancingSeatsCount();
+                    if (advSeats > 1 && advSeats < takeCount) {
+                        takeCount = advSeats;
+                    }
+                }
                 StringBuilder sb = new StringBuilder("[");
                 for (int i = 0; i < takeCount; i++) {
                     if (i > 0) sb.append(",");
@@ -84,6 +91,9 @@
 
         <!-- Stage End Popup Component -->
         <jsp:include page="/common/component/stage-end-popup.jsp"/>
+
+        <!-- Stage Finish Alert Component (Locked Stage 2) -->
+        <jsp:include page="/common/component/stage-finish-alert.jsp"/>
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
@@ -297,16 +307,19 @@
                 var stage2TeamsRaw = null;
                 try { stage2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
 
+                // Resolve team list — server-provided preloadedTeams is authoritative
                 var finalTeams = [];
-                if (currentStage === 2 && stage2TeamsRaw && stage2TeamsRaw.length > 0) {
-                    finalTeams = stage2TeamsRaw;
-                } else if (preloadedTeams && preloadedTeams.length > 0) {
+                if (preloadedTeams && preloadedTeams.length > 0) {
+                    // Server (JSP/DB) has the correct, authoritative team list
                     finalTeams = preloadedTeams;
+                } else if (currentStage === 2 && stage2TeamsRaw && stage2TeamsRaw.length > 0) {
+                    // Fallback: use localStorage stage2Teams only when server sent nothing (demo/offline mode)
+                    finalTeams = stage2TeamsRaw;
                 }
 
-                // Enforce advanceCount limit strictly in Stage 2
+                // For Stage 2: enforce advanceCount only when server didn't pre-slice (i.e. finalTeams came from localStorage)
                 if (currentStage === 2) {
-                    if (advCount && advCount > 1 && finalTeams.length > advCount) {
+                    if (preloadedTeams && preloadedTeams.length === 0 && advCount && advCount > 1 && finalTeams.length > advCount) {
                         finalTeams = finalTeams.slice(0, advCount);
                     }
                     cutTarget = 0; // Stage 2 plays to Grand Final champion!

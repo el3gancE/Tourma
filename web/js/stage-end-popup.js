@@ -390,10 +390,23 @@
 
             try {
                 localStorage.setItem('tourma_stage1_locked_' + this.tournamentId, 'false');
-                this.applyLockToUI(false);
 
-                // Reload current page to refresh UI state
-                window.location.reload();
+                var banner = document.getElementById('stageEndPopupBanner');
+                if (banner) {
+                    banner.classList.remove('is-locked');
+                    var titleLine = document.getElementById('stageEndTitleLine');
+                    if (titleLine) {
+                        titleLine.textContent = 'Khi bạn xác nhận hoàn thành vòng 1, kết quả sẽ bị khóa và bạn sẽ được chuyển sang vòng tiếp theo.';
+                    }
+                    var confirmBtn = document.getElementById('stageEndConfirmBtn');
+                    if (confirmBtn) confirmBtn.style.display = 'inline-flex';
+                    var nextBtn = document.getElementById('stageEndNextBtn');
+                    if (nextBtn) nextBtn.style.display = 'none';
+                    var unlockBtn = document.getElementById('stageEndUnlockBtn');
+                    if (unlockBtn) unlockBtn.style.display = 'none';
+                }
+
+                this.applyLockToUI(false);
             } catch (e) {
                 console.error('[StageEndPopup] confirmUnlock error:', e);
             }

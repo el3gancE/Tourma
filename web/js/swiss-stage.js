@@ -686,10 +686,21 @@
     var countBadge = document.getElementById('swissTeamCountBadge');
     if (countBadge) countBadge.innerText = teamsList.length + ' Đội';
 
-    // 2. Team Count Validation: MUST BE EXACTLY 16 TEAMS!
+    // 2. Check if Stage 2 is locked (Stage 1 not yet completed or not confirmed)
     var alertBox = document.getElementById('swissInvalidTeamAlert');
     var mainWrapper = document.getElementById('swissMainContentWrapper');
     var descEl = document.getElementById('swissInvalidTeamDesc');
+
+    if (window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+      var isStage2Locked = window.StageFinishAlert.checkAndRender(tournamentId, currentStage, 'stageFinishAlertContainer');
+      if (isStage2Locked) {
+        if (mainWrapper) mainWrapper.style.display = 'none';
+        if (alertBox) alertBox.style.display = 'none';
+        var ctrlBar = document.querySelector('.swiss-control-bar');
+        if (ctrlBar) ctrlBar.style.display = 'none';
+        return; // Stop rendering Stage 2 Swiss!
+      }
+    }
 
     if (teamsList.length !== 16) {
       if (alertBox && mainWrapper) {

@@ -29,6 +29,16 @@
             this.currentStage = (stage === 2 || stage === '2') ? 2 : 1;
             this.cutTarget = cutTarget || 0;
 
+            // Check Stage 2 Lock immediately
+            if (this.currentStage === 2 && window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+                var isBlocked = window.StageFinishAlert.checkAndRender(this.tournamentId, 2, 'rrFixturesContainer');
+                if (isBlocked) {
+                    var tabs = document.getElementById('rrRoundSelectorTabs');
+                    if (tabs) tabs.style.display = 'none';
+                    return; // Stop initialization completely!
+                }
+            }
+
             if (!this.cutTarget || this.cutTarget <= 1) {
                 try {
                     var mCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + this.tournamentId));
@@ -443,6 +453,16 @@
 
             container.innerHTML = '';
             var self = this;
+
+            // Check if Stage 2 is locked
+            if (window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+                var isStage2Locked = window.StageFinishAlert.checkAndRender(this.tournamentId, this.currentStage, container);
+                if (isStage2Locked) {
+                    var tabs = document.getElementById('rrRoundSelectorTabs');
+                    if (tabs) tabs.style.display = 'none';
+                    return; // Stop rendering Stage 2 Round Robin fixtures!
+                }
+            }
 
             if (!this.teamsList || this.teamsList.length === 0 || !this.roundsList || this.roundsList.length === 0) {
                 this.renderEmptyState(container);

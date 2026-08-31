@@ -44,15 +44,33 @@
                 this.currentStage = 1;
             }
 
-            if (!this.cutTarget) {
-                try {
-                    var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
-                                 localStorage.getItem('tourma_cut_target_' + this.tournamentId);
-                    if (rawCut) this.cutTarget = parseInt(rawCut, 10);
-                } catch (e) {}
+            // Check Stage 2 Lock immediately
+            if (this.currentStage === 2 && window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+                var isBlocked = window.StageFinishAlert.checkAndRender(this.tournamentId, 2, 'deEmptyAlertContainer');
+                if (isBlocked) {
+                    var dualWs = document.getElementById('deDualViewportWorkspace');
+                    if (dualWs) dualWs.style.display = 'none';
+                    var listV = document.getElementById('deListViewContainer');
+                    if (listV) listV.style.display = 'none';
+                    var emptyAlert = document.getElementById('deEmptyAlertContainer');
+                    if (emptyAlert) emptyAlert.style.display = 'flex';
+                    return; // Stop initialization completely!
+                }
             }
 
-            // Priority 1: Stage 2 teams saved by Stage 1 completion (most accurate - already shuffled)
+            // cutTarget from localStorage only relevant for multi-stage (when not already set by JSP/config)
+            if (!this.cutTarget) {
+                // Only read from localStorage for Stage 2 (multi-stage scenario)
+                if (this.currentStage === 2) {
+                    try {
+                        var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
+                                     localStorage.getItem('tourma_cut_target_' + this.tournamentId);
+                        if (rawCut) this.cutTarget = parseInt(rawCut, 10);
+                    } catch (e) {}
+                }
+            }
+
+            // Load teams — JSP preloadedTeams is the authoritative source (already resolved & sliced by server)
             var stage2Teams = null;
             try {
                 stage2Teams = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + this.tournamentId));
@@ -77,31 +95,25 @@
                 return defaultSeed;
             };
 
-            if (this.currentStage === 2 && stage2Teams && stage2Teams.length > 0) {
-                // Use stage2 teams (has actual resolved team names and original seeds from SE bracket)
-                this.teamsList = stage2Teams.map(function(t, i) {
-                    var tName = (typeof t === 'object') ? (t.name || t.rawName) : t;
-                    var tSeed = (typeof t === 'object' && t.seed !== undefined && t.seed !== null) ? t.seed : findOriginalSeed(tName, i + 1);
-                    return { name: tName, rawName: tName, seed: tSeed };
-                });
-            } else if (this._preloadedTeams && this._preloadedTeams.length > 0) {
-                // Priority 2: Server-provided teams (already cutTarget-limited in JSP if stage 2)
-                this.teamsList = this._preloadedTeams.map(function(t, i) {
-                    var tName = (typeof t === 'object') ? (t.name || t.rawName) : t;
-                    var tSeed = (typeof t === 'object' && t.seed !== undefined && t.seed !== null) ? t.seed : findOriginalSeed(tName, i + 1);
-                    return { name: tName, rawName: tName, seed: tSeed };
-                });
+            var mapTeam = function(t, i) {
+                var tName = (typeof t === 'object') ? (t.name || t.rawName) : t;
+                var tSeed = (typeof t === 'object' && t.seed !== undefined && t.seed !== null) ? t.seed : findOriginalSeed(tName, i + 1);
+                return { name: tName, rawName: tName, seed: tSeed };
+            };
+
+            // Priority 1: JSP server-provided teams (authoritative — already sliced to correct count)
+            if (this._preloadedTeams && this._preloadedTeams.length > 0) {
+                this.teamsList = this._preloadedTeams.map(mapTeam);
+            // Priority 2: stage2Teams from localStorage (only when JSP sent nothing, e.g. demo mode)
+            } else if (this.currentStage === 2 && stage2Teams && stage2Teams.length > 0) {
+                this.teamsList = stage2Teams.map(mapTeam);
             } else {
-                // Priority 3: Fallback from localStorage
+                // Priority 3: Fallback from localStorage tourma_teams_ / tourma_stage2_teams_
                 try {
                     var storageKeyTeams = (this.currentStage === 2) ? ('tourma_stage2_teams_' + this.tournamentId) : ('tourma_teams_' + this.tournamentId);
                     var savedTeams = JSON.parse(localStorage.getItem(storageKeyTeams));
                     if (savedTeams && savedTeams.length > 0) {
-                        this.teamsList = savedTeams.map(function(t, i) {
-                            var tName = (typeof t === 'object') ? (t.name || t.rawName) : t;
-                            var tSeed = (typeof t === 'object' && t.seed !== undefined && t.seed !== null) ? t.seed : (i + 1);
-                            return { name: tName, rawName: tName, seed: tSeed };
-                        });
+                        this.teamsList = savedTeams.map(mapTeam);
                     }
                 } catch (e) {}
             }
@@ -110,7 +122,7 @@
                 this.teamsList = [];
             }
 
-            // Enforce cutTarget limit ONLY IF currentStage === 2
+            // Enforce cutTarget limit ONLY for Stage 2 when cutTarget comes from JSP/DB (not stale localStorage)
             if (this.currentStage === 2 && this.cutTarget > 1 && this.teamsList.length > this.cutTarget) {
                 this.teamsList = this.teamsList.slice(0, this.cutTarget);
             }
@@ -126,6 +138,12 @@
             // Separate storage keys for Stage 1 vs Stage 2
             this.storageKey = (this.currentStage === 2) ? ('tourma_de_matches_stage2_' + this.tournamentId) : ('tourma_de_matches_' + this.tournamentId);
             this.inputsKey = (this.currentStage === 2) ? ('tourma_de_round_inputs_stage2_' + this.tournamentId) : ('tourma_de_round_inputs_' + this.tournamentId);
+
+            // Update Team Count Badge
+            var teamCountBadge = document.getElementById('deTeamCountBadge');
+            if (teamCountBadge) {
+                teamCountBadge.innerText = this.teamsList.length + ' Đội';
+            }
 
             // Update Advancing Badge
             var advBadge = document.getElementById('deAdvancingBadge');
@@ -383,6 +401,18 @@
             var self = this;
 
             var teamCount = (this.teamsList && Array.isArray(this.teamsList)) ? this.teamsList.length : 0;
+
+            // Check if Stage 2 is locked
+            if (window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+                var isStage2Locked = window.StageFinishAlert.checkAndRender(this.tournamentId, this.currentStage, alertContainer || wrapper);
+                if (isStage2Locked) {
+                    if (dualWorkspace) dualWorkspace.style.display = 'none';
+                    if (alertContainer) alertContainer.style.display = 'flex';
+                    var listView = document.getElementById('deListViewContainer');
+                    if (listView) listView.style.display = 'none';
+                    return; // Stop rendering Stage 2 DE viewport!
+                }
+            }
 
             if (teamCount < 2 || !this.bracketData) {
                 if (dualWorkspace) dualWorkspace.style.display = 'none';

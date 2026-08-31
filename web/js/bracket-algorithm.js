@@ -420,10 +420,9 @@
                 }
             }
             var ratio = byeCount / totalR1;
-            // Few BYE matches (<= 50%): SHOW BYEs (true)
-            // Too many BYE matches (> 50%): HIDE BYEs (false)
-            // Exactly 50%: SHOW BYEs (true)
-            return ratio <= threshold;
+            // Few BYE matches (< 50%): SHOW BYEs (true)
+            // Many BYE matches (>= 50%): HIDE BYEs (false)
+            return ratio < threshold;
         },
 
         /**
