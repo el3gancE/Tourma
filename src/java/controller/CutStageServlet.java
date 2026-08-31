@@ -8,6 +8,10 @@ import model.Team;
 import model.Tournament;
 import service.CountAdvanceTeamService;
 import service.SECutService;
+import service.DECutService;
+import service.GSCutService;
+import service.RRCutService;
+import service.SwissCutService;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -140,6 +144,45 @@ public class CutStageServlet extends HttpServlet {
                 json.append("]");
                 json.append("}");
 
+                out.print(json.toString());
+            } else if ("DOUBLE_ELIMINATION".equalsIgnoreCase(stage1Format) || "DE".equalsIgnoreCase(stage1Format)) {
+                List<Team> dbTeams = participantDAO.getTeamsByTournamentId(tournamentId);
+                int totalTeams = (dbTeams != null && !dbTeams.isEmpty()) ? dbTeams.size() : 16;
+                
+                int ubStopRound = DECutService.calculateUbStoppingRound(totalTeams, cutTarget);
+                int lbStopRound = DECutService.calculateLbStoppingRound(ubStopRound);
+                
+                List<Match> matchesList = singleEliminationDAO.getMatchesByTournamentId(intTourneyId);
+                boolean roundFinished = DECutService.isCutStageFinished(matchesList, ubStopRound, lbStopRound);
+                if (!roundFinished) {
+                    out.print("{\"status\":\"error\",\"message\":\"Các trận vòng dừng (UB " + ubStopRound + ", LB " + lbStopRound + ") chưa hoàn tất!\"}");
+                    return;
+                }
+                
+                List<Team> qualifiedTeams = DECutService.extractQualifiedTeams(matchesList, ubStopRound, lbStopRound);
+                
+                StringBuilder json = new StringBuilder();
+                json.append("{");
+                json.append("\"status\":\"success\",");
+                json.append("\"message\":\"Thực hiện Cut Stage Double Elimination thành công!\",");
+                json.append("\"tournamentId\":\"").append(tournamentId).append("\",");
+                json.append("\"stage1Format\":\"DOUBLE_ELIMINATION\",");
+                json.append("\"ubStoppingRound\":").append(ubStopRound).append(",");
+                json.append("\"lbStoppingRound\":").append(lbStopRound).append(",");
+                json.append("\"cutTarget\":").append(cutTarget).append(",");
+                json.append("\"targetFormat\":\"").append(targetFormat).append("\",");
+                json.append("\"qualifiedCount\":").append(qualifiedTeams.size()).append(",");
+                json.append("\"qualifiedTeams\":[");
+                for (int i = 0; i < qualifiedTeams.size(); i++) {
+                    Team t = qualifiedTeams.get(i);
+                    json.append("{");
+                    json.append("\"id\":\"").append(t.getId() != null ? t.getId() : "").append("\",");
+                    json.append("\"name\":\"").append(t.getName() != null ? t.getName() : "").append("\",");
+                    json.append("\"seed\":").append(i + 1);
+                    json.append("}");
+                    if (i < qualifiedTeams.size() - 1) json.append(",");
+                }
+                json.append("]}");
                 out.print(json.toString());
             } else {
                 out.print("{\"status\":\"error\",\"message\":\"Thể thức Stage 1 '" + stage1Format + "' chưa được hỗ trợ!\"}");

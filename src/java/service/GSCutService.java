@@ -315,60 +315,144 @@ public class GSCutService {
      * @param qualifiedTeams List of qualified GroupTeams
      * @return Ordered List of Team models [T1_1, T1_2, T2_1, T2_2, ...]
      */
+    /**
+     * 3. Generate flat list of Team objects in exact Bracket slot order for Stage 2.
+     * Guaranteed 0 same-group conflicts in Round 1 via Zero-Conflict Constraint Solver.
+     *
+     * @param qualifiedTeams List of qualified GroupTeams
+     * @return Ordered List of Team models [Seed 1, Seed 2, ..., Seed N]
+     */
     public static List<Team> generateStage2BracketSeedOrder(List<GroupTeam> qualifiedTeams) {
         List<Team> orderedTeamModels = new ArrayList<>();
         if (qualifiedTeams == null || qualifiedTeams.isEmpty()) return orderedTeamModels;
 
         int count = qualifiedTeams.size();
-        Map<String, Map<Integer, GroupTeam>> groupLookup = new HashMap<>();
-        Set<String> groups = new HashSet<>();
+        int bracketSize = nextPowerOfTwo(count);
+        List<int[]> seedPairs = generateSeedPairs(bracketSize);
+        int numMatches = seedPairs.size();
 
-        for (GroupTeam gt : qualifiedTeams) {
-            if (gt.getGroupKey() != null) {
-                groups.add(gt.getGroupKey());
-                groupLookup.computeIfAbsent(gt.getGroupKey(), k -> new HashMap<>()).put(gt.getGroupRank(), gt);
-            }
+        // Sort: Rank 1 first (A..Z), Rank 2 (A..Z), Wildcards by PTS
+        List<GroupTeam> sorted = new ArrayList<>(qualifiedTeams);
+        sorted.sort((a, b) -> {
+            int rA = a.getGroupRank() > 0 ? a.getGroupRank() : 99;
+            int rB = b.getGroupRank() > 0 ? b.getGroupRank() : 99;
+            if (rA != rB) return Integer.compare(rA, rB);
+            String gA = a.getGroupKey() != null ? a.getGroupKey() : "";
+            String gB = b.getGroupKey() != null ? b.getGroupKey() : "";
+            return gA.compareTo(gB);
+        });
+
+        List<GroupTeam> matchTops = new ArrayList<>();
+        List<GroupTeam> matchBots = new ArrayList<>();
+
+        for (int m = 0; m < numMatches; m++) {
+            matchTops.add((m < sorted.size()) ? sorted.get(m) : null);
         }
-        int numGroups = groups.size();
-
-        // Case 1: 2 Groups (A, B) -> 4 Teams (1A, 2A, 1B, 2B)
-        // Bracket pairs (1 vs 4) = 1A vs 2B, (2 vs 3) = 1B vs 2A!
-        if (numGroups == 2 && count == 4 && groupLookup.containsKey("A") && groupLookup.containsKey("B")) {
-            orderedTeamModels.add(groupLookup.get("A").get(1).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("B").get(1).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("A").get(2).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("B").get(2).toTeamModel());
-            return orderedTeamModels;
-        }
-
-        // Case 2: 4 Groups (A, B, C, D) -> 8 Teams
-        // Bracket pairs (1 vs 8, 4 vs 5, 2 vs 7, 3 vs 6): 1A vs 2B, 1C vs 2D, 1B vs 2A, 1D vs 2C!
-        if (numGroups == 4 && count == 8 && groupLookup.containsKey("A") && groupLookup.containsKey("B") && groupLookup.containsKey("C") && groupLookup.containsKey("D")) {
-            orderedTeamModels.add(groupLookup.get("A").get(1).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("B").get(1).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("D").get(1).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("C").get(1).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("D").get(2).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("C").get(2).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("A").get(2).toTeamModel());
-            orderedTeamModels.add(groupLookup.get("B").get(2).toTeamModel());
-            return orderedTeamModels;
+        for (int m = numMatches; m < 2 * numMatches; m++) {
+            matchBots.add((m < sorted.size()) ? sorted.get(m) : null);
         }
 
-        // General fallback
-        for (GroupTeam gt : qualifiedTeams) {
-            orderedTeamModels.add(gt.toTeamModel());
+        // Zero-conflict solver
+        List<GroupTeam> resolvedBots = solveZeroConflict(matchTops, matchBots);
+
+        Team[] seedArray = new Team[bracketSize];
+        for (int m = 0; m < numMatches; m++) {
+            int topSlot = seedPairs.get(m)[0];
+            int botSlot = seedPairs.get(m)[1];
+            GroupTeam topTeam = matchTops.get(m);
+            GroupTeam botTeam = resolvedBots.get(m);
+
+            seedArray[topSlot - 1] = (topTeam != null) ? topTeam.toTeamModel() : createByeTeam();
+            seedArray[botSlot - 1] = (botTeam != null) ? botTeam.toTeamModel() : createByeTeam();
         }
-        return orderedTeamModels;
+
+        return Arrays.asList(seedArray);
     }
 
-    /**
-     * Recursive generator for standard tournament seed bracket slots (Power of 2).
-     * e.g. N=2: [1, 2]
-     *      N=4: [1, 4, 2, 3]
-     *      N=8: [1, 8, 4, 5, 2, 7, 3, 6]
-     *      N=16: [1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11]
-     */
+    private static List<int[]> generateSeedPairs(int pow2) {
+        int rounds = (int) (Math.log(pow2) / Math.log(2)) - 1;
+        List<Integer> pls = new ArrayList<>();
+        pls.add(1);
+        pls.add(2);
+
+        for (int i = 0; i < rounds; i++) {
+            List<Integer> nextPls = new ArrayList<>();
+            int sum = (int) Math.pow(2, i + 2) + 1;
+            for (int val : pls) {
+                nextPls.add(val);
+                nextPls.add(sum - val);
+            }
+            pls = nextPls;
+        }
+
+        List<int[]> pairs = new ArrayList<>();
+        for (int k = 0; k < pls.size(); k += 2) {
+            pairs.add(new int[]{pls.get(k), pls.get(k + 1)});
+        }
+        return pairs;
+    }
+
+    private static List<GroupTeam> solveZeroConflict(List<GroupTeam> tops, List<GroupTeam> bots) {
+        List<GroupTeam> current = new ArrayList<>(bots);
+        int minConflicts = countConflicts(tops, current);
+        if (minConflicts == 0) return current;
+
+        Random rnd = new Random(42);
+        List<GroupTeam> bestPerm = new ArrayList<>(current);
+
+        for (int step = 0; step < 3000; step++) {
+            List<Integer> conflictIndices = new ArrayList<>();
+            for (int i = 0; i < tops.size(); i++) {
+                if (tops.get(i) != null && current.get(i) != null &&
+                    Objects.equals(tops.get(i).getGroupKey(), current.get(i).getGroupKey())) {
+                    conflictIndices.add(i);
+                }
+            }
+            if (conflictIndices.isEmpty()) {
+                return current; // Zero conflict found!
+            }
+
+            int cIdx = conflictIndices.get(rnd.nextInt(conflictIndices.size()));
+            int swapWith = rnd.nextInt(current.size());
+            if (cIdx == swapWith) continue;
+
+            // Swap
+            Collections.swap(current, cIdx, swapWith);
+
+            int newConf = countConflicts(tops, current);
+            if (newConf < minConflicts) {
+                minConflicts = newConf;
+                bestPerm = new ArrayList<>(current);
+                if (minConflicts == 0) return bestPerm;
+            } else if (newConf > minConflicts) {
+                if (rnd.nextDouble() > 0.15) {
+                    Collections.swap(current, cIdx, swapWith); // Revert
+                }
+            }
+        }
+        return bestPerm;
+    }
+
+    private static int countConflicts(List<GroupTeam> tops, List<GroupTeam> bots) {
+        int conf = 0;
+        for (int i = 0; i < tops.size() && i < bots.size(); i++) {
+            if (tops.get(i) != null && bots.get(i) != null &&
+                Objects.equals(tops.get(i).getGroupKey(), bots.get(i).getGroupKey())) {
+                conf++;
+            }
+        }
+        return conf;
+    }
+
+    private static Team createByeTeam() {
+        Team bye = new Team();
+        bye.setId("BYE");
+        bye.setRawName("BYE");
+        bye.setNormalizedName("BYE");
+        bye.setStatus("BYE");
+        return bye;
+    }
+
     public static List<Integer> generateStandardSeedSlots(int size) {
         if (size <= 2) {
             List<Integer> base = new ArrayList<>();
@@ -388,16 +472,12 @@ public class GSCutService {
         return current;
     }
 
-    /**
-     * Resolves same-group conflicts dynamically using optimal peer-swapping.
-     */
     private static void resolveSameGroupConflicts(List<MatchPair> pairs) {
         for (int i = 0; i < pairs.size(); i++) {
             MatchPair p1 = pairs.get(i);
             if (p1.getTeam1() != null && p1.getTeam2() != null &&
                 Objects.equals(p1.getTeam1().getGroupKey(), p1.getTeam2().getGroupKey())) {
 
-                // Found a conflict! Search for a valid candidate to swap team2 with
                 for (int j = 0; j < pairs.size(); j++) {
                     if (i == j) continue;
                     MatchPair p2 = pairs.get(j);
@@ -407,7 +487,6 @@ public class GSCutService {
                         boolean p2Valid = (p2.getTeam1() == null) || !Objects.equals(p2.getTeam1().getGroupKey(), p1.getTeam2().getGroupKey());
 
                         if (p1Valid && p2Valid) {
-                            // Perform swap
                             GroupTeam temp = p1.team2;
                             p1.team2 = p2.team2;
                             p2.team2 = temp;

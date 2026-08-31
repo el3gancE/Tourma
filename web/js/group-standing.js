@@ -528,73 +528,127 @@
             if (!qualifiedTeams || qualifiedTeams.length === 0) return [];
 
             var count = qualifiedTeams.length;
-            var numGroups = 0;
-            var groupLookup = {};
-            for (var i = 0; i < qualifiedTeams.length; i++) {
-                var gt = qualifiedTeams[i];
-                if (!groupLookup[gt.groupKey]) {
-                    groupLookup[gt.groupKey] = {};
-                    numGroups++;
+            var nextPowerOfTwo = function (n) {
+                if (n <= 1) return 2;
+                var p = 1;
+                while (p < n) p *= 2;
+                return p;
+            };
+
+            var generateSeedPairs = function (pow2) {
+                var rounds = Math.log2(pow2) - 1;
+                var pls = [1, 2];
+                for (var i = 0; i < rounds; i++) {
+                    var nextPls = [];
+                    var sum = Math.pow(2, i + 2) + 1;
+                    for (var j = 0; j < pls.length; j++) {
+                        nextPls.push(pls[j]);
+                        nextPls.push(sum - pls[j]);
+                    }
+                    pls = nextPls;
                 }
-                groupLookup[gt.groupKey][gt.groupRank] = gt.name;
+                var pairs = [];
+                for (var k = 0; k < pls.length; k += 2) {
+                    pairs.push([pls[k], pls[k + 1]]);
+                }
+                return pairs;
+            };
+
+            var bracketSize = nextPowerOfTwo(count);
+            var seedPairs = generateSeedPairs(bracketSize);
+            var numMatches = seedPairs.length;
+
+            // Sort qualified teams: Rank 1 first (A..Z), Rank 2 (A..Z), Wildcards by PTS
+            var sorted = qualifiedTeams.slice().sort(function (a, b) {
+                var rA = a.groupRank || 99;
+                var rB = b.groupRank || 99;
+                if (rA !== rB) return rA - rB;
+                var gA = a.groupKey || '';
+                var gB = b.groupKey || '';
+                return gA.localeCompare(gB);
+            });
+
+            // Assign top half to top slots of matches (seedPairs[m][0])
+            // and bottom half to bottom slots of matches (seedPairs[m][1])
+            var matchTops = [];
+            var matchBots = [];
+
+            for (var m = 0; m < numMatches; m++) {
+                matchTops.push((m < sorted.length) ? sorted[m] : null);
+            }
+            for (var m = numMatches; m < 2 * numMatches; m++) {
+                matchBots.push((m < sorted.length) ? sorted[m] : null);
             }
 
-            // CASE 1: 2 GROUPS (A, B) -> 4 Teams (Semi-Finals)
-            // Desired bracket matches:
-            // Match 1: 1A vs 2B
-            // Match 2: 1B vs 2A
-            if (numGroups === 2 && count === 4 && groupLookup['A'] && groupLookup['B']) {
-                var t1A = groupLookup['A'][1] || '1A';
-                var t2A = groupLookup['A'][2] || '2A';
-                var t1B = groupLookup['B'][1] || '1B';
-                var t2B = groupLookup['B'][2] || '2B';
-                // Bracket pairing (1 vs 4, 2 vs 3) -> 1A vs 2B, 1B vs 2A
-                return [t1A, t1B, t2A, t2B];
+            // ZERO-CONFLICT CONSTRAINT SOLVER:
+            // Guarantees matchTops[m].groupKey != matchBots[m].groupKey
+            var solveZeroConflict = function (tops, bots) {
+                var bestPerm = bots.slice();
+                var countConflicts = function (p) {
+                    var conf = 0;
+                    for (var i = 0; i < tops.length; i++) {
+                        if (tops[i] && p[i] && tops[i].groupKey && p[i].groupKey && tops[i].groupKey === p[i].groupKey) {
+                            conf++;
+                        }
+                    }
+                    return conf;
+                };
+
+                var current = bots.slice();
+                var minConflicts = countConflicts(current);
+                if (minConflicts === 0) return current;
+
+                for (var step = 0; step < 3000; step++) {
+                    var conflictIndices = [];
+                    for (var i = 0; i < tops.length; i++) {
+                        if (tops[i] && current[i] && tops[i].groupKey && current[i].groupKey && tops[i].groupKey === current[i].groupKey) {
+                            conflictIndices.push(i);
+                        }
+                    }
+                    if (conflictIndices.length === 0) {
+                        return current; // Zero conflict found!
+                    }
+
+                    var cIdx = conflictIndices[Math.floor(Math.random() * conflictIndices.length)];
+                    var swapWith = Math.floor(Math.random() * current.length);
+                    if (cIdx === swapWith) continue;
+
+                    var tmp = current[cIdx];
+                    current[cIdx] = current[swapWith];
+                    current[swapWith] = tmp;
+
+                    var newConf = countConflicts(current);
+                    if (newConf < minConflicts) {
+                        minConflicts = newConf;
+                        bestPerm = current.slice();
+                        if (minConflicts === 0) return bestPerm;
+                    } else if (newConf > minConflicts) {
+                        if (Math.random() > 0.15) {
+                            var rev = current[cIdx];
+                            current[cIdx] = current[swapWith];
+                            current[swapWith] = rev;
+                        }
+                    }
+                }
+
+                return bestPerm;
+            };
+
+            var resolvedBots = solveZeroConflict(matchTops, matchBots);
+
+            // Reconstruct ordered seed array [Seed 1, Seed 2, ..., Seed N]
+            var seedArray = new Array(bracketSize);
+            for (var m = 0; m < numMatches; m++) {
+                var topSlot = seedPairs[m][0]; // 1-indexed
+                var botSlot = seedPairs[m][1]; // 1-indexed
+                var topTeam = matchTops[m];
+                var botTeam = resolvedBots[m];
+
+                seedArray[topSlot - 1] = topTeam ? (topTeam.name || topTeam) : 'BYE';
+                seedArray[botSlot - 1] = botTeam ? (botTeam.name || botTeam) : 'BYE';
             }
 
-            // CASE 2: 2 GROUPS (A, B) -> 8 Teams (Top 4 each)
-            // Desired bracket matches:
-            // Match 1: 1A vs 4B
-            // Match 2: 2B vs 3A
-            // Match 3: 1B vs 4A
-            // Match 4: 2A vs 3B
-            if (numGroups === 2 && count === 8 && groupLookup['A'] && groupLookup['B']) {
-                var t1A = groupLookup['A'][1], t2A = groupLookup['A'][2], t3A = groupLookup['A'][3], t4A = groupLookup['A'][4];
-                var t1B = groupLookup['B'][1], t2B = groupLookup['B'][2], t3B = groupLookup['B'][3], t4B = groupLookup['B'][4];
-                return [t1A, t1B, t2A, t2B, t3A, t3B, t4A, t4B];
-            }
-
-            // CASE 3: 4 GROUPS (A, B, C, D) -> 8 Teams (Quarter-Finals)
-            // Desired bracket matches:
-            // Match 1: 1A vs 2B
-            // Match 2: 1C vs 2D
-            // Match 3: 1B vs 2A
-            // Match 4: 1D vs 2C
-            if (numGroups === 4 && count === 8 && groupLookup['A'] && groupLookup['B'] && groupLookup['C'] && groupLookup['D']) {
-                var t1A = groupLookup['A'][1], t2A = groupLookup['A'][2];
-                var t1B = groupLookup['B'][1], t2B = groupLookup['B'][2];
-                var t1C = groupLookup['C'][1], t2C = groupLookup['C'][2];
-                var t1D = groupLookup['D'][1], t2D = groupLookup['D'][2];
-                return [t1A, t1B, t1D, t1C, t2D, t2C, t2A, t2B];
-            }
-
-            // CASE 4: 4 GROUPS (A, B, C, D) -> 16 Teams (Round of 16)
-            if (numGroups === 4 && count === 16 && groupLookup['A'] && groupLookup['B'] && groupLookup['C'] && groupLookup['D']) {
-                var t1A = groupLookup['A'][1], t2A = groupLookup['A'][2], t3A = groupLookup['A'][3], t4A = groupLookup['A'][4];
-                var t1B = groupLookup['B'][1], t2B = groupLookup['B'][2], t3B = groupLookup['B'][3], t4B = groupLookup['B'][4];
-                var t1C = groupLookup['C'][1], t2C = groupLookup['C'][2], t3C = groupLookup['C'][3], t4C = groupLookup['C'][4];
-                var t1D = groupLookup['D'][1], t2D = groupLookup['D'][2], t3D = groupLookup['D'][3], t4D = groupLookup['D'][4];
-                return [t1A, t1B, t1D, t1C, t2D, t2C, t2A, t2B, t3A, t3B, t3D, t3C, t4D, t4C, t4A, t4B];
-            }
-
-            // General Fallback
-            var rank1 = [];
-            var others = [];
-            for (var i = 0; i < qualifiedTeams.length; i++) {
-                if (qualifiedTeams[i].groupRank === 1) rank1.push(qualifiedTeams[i].name);
-                else others.push(qualifiedTeams[i].name);
-            }
-            return rank1.concat(others);
+            return seedArray;
         }
     };
 })();
