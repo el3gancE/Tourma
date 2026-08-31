@@ -273,11 +273,20 @@
                 var tournamentType = '<%= tournamentType %>';
                 var currentStage = <%= currentStage %>;
 
-                // Resolve cutTarget from DB or localStorage first
-                if (!cutTarget || cutTarget <= 1) {
+                // Resolve advance count from config or localStorage
+                var advCount = <%= cutTarget %>;
+                if (!advCount || advCount <= 1) {
+                    try {
+                        var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
+                        if (multiCfg && multiCfg.stage1Config) {
+                            advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                        }
+                    } catch(e) {}
+                }
+                if (!advCount || advCount <= 1) {
                     var rawCut = localStorage.getItem('tourma_advance_count_' + tourneyId) ||
                                  localStorage.getItem('tourma_cut_target_' + tourneyId);
-                    if (rawCut) cutTarget = parseInt(rawCut, 10);
+                    if (rawCut) advCount = parseInt(rawCut, 10);
                 }
 
                 // Check stage2Teams from localStorage
@@ -291,10 +300,12 @@
                     finalTeams = preloadedTeams;
                 }
 
-                // Enforce cutTarget limit strictly in Stage 2
-                if (currentStage === 2 && cutTarget && cutTarget > 1 && finalTeams.length > cutTarget) {
-                    finalTeams = finalTeams.slice(0, cutTarget);
-                    try { localStorage.setItem('tourma_stage2_teams_' + tourneyId, JSON.stringify(finalTeams)); } catch(e) {}
+                // Enforce advanceCount limit strictly in Stage 2
+                if (currentStage === 2) {
+                    if (advCount && advCount > 1 && finalTeams.length > advCount) {
+                        finalTeams = finalTeams.slice(0, advCount);
+                    }
+                    cutTarget = 0; // Stage 2 plays to Grand Final champion!
                 }
 
                 window.TourmaDoubleElimination.init({

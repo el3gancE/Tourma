@@ -244,6 +244,25 @@
                             mat.team2.seed = seedLookup[mat.team2.name];
                         }
                     }
+
+                    // Auto-resolve any unlinked BYE winners to their next round slots
+                    for (var k = 0; k < mKeys.length; k++) {
+                        var mat = this.matchesMap[mKeys[k]];
+                        if (mat && mat.winnerId && mat.nextMatchId && this.matchesMap[mat.nextMatchId]) {
+                            var isT1 = (mat.winnerId === 'team1');
+                            var wTeam = isT1 ? mat.team1 : mat.team2;
+                            var nextM = this.matchesMap[mat.nextMatchId];
+                            if (wTeam && wTeam.name && wTeam.name !== 'BYE') {
+                                if (mat.nextMatchSlot === 1 && (!nextM.team1.name || nextM.team1.name.startsWith('W #') || nextM.team1.name === 'TBD')) {
+                                    nextM.team1.name = wTeam.name;
+                                    nextM.team1.seed = wTeam.seed;
+                                } else if (mat.nextMatchSlot === 2 && (!nextM.team2.name || nextM.team2.name.startsWith('W #') || nextM.team2.name === 'TBD')) {
+                                    nextM.team2.name = wTeam.name;
+                                    nextM.team2.seed = wTeam.seed;
+                                }
+                            }
+                        }
+                    }
                 }
             } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
                 // GENERATE FRESH BRACKET

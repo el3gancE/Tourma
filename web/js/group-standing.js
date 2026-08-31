@@ -137,7 +137,7 @@
                     var btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = 'rr-round-tab-btn' + (self.selectedGroupFilter === gKey ? ' active' : '');
-                    btn.innerText = 'Bảng ' + gKey;
+                    btn.innerText = gKey.startsWith('Bảng') ? gKey : ('Bảng ' + gKey);
                     btn.onclick = function () {
                         self.selectedGroupFilter = gKey;
                         self.renderGroupFilterPills();
@@ -447,6 +447,154 @@
 
         render: function (groups, groupMatches, rules) {
             this.renderAllGroupStandings('gsStandingsContainer', groups, groupMatches, rules);
+        },
+
+        getQualifiedTeamsCrossover: function (tournamentId, groups, groupMatches, totalAdvanceCount) {
+            this.groups = groups || this.groups || {};
+            this.groupMatches = groupMatches || this.groupMatches || {};
+            if (totalAdvanceCount) this.rules.advanceCount = Number(totalAdvanceCount);
+
+            var standings = this.calculateAllGroupStandings();
+            var groupKeys = Object.keys(standings).sort();
+            var numGroups = groupKeys.length || 1;
+            var advCount = this.rules.advanceCount || 4;
+
+            var directPerGroup = Math.floor(advCount / numGroups);
+            var remainder = advCount % numGroups;
+
+            var qualifiedList = [];
+
+            // 1. Direct qualifiers
+            for (var k = 0; k < groupKeys.length; k++) {
+                var gKey = groupKeys[k];
+                var gList = standings[gKey] || [];
+                var limit = Math.min(directPerGroup, gList.length);
+                for (var i = 0; i < limit; i++) {
+                    var tm = gList[i];
+                    qualifiedList.push({
+                        id: tm.teamId,
+                        name: tm.name,
+                        groupKey: gKey,
+                        groupRank: i + 1,
+                        points: tm.pts,
+                        goalDifference: tm.gd,
+                        goalsFor: tm.gf,
+                        isWildcard: false
+                    });
+                }
+            }
+
+            // 2. Wildcards
+            if (remainder > 0) {
+                var wildcardCandidates = [];
+                var wildcardRankIndex = directPerGroup;
+
+                for (var k = 0; k < groupKeys.length; k++) {
+                    var gKey = groupKeys[k];
+                    var gList = standings[gKey] || [];
+                    if (gList.length > wildcardRankIndex) {
+                        var candidate = gList[wildcardRankIndex];
+                        wildcardCandidates.push({
+                            id: candidate.teamId,
+                            name: candidate.name,
+                            groupKey: gKey,
+                            groupRank: wildcardRankIndex + 1,
+                            points: candidate.pts,
+                            goalDifference: candidate.gd,
+                            goalsFor: candidate.gf,
+                            isWildcard: true
+                        });
+                    }
+                }
+
+                wildcardCandidates.sort(function (a, b) {
+                    if (b.points !== a.points) return b.points - a.points;
+                    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+                    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                    return (a.name || '').localeCompare(b.name || '');
+                });
+
+                var takeCount = Math.min(remainder, wildcardCandidates.length);
+                for (var w = 0; w < takeCount; w++) {
+                    qualifiedList.push(wildcardCandidates[w]);
+                }
+            }
+
+            // 3. Dynamic Crossover Pairing
+            return this.pairCrossoverForKnockout(qualifiedList);
+        },
+
+        pairCrossoverForKnockout: function (qualifiedTeams) {
+            if (!qualifiedTeams || qualifiedTeams.length === 0) return [];
+
+            var count = qualifiedTeams.length;
+            var numGroups = 0;
+            var groupLookup = {};
+            for (var i = 0; i < qualifiedTeams.length; i++) {
+                var gt = qualifiedTeams[i];
+                if (!groupLookup[gt.groupKey]) {
+                    groupLookup[gt.groupKey] = {};
+                    numGroups++;
+                }
+                groupLookup[gt.groupKey][gt.groupRank] = gt.name;
+            }
+
+            // CASE 1: 2 GROUPS (A, B) -> 4 Teams (Semi-Finals)
+            // Desired bracket matches:
+            // Match 1: 1A vs 2B
+            // Match 2: 1B vs 2A
+            if (numGroups === 2 && count === 4 && groupLookup['A'] && groupLookup['B']) {
+                var t1A = groupLookup['A'][1] || '1A';
+                var t2A = groupLookup['A'][2] || '2A';
+                var t1B = groupLookup['B'][1] || '1B';
+                var t2B = groupLookup['B'][2] || '2B';
+                // Bracket pairing (1 vs 4, 2 vs 3) -> 1A vs 2B, 1B vs 2A
+                return [t1A, t1B, t2A, t2B];
+            }
+
+            // CASE 2: 2 GROUPS (A, B) -> 8 Teams (Top 4 each)
+            // Desired bracket matches:
+            // Match 1: 1A vs 4B
+            // Match 2: 2B vs 3A
+            // Match 3: 1B vs 4A
+            // Match 4: 2A vs 3B
+            if (numGroups === 2 && count === 8 && groupLookup['A'] && groupLookup['B']) {
+                var t1A = groupLookup['A'][1], t2A = groupLookup['A'][2], t3A = groupLookup['A'][3], t4A = groupLookup['A'][4];
+                var t1B = groupLookup['B'][1], t2B = groupLookup['B'][2], t3B = groupLookup['B'][3], t4B = groupLookup['B'][4];
+                return [t1A, t1B, t2A, t2B, t3A, t3B, t4A, t4B];
+            }
+
+            // CASE 3: 4 GROUPS (A, B, C, D) -> 8 Teams (Quarter-Finals)
+            // Desired bracket matches:
+            // Match 1: 1A vs 2B
+            // Match 2: 1C vs 2D
+            // Match 3: 1B vs 2A
+            // Match 4: 1D vs 2C
+            if (numGroups === 4 && count === 8 && groupLookup['A'] && groupLookup['B'] && groupLookup['C'] && groupLookup['D']) {
+                var t1A = groupLookup['A'][1], t2A = groupLookup['A'][2];
+                var t1B = groupLookup['B'][1], t2B = groupLookup['B'][2];
+                var t1C = groupLookup['C'][1], t2C = groupLookup['C'][2];
+                var t1D = groupLookup['D'][1], t2D = groupLookup['D'][2];
+                return [t1A, t1B, t1D, t1C, t2D, t2C, t2A, t2B];
+            }
+
+            // CASE 4: 4 GROUPS (A, B, C, D) -> 16 Teams (Round of 16)
+            if (numGroups === 4 && count === 16 && groupLookup['A'] && groupLookup['B'] && groupLookup['C'] && groupLookup['D']) {
+                var t1A = groupLookup['A'][1], t2A = groupLookup['A'][2], t3A = groupLookup['A'][3], t4A = groupLookup['A'][4];
+                var t1B = groupLookup['B'][1], t2B = groupLookup['B'][2], t3B = groupLookup['B'][3], t4B = groupLookup['B'][4];
+                var t1C = groupLookup['C'][1], t2C = groupLookup['C'][2], t3C = groupLookup['C'][3], t4C = groupLookup['C'][4];
+                var t1D = groupLookup['D'][1], t2D = groupLookup['D'][2], t3D = groupLookup['D'][3], t4D = groupLookup['D'][4];
+                return [t1A, t1B, t1D, t1C, t2D, t2C, t2A, t2B, t3A, t3B, t3D, t3C, t4D, t4C, t4A, t4B];
+            }
+
+            // General Fallback
+            var rank1 = [];
+            var others = [];
+            for (var i = 0; i < qualifiedTeams.length; i++) {
+                if (qualifiedTeams[i].groupRank === 1) rank1.push(qualifiedTeams[i].name);
+                else others.push(qualifiedTeams[i].name);
+            }
+            return rank1.concat(others);
         }
     };
 })();

@@ -85,18 +85,30 @@
         },
 
         addNewGroup: function () {
-            var groupLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'];
+            var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             var nextName = '';
 
-            for (var i = 0; i < groupLetters.length; i++) {
-                if (!this.groups[groupLetters[i]]) {
-                    nextName = groupLetters[i];
+            for (var i = 0; i < 26; i++) {
+                var charKey = letters.charAt(i);
+                if (!this.groups[charKey]) {
+                    nextName = charKey;
                     break;
                 }
             }
             if (!nextName) {
+                for (var i = 26; i < 702; i++) {
+                    var first = letters.charAt(Math.floor(i / 26) - 1);
+                    var second = letters.charAt(i % 26);
+                    var doubleKey = first + second;
+                    if (!this.groups[doubleKey]) {
+                        nextName = doubleKey;
+                        break;
+                    }
+                }
+            }
+            if (!nextName) {
                 var existingKeys = Object.keys(this.groups);
-                nextName = 'Bảng ' + (existingKeys.length + 1);
+                nextName = String(existingKeys.length + 1);
             }
 
             this.groups[nextName] = [];
@@ -107,7 +119,8 @@
         deleteGroup: function (gKey) {
             if (!this.groups[gKey]) return;
 
-            if (confirm('Bạn có chắc chắn muốn xóa Bảng ' + gKey + '? Các đội trong bảng này sẽ quay về danh sách đội chưa xếp.')) {
+            var displayName = gKey.startsWith('Bảng') ? gKey : ('Bảng ' + gKey);
+            if (confirm('Bạn có chắc chắn muốn xóa ' + displayName + '? Các đội trong bảng này sẽ quay về danh sách đội chưa xếp.')) {
                 delete this.groups[gKey];
                 this.saveGroupsState();
                 this.renderWorkspace();
