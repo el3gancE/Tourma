@@ -173,7 +173,36 @@
                 return (swTotal > 0 && swDone === swTotal);
             }
 
+            // 5. DOUBLE ELIMINATION (Multi-Stage Stage 1 with cutTarget)
+            if (format === 'DOUBLE_ELIMINATION' && matchesMap) {
+                var cutTarget = (config && config.cutTarget) ? config.cutTarget : 0;
+                if (!cutTarget) {
+                    try {
+                        var rawDE = localStorage.getItem('tourma_advance_count_' + tid) || localStorage.getItem('tourma_cut_target_' + tid);
+                        if (rawDE) cutTarget = parseInt(rawDE, 10);
+                    } catch(e) {}
+                }
+                if (!cutTarget || cutTarget <= 1) return false;
+
+                // Primary signal: checkAndTriggerStage2Cut already sets tourma_stage1_completed_ when cut is done
+                try {
+                    if (localStorage.getItem('tourma_stage1_completed_' + tid) === 'true') return true;
+                } catch(e) {}
+
+                // Secondary signal: stage2 teams have been created with correct count
+                try {
+                    var s2Raw = localStorage.getItem('tourma_stage2_teams_' + tid);
+                    if (s2Raw) {
+                        var s2Teams = JSON.parse(s2Raw);
+                        if (Array.isArray(s2Teams) && s2Teams.length >= cutTarget) return true;
+                    }
+                } catch(e) {}
+
+                return false;
+            }
+
             return false;
+
         },
 
         /**
@@ -301,9 +330,18 @@
                 localStorage.setItem('tourma_stage1_locked_' + tid, 'true');
                 localStorage.setItem('tourma_stage1_completed_' + tid, 'true');
 
-                // 2. Trigger Stage 2 cut generation if Group Stage
+                // 2. Trigger Stage 2 cut generation across format engines
                 if (window.TourmaGroupStage && typeof window.TourmaGroupStage.checkAndTriggerStage2Cut === 'function') {
                     window.TourmaGroupStage.checkAndTriggerStage2Cut();
+                }
+                if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.checkAndTriggerStage2Cut === 'function') {
+                    window.SingleEliminationEngine.checkAndTriggerStage2Cut();
+                }
+                if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.checkAndTriggerStage2Cut === 'function') {
+                    window.TourmaDoubleElimination.checkAndTriggerStage2Cut();
+                }
+                if (window.TourmaSwiss && typeof window.TourmaSwiss.checkSwissStageCompletion === 'function') {
+                    window.TourmaSwiss.checkSwissStageCompletion();
                 }
 
                 // 3. Resolve Stage 2 URL
@@ -416,17 +454,46 @@
          * Apply or remove disabled states from inputs/buttons when locked
          */
         applyLockToUI: function (isLocked) {
+            if (isLocked) {
+                document.body.classList.add('stage1-is-locked');
+                window.TourmaQuickMode = false;
+                if (window.SingleEliminationEngine) window.SingleEliminationEngine.isQuickMode = false;
+                if (window.TourmaDoubleElimination) window.TourmaDoubleElimination.isQuickMode = false;
+            } else {
+                document.body.classList.remove('stage1-is-locked');
+            }
+
+            // Quick mode buttons
+            var qBtns = document.querySelectorAll('#singleBtnQuickMode, #deBtnQuickMode, .btn-quick-mode-toggle');
+            for (var q = 0; q < qBtns.length; q++) {
+                if (isLocked) {
+                    qBtns[q].classList.remove('active');
+                    var statusSpan = qBtns[q].querySelector('.quick-mode-status-text');
+                    if (statusSpan) statusSpan.textContent = 'OFF';
+                    qBtns[q].style.opacity = '0.5';
+                    qBtns[q].style.pointerEvents = 'none';
+                } else {
+                    qBtns[q].style.opacity = '1';
+                    qBtns[q].style.pointerEvents = 'auto';
+                }
+            }
+
             // Disable random score buttons, edit score inputs if locked
             var scoreInputs = document.querySelectorAll('.match-score-input, .score-input, .group-score-input');
             for (var i = 0; i < scoreInputs.length; i++) {
                 scoreInputs[i].disabled = isLocked;
             }
 
-            var randomBtns = document.querySelectorAll('.btn-random-scores, .btn-random-group, .btn-auto-score');
+            var randomBtns = document.querySelectorAll('.btn-random-scores, .btn-random-round, .btn-random-group, .btn-auto-score');
             for (var j = 0; j < randomBtns.length; j++) {
                 randomBtns[j].disabled = isLocked;
-                if (isLocked) randomBtns[j].style.opacity = '0.5';
-                else randomBtns[j].style.opacity = '1';
+                if (isLocked) {
+                    randomBtns[j].style.opacity = '0.5';
+                    randomBtns[j].style.pointerEvents = 'none';
+                } else {
+                    randomBtns[j].style.opacity = '1';
+                    randomBtns[j].style.pointerEvents = 'auto';
+                }
             }
         },
 

@@ -1049,10 +1049,11 @@
             );
         },
 
-        /**
-         * Open / Close / Confirm Reset Bracket Modal
-         */
         openResetModal: function () {
+            if (this.currentStage === 1 && window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(this.tournamentId)) {
+                alert('Vòng 1 đã hoàn tất và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa để sửa" trên thanh thông báo nếu bạn muốn thiết lập lại.');
+                return;
+            }
             if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
                 alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset giải.');
                 return;
@@ -1351,6 +1352,10 @@
         },
 
         openResetModal: function () {
+            if (this.currentStage === 1 && window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(this.tournamentId)) {
+                alert('Vòng 1 đã hoàn tất và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa để sửa" trên thanh thông báo nếu bạn muốn thiết lập lại.');
+                return;
+            }
             if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
                 alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset nhánh đấu.');
                 return;

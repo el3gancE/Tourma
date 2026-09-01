@@ -574,9 +574,22 @@
 
   // Standalone Reset Matches Handler
   window.resetSwissMatches = function () {
-    initFullSwissMatchesStructure();
     var stageParam = new URLSearchParams(window.location.search).get('stage');
     var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
+    if (currentStage === 1 && window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(tournamentId)) {
+      alert('Vòng 1 đã hoàn tất và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa để sửa" trên thanh thông báo nếu bạn muốn thiết lập lại.');
+      return;
+    }
+    if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+      alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset giải.');
+      return;
+    }
+    if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ tỷ số và đặt lại giai đoạn Swiss về Vòng 1 ban đầu?')) {
+      return;
+    }
+    var storageKey = (currentStage === 2) ? ("tourma_swiss_matches_stage2_" + tournamentId) : ("tourma_swiss_matches_" + tournamentId);
+    try { localStorage.removeItem(storageKey); } catch(e) {}
+    initFullSwissMatchesStructure();
     if (currentStage === 1) {
       try {
         localStorage.removeItem('tourma_stage2_teams_' + tournamentId);
@@ -584,6 +597,7 @@
         localStorage.removeItem('tourma_matches_stage2_' + tournamentId);
         localStorage.removeItem('tourma_de_matches_' + tournamentId);
         localStorage.removeItem('tourma_rr_matches_' + tournamentId);
+        localStorage.removeItem('tourma_stage1_completed_' + tournamentId);
         var mCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
         if (mCfgRaw) {
           var mCfg = JSON.parse(mCfgRaw);
@@ -1343,18 +1357,23 @@
     });
   }
 
-  window.resetSwissMatches = function() {
-    if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ tỷ số và đặt lại giai đoạn Swiss về Vòng 1 ban đầu?')) {
-      return;
-    }
-    localStorage.removeItem("tourma_swiss_matches_" + tournamentId);
-    initFullSwissMatchesStructure();
-    if (currentViewMode === 'LIST') renderListView();
-    else renderBracketView();
+  // Export Swiss Engine to window
+  window.TourmaSwiss = {
+    tournamentId: tournamentId,
+    init: initSwissEngine,
+    checkSwissStageCompletion: checkSwissStageCompletion,
+    resetSwissMatches: window.resetSwissMatches,
+    randomizeSwissMatches: window.randomizeSwissMatches,
+    toggleQuickMode: window.toggleSwissQuickMode,
+    switchViewMode: window.switchSwissViewMode
   };
 
-  document.addEventListener('DOMContentLoaded', function () {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      initSwissEngine();
+    });
+  } else {
     initSwissEngine();
-  });
+  }
 
 })();

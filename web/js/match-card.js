@@ -114,13 +114,27 @@
                     (hasBye ? '' : ('<span class="match-list-status ' + statusClass + '">' + statusLabel + '</span>')) +
                 '</div>';
 
+            var checkCardLocked = function () {
+                // Delegate to TourmaScoreModal.isLocked which properly checks multi-stage guard
+                if (window.TourmaScoreModal && typeof window.TourmaScoreModal.isLocked === 'function') {
+                    return window.TourmaScoreModal.isLocked(null);
+                }
+                // Fallback: only check final champion lock
+                if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
+                var _tid = window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null;
+                if (_tid) {
+                    try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') return true; } catch(e) {}
+                }
+                return false;
+            };
+
             // Quick Mode Team Side Click Handlers (No path hover in list mode)
             var t1Side = card.querySelector('.match-team-side.team-left');
             var t2Side = card.querySelector('.match-team-side.team-right');
 
             if (t1Side) {
                 t1Side.addEventListener('click', function (e) {
-                    if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return;
+                    if (checkCardLocked()) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
@@ -135,7 +149,7 @@
 
             if (t2Side) {
                 t2Side.addEventListener('click', function (e) {
-                    if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return;
+                    if (checkCardLocked()) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
@@ -150,13 +164,7 @@
 
             // Attach Click Handler to Entire Card (Only if playable and NOT Quick Mode)
             card.addEventListener('click', function () {
-                // Check lock directly from localStorage - most reliable source of truth
-                var _tid = window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null;
-                var _locked = (window.FinalStagePopup && window.FinalStagePopup.isLocked);
-                if (!_locked && _tid) {
-                    try { _locked = localStorage.getItem('tourma_final_locked_' + _tid) === 'true'; } catch(e) {}
-                }
-                if (_locked) return;
+                if (checkCardLocked()) return;
 
                 if (!isPlayable) {
                     return; // Prevent clicking unconfirmed / BYE matches

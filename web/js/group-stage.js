@@ -557,6 +557,11 @@
         },
 
         randomizeAllMatches: function () {
+            if (window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(this.tournamentId)) {
+                alert('Vòng 1 đã hoàn tất và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa để sửa" trên thanh thông báo.');
+                return;
+            }
+
             var groupKeys = Object.keys(this.groupMatches);
             if (groupKeys.length === 0) {
                 alert('Chưa có trận đấu nào để sinh tỉ số ngẫu nhiên!');
@@ -600,6 +605,11 @@
         },
 
         resetAllMatches: function () {
+            if (window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(this.tournamentId)) {
+                alert('Vòng 1 đã hoàn tất và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa để sửa" trên thanh thông báo nếu bạn muốn thiết lập lại.');
+                return;
+            }
+
             if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ kết quả thi đấu và đưa giải đấu về từ đầu?')) {
                 return;
             }
@@ -623,6 +633,10 @@
         },
 
         randomizeRoundMatches: function (gKey, rNum, rMatches, targetWinScore) {
+            if (window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(this.tournamentId)) {
+                alert('Vòng 1 đã hoàn tất và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa để sửa" trên thanh thông báo.');
+                return;
+            }
             if (!rMatches || rMatches.length === 0) return;
 
             for (var i = 0; i < rMatches.length; i++) {
