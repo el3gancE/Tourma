@@ -153,22 +153,43 @@
 
             // 4. SWISS
             if ((format === 'SWISS' || format === 'SWISS_LITE') && matchesMap) {
+                // Primary: Swiss cut complete (8 teams qualified)
+                if (teamsList && teamsList.length > 0 && window.TourmaSwissAlgorithm && typeof window.TourmaSwissAlgorithm.calculateStandings === 'function') {
+                    var swStandings = window.TourmaSwissAlgorithm.calculateStandings(teamsList, matchesMap);
+                    var swQualified = swStandings.filter(function (st) { return st.qualified; });
+                    if (swQualified.length >= 8) return true;
+                }
+
+                // Fallback: all playable matches have decisive scores
                 var swKeys = Object.keys(matchesMap);
                 var swTotal = 0;
                 var swDone = 0;
                 for (var s = 0; s < swKeys.length; s++) {
                     var swm = matchesMap[swKeys[s]];
                     if (!swm) continue;
-                    var st1 = swm.team1 ? swm.team1.name : '';
-                    var st2 = swm.team2 ? swm.team2.name : '';
-                    if (!st1 || !st2 || st1 === 'BYE' || st2 === 'BYE') continue;
+                    var st1 = swm.team1 ? (swm.team1.name || swm.team1) : '';
+                    var st2 = swm.team2 ? (swm.team2.name || swm.team2) : '';
+                    if (!st1 || !st2 || st1 === 'TBD' || st2 === 'TBD' || st1 === 'BYE' || st2 === 'BYE') continue;
 
                     swTotal++;
-                    var ss1 = (swm.team1 && swm.team1.score !== '' && swm.team1.score !== null && !isNaN(Number(swm.team1.score))) ? Number(swm.team1.score) : null;
-                    var ss2 = (swm.team2 && swm.team2.score !== '' && swm.team2.score !== null && !isNaN(Number(swm.team2.score))) ? Number(swm.team2.score) : null;
-                    if (ss1 !== null && ss2 !== null) {
-                        swDone++;
+                    var ss1 = null;
+                    var ss2 = null;
+                    if (swm.team1Score !== '' && swm.team1Score !== null && swm.team1Score !== undefined && !isNaN(Number(swm.team1Score))) {
+                        ss1 = Number(swm.team1Score);
+                    } else if (swm.team1 && swm.team1.score !== '' && swm.team1.score !== null && !isNaN(Number(swm.team1.score))) {
+                        ss1 = Number(swm.team1.score);
                     }
+                    if (swm.team2Score !== '' && swm.team2Score !== null && swm.team2Score !== undefined && !isNaN(Number(swm.team2Score))) {
+                        ss2 = Number(swm.team2Score);
+                    } else if (swm.team2 && swm.team2.score !== '' && swm.team2.score !== null && !isNaN(Number(swm.team2.score))) {
+                        ss2 = Number(swm.team2.score);
+                    }
+
+                    var isMatchDone = ss1 !== null && ss2 !== null && ss1 !== ss2;
+                    if (!isMatchDone && (swm.status === 'COMPLETED' || swm.status === 'DONE') && ss1 !== null && ss2 !== null) {
+                        isMatchDone = true;
+                    }
+                    if (isMatchDone) swDone++;
                 }
                 return (swTotal > 0 && swDone === swTotal);
             }

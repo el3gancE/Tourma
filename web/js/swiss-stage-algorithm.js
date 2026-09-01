@@ -39,7 +39,7 @@
       if (matchesMap && typeof matchesMap === 'object') {
         Object.keys(matchesMap).forEach(function (key) {
           var m = matchesMap[key];
-          if (!m || m.status !== 'COMPLETED') return;
+          if (!m || (m.status !== 'COMPLETED' && m.status !== 'DONE')) return;
 
           var t1Name = m.team1 ? (m.team1.name || m.team1) : m.team1Name;
           var t2Name = m.team2 ? (m.team2.name || m.team2) : m.team2Name;

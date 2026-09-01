@@ -455,9 +455,9 @@
     var stageParam = new URLSearchParams(window.location.search).get('stage');
     var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
 
-    // Check if 8 teams qualified
-    if (qualifiedTeams.length === 8) {
-      if (currentStage === 1) {
+    if (currentStage === 1) {
+      // Check if 8 teams qualified — trigger Stage 2 cut pipeline
+      if (qualifiedTeams.length === 8) {
         var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
         if (multiCfgRaw) {
           try {
@@ -544,30 +544,32 @@
               multiCfg.stage2MatchesCreated = true;
               localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(multiCfg));
             }
-        // Multi-Stage Stage 1: Trigger StageEndPopup
-        if (window.StageEndPopup) {
-          window.StageEndPopup.update(
-            tournamentId,
-            'SWISS',
-            matchesMap,
-            teamsList,
-            null,
-            null,
-            1
-          );
+          } catch(e) {}
         }
-      } else {
-        // Stage 2 Swiss or Single Stage Swiss -> Check FinalStagePopup
-        if (window.FinalStagePopup && standings.length > 0) {
-          window.FinalStagePopup.checkAndRender(
-            tournamentId,
-            'SWISS',
-            matchesMap,
-            teamsList,
-            null,
-            null
-          );
-        }
+      }
+      // Multi-Stage Stage 1: always refresh StageEndPopup (show confirm / locked banner)
+      if (window.StageEndPopup) {
+        window.StageEndPopup.update(
+          tournamentId,
+          'SWISS',
+          matchesMap,
+          teamsList,
+          null,
+          null,
+          1
+        );
+      }
+    } else {
+      // Stage 2 Swiss or Single Stage Swiss -> Check FinalStagePopup
+      if (window.FinalStagePopup && standings.length > 0) {
+        window.FinalStagePopup.checkAndRender(
+          tournamentId,
+          'SWISS',
+          matchesMap,
+          teamsList,
+          null,
+          null
+        );
       }
     }
   }
@@ -1204,7 +1206,7 @@
 
           poolHeader.appendChild(poolTitle);
           poolHeader.appendChild(poolControls);
-          var cardColorClass = getPoolCardClass(pKey);
+          poolCard.appendChild(poolHeader);
           var themeColor = (pKey === '2-0' || pKey === '2-1') ? 'green' : ((pKey === '0-2' || pKey === '1-2') ? 'red' : ((pKey === '2-2') ? 'gold' : 'mint'));
 
           poolMatches.forEach(function (m) {
