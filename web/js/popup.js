@@ -13,6 +13,60 @@
         onSaveCallback: null,
 
         /**
+         * Check if tournament editing is currently locked (Stage 1 locked or Final Stage champion locked)
+         */
+        isLocked: function (tournamentId) {
+            var tid = tournamentId;
+            if (!tid) {
+                try {
+                    var urlParams = new URLSearchParams(window.location.search);
+                    tid = urlParams.get('id');
+                } catch(e) {}
+            }
+            if (!tid && window.FinalStagePopup) tid = window.FinalStagePopup.tournamentId;
+            if (!tid && window.StageEndPopup) tid = window.StageEndPopup.tournamentId;
+            if (!tid && window.SingleEliminationEngine) tid = window.SingleEliminationEngine.tournamentId;
+            if (!tid && window.TourmaDoubleElimination) tid = window.TourmaDoubleElimination.tournamentId;
+            if (!tid && window.TourmaRoundRobin) tid = window.TourmaRoundRobin.tournamentId;
+            if (!tid && window.TourmaSwiss) tid = window.TourmaSwiss.tournamentId;
+            if (!tid && window.TourmaGroupStage) tid = window.TourmaGroupStage.tournamentId;
+
+            if (!tid) return false;
+
+            // 1. Final champion lock (always applies regardless of tournament type)
+            try {
+                if (localStorage.getItem('tourma_final_locked_' + tid) === 'true') return true;
+            } catch (e) {}
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
+
+            // 2. Stage 1 lock — ONLY for Multi-Stage tournaments, ONLY when currently in Stage 1
+            var stageParam = null;
+            try {
+                stageParam = new URLSearchParams(window.location.search).get('stage');
+            } catch(e) {}
+            var isStage2 = (stageParam === '2');
+
+            if (!isStage2) {
+                // Check if this is actually a Multi-Stage tournament
+                var isMultiStage = false;
+                try {
+                    isMultiStage = (
+                        localStorage.getItem('tourma_type_' + tid) === 'MULTI_STAGE' ||
+                        !!localStorage.getItem('tourma_multi_config_' + tid)
+                    );
+                } catch(e) {}
+
+                if (isMultiStage) {
+                    try {
+                        if (localStorage.getItem('tourma_stage1_locked_' + tid) === 'true') return true;
+                    } catch (e) {}
+                }
+            }
+
+            return false;
+        },
+
+        /**
          * Open Score Editing Modal with initial match data
          * @param {Object} matchData - { matchId, roundName, team1Name, team1Seed, team1Score, team2Name, team2Seed, team2Score, winnerId, status, allowDraw }
          * @param {Function} callback - Optional callback on save
@@ -20,15 +74,8 @@
         open: function (matchData, callback) {
             if (!matchData) return;
 
-            // Check lock directly from localStorage for guaranteed correctness
-            var tid = window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null;
-            var isLockedLS = false;
-            if (tid) {
-                try { isLockedLS = localStorage.getItem('tourma_final_locked_' + tid) === 'true'; } catch(e) {}
-            }
-            if (isLockedLS || (window.FinalStagePopup && window.FinalStagePopup.isLocked)) {
-                // Sync the isLocked flag just in case it drifted
-                if (window.FinalStagePopup) window.FinalStagePopup.isLocked = true;
+            // Check lock directly from localStorage & memory for guaranteed correctness
+            if (this.isLocked(matchData.tournamentId)) {
                 return;
             }
 
