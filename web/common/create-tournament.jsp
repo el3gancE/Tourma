@@ -1,4 +1,11 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%
+    String sIdParam = request.getParameter("seriesId");
+    if (sIdParam != null && !sIdParam.trim().isEmpty()) {
+        response.sendRedirect(request.getContextPath() + "/rolling/create-tournament?seriesId=" + sIdParam.trim());
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html lang="vi">
     <head>

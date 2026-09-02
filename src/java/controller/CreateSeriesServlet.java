@@ -85,8 +85,12 @@ public class CreateSeriesServlet extends HttpServlet {
                 System.err.println("Failed to insert series into database: " + seriesId);
             }
 
-            // 4. Redirect to My Series List
-            response.sendRedirect(request.getContextPath() + "/my-series");
+            // 4. Redirect to Dashboard based on model type
+            if ("ROLLING_WINDOW".equalsIgnoreCase(rankingModel)) {
+                response.sendRedirect(request.getContextPath() + "/rolling/dashboard?id=" + seriesId);
+            } else {
+                response.sendRedirect(request.getContextPath() + "/my-series");
+            }
 
         } catch (Exception e) {
             e.printStackTrace();

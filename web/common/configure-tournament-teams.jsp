@@ -1,9 +1,26 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="dao.ParticipantDAO"%>
 <%@page import="model.Team"%>
 <%@page import="java.util.List"%>
 <%
     String tournamentId = request.getParameter("id");
+    String seriesIdParam = request.getParameter("seriesId");
+    if (seriesIdParam == null || seriesIdParam.trim().isEmpty()) {
+        if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+            try {
+                dao.TournamentDAO tDaoCheck = new dao.TournamentDAO();
+                model.Tournament tObj = tDaoCheck.getTournamentById(tournamentId);
+                if (tObj != null && tObj.getSeriesId() != null && !tObj.getSeriesId().trim().isEmpty()) {
+                    seriesIdParam = tObj.getSeriesId();
+                }
+            } catch (Exception ignore) {}
+        }
+    }
+    if (seriesIdParam != null && !seriesIdParam.trim().isEmpty()) {
+        response.sendRedirect(request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + seriesIdParam.trim());
+        return;
+    }
+
     String tourneyFormat = request.getParameter("format");
     String advSeatsParam = request.getParameter("advancingSeatsCount");
     String tournamentTypeParam = request.getParameter("tournamentType");

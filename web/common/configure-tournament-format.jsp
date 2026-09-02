@@ -1,17 +1,25 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="dao.TournamentDAO"%>
-<%@page import="model.Tournament"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="dao.TournamentDAO, model.Tournament"%>
 <%
     String tournamentId = request.getParameter("id");
     String currentFormat = request.getParameter("format");
     String currentType = request.getParameter("type"); // SINGLE_STAGE or MULTI_STAGE
-    if ((currentFormat == null || currentFormat.trim().isEmpty()) && tournamentId != null && !tournamentId.trim().isEmpty()) {
+    String seriesIdParam = request.getParameter("seriesId");
+
+    if (tournamentId != null && !tournamentId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tournamentId);
             if (t != null) {
-                if (t.getFormat() != null) currentFormat = t.getFormat();
-                if (t.getTournamentType() != null) currentType = t.getTournamentType();
+                if ((currentFormat == null || currentFormat.trim().isEmpty()) && t.getFormat() != null) {
+                    currentFormat = t.getFormat();
+                }
+                if ((currentType == null || currentType.trim().isEmpty()) && t.getTournamentType() != null) {
+                    currentType = t.getTournamentType();
+                }
+                if ((seriesIdParam == null || seriesIdParam.trim().isEmpty()) && t.getSeriesId() != null) {
+                    seriesIdParam = t.getSeriesId();
+                }
             }
         } catch (Exception e) {
             // Keep empty
@@ -23,6 +31,10 @@
     if (currentType == null || currentType.trim().isEmpty()) {
         currentType = "SINGLE_STAGE";
     }
+
+    String formActionUrl = (seriesIdParam != null && !seriesIdParam.trim().isEmpty())
+        ? (request.getContextPath() + "/rolling/tournament-teams")
+        : (request.getContextPath() + "/common/configure-tournament-teams.jsp");
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -61,6 +73,7 @@
     <jsp:include page="/common/component/sidebar.jsp">
         <jsp:param name="activeStep" value="format" />
         <jsp:param name="id" value="${param.id}" />
+        <jsp:param name="seriesId" value="${param.seriesId}" />
     </jsp:include>
 
     <!-- Main Content Container Shifted Right by Sidebar -->
@@ -89,8 +102,9 @@
                 Chọn thể thức thi đấu
             </h1>
 
-            <form id="configureFormatForm" action="${pageContext.request.contextPath}/common/configure-tournament-teams.jsp" method="GET" onsubmit="return validateAndSubmitFormat(event)">
+            <form id="configureFormatForm" action="<%= formActionUrl %>" method="GET" onsubmit="return validateAndSubmitFormat(event)">
                 <input type="hidden" name="id" value="<%= (tournamentId != null) ? tournamentId : "" %>">
+                <input type="hidden" name="seriesId" value="<%= (seriesIdParam != null) ? seriesIdParam : "" %>">
                 <input type="hidden" id="selectedTournamentType" name="tournamentType" value="<%= currentType %>">
                 <input type="hidden" id="selectedFormat" name="format" value="<%= currentFormat %>">
                 

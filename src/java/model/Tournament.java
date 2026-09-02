@@ -88,6 +88,15 @@ public class Tournament {
     public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
 
+    private Integer seriesRewardPoints;
+    private String seriesPointsConfig;
+
+    public Integer getSeriesRewardPoints() { return seriesRewardPoints; }
+    public void setSeriesRewardPoints(Integer seriesRewardPoints) { this.seriesRewardPoints = seriesRewardPoints; }
+
+    public String getSeriesPointsConfig() { return seriesPointsConfig; }
+    public void setSeriesPointsConfig(String seriesPointsConfig) { this.seriesPointsConfig = seriesPointsConfig; }
+
     public String getChampionName() { return championName; }
     public void setChampionName(String championName) { this.championName = championName; }
 }

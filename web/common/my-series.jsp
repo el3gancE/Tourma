@@ -1,4 +1,4 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="vi">
@@ -98,9 +98,18 @@
                                 </div>
 
                                 <div class="series-card-footer">
-                                    <a href="${pageContext.request.contextPath}/leaderboard.jsp?seriesId=${s.id}" class="btn-view-series-card">
-                                        <i class="fa-solid fa-ranking-star"></i> Xem BXH ➔
-                                    </a>
+                                    <c:choose>
+                                        <c:when test="${s.rankingModel == 'ROLLING_WINDOW'}">
+                                            <a href="${pageContext.request.contextPath}/rolling/dashboard?id=${s.id}" class="btn-view-series-card">
+                                                <i class="fa-solid fa-chart-line"></i> Quản Lý & xem BXH ➔
+                                            </a>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <a href="${pageContext.request.contextPath}/leaderboard.jsp?seriesId=${s.id}" class="btn-view-series-card">
+                                                <i class="fa-solid fa-ranking-star"></i> Xem BXH ➔
+                                            </a>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
                         </c:forEach>

@@ -1,6 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="dao.TournamentDAO"%>
-<%@page import="model.Tournament"%>
+<%@page import="dao.TournamentDAO, dao.SeriesDAO"%>
+<%@page import="model.Tournament, model.Series, java.util.List"%>
 <%
     String activeStep = request.getParameter("activeStep");
     if (activeStep == null || activeStep.trim().isEmpty()) {
@@ -10,18 +10,41 @@
     String tournamentId = request.getParameter("id");
     if (tournamentId == null) tournamentId = "";
 
+    String seriesId = request.getParameter("seriesId");
+    if (seriesId == null || seriesId.trim().isEmpty()) {
+        seriesId = (String) request.getAttribute("seriesId");
+    }
+    if (seriesId == null) seriesId = "";
+
     String format = request.getParameter("format");
     String tournamentName = "";
     String tournamentType = "SINGLE_STAGE";
+    Tournament currentTournament = null;
 
     if (!tournamentId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
-            Tournament t = tDao.getTournamentById(tournamentId);
-            if (t != null) {
-                if (t.getName() != null) tournamentName = t.getName();
-                if (t.getFormat() != null) format = t.getFormat();
-                if (t.getTournamentType() != null) tournamentType = t.getTournamentType();
+            currentTournament = tDao.getTournamentById(tournamentId);
+            if (currentTournament != null) {
+                if (currentTournament.getName() != null) tournamentName = currentTournament.getName();
+                if (currentTournament.getFormat() != null) format = currentTournament.getFormat();
+                if (currentTournament.getTournamentType() != null) tournamentType = currentTournament.getTournamentType();
+                if (seriesId.trim().isEmpty() && currentTournament.getSeriesId() != null) {
+                    seriesId = currentTournament.getSeriesId();
+                }
+            }
+        } catch (Exception e) {}
+    }
+
+    Series currentSeries = null;
+    List<Tournament> subTourneys = null;
+    if (!seriesId.trim().isEmpty()) {
+        try {
+            SeriesDAO sDao = new SeriesDAO();
+            currentSeries = sDao.getSeriesById(seriesId.trim());
+            if (currentSeries != null) {
+                TournamentDAO tDaoSub = new TournamentDAO();
+                subTourneys = tDaoSub.getTournamentsBySeriesId(currentSeries.getId());
             }
         } catch (Exception e) {}
     }
@@ -42,26 +65,110 @@
     }
 
     boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType);
+    boolean hasSeries = (currentSeries != null);
+    boolean hasTournament = (currentTournament != null);
 %>
 
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
 
 <aside class="app-left-sidebar">
 
-    <!-- CHI TIẾT GIẢI ĐẤU -->
+    <% if (hasSeries) { %>
+    <!-- ========================================================= -->
+    <!-- MỤC 1: QUẢN LÝ CHUỖI GIẢI (SERIES SECTION)                -->
+    <!-- ========================================================= -->
+    <div class="sidebar-section-header" style="color: #fbbf24;">
+        <i class="fa-solid fa-layer-group"></i> CHUỖI GIẢI (SERIES)
+    </div>
+
+    <div class="sidebar-subtourney-badge" style="border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12);">
+        <i class="fa-solid fa-chart-line text-gold"></i>
+        <span><%= currentSeries.getName() %></span>
+    </div>
+
+    <ul class="sidebar-menu-list" style="margin-bottom: 1.5rem;">
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= currentSeries.getId() %>"
+               class="sidebar-menu-link <%= "dashboard".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-chart-line menu-icon text-gold"></i>
+                <span>Dashboard Series</span>
+            </a>
+        </li>
+
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/rolling/standings?id=<%= currentSeries.getId() %>"
+               class="sidebar-menu-link <%= "standings".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-list-ol menu-icon text-gold"></i>
+                <span>Bảng Xếp Hạng Series</span>
+            </a>
+        </li>
+
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/rolling/team-list?id=<%= currentSeries.getId() %>"
+               class="sidebar-menu-link <%= "team-list".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-users menu-icon text-mint"></i>
+                <span>Danh Sách Đội Partner</span>
+            </a>
+        </li>
+
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/rolling/tournament-list?id=<%= currentSeries.getId() %>"
+               class="sidebar-menu-link <%= "tournament-list".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-trophy menu-icon text-gold"></i>
+                <span>Danh Sách Giải Con (<%= subTourneys != null ? subTourneys.size() : 0 %>)</span>
+            </a>
+        </li>
+
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= currentSeries.getId() %>"
+               class="sidebar-menu-link <%= "create-subtourney".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-plus-circle menu-icon text-mint"></i>
+                <span>+ Thêm Giải Con Mới</span>
+            </a>
+        </li>
+
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/rolling/history?id=<%= currentSeries.getId() %>"
+               class="sidebar-menu-link <%= "history".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-clock-rotate-left menu-icon text-cyan"></i>
+                <span>Lịch Sử Tích & Trừ Điểm</span>
+            </a>
+        </li>
+
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/rolling/config?id=<%= currentSeries.getId() %>"
+               class="sidebar-menu-link <%= "config".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-sliders menu-icon text-muted"></i>
+                <span>Cấu Hình Series</span>
+            </a>
+        </li>
+
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/my-series" class="sidebar-menu-link">
+                <i class="fa-solid fa-folder-open menu-icon text-muted"></i>
+                <span>Danh Sách Series</span>
+            </a>
+        </li>
+    </ul>
+    <% } %>
+
+    <% if (hasTournament) { %>
+    <!-- ========================================================= -->
+    <!-- MỤC 2: QUẢN LÝ GIẢI ĐẤU (GIẢI ĐƠN HOẶC GIẢI CON)           -->
+    <!-- ========================================================= -->
     <div class="sidebar-section-header">
-        <i class="fa-solid fa-bolt"></i> CHI TIẾT GIẢI ĐẤU
+        <i class="fa-solid fa-bolt"></i> <%= hasSeries ? ("GIẢI CON #" + (currentTournament != null ? currentTournament.getTournamentIndexInSeries() : "")) : "CHI TIẾT GIẢI ĐẤU" %>
     </div>
 
     <div class="sidebar-subtourney-badge">
-        <i class="fa-solid fa-volleyball text-mint"></i>
+        <i class="fa-solid fa-trophy text-mint"></i>
         <span><%= tournamentName %></span>
     </div>
 
     <ul class="sidebar-menu-list">
-        <!-- BƯỚC 1: THỂ THỨC (Link to configure-tournament-format.jsp) -->
+        <!-- BƯỚC 1: THỂ THỨC -->
         <li class="sidebar-menu-item">
-            <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=<%= tournamentId %>&format=<%= format %>"
+            <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=<%= tournamentId %>&seriesId=<%= seriesId %>"
                class="sidebar-menu-link <%= "format".equals(activeStep) || "step1".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid fa-diagram-project menu-icon"></i>
                 <span>Tổng Quan Giải</span>
@@ -70,12 +177,23 @@
 
         <!-- BƯỚC 2: QUẢN LÝ ĐỘI -->
         <li class="sidebar-menu-item">
-            <a href="${pageContext.request.contextPath}/common/configure-tournament-teams.jsp?id=<%= tournamentId %>&format=<%= format %>"
-               class="sidebar-menu-link <%= "teams".equals(activeStep) || "step2".equals(activeStep) ? "active" : "" %>">
+            <a href="<%= hasSeries ? (request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + seriesId) : (request.getContextPath() + "/common/configure-tournament-teams.jsp?id=" + tournamentId) %>"
+               class="sidebar-menu-link <%= "teams".equals(activeStep) || "step2".equals(activeStep) || "tournament-teams".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid fa-user-plus menu-icon"></i>
                 <span>Thêm Đội & Quản Lý</span>
             </a>
         </li>
+
+        <% if (hasSeries) { %>
+        <!-- BƯỚC 3: SET ĐIỂM THƯỞNG GIẢI CON -->
+        <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/rolling/point-config?id=<%= tournamentId %>&seriesId=<%= seriesId %>"
+               class="sidebar-menu-link <%= "point-config".equals(activeStep) || "points".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-star menu-icon text-gold"></i>
+                <span>Set Điểm Thưởng</span>
+            </a>
+        </li>
+        <% } %>
 
         <!-- MỤC RIÊNG CHO GROUP STAGE: QUẢN LÝ BẢNG ĐẤU -->
         <li class="sidebar-menu-item" id="sidebarMenuManageGroup" style="<%= "GROUP_STAGE".equalsIgnoreCase(format) ? "" : "display: none;" %>">
@@ -122,28 +240,6 @@
             </a>
         </li>
 
-        <!-- ========================================================= -->
-        <!-- CÁC VÒNG ĐẤU / SƠ ĐỒ NHÁNH LUÔN ĐƯỢC XẾP CUỐI CÙNG Ở SIDEBAR -->
-        <!-- ========================================================= -->
-
-        <!-- MULTI-STAGE: VÒNG 1 -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1" style="<%= isMultiStage ? "" : "display: none;" %>">
-            <a id="sidebarLinkStage1" href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=<%= tournamentId %>&stage=1"
-               class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && !"2".equals(request.getParameter("stage"))) ? "active" : "" %>">
-                <i class="fa-solid fa-trophy menu-icon"></i>
-                <span>Vòng 1</span>
-            </a>
-        </li>
-
-        <!-- MULTI-STAGE: VÒNG 2 -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2" style="<%= isMultiStage ? "" : "display: none;" %>">
-            <a id="sidebarLinkStage2" href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=<%= tournamentId %>&stage=2"
-               class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && "2".equals(request.getParameter("stage"))) ? "active" : "" %>">
-                <i class="fa-solid fa-medal menu-icon text-mint"></i>
-                <span>Vòng 2</span>
-            </a>
-        </li>
-
         <!-- SINGLE-STAGE: SƠ ĐỒ NHÁNH / LỊCH ĐẤU -->
         <li class="sidebar-menu-item" id="sidebarMenuSingleStage" style="<%= isMultiStage ? "display: none;" : "" %>">
             <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %>"
@@ -153,6 +249,8 @@
             </a>
         </li>
     </ul>
+    <% } %>
+
 </aside>
 
 <script>
