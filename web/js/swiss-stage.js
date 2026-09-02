@@ -16,6 +16,8 @@
   var isQuickMode = false;
   var teamsList = [];
   var matchesMap = {};
+  var roundRandomScores = {};
+  var poolRandomScores = {};
 
   // Fixed 5-Round Swiss Structure Matrix for 16 Teams (33 Matches total)
   var SWISS_STRUCTURE = [
@@ -92,9 +94,41 @@
     setQuickMode(!isQuickMode);
   };
 
+  // Get custom Quick Mode winning score from pool/round input or saved state (defaults to 1)
+  function getQuickModeWinScore(cardNode, rNum, pKey) {
+    if (cardNode) {
+      var poolBox = cardNode.closest('.swiss-pool-card, .swiss-list-pool-box');
+      if (poolBox) {
+        var poolInp = poolBox.querySelector('.pool-random-input');
+        if (poolInp && poolInp.value && parseInt(poolInp.value, 10) > 0) {
+          return parseInt(poolInp.value, 10);
+        }
+      }
+      var roundBox = cardNode.closest('.swiss-bracket-column, .swiss-list-round-card');
+      if (roundBox) {
+        var roundInp = roundBox.querySelector('.round-random-input');
+        if (roundInp && roundInp.value && parseInt(roundInp.value, 10) > 0) {
+          return parseInt(roundInp.value, 10);
+        }
+      }
+    }
+    if (pKey && poolRandomScores[pKey] && parseInt(poolRandomScores[pKey], 10) > 0) {
+      return parseInt(poolRandomScores[pKey], 10);
+    }
+    if (rNum && roundRandomScores[rNum] && parseInt(roundRandomScores[rNum], 10) > 0) {
+      return parseInt(roundRandomScores[rNum], 10);
+    }
+    return 1;
+  }
+
   // Global Capture-phase Listener for Quick Mode Clicks to PREVENT POPUP (Winner Score = 1)
   document.addEventListener('click', function(e) {
     if (!window.TourmaQuickMode && !isQuickMode) return;
+
+    // Do NOT intercept clicks on inputs, buttons, or random controls!
+    if (e.target.closest('input, button, select, .pool-header-random-controls, .round-header-random-controls, .btn-pool-random, .btn-round-random, .btn-round-reset, .pool-random-input, .round-random-input')) {
+      return;
+    }
 
     var cardNode = e.target.closest('.bracket-node-card, .match-card-item, .swiss-card-item');
     if (!cardNode) return;
@@ -130,13 +164,17 @@
       if (txt.includes(t2Name)) isT2 = true;
     }
 
-    // Quick Mode: Winning Score = 1, Losing Score = 0
+    var wScoreVal = getQuickModeWinScore(cardNode, m.roundIndex, m.recordPool);
+    var lScoreVal = (wScoreVal > 0) ? Math.floor(Math.random() * wScoreVal) : 0;
+
     if (isT2) {
-      m.team1Score = 0;
-      m.team2Score = 1;
+      m.team1Score = lScoreVal;
+      m.team2Score = wScoreVal;
+      m.winnerId = 'team2';
     } else {
-      m.team1Score = 1;
-      m.team2Score = 0;
+      m.team1Score = wScoreVal;
+      m.team2Score = lScoreVal;
+      m.winnerId = 'team1';
     }
     m.status = 'COMPLETED';
 
@@ -235,26 +273,23 @@
   function randomizeRoundMatches(rNum, winScore) {
     var customScore = (winScore && parseInt(winScore, 10) > 0) ? parseInt(winScore, 10) : 0;
 
-    // Check if round is already fully completed
-    var uncompletedCount = 0;
+    var playableCount = 0;
     Object.keys(matchesMap).forEach(function (k) {
       var m = matchesMap[k];
       if (m && m.roundIndex === rNum) {
         var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
         var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
         if (t1Name !== 'TBD' && t2Name !== 'TBD' && t1Name !== 'BYE' && t2Name !== 'BYE') {
-          if (m.status !== 'COMPLETED' && m.status !== 'DONE') {
-            uncompletedCount++;
-          }
+          playableCount++;
         }
       }
     });
 
-    if (uncompletedCount === 0) return;
+    if (playableCount === 0) return;
 
     Object.keys(matchesMap).forEach(function (k) {
       var m = matchesMap[k];
-      if (m && m.roundIndex === rNum && m.status !== 'COMPLETED' && m.status !== 'DONE') {
+      if (m && m.roundIndex === rNum) {
         var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
         var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
         if (t1Name !== 'TBD' && t2Name !== 'TBD' && t1Name !== 'BYE' && t2Name !== 'BYE') {
@@ -264,6 +299,9 @@
           if (customScore > 0) {
             wScore = customScore;
             lScore = Math.floor(Math.random() * customScore);
+          } else if (isQuickMode || window.TourmaQuickMode) {
+            wScore = 1;
+            lScore = 0;
           } else {
             var res = getRandomDecisiveScores();
             wScore = res.winScore;
@@ -272,6 +310,7 @@
 
           m.team1Score = isT1Win ? wScore : lScore;
           m.team2Score = isT1Win ? lScore : wScore;
+          m.winnerId = isT1Win ? 'team1' : 'team2';
           m.status = 'COMPLETED';
         }
       }
@@ -289,45 +328,45 @@
   function randomizePoolMatches(rNum, poolKey, winScore) {
     var customScore = (winScore && parseInt(winScore, 10) > 0) ? parseInt(winScore, 10) : 0;
 
-    var uncompletedCount = 0;
+    var playableCount = 0;
     Object.keys(matchesMap).forEach(function (k) {
       var m = matchesMap[k];
       if (m && m.roundIndex === rNum && (m.recordPool === poolKey || (!m.recordPool && poolKey === '0-0'))) {
         var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
         var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
         if (t1Name !== 'TBD' && t2Name !== 'TBD' && t1Name !== 'BYE' && t2Name !== 'BYE') {
-          if (m.status !== 'COMPLETED' && m.status !== 'DONE') {
-            uncompletedCount++;
-          }
+          playableCount++;
         }
       }
     });
 
-    if (uncompletedCount === 0) return;
+    if (playableCount === 0) return;
 
     Object.keys(matchesMap).forEach(function (k) {
       var m = matchesMap[k];
       if (m && m.roundIndex === rNum && (m.recordPool === poolKey || (!m.recordPool && poolKey === '0-0'))) {
-        if (m.status !== 'COMPLETED' && m.status !== 'DONE') {
-          var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
-          var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
-          if (t1Name !== 'TBD' && t2Name !== 'TBD' && t1Name !== 'BYE' && t2Name !== 'BYE') {
-            var isT1Win = Math.random() < 0.5;
-            var wScore, lScore;
+        var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
+        var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
+        if (t1Name !== 'TBD' && t2Name !== 'TBD' && t1Name !== 'BYE' && t2Name !== 'BYE') {
+          var isT1Win = Math.random() < 0.5;
+          var wScore, lScore;
 
-            if (customScore > 0) {
-              wScore = customScore;
-              lScore = Math.floor(Math.random() * customScore);
-            } else {
-              var res = getRandomDecisiveScores();
-              wScore = res.winScore;
-              lScore = res.loseScore;
-            }
-
-            m.team1Score = isT1Win ? wScore : lScore;
-            m.team2Score = isT1Win ? lScore : wScore;
-            m.status = 'COMPLETED';
+          if (customScore > 0) {
+            wScore = customScore;
+            lScore = Math.floor(Math.random() * customScore);
+          } else if (isQuickMode || window.TourmaQuickMode) {
+            wScore = 1;
+            lScore = 0;
+          } else {
+            var res = getRandomDecisiveScores();
+            wScore = res.winScore;
+            lScore = res.loseScore;
           }
+
+          m.team1Score = isT1Win ? wScore : lScore;
+          m.team2Score = isT1Win ? lScore : wScore;
+          m.winnerId = isT1Win ? 'team1' : 'team2';
+          m.status = 'COMPLETED';
         }
       }
     });
@@ -889,16 +928,20 @@
       var rInp = document.createElement('input');
       rInp.type = 'number';
       rInp.className = 'round-random-input';
-      rInp.value = '';
+      rInp.value = roundRandomScores[rNum] || '';
       rInp.placeholder = '-';
       rInp.min = '1';
-      if (isRoundCompleted || !hasPlayableMatches) rInp.disabled = true;
+      if (!hasPlayableMatches) rInp.disabled = true;
+
+      rInp.oninput = function() {
+        roundRandomScores[rNum] = this.value;
+      };
 
       var rBtn = document.createElement('button');
       rBtn.type = 'button';
       rBtn.className = 'btn-round-random';
       rBtn.innerText = 'Random';
-      if (isRoundCompleted || !hasPlayableMatches) rBtn.disabled = true;
+      if (!hasPlayableMatches) rBtn.disabled = true;
 
       var rResetBtn = document.createElement('button');
       rResetBtn.type = 'button';
@@ -906,6 +949,7 @@
       rResetBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
 
       (function(rNumber, inp) {
+        inp.onclick = function(e) { e.stopPropagation(); };
         rBtn.onclick = function(e) {
           e.stopPropagation();
           randomizeRoundMatches(rNumber, inp.value);
@@ -969,19 +1013,24 @@
         var poolInp = document.createElement('input');
         poolInp.type = 'number';
         poolInp.className = 'pool-random-input';
-        poolInp.value = '';
+        poolInp.value = poolRandomScores[pKey] || '';
         poolInp.placeholder = '-';
         poolInp.min = '1';
-        if (isPoolCompleted || !hasPoolPlayable) poolInp.disabled = true;
+        if (!hasPoolPlayable) poolInp.disabled = true;
+
+        poolInp.oninput = function() {
+          poolRandomScores[pKey] = this.value;
+        };
 
         var poolRandBtn = document.createElement('button');
         poolRandBtn.type = 'button';
         poolRandBtn.className = 'btn-pool-random';
         poolRandBtn.title = 'Random tỷ số cho nhóm ' + pKey;
         poolRandBtn.innerHTML = '<i class="fa-solid fa-dice"></i> Random';
-        if (isPoolCompleted || !hasPoolPlayable) poolRandBtn.disabled = true;
+        if (!hasPoolPlayable) poolRandBtn.disabled = true;
 
         (function(rNumber, keyStr, inp) {
+          inp.onclick = function(e) { e.stopPropagation(); };
           poolRandBtn.onclick = function(e) {
             e.stopPropagation();
             randomizePoolMatches(rNumber, keyStr, inp.value);
@@ -1103,16 +1152,20 @@
         var rInp = document.createElement('input');
         rInp.type = 'number';
         rInp.className = 'round-random-input';
-        rInp.value = '';
+        rInp.value = roundRandomScores[r] || '';
         rInp.placeholder = '-';
         rInp.min = '1';
-        if (isRoundCompleted || !hasPlayableMatches) rInp.disabled = true;
+        if (!hasPlayableMatches) rInp.disabled = true;
+
+        rInp.oninput = function() {
+          roundRandomScores[r] = this.value;
+        };
 
         var rBtn = document.createElement('button');
         rBtn.type = 'button';
         rBtn.className = 'btn-round-random';
         rBtn.innerText = 'Random';
-        if (isRoundCompleted || !hasPlayableMatches) rBtn.disabled = true;
+        if (!hasPlayableMatches) rBtn.disabled = true;
 
         var rResetBtn = document.createElement('button');
         rResetBtn.type = 'button';
@@ -1120,6 +1173,7 @@
         rResetBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
 
         (function(rNum, inp) {
+          inp.onclick = function(e) { e.stopPropagation(); };
           rBtn.onclick = function(e) {
             e.stopPropagation();
             randomizeRoundMatches(rNum, inp.value);
@@ -1182,19 +1236,24 @@
           var poolInp = document.createElement('input');
           poolInp.type = 'number';
           poolInp.className = 'pool-random-input';
-          poolInp.value = '';
+          poolInp.value = poolRandomScores[pKey] || '';
           poolInp.placeholder = '-';
           poolInp.min = '1';
-          if (isPoolCompleted || !hasPoolPlayable) poolInp.disabled = true;
+          if (!hasPoolPlayable) poolInp.disabled = true;
+
+          poolInp.oninput = function() {
+            poolRandomScores[pKey] = this.value;
+          };
 
           var poolRandBtn = document.createElement('button');
           poolRandBtn.type = 'button';
           poolRandBtn.className = 'btn-pool-random';
           poolRandBtn.title = 'Random tỷ số cho nhóm ' + pKey;
           poolRandBtn.innerHTML = '<i class="fa-solid fa-dice"></i> Random';
-          if (isPoolCompleted || !hasPoolPlayable) poolRandBtn.disabled = true;
+          if (!hasPoolPlayable) poolRandBtn.disabled = true;
 
           (function(rNumber, keyStr, inp) {
+            inp.onclick = function(e) { e.stopPropagation(); };
             poolRandBtn.onclick = function(e) {
               e.stopPropagation();
               randomizePoolMatches(rNumber, keyStr, inp.value);
@@ -1279,13 +1338,19 @@
         }
       }
 
-      // Quick Mode Winner Score = 1, Loser Score = 0
+      var cardNode = (event && event.target) ? event.target.closest('.bracket-node-card, .match-card-item, .swiss-card-item') : null;
+      var wScoreVal = getQuickModeWinScore(cardNode, m.roundIndex, m.recordPool);
+      var lScoreVal = (wScoreVal > 0) ? Math.floor(Math.random() * wScoreVal) : 0;
+
+      // Quick Mode Winner Score = n, Loser Score = random in [0, n-1]
       if (targetTeam === 'team1') {
-        m.team1Score = 1;
-        m.team2Score = 0;
+        m.team1Score = wScoreVal;
+        m.team2Score = lScoreVal;
+        m.winnerId = 'team1';
       } else {
-        m.team1Score = 0;
-        m.team2Score = 1;
+        m.team1Score = lScoreVal;
+        m.team2Score = wScoreVal;
+        m.winnerId = 'team2';
       }
       m.status = 'COMPLETED';
 
