@@ -55,6 +55,8 @@ CREATE TABLE tournaments (
     tournament_type VARCHAR(20) NOT NULL DEFAULT 'SINGLE_STAGE' CHECK (tournament_type IN ('SINGLE_STAGE', 'MULTI_STAGE')),
     series_event_type VARCHAR(20) DEFAULT 'NONE' CHECK (series_event_type IN ('QUALIFIER', 'MAIN', 'NONE')), -- QUALIFIER (I=25), MAIN (I=45), NONE
     tier_name VARCHAR(10) NULL CHECK (tier_name IN ('S', 'A', 'B', 'C', 'D')), -- Tier cố định cho Rolling Series: S, A, B, C, D (NULL nếu là Giải đơn lẻ)
+    series_reward_points INT NULL, -- Điểm thưởng Vô địch nhập tay cho giải con trong Rolling Series
+    series_points_config NVARCHAR(MAX) NULL, -- Tùy chỉnh chi tiết điểm thưởng từng vị trí (JSON)
     tournament_index_in_series INT DEFAULT 1, -- Thứ tự giải trong Series (e.g. Giải thứ 1, 2, ... 11, 12)
     phase_number INT DEFAULT 1, -- Phase tương ứng (e.g. Giải thứ 12 -> Phase 2)
     division_level INT DEFAULT 1, -- Cấp Hạng đấu trong League System (1 = Hạng 1, 2 = Hạng 2...)
