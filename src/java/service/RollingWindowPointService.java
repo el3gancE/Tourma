@@ -43,7 +43,8 @@ public class RollingWindowPointService {
         private int expiredPoints;     // Sum of points deducted from older tournaments
         private int lastTourneyPoints; // Points earned in the latest sub-tournament
         private int activeTourneysCount; // Count of sub-tournaments played in window W
-        private int netFluctuation;    // Net change = lastTourneyPoints - newlyExpiredPoints
+        private int droppedTourneyPoints; // Points earned in the single tournament that just dropped out of window W
+        private int netFluctuation;    // Net change = lastTourneyPoints - droppedTourneyPoints
 
         public String getPartnerParticipantId() { return partnerParticipantId; }
         public void setPartnerParticipantId(String partnerParticipantId) { this.partnerParticipantId = partnerParticipantId; }
@@ -56,6 +57,9 @@ public class RollingWindowPointService {
 
         public int getTotalActivePoints() { return totalActivePoints; }
         public void setTotalActivePoints(int totalActivePoints) { this.totalActivePoints = totalActivePoints; }
+
+        public int getDroppedTourneyPoints() { return droppedTourneyPoints; }
+        public void setDroppedTourneyPoints(int droppedTourneyPoints) { this.droppedTourneyPoints = droppedTourneyPoints; }
 
         public int getExpiredPoints() { return expiredPoints; }
         public void setExpiredPoints(int expiredPoints) { this.expiredPoints = expiredPoints; }
@@ -88,7 +92,7 @@ public class RollingWindowPointService {
 
         // 1. Fetch official partner participants for this series
         List<PartnerParticipant> partners = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
-        if (partners.isEmpty()) return resultList;
+        if (partners == null || partners.isEmpty()) return resultList;
 
         Map<String, RollingStandingDTO> dtoMap = new LinkedHashMap<>();
         Map<String, String> nameToIdMap = new HashMap<>();
@@ -102,6 +106,7 @@ public class RollingWindowPointService {
                 dto.setTotalActivePoints(0);
                 dto.setExpiredPoints(0);
                 dto.setLastTourneyPoints(0);
+                dto.setDroppedTourneyPoints(0);
                 dto.setActiveTourneysCount(0);
                 dto.setNetFluctuation(0);
 
@@ -127,6 +132,7 @@ public class RollingWindowPointService {
 
         int totalCount = configuredTourneys.size();
         int activeStartIndex = Math.max(0, totalCount - windowSize);
+        int droppedIndex = totalCount - windowSize - 1;
 
         ParticipantDAO pDao = new ParticipantDAO();
 
@@ -135,6 +141,7 @@ public class RollingWindowPointService {
             Tournament t = configuredTourneys.get(tIdx);
             boolean isActiveWindow = (tIdx >= activeStartIndex);
             boolean isLatestTourney = (tIdx == totalCount - 1);
+            boolean isDroppedTourney = (tIdx == droppedIndex);
 
             // Parse position points map JSON e.g. {"1":500,"2":200,"3-4":100}
             Map<String, Integer> posPtsMap = parsePointsConfigJson(t.getSeriesPointsConfig());
@@ -176,6 +183,10 @@ public class RollingWindowPointService {
                         dto.setExpiredPoints(dto.getExpiredPoints() + pts);
                     }
 
+                    if (isDroppedTourney) {
+                        dto.setDroppedTourneyPoints(pts);
+                    }
+
                     if (isLatestTourney) {
                         dto.setLastTourneyPoints(pts);
                     }
@@ -190,7 +201,7 @@ public class RollingWindowPointService {
         for (int r = 0; r < resultList.size(); r++) {
             RollingStandingDTO dto = resultList.get(r);
             dto.setRank(r + 1);
-            dto.setNetFluctuation(dto.getLastTourneyPoints());
+            dto.setNetFluctuation(dto.getLastTourneyPoints() - dto.getDroppedTourneyPoints());
         }
 
         return resultList;
@@ -251,12 +262,34 @@ public class RollingWindowPointService {
             return posPtsMap.get("1");
         } else if (pos == 2 && posPtsMap.containsKey("2")) {
             return posPtsMap.get("2");
+        } else if (pos == 3 && posPtsMap.containsKey("3")) {
+            return posPtsMap.get("3");
+        } else if (pos == 4 && posPtsMap.containsKey("4")) {
+            return posPtsMap.get("4");
         } else if (pos >= 3 && pos <= 4 && posPtsMap.containsKey("3-4")) {
             return posPtsMap.get("3-4");
+        } else if (pos >= 5 && pos <= 6 && posPtsMap.containsKey("5-6")) {
+            return posPtsMap.get("5-6");
+        } else if (pos >= 7 && pos <= 8 && posPtsMap.containsKey("7-8")) {
+            return posPtsMap.get("7-8");
         } else if (pos >= 5 && pos <= 8 && posPtsMap.containsKey("5-8")) {
             return posPtsMap.get("5-8");
+        } else if (pos >= 9 && pos <= 12 && posPtsMap.containsKey("9-12")) {
+            return posPtsMap.get("9-12");
+        } else if (pos >= 13 && pos <= 16 && posPtsMap.containsKey("13-16")) {
+            return posPtsMap.get("13-16");
         } else if (pos >= 9 && pos <= 16 && posPtsMap.containsKey("9-16")) {
             return posPtsMap.get("9-16");
+        } else if (pos >= 17 && pos <= 32 && posPtsMap.containsKey("17-32")) {
+            return posPtsMap.get("17-32");
+        } else if (pos >= 33 && pos <= 64 && posPtsMap.containsKey("33-64")) {
+            return posPtsMap.get("33-64");
+        } else if (pos >= 65 && pos <= 128 && posPtsMap.containsKey("65-128")) {
+            return posPtsMap.get("65-128");
+        } else if (posPtsMap.containsKey("stage1_eliminated")) {
+            return posPtsMap.get("stage1_eliminated");
+        } else if (posPtsMap.containsKey("swiss_2-3") && pos >= 9) {
+            return posPtsMap.get("swiss_2-3");
         }
         return 0;
     }

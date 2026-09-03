@@ -56,9 +56,15 @@ public class RollingPointConfigServlet extends HttpServlet {
         List<Team> currentTeams = participantDAO.getTeamsByTournamentId(tournament.getId());
         int teamCount = currentTeams != null ? currentTeams.size() : 0;
 
+        List<String> stageFormats = tournamentDAO.getStageFormats(tournament.getId());
+        String s1F = (stageFormats != null && stageFormats.size() > 0) ? stageFormats.get(0) : null;
+        String s2F = (stageFormats != null && stageFormats.size() > 1) ? stageFormats.get(1) : null;
+
         request.setAttribute("tournament", tournament);
         request.setAttribute("series", series);
         request.setAttribute("teamCount", teamCount);
+        request.setAttribute("stage1Format", s1F);
+        request.setAttribute("stage2Format", s2F);
 
         request.getRequestDispatcher("/common/rolling/rolling-point-config.jsp").forward(request, response);
     }

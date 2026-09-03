@@ -207,45 +207,61 @@
                 savedBracket = null;
             }
 
-            // Check if saved bracket team count matches current teamsList
+            // Check if saved bracket team count and cutTarget match
             var savedBracketValid = false;
+            var isCut = (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1);
             if (savedBracket && savedBracket.matchesMap && Object.keys(savedBracket.matchesMap).length > 0) {
-                // Determine how many unique teams appear in the saved bracket's first round
-                var savedTeamNames = {};
-                var keys = Object.keys(savedBracket.matchesMap);
-                for (var i = 0; i < keys.length; i++) {
-                    var m = savedBracket.matchesMap[keys[i]];
-                    var t1 = m.team1 ? m.team1.name : '';
-                    var t2 = m.team2 ? m.team2.name : '';
-                    if (t1 && t1 !== 'BYE' && !t1.startsWith('W #') && !t1.startsWith('L #') && t1 !== 'Winner UB' && t1 !== 'Winner LB') savedTeamNames[t1] = 1;
-                    if (t2 && t2 !== 'BYE' && !t2.startsWith('W #') && !t2.startsWith('L #') && t2 !== 'Winner UB' && t2 !== 'Winner LB') savedTeamNames[t2] = 1;
-                }
-                var savedTeamCount = Object.keys(savedTeamNames).length;
-                var isAllMatch = true;
-                if (this.teamsList && this.teamsList.length > 0) {
-                    for (var ti = 0; ti < this.teamsList.length; ti++) {
-                        var tm = this.teamsList[ti];
-                        var tmName = (typeof tm === 'object') ? (tm.name || tm.rawName) : tm;
-                        if (tmName && !savedTeamNames[tmName]) {
-                            isAllMatch = false;
-                            break;
-                        }
-                    }
-                }
-                // Accept saved bracket only if every team matches and team count matches
-                savedBracketValid = isAllMatch && (savedTeamCount === 0 || savedTeamCount === this.teamsList.length || Math.abs(savedTeamCount - this.teamsList.length) <= 1);
-
-                // Verify if cut stage format matches expected cut stage vs full bracket
-                var isCutExpected = (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1 && this.teamsList && this.cutTarget < this.teamsList.length);
-                var isSavedCut = (savedBracket && savedBracket.grandFinalsRound === null);
-                if (isCutExpected !== isSavedCut) {
+                var hasGrandFinal = !!(savedBracket.grandFinalsRound && savedBracket.grandFinalsRound.matches && savedBracket.grandFinalsRound.matches.length > 0);
+                if (isCut && hasGrandFinal) {
                     savedBracketValid = false;
+                } else if (!isCut && !hasGrandFinal && this.teamsList && this.teamsList.length >= 2) {
+                    savedBracketValid = false;
+                } else {
+                    savedBracketValid = true;
                 }
             }
 
             if (savedBracketValid && savedBracket) {
                 this.bracketData = savedBracket;
                 this.matchesMap = savedBracket.matchesMap || {};
+
+                // Re-link match references from rounds to matchesMap so object references remain 100% identical!
+                var self = this;
+                var relinkMatch = function(m) {
+                    if (!m) return m;
+                    var mKey = (m.matchId !== undefined && m.matchId !== null) ? m.matchId : m.id;
+                    if (mKey === undefined || mKey === null) return m;
+                    if (!self.matchesMap[mKey]) {
+                        self.matchesMap[mKey] = m;
+                    }
+                    return self.matchesMap[mKey];
+                };
+
+                if (this.bracketData.upperRounds) {
+                    for (var ur = 0; ur < this.bracketData.upperRounds.length; ur++) {
+                        var uRound = this.bracketData.upperRounds[ur];
+                        if (uRound && uRound.matches) {
+                            for (var um = 0; um < uRound.matches.length; um++) {
+                                uRound.matches[um] = relinkMatch(uRound.matches[um]);
+                            }
+                        }
+                    }
+                }
+                if (this.bracketData.lowerRounds) {
+                    for (var lr = 0; lr < this.bracketData.lowerRounds.length; lr++) {
+                        var lRound = this.bracketData.lowerRounds[lr];
+                        if (lRound && lRound.matches) {
+                            for (var lm = 0; lm < lRound.matches.length; lm++) {
+                                lRound.matches[lm] = relinkMatch(lRound.matches[lm]);
+                            }
+                        }
+                    }
+                }
+                if (this.bracketData.grandFinalsRound && this.bracketData.grandFinalsRound.matches) {
+                    for (var gm = 0; gm < this.bracketData.grandFinalsRound.matches.length; gm++) {
+                        this.bracketData.grandFinalsRound.matches[gm] = relinkMatch(this.bracketData.grandFinalsRound.matches[gm]);
+                    }
+                }
 
                 // Synchronize correct original seeds from this.teamsList to matchesMap in saved bracket
                 if (this.teamsList && this.teamsList.length > 0) {
@@ -1498,6 +1514,17 @@
             }
 
             localStorage.setItem('tourma_stage1_completed_' + this.tournamentId, 'true');
+            if (window.StageEndPopup) {
+                window.StageEndPopup.update(
+                    this.tournamentId,
+                    'DOUBLE_ELIMINATION',
+                    this.matchesMap,
+                    this.teamsList,
+                    { cutTarget: this.cutTarget },
+                    null,
+                    1
+                );
+            }
         },
 
         checkFinalStage: function () {

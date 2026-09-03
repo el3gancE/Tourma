@@ -37,6 +37,19 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         SeriesDAO seriesDAO = new SeriesDAO();
         ParticipantDAO participantDAO = new ParticipantDAO();
 
+        String fmt = request.getParameter("format");
+        if (fmt == null || fmt.trim().isEmpty()) fmt = request.getParameter("selectedFormat");
+        String tType = request.getParameter("tournamentType");
+        if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("selectedTournamentType");
+        if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("type");
+
+        String s1F = request.getParameter("stage1Format");
+        String s2F = request.getParameter("stage2Format");
+
+        if (tournamentId != null && fmt != null && !fmt.trim().isEmpty()) {
+            tournamentDAO.updateTournamentFormatAndType(tournamentId.trim(), fmt, tType, s1F, s2F);
+        }
+
         Tournament tournament = null;
         if (tournamentId != null && !tournamentId.trim().isEmpty()) {
             tournament = tournamentDAO.getTournamentById(tournamentId.trim());
@@ -77,8 +90,17 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         String action = request.getParameter("action");
         String tournamentId = request.getParameter("tournamentId");
         String seriesId = request.getParameter("seriesId");
-
         ParticipantDAO participantDAO = new ParticipantDAO();
+        TournamentDAO tournamentDAO = new TournamentDAO();
+
+        String fmt = request.getParameter("selectedFormat");
+        if (fmt == null || fmt.trim().isEmpty()) fmt = request.getParameter("format");
+        String tType = request.getParameter("selectedTournamentType");
+        if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("type");
+
+        if (tournamentId != null && fmt != null && !fmt.trim().isEmpty()) {
+            tournamentDAO.updateTournamentFormatAndType(tournamentId, fmt, tType);
+        }
 
         if ("addPartnerTeams".equalsIgnoreCase(action)) {
             String[] selectedTeamNames = request.getParameterValues("selectedTeamNames");

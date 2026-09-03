@@ -23,8 +23,15 @@
             if (currentStage && (currentStage === 2 || currentStage === '2')) return false;
             try {
                 var tType = localStorage.getItem('tourma_type_' + tournamentId);
+                if (tType === 'SINGLE_STAGE') return false;
                 var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
-                return (tType === 'MULTI_STAGE' || !!multiCfgRaw);
+                if (multiCfgRaw) {
+                    var mObj = JSON.parse(multiCfgRaw);
+                    if (mObj && (mObj.isMultiStage === false || mObj.tournamentType === 'SINGLE_STAGE')) return false;
+                    if (tType === 'MULTI_STAGE') return true;
+                    return !!(mObj && mObj.stage2Format);
+                }
+                return (tType === 'MULTI_STAGE');
             } catch (e) {
                 return false;
             }
@@ -218,6 +225,22 @@
                         if (Array.isArray(s2Teams) && s2Teams.length >= cutTarget) return true;
                     }
                 } catch(e) {}
+
+                // Tertiary signal: all scheduled matches in matchesMap have winners
+                var mKeys = Object.keys(matchesMap);
+                var hasMatches = false;
+                var allMatchesDone = true;
+                for (var mIdx = 0; mIdx < mKeys.length; mIdx++) {
+                    var mat = matchesMap[mKeys[mIdx]];
+                    if (mat && (mat.matchId !== undefined || mat.id !== undefined)) {
+                        hasMatches = true;
+                        if (!mat.winnerId || (mat.winnerId !== 'team1' && mat.winnerId !== 'team2')) {
+                            allMatchesDone = false;
+                            break;
+                        }
+                    }
+                }
+                if (hasMatches && allMatchesDone) return true;
 
                 return false;
             }

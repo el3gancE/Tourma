@@ -118,37 +118,6 @@
                 <span>Danh Sách Giải Con (<%= subTourneys != null ? subTourneys.size() : 0 %>)</span>
             </a>
         </li>
-
-        <li class="sidebar-menu-item">
-            <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= currentSeries.getId() %>"
-               class="sidebar-menu-link <%= "create-subtourney".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-plus-circle menu-icon text-mint"></i>
-                <span>+ Thêm Giải Con Mới</span>
-            </a>
-        </li>
-
-        <li class="sidebar-menu-item">
-            <a href="${pageContext.request.contextPath}/rolling/history?id=<%= currentSeries.getId() %>"
-               class="sidebar-menu-link <%= "history".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-clock-rotate-left menu-icon text-cyan"></i>
-                <span>Lịch Sử Tích & Trừ Điểm</span>
-            </a>
-        </li>
-
-        <li class="sidebar-menu-item">
-            <a href="${pageContext.request.contextPath}/rolling/config?id=<%= currentSeries.getId() %>"
-               class="sidebar-menu-link <%= "config".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-sliders menu-icon text-muted"></i>
-                <span>Cấu Hình Series</span>
-            </a>
-        </li>
-
-        <li class="sidebar-menu-item">
-            <a href="${pageContext.request.contextPath}/my-series" class="sidebar-menu-link">
-                <i class="fa-solid fa-folder-open menu-icon text-muted"></i>
-                <span>Danh Sách Series</span>
-            </a>
-        </li>
     </ul>
     <% } %>
 
@@ -240,12 +209,30 @@
             </a>
         </li>
 
-        <!-- SINGLE-STAGE: SƠ ĐỒ NHÁNH / LỊCH ĐẤU -->
+        <!-- MULTI-STAGE: VÒNG 1 (Stage 1 - SƠ ĐỒ / LỊCH ĐẤU & TỈ SỐ) -->
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1" style="<%= isMultiStage ? "" : "display: none;" %>">
+            <a id="sidebarLinkStage1" href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&stage=1<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
+               class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && "1".equals(request.getParameter("stage"))) || ("bracket".equals(activeStep) && request.getParameter("stage") == null && isMultiStage) ? "active" : "" %>">
+                <i class="fa-solid fa-diagram-project menu-icon text-mint"></i>
+                <span id="sidebarTextStage1">Trận Đấu Vòng 1</span>
+            </a>
+        </li>
+
+        <!-- MULTI-STAGE: VÒNG 2 (Stage 2 - SƠ ĐỒ / LỊCH ĐẤU & TỈ SỐ) -->
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2" style="<%= isMultiStage ? "" : "display: none;" %>">
+            <a id="sidebarLinkStage2" href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&stage=2<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
+               class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && "2".equals(request.getParameter("stage"))) ? "active" : "" %>">
+                <i class="fa-solid fa-trophy menu-icon text-gold"></i>
+                <span id="sidebarTextStage2">Trận Đấu Vòng 2</span>
+            </a>
+        </li>
+
+        <!-- SINGLE-STAGE: SƠ ĐỒ NHÁNH / LỊCH ĐẤU & TỈ SỐ -->
         <li class="sidebar-menu-item" id="sidebarMenuSingleStage" style="<%= isMultiStage ? "display: none;" : "" %>">
-            <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %>"
-               class="sidebar-menu-link <%= "bracket".equals(activeStep) || "step3".equals(activeStep) ? "active" : "" %>">
+            <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %><%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
+               class="sidebar-menu-link <%= ("bracket".equals(activeStep) || "step3".equals(activeStep)) && !isMultiStage ? "active" : "" %>">
                 <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "fa-layer-group" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "fa-diagram-project" : "fa-diagram-project")) %> menu-icon"></i>
-                <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "Vòng Bảng" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "Vòng Swiss" : "Sơ Đồ Nhánh")) %></span>
+                <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu & Tỉ Số" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "Vòng Bảng & Tỉ Số" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "Vòng Swiss & Tỉ Số" : "Sơ Đồ Nhánh & Tỉ Số")) %></span>
             </a>
         </li>
     </ul>
@@ -292,8 +279,10 @@
                     return 'single-elimination.jsp';
                 };
 
-                if (link1) link1.href = '${pageContext.request.contextPath}/common/' + getPageForFormat(s1Format) + '?id=' + tid + '&stage=1';
-                if (link2) link2.href = '${pageContext.request.contextPath}/common/' + getPageForFormat(s2Format) + '?id=' + tid + '&stage=2';
+                var seriesId = '<%= seriesId %>';
+                var sParam = (seriesId && seriesId !== 'null' && seriesId !== '') ? ('&seriesId=' + seriesId) : '';
+                if (link1) link1.href = '${pageContext.request.contextPath}/common/' + getPageForFormat(s1Format) + '?id=' + tid + '&stage=1' + sParam;
+                if (link2) link2.href = '${pageContext.request.contextPath}/common/' + getPageForFormat(s2Format) + '?id=' + tid + '&stage=2' + sParam;
 
                 // Display BXH Vong 1 if Stage 1 is Round Robin
                 if (s1Format === 'ROUND_ROBIN' && menuRR1) {
@@ -314,6 +303,22 @@
                     if (menuMG) menuMG.style.display = '';
                     if (menuGS) menuGS.style.display = '';
                 }
+            }
+        }
+
+        var localFmt = localStorage.getItem('tourma_format_' + tid);
+        if (!isMulti && localFmt && sSingle) {
+            localFmt = localFmt.toUpperCase();
+            var page = 'single-elimination.jsp';
+            if (localFmt === 'DOUBLE_ELIMINATION') page = 'double-elimination.jsp';
+            else if (localFmt === 'ROUND_ROBIN') page = 'round-robin.jsp';
+            else if (localFmt === 'GROUP_STAGE') page = 'group-stage.jsp';
+            else if (localFmt === 'SWISS_LITE' || localFmt === 'SWISS') page = 'swiss-stage.jsp';
+            
+            var aLink = sSingle.querySelector('a');
+            if (aLink) {
+                var seriesId = '<%= seriesId %>';
+                aLink.href = '${pageContext.request.contextPath}/common/' + page + '?id=' + tid + '&format=' + localFmt + (seriesId ? ('&seriesId=' + seriesId) : '');
             }
         }
     } catch (e) {}

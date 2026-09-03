@@ -99,15 +99,6 @@
                 </div>
             </div>
 
-            <!-- EXPLANATORY NOTICE BOX FOR ROLLING EXPIRY -->
-            <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem; font-size: 0.8rem; color: #e0f2fe;">
-                <div style="font-weight: 800; color: #38bdf8; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <i class="fa-solid fa-calculator"></i> Cơ Chế Trừ Điểm Trượt (Rolling Window Expiry W = <%= phaseSize %>):
-                </div>
-                • <strong>Cửa sổ tích điểm:</strong> Chỉ <strong><%= phaseSize %> giải con gần nhất</strong> được cộng điểm vào tổng tích lũy.<br>
-                • <strong>Biến động:</strong> Hiển thị điểm đạt ở giải gần nhất và điểm hết hạn từ giải cũ ngoài cửa sổ trượt (trừ điểm trượt).
-            </div>
-
             <!-- Full Standings Table Card -->
             <div class="team-list-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
@@ -138,17 +129,18 @@
                                 int expiredPts = dto.getExpiredPoints();
                                 int activeTourneys = dto.getActiveTourneysCount();
 
+                                int netChange = lastPts - expiredPts;
                                 String lastPtsText = (lastPts > 0) ? ("+" + lastPts + " pts") : "0 pts";
                                 String lastPtsColor = (lastPts > 0) ? "#2dd4bf" : "#94a3b8";
 
                                 String changeText = "0 pts";
                                 String changeColor = "#94a3b8";
-                                if (expiredPts > 0) {
-                                    changeText = (lastPts > 0 ? ("+" + lastPts) : "0") + " pts <small style='font-size:0.75rem;'>(-" + expiredPts + " trượt)</small>";
-                                    changeColor = "#ef4444";
-                                } else if (lastPts > 0) {
-                                    changeText = "+" + lastPts + " pts";
+                                if (netChange > 0) {
+                                    changeText = "+" + netChange + " pts";
                                     changeColor = "#2dd4bf";
+                                } else if (netChange < 0) {
+                                    changeText = netChange + " pts";
+                                    changeColor = "#ef4444";
                                 }
                         %>
                             <tr>
@@ -215,13 +207,18 @@
                 <% if (tournamentsList != null) {
                     for (int i = 0; i < tournamentsList.size(); i++) {
                         Tournament t = tournamentsList.get(i);
-                        String cfgJson = (t.getSeriesPointsConfig() != null && !t.getSeriesPointsConfig().trim().isEmpty()) 
-                            ? t.getSeriesPointsConfig() : "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                        String rawCfg = (t != null) ? t.getSeriesPointsConfig() : null;
+                        String cfgJson = (rawCfg != null && rawCfg.trim().startsWith("{") && rawCfg.trim().endsWith("}")) 
+                            ? rawCfg.trim() : "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                        String safeName = (t != null && t.getName() != null) ? t.getName().replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
+                        String safeId = (t != null && t.getId() != null) ? t.getId() : "";
+                        int tIdx = (t != null && t.getTournamentIndexInSeries() > 0) ? t.getTournamentIndexInSeries() : (i + 1);
                 %>
                     {
-                        id: "<%= t.getId() %>",
-                        name: "<%= t.getName() != null ? t.getName().replace("\"", "\\\"") : "" %>",
-                        index: <%= t.getTournamentIndexInSeries() > 0 ? t.getTournamentIndexInSeries() : (i + 1) %>,
+                        id: "<%= safeId %>",
+                        name: "<%= safeName %>",
+                        index: <%= tIdx %>,
+                        format: "<%= (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "" %>",
                         pointsConfig: <%= cfgJson %>
                     }<%= (i < tournamentsList.size() - 1) ? "," : "" %>
                 <%  }
@@ -229,6 +226,10 @@
             ];
             window.seriesPhaseSize = <%= phaseSize %>;
         </script>
+        <!-- Engine Algorithms for Series Standings Calculation -->
+        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings.js"></script>
     </body>
 </html>

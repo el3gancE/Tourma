@@ -1,4 +1,4 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="dao.TournamentDAO"%>
 <%@page import="dao.ParticipantDAO"%>
@@ -34,7 +34,15 @@
                 StringBuilder sb = new StringBuilder("[");
                 for (int i = 0; i < plist.size(); i++) {
                     if (i > 0) sb.append(",");
-                    sb.append("\"").append(plist.get(i).getRawName().replace("\"", "\\\"")).append("\"");
+                    Team tm = plist.get(i);
+                    String tName = tm != null ? tm.getName() : null;
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = tm != null ? tm.getRawName() : null;
+                    }
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = "Đội #" + (i + 1);
+                    }
+                    sb.append("\"").append(tName.replace("\"", "\\\"")).append("\"");
                 }
                 sb.append("]");
                 teamsJson = sb.toString();

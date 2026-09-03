@@ -19,6 +19,10 @@
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId);
+            ParticipantDAO pDao = new ParticipantDAO();
+            List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
+            int totalTeamsCount = plist != null ? plist.size() : 8;
+
             if (t != null) {
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
@@ -28,12 +32,13 @@
                 }
                 if ("MULTI_STAGE".equals(tournamentType) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
+                    if (cutTarget >= totalTeamsCount || cutTarget <= 1) {
+                        cutTarget = Math.max(2, (int) Math.pow(2, Math.max(1, (int) Math.floor(Math.log(totalTeamsCount) / Math.log(2)) - 1)));
+                    }
                 } else {
                     cutTarget = 0;
                 }
             }
-            ParticipantDAO pDao = new ParticipantDAO();
-            List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
             if (plist != null && !plist.isEmpty()) {
                 int takeCount = plist.size();
                 // For multi-stage stage 2: server only sends the advancingSeatsCount teams
@@ -46,7 +51,15 @@
                 StringBuilder sb = new StringBuilder("[");
                 for (int i = 0; i < takeCount; i++) {
                     if (i > 0) sb.append(",");
-                    sb.append("\"").append(plist.get(i).getRawName().replace("\"", "\\\"")).append("\"");
+                    Team tm = plist.get(i);
+                    String tName = tm != null ? tm.getName() : null;
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = tm != null ? tm.getRawName() : null;
+                    }
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = "Đội #" + (i + 1);
+                    }
+                    sb.append("\"").append(tName.replace("\"", "\\\"")).append("\"");
                 }
                 sb.append("]");
                 deTeamsJson = sb.toString();
@@ -288,23 +301,33 @@
                 var preloadedTeams = <%= deTeamsJson %>;
                 var cutTarget = <%= cutTarget %>;
                 var tournamentType = '<%= tournamentType %>';
+                try { localStorage.setItem('tourma_type_' + tourneyId, tournamentType); } catch(e) {}
                 var currentStage = <%= currentStage %>;
 
                 // Resolve advance count from config or localStorage
-                var advCount = <%= cutTarget %>;
-                if (!advCount || advCount <= 1) {
-                    try {
-                        var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
-                        if (multiCfg && multiCfg.stage1Config) {
-                            advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
-                        }
-                    } catch(e) {}
-                }
+                var advCount = 0;
+                try {
+                    var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
+                    if (multiCfg && multiCfg.stage1Config) {
+                        advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                    }
+                } catch(e) {}
                 if (!advCount || advCount <= 1) {
                     var rawCut = localStorage.getItem('tourma_advance_count_' + tourneyId) ||
                                  localStorage.getItem('tourma_cut_target_' + tourneyId);
                     if (rawCut) advCount = parseInt(rawCut, 10);
                 }
+                if (!advCount || advCount <= 1) {
+                    advCount = <%= cutTarget %>;
+                }
+
+                var totalTeamsCount = (preloadedTeams && preloadedTeams.length > 0) ? preloadedTeams.length : 8;
+                if (advCount >= totalTeamsCount || advCount <= 1) {
+                    var p2 = 4;
+                    while (p2 * 2 <= totalTeamsCount) p2 *= 2;
+                    advCount = Math.max(2, p2 / 2);
+                }
+                cutTarget = advCount;
 
                 // Check stage2Teams from localStorage
                 var stage2TeamsRaw = null;

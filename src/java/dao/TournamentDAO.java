@@ -380,4 +380,86 @@ public class TournamentDAO {
         }
         return false;
     }
+
+    public boolean updateTournamentFormatAndType(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        if (format == null || format.trim().isEmpty()) format = "SINGLE_ELIMINATION";
+        if (tournamentType == null || tournamentType.trim().isEmpty()) tournamentType = "SINGLE_STAGE";
+
+        String sqlTourney = "UPDATE tournaments SET tournament_type = ? WHERE id = ?";
+
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sqlTourney)) {
+                ps.setString(1, tournamentType.trim().toUpperCase());
+                ps.setString(2, tournamentId.trim());
+                ps.executeUpdate();
+            }
+
+            String sqlDeleteStages = "DELETE FROM tournament_stages WHERE tournament_id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlDeleteStages)) {
+                ps.setString(1, tournamentId.trim());
+                ps.executeUpdate();
+            }
+
+            if ("MULTI_STAGE".equalsIgnoreCase(tournamentType)) {
+                String s1 = (stage1Format != null && !stage1Format.trim().isEmpty()) ? stage1Format.trim().toUpperCase() : "GROUP_STAGE";
+                String s2 = (stage2Format != null && !stage2Format.trim().isEmpty()) ? stage2Format.trim().toUpperCase() : "SINGLE_ELIMINATION";
+
+                String sqlInsert1 = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 1, N'Stage 1', ?)";
+                try (PreparedStatement ps = conn.prepareStatement(sqlInsert1)) {
+                    ps.setString(1, "STAGE_1_" + System.currentTimeMillis());
+                    ps.setString(2, tournamentId.trim());
+                    ps.setString(3, s1);
+                    ps.executeUpdate();
+                }
+
+                String sqlInsert2 = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 2, N'Stage 2', ?)";
+                try (PreparedStatement ps = conn.prepareStatement(sqlInsert2)) {
+                    ps.setString(1, "STAGE_2_" + System.currentTimeMillis());
+                    ps.setString(2, tournamentId.trim());
+                    ps.setString(3, s2);
+                    ps.executeUpdate();
+                }
+            } else {
+                String sqlInsertStage = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 1, N'Main Stage', ?)";
+                try (PreparedStatement ps = conn.prepareStatement(sqlInsertStage)) {
+                    ps.setString(1, "STAGE_" + System.currentTimeMillis());
+                    ps.setString(2, tournamentId.trim());
+                    ps.setString(3, format.trim().toUpperCase());
+                    ps.executeUpdate();
+                }
+            }
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateTournamentFormatAndType(String tournamentId, String format, String tournamentType) {
+        return updateTournamentFormatAndType(tournamentId, format, tournamentType, null, null);
+    }
+
+    public List<String> getStageFormats(String tournamentId) {
+        List<String> list = new ArrayList<>();
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return list;
+        String sql = "SELECT format FROM tournament_stages WHERE tournament_id = ? ORDER BY stage_order ASC";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String f = rs.getString("format");
+                    if (f != null) list.add(f.trim().toUpperCase());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

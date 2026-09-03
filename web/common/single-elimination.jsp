@@ -42,7 +42,15 @@
                 StringBuilder sb = new StringBuilder("[");
                 for (int i = 0; i < plist.size(); i++) {
                     if (i > 0) sb.append(",");
-                    sb.append("\"").append(plist.get(i).getRawName().replace("\"", "\\\"")).append("\"");
+                    Team tm = plist.get(i);
+                    String tName = tm != null ? tm.getName() : null;
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = tm != null ? tm.getRawName() : null;
+                    }
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = "Đội #" + (i + 1);
+                    }
+                    sb.append("\"").append(tName.replace("\"", "\\\"")).append("\"");
                 }
                 sb.append("]");
                 teamsJson = sb.toString();
@@ -258,6 +266,7 @@
                 var preloadedTeams = <%= teamsJson %>;
                 var cutTarget = <%= cutTarget %>; // from DB
                 var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
+                try { localStorage.setItem('tourma_type_' + tourneyId, isMultiStage ? 'MULTI_STAGE' : 'SINGLE_STAGE'); } catch (e) { }
                 var currentStage = <%= currentStage %>;
 
                 if (currentStage === 2) {
