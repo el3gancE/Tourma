@@ -51,9 +51,53 @@
             // Only matches with 2 real confirmed teams and NOT BYE are clickable
             var isPlayable = !isT1Placeholder && !isT2Placeholder && !hasBye;
 
+            var getDisplaySeed = function (rawSeed, matchData) {
+                if (rawSeed === undefined || rawSeed === null || rawSeed === '') return '';
+                var sNum = parseInt(String(rawSeed).replace('#', '').trim(), 10);
+                if (isNaN(sNum)) return '';
+                var cfgRaw = null;
+                try {
+                    var tid = (matchData && (matchData.tournamentId || matchData.tourneyId)) ||
+                              (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
+                              (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
+                              (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
+                              (window.TourmaSwissStage && window.TourmaSwissStage.tournamentId) ||
+                              (window.TourmaGroupStage && window.TourmaGroupStage.tournamentId) ||
+                              (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId) ||
+                              window.TourmaContextPathTourneyId;
+                    if (!tid) {
+                        var params = new URLSearchParams(window.location.search);
+                        tid = params.get('id');
+                    }
+                    if (tid) {
+                        cfgRaw = localStorage.getItem('tourma_hide_seed_config_' + tid);
+                    }
+                } catch (e) {}
+
+                if (cfgRaw) {
+                    try {
+                        var cfg = (typeof cfgRaw === 'string') ? JSON.parse(cfgRaw) : cfgRaw;
+                        if (cfg && cfg.isEnabled) {
+                            var rawVisible = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? String(cfg.visibleCount).trim() : '';
+                            if (rawVisible === '' || rawVisible === '0') {
+                                return '';
+                            }
+                            var maxVisible = parseInt(rawVisible, 10);
+                            if (isNaN(maxVisible) || maxVisible <= 0) {
+                                return '';
+                            }
+                            if (sNum > maxVisible) {
+                                return '';
+                            }
+                        }
+                    } catch (e) {}
+                }
+                return String(sNum);
+            };
+
             var hideSeeds = (data.hideSeeds === true);
-            var seed1 = (isT1Bye || hideSeeds) ? '' : (t1.seed || '').toString().replace('#', '');
-            var seed2 = (isT2Bye || hideSeeds) ? '' : (t2.seed || '').toString().replace('#', '');
+            var seed1 = (isT1Bye || isT1Placeholder || hideSeeds) ? '' : getDisplaySeed(t1.seed, data);
+            var seed2 = (isT2Bye || isT2Placeholder || hideSeeds) ? '' : getDisplaySeed(t2.seed, data);
 
             var t1ScoreDisp = (isDone && !hasBye && t1.score !== undefined && t1.score !== null && t1.score !== '') ? t1.score : '';
             var t2ScoreDisp = (isDone && !hasBye && t2.score !== undefined && t2.score !== null && t2.score !== '') ? t2.score : '';
@@ -78,8 +122,12 @@
             var t1Class = 'match-team-side team-left ' + (isT1Winner ? 'winner ' : '') + (isT1Placeholder ? 'placeholder ' : '') + (isT1Bye ? 'bye-team ' : '');
             var t2Class = 'match-team-side team-right ' + (isT2Winner ? 'winner ' : '') + (isT2Placeholder ? 'placeholder ' : '') + (isT2Bye ? 'bye-team ' : '');
 
-            var seed1Html = (isT1Bye || !seed1) ? '<span class="match-list-seed bye-seed"></span>' : ('<span class="match-list-seed">' + seed1 + '</span>');
-            var seed2Html = (isT2Bye || !seed2) ? '<span class="match-list-seed bye-seed"></span>' : ('<span class="match-list-seed">' + seed2 + '</span>');
+            var seed1Html = isT1Placeholder ? '<span class="match-list-seed bye-seed" style="visibility:hidden"></span>' : 
+                            (isT1Bye ? '<span class="match-list-seed bye-seed"></span>' : 
+                            ('<span class="match-list-seed">' + (seed1 || '') + '</span>'));
+            var seed2Html = isT2Placeholder ? '<span class="match-list-seed bye-seed" style="visibility:hidden"></span>' : 
+                            (isT2Bye ? '<span class="match-list-seed bye-seed"></span>' : 
+                            ('<span class="match-list-seed">' + (seed2 || '') + '</span>'));
 
             var accentClass = 'match-card-accent-bar' + bTypeClass;
 

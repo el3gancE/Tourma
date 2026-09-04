@@ -185,43 +185,17 @@
                             savedTeamNamesFromList = savedBracket.teamsList.map(getTeamName).filter(function(n) { return !!n; });
                         }
 
-                        if (savedTeamNamesFromList.length > 0) {
-                            // Fast path: compare saved teamsList directly
-                            if (savedTeamNamesFromList.length === currentTeamNames.length) {
-                                var allMatch = true;
-                                for (var ti = 0; ti < currentTeamNames.length; ti++) {
-                                    if (savedTeamNamesFromList.indexOf(currentTeamNames[ti]) === -1) {
-                                        allMatch = false; break;
-                                    }
+                        if (savedTeamNamesFromList.length > 0 && savedTeamNamesFromList.length === currentTeamNames.length) {
+                            // Exact seed sequence comparison
+                            var allMatch = true;
+                            for (var ti = 0; ti < currentTeamNames.length; ti++) {
+                                if (savedTeamNamesFromList[ti] !== currentTeamNames[ti]) {
+                                    allMatch = false; break;
                                 }
-                                savedValid = allMatch;
                             }
+                            savedValid = allMatch;
                         } else {
-                            // Fallback: count unique non-placeholder teams from Round 1 matches only
-                            var r1Matches = savedBracket.roundsList[0].matches || [];
-                            var r1Teams = [];
-                            for (var mi = 0; mi < r1Matches.length; mi++) {
-                                var smatch = r1Matches[mi];
-                                var sn1 = smatch.team1 ? (smatch.team1.name || smatch.team1) : '';
-                                var sn2 = smatch.team2 ? (smatch.team2.name || smatch.team2) : '';
-                                if (sn1 && sn1 !== 'BYE' && sn1 !== 'TBD' && !sn1.startsWith('W #')) {
-                                    if (r1Teams.indexOf(sn1) === -1) r1Teams.push(sn1);
-                                }
-                                if (sn2 && sn2 !== 'BYE' && sn2 !== 'TBD' && !sn2.startsWith('W #')) {
-                                    if (r1Teams.indexOf(sn2) === -1) r1Teams.push(sn2);
-                                }
-                            }
-                            // In brackets with BYEs, round 1 may have fewer teams than total.
-                            // Accept if all r1Teams exist in currentTeamNames.
-                            if (r1Teams.length > 0 && r1Teams.length <= currentTeamNames.length) {
-                                var r1AllIn = true;
-                                for (var ri = 0; ri < r1Teams.length; ri++) {
-                                    if (currentTeamNames.indexOf(r1Teams[ri]) === -1) {
-                                        r1AllIn = false; break;
-                                    }
-                                }
-                                savedValid = r1AllIn;
-                            }
+                            savedValid = false;
                         }
                     } else {
                         savedValid = true; // No teams = any saved bracket is fine
@@ -259,9 +233,13 @@
                         var mat = this.matchesMap[mKeys[k]];
                         if (mat.team1 && mat.team1.name && seedLookup[mat.team1.name] !== undefined) {
                             mat.team1.seed = seedLookup[mat.team1.name];
+                        } else if (mat.team1 && (!mat.team1.name || mat.team1.name.startsWith('W #') || mat.team1.name.startsWith('L #') || mat.team1.name === 'TBD')) {
+                            mat.team1.seed = '';
                         }
                         if (mat.team2 && mat.team2.name && seedLookup[mat.team2.name] !== undefined) {
                             mat.team2.seed = seedLookup[mat.team2.name];
+                        } else if (mat.team2 && (!mat.team2.name || mat.team2.name.startsWith('W #') || mat.team2.name.startsWith('L #') || mat.team2.name === 'TBD')) {
+                            mat.team2.seed = '';
                         }
                     }
 
@@ -285,72 +263,11 @@
                     }
                 }
             } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
-                // GENERATE FRESH BRACKET
+                // GENERATE FRESH BRACKET directly from current teamsList sequence
                 var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
                 this.bracketData = generated;
                 this.roundsList = generated.roundsList || [];
                 this.matchesMap = generated.matchesMap || {};
-
-                // For Stage 1 ONLY, check legacy key format if matches exist
-                if (this.currentStage === 1) {
-                    var legacyMap = null;
-                    try {
-                        var legacyRaw = localStorage.getItem('tourma_matches_' + this.tournamentId);
-                        if (legacyRaw) legacyMap = JSON.parse(legacyRaw);
-                    } catch (e) {}
-
-                    var oldMap = legacyMap;
-                    if (oldMap && Object.keys(oldMap).length > 0) {
-                        for (var r = 0; r < this.roundsList.length; r++) {
-                            var rMatches = this.roundsList[r].matches;
-                            for (var m = 0; m < rMatches.length; m++) {
-                                var currMatch = rMatches[m];
-                                var oldM = oldMap[currMatch.matchId];
-                                if (!oldM) continue;
-                                if (oldM.team1 && oldM.team1.name && !oldM.team1.name.startsWith('W #')) {
-                                    currMatch.team1.name = oldM.team1.name;
-                                    currMatch.team1.seed = oldM.team1.seed;
-                                }
-                                if (oldM.team2 && oldM.team2.name && !oldM.team2.name.startsWith('W #')) {
-                                    currMatch.team2.name = oldM.team2.name;
-                                    currMatch.team2.seed = oldM.team2.seed;
-                                }
-                                if (oldM.team1 && oldM.team1.score !== undefined && oldM.team1.score !== '') currMatch.team1.score = oldM.team1.score;
-                                if (oldM.team2 && oldM.team2.score !== undefined && oldM.team2.score !== '') currMatch.team2.score = oldM.team2.score;
-                                if (oldM.winnerId) {
-                                    currMatch.winnerId = oldM.winnerId;
-                                    currMatch.status = oldM.status || 'COMPLETED';
-                                    if (currMatch.nextMatchId && this.matchesMap[currMatch.nextMatchId]) {
-                                        var isT1W = (oldM.winnerId === 'team1');
-                                        var nMatch = this.matchesMap[currMatch.nextMatchId];
-                                        var wN = isT1W ? currMatch.team1.name : currMatch.team2.name;
-                                        var wS = isT1W ? currMatch.team1.seed : currMatch.team2.seed;
-                                        if (currMatch.nextMatchSlot === 1) { nMatch.team1.name = wN; nMatch.team1.seed = wS; }
-                                        else { nMatch.team2.name = wN; nMatch.team2.seed = wS; }
-                                    }
-                                } else if (oldM.status) {
-                                    currMatch.status = oldM.status;
-                                }
-                            }
-                        }
-                    }
-
-                    // Merge from dbMatches if provided (Stage 1 only)
-                    if (dbMatches && dbMatches.length > 0) {
-                        for (var i = 0; i < dbMatches.length; i++) {
-                            var dbm = dbMatches[i];
-                            var targetM = this.matchesMap[dbm.id || dbm.matchId];
-                            if (targetM) {
-                                targetM.status = dbm.status;
-                                if (targetM.team1) targetM.team1.score = dbm.team1Score;
-                                if (targetM.team2) targetM.team2.score = dbm.team2Score;
-                                if (dbm.winnerId && targetM.team1) {
-                                    targetM.winnerId = (dbm.winnerId === targetM.team1.name) ? 'team1' : 'team2';
-                                }
-                            }
-                        }
-                    }
-                }
             }
 
             this.persistMatches();
@@ -503,6 +420,7 @@
 
                 for (var m = 0; m < roundObj.matches.length; m++) {
                     var matchData = roundObj.matches[m];
+                    matchData.tournamentId = self.tournamentId;
                     var t1Name = matchData.team1 ? matchData.team1.name : '';
                     var t2Name = matchData.team2 ? matchData.team2.name : '';
                     var isBye = matchData.isBye || (t1Name === 'BYE' || t2Name === 'BYE');
@@ -755,6 +673,7 @@
 
                 for (var m = 0; m < roundObj.matches.length; m++) {
                     var matchData = roundObj.matches[m];
+                    matchData.tournamentId = self.tournamentId;
                     if (window.TourmaMatchCard && typeof window.TourmaMatchCard.createCardElement === 'function') {
                         var cardElem = window.TourmaMatchCard.createCardElement(matchData);
                         if (cardElem) listContainer.appendChild(cardElem);

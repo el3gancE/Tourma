@@ -451,6 +451,7 @@
 
             // 4. Resolve all cascading initial BYEs (Double BYEs & Single BYEs with predetermined real teams)
             var bracketData = {
+                teamsList: teamsList,
                 upperRounds: upperRounds,
                 lowerRounds: lowerRounds,
                 grandFinalsRound: grandFinalsRound,

@@ -131,15 +131,23 @@
                     </div>
 
                     <div class="manage-toolbar">
-                        <div class="manage-toolbar-left">
-                            <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15);" onclick="shuffleSubtourneyTeams()">
-                                <i class="fa-solid fa-shuffle text-mint"></i> Xáo Trộn Ngẫu Nhiên
+                        <div class="manage-toolbar-left" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <span style="color: #94a3b8; font-size: 0.85rem;">Giữ top:</span>
+                            <input type="number" id="lockTopSeedsInput" min="0" max="999" placeholder="0"
+                                   style="width: 52px; height: 32px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; color: #f8fafc; font-size: 0.85rem; text-align: center;"
+                                   onfocus="this.select()" onchange="window.saveHideSeedConfig()" oninput="window.saveHideSeedConfig()">
+                            <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem;" onclick="shuffleSubtourneyTeams()">
+                                Xáo trộn
+                            </button>
+                            <button type="button" id="btnToggleHideSeed" class="btn btn-secondary" onclick="window.toggleHideSeedMode()"
+                                    style="background: rgba(255, 255, 255, 0.06); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
+                                Ẩn seed
                             </button>
                         </div>
                         <div class="manage-toolbar-right" style="display: flex; gap: 0.5rem; align-items: center;">
                             <input type="text" class="form-control" placeholder="Tìm kiếm tên đội..." onkeyup="filterTournamentTeams(this.value)" style="max-width: 130px; font-size: 0.78rem; padding: 0.25rem 0.5rem; border-radius: 6px;">
                             <button type="button" class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);" onclick="deleteSelectedSubtourneyTeams()">
-                                <i class="fa-solid fa-trash-can"></i> Xóa Đã Chọn
+                                Xóa đã chọn
                             </button>
                         </div>
                     </div>
@@ -218,10 +226,18 @@
                 <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=<%= tourneyId %>&seriesId=<%= seriesIdVal %>" class="btn btn-secondary" style="font-weight: 700;">
                     <i class="fa-solid fa-arrow-left"></i> Quay lại Bước 2: Thể Thức
                 </a>
-                <a id="nextStepBtn" href="<%= nextStepUrl %>" class="btn btn-mint" style="font-weight: 800; border-radius: 10px; padding: 0.65rem 1.5rem;">
+                <button type="button" id="nextStepBtn" onclick="window.proceedToNextStep(event)" class="btn btn-mint" style="font-weight: 800; border-radius: 10px; padding: 0.65rem 1.5rem; border: none; cursor: pointer;">
                     Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>
-                </a>
+                </button>
             </div>
+
+            <form id="saveOrderAndProceedForm" method="POST" action="${pageContext.request.contextPath}/rolling/tournament-teams" style="display: none;">
+                <input type="hidden" name="action" value="saveTeamsOrder">
+                <input type="hidden" name="tournamentId" value="<%= tourneyId %>">
+                <input type="hidden" name="seriesId" value="<%= seriesIdVal %>">
+                <input type="hidden" name="nextUrl" value="<%= nextStepUrl %>">
+                <input type="hidden" name="orderedTeamNames" id="orderedTeamNamesInput" value="">
+            </form>
 
         </main>
 

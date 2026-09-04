@@ -155,17 +155,17 @@
                 return String(t);
             };
 
-            // Check if saved teams match current teams (same team count and same team names)
+            // Check if saved teams match current teams (same team count and exact seed sequence)
             var savedTeamsList = savedData ? (savedData.teamsList || []) : [];
             var isTeamsCountSame = (savedTeamsList.length === this.teamsList.length);
-            var isTeamsSameSet = false;
+            var isTeamsSameOrder = false;
             if (isTeamsCountSame && this.teamsList.length > 0) {
-                var sSet = savedTeamsList.map(getTeamName).sort();
-                var cSet = this.teamsList.map(getTeamName).sort();
-                isTeamsSameSet = true;
-                for (var ti = 0; ti < sSet.length; ti++) {
-                    if (sSet[ti] !== cSet[ti]) {
-                        isTeamsSameSet = false;
+                var sNames = savedTeamsList.map(getTeamName);
+                var cNames = this.teamsList.map(getTeamName);
+                isTeamsSameOrder = true;
+                for (var ti = 0; ti < sNames.length; ti++) {
+                    if (sNames[ti] !== cNames[ti]) {
+                        isTeamsSameOrder = false;
                         break;
                     }
                 }
@@ -175,9 +175,9 @@
             var savedConfig = savedData ? (savedData.config || {}) : {};
             var isConfigSame = (Number(savedConfig.legsCount || 1) === Number(this.config.legsCount || 1));
 
-            // Validate: saved rounds must have matching teams, matching legsCount, and at least 1 round with ≥1 real match
+            // Validate: saved rounds must have matching teams in exact sequence, matching legsCount, and at least 1 round with ≥1 real match
             var isValidSaved = false;
-            if (savedData && isTeamsSameSet && isConfigSame && savedData.rounds && savedData.rounds.length > 0) {
+            if (savedData && isTeamsSameOrder && isConfigSame && savedData.rounds && savedData.rounds.length > 0) {
                 for (var rv = 0; rv < savedData.rounds.length; rv++) {
                     var rdv = savedData.rounds[rv];
                     if (rdv && rdv.matches && rdv.matches.length > 0) {

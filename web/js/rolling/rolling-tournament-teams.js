@@ -209,8 +209,13 @@
     var rows = Array.from(tbody.querySelectorAll('tr.team-table-row'));
     if (rows.length <= 1) return;
 
-    for (var i = rows.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
+    var lockInput = document.getElementById('lockTopSeedsInput');
+    var lockCount = lockInput ? parseInt(lockInput.value, 10) : 0;
+    if (isNaN(lockCount) || lockCount < 0) lockCount = 0;
+    if (lockCount >= rows.length) return;
+
+    for (var i = rows.length - 1; i > lockCount; i--) {
+      var j = lockCount + Math.floor(Math.random() * (i - lockCount + 1));
       var temp = rows[i];
       rows[i] = rows[j];
       rows[j] = temp;
@@ -236,6 +241,126 @@
     }
   };
 
-  document.addEventListener('DOMContentLoaded', window.initSubtourneyDragAndDrop);
+  function getSubtourneyId() {
+    var params = new URLSearchParams(window.location.search);
+    return params.get('id') || 'demo';
+  }
+
+  window.initHideSeedConfig = function () {
+    var tid = getSubtourneyId();
+    var btn = document.getElementById('btnToggleHideSeed');
+    var input = document.getElementById('lockTopSeedsInput');
+    if (!btn) return;
+
+    var isEnabled = false;
+    var visibleCount = '';
+    if (tid) {
+      try {
+        var raw = localStorage.getItem('tourma_hide_seed_config_' + tid);
+        if (raw) {
+          var cfg = JSON.parse(raw);
+          isEnabled = !!cfg.isEnabled;
+          visibleCount = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? cfg.visibleCount : '';
+        }
+      } catch (e) {}
+    }
+
+    if (input) {
+      input.value = visibleCount;
+    }
+    window.applyHideSeedUI(isEnabled);
+  };
+
+  window.applyHideSeedUI = function (isEnabled) {
+    var btn = document.getElementById('btnToggleHideSeed');
+    if (!btn) return;
+
+    if (isEnabled) {
+      btn.dataset.active = 'true';
+      btn.style.background = '#10b981';
+      btn.style.color = '#ffffff';
+      btn.style.borderColor = '#10b981';
+    } else {
+      btn.dataset.active = 'false';
+      btn.style.background = 'rgba(255, 255, 255, 0.06)';
+      btn.style.color = '#94a3b8';
+      btn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+    }
+  };
+
+  window.toggleHideSeedMode = function () {
+    var btn = document.getElementById('btnToggleHideSeed');
+    var isCurrentlyActive = (btn && btn.dataset.active === 'true');
+    var newActive = !isCurrentlyActive;
+    window.applyHideSeedUI(newActive);
+    window.saveHideSeedConfig();
+  };
+
+  window.saveHideSeedConfig = function () {
+    var tid = getSubtourneyId();
+    var btn = document.getElementById('btnToggleHideSeed');
+    var input = document.getElementById('lockTopSeedsInput');
+    var isEnabled = (btn && btn.dataset.active === 'true');
+    var visibleCount = input ? input.value.trim() : '';
+
+    var cfg = {
+      isEnabled: isEnabled,
+      visibleCount: visibleCount
+    };
+    if (tid) {
+      try {
+        localStorage.setItem('tourma_hide_seed_config_' + tid, JSON.stringify(cfg));
+      } catch (e) {}
+    }
+  };
+
+  window.proceedToNextStep = function (e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var rows = Array.from(document.querySelectorAll('#subtourneyTeamsTable tbody tr.team-table-row'));
+    var teamNames = [];
+    rows.forEach(function (r) {
+      var nameSpan = r.querySelector('td:nth-child(2) span');
+      if (nameSpan) {
+        var tName = nameSpan.textContent.trim();
+        if (tName) teamNames.push(tName);
+      }
+    });
+
+    var tid = getSubtourneyId();
+    if (tid) {
+      try {
+        localStorage.removeItem('tourma_matches_' + tid);
+        localStorage.removeItem('tourma_matches_stage2_' + tid);
+        localStorage.removeItem('tourma_bracket_' + tid);
+        localStorage.removeItem('tourma_bracket_stage2_' + tid);
+        localStorage.removeItem('tourma_de_matches_' + tid);
+        localStorage.removeItem('tourma_de_matches_stage2_' + tid);
+        localStorage.removeItem('tourma_rr_matches_' + tid);
+        localStorage.removeItem('tourma_group_matches_' + tid);
+        localStorage.removeItem('tourma_swiss_matches_' + tid);
+        localStorage.setItem('tourma_teams_' + tid, JSON.stringify(teamNames));
+      } catch (e) {}
+    }
+
+    var inp = document.getElementById('orderedTeamNamesInput');
+    if (inp) {
+      inp.value = teamNames.join('\n');
+    }
+    var form = document.getElementById('saveOrderAndProceedForm');
+    if (form) {
+      form.submit();
+    } else {
+      var nextBtn = document.getElementById('nextStepBtn');
+      if (nextBtn && nextBtn.getAttribute('data-href')) {
+        window.location.href = nextBtn.getAttribute('data-href');
+      }
+    }
+    return false;
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    window.initSubtourneyDragAndDrop();
+    window.initHideSeedConfig();
+  });
 
 })();

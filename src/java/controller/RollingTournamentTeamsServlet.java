@@ -158,6 +158,27 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                     }
                 }
             }
+        } else if ("saveTeamsOrder".equalsIgnoreCase(action)) {
+            String orderedNamesRaw = request.getParameter("orderedTeamNames");
+            if (orderedNamesRaw != null && !orderedNamesRaw.trim().isEmpty() && tournamentId != null) {
+                String[] lines = orderedNamesRaw.split("\\r?\\n");
+                List<String> teamList = new ArrayList<>();
+                for (String line : lines) {
+                    if (line != null && !line.trim().isEmpty()) {
+                        teamList.add(line.trim());
+                    }
+                }
+                if (!teamList.isEmpty()) {
+                    participantDAO.saveTournamentTeams(tournamentId, teamList);
+                }
+            }
+            String nextUrl = request.getParameter("nextUrl");
+            if (nextUrl != null && !nextUrl.trim().isEmpty()) {
+                response.sendRedirect(nextUrl);
+                return;
+            }
+            response.sendRedirect(request.getContextPath() + "/rolling/point-config?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : ""));
+            return;
         }
 
         response.sendRedirect(request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : ""));

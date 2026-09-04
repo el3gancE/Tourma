@@ -570,7 +570,17 @@
               var totalLbR = lowerRounds.length;
               for (var lrIdx = totalLbR - 1; lrIdx >= 0; lrIdx--) {
                 var lrNum = lrIdx + 1;
-                var posKey = isMultiStage ? ("s1_lb_r" + lrNum) : ((lrIdx === totalLbR - 1) ? "3" : ((lrIdx === totalLbR - 2) ? "4" : "5-8"));
+                var offset = totalLbR - 1 - lrIdx;
+                var posKey = (offset === 0) ? "3" : ((offset === 1) ? "4" : "5-8");
+                if (isMultiStage) {
+                  posKey = "s1_lb_r" + lrNum;
+                } else if (offset >= 2) {
+                  var k = Math.floor((offset - 2) / 2);
+                  var tStart = Math.pow(2, k + 2) + 1;
+                  var hSize = Math.pow(2, k + 1);
+                  var tEnd = Math.pow(2, k + 3);
+                  posKey = (offset % 2 === 0) ? (tStart + "-" + (tStart + hSize - 1)) : ((tStart + hSize) + "-" + tEnd);
+                }
                 var roundObj = lowerRounds[lrIdx];
                 if (roundObj && roundObj.matches) {
                   roundObj.matches.forEach(function (m) {
@@ -736,6 +746,9 @@
     teamDataArray.forEach(function (data, rankIdx) {
       var row = data.row;
       var rank = rankIdx + 1;
+
+      // Physically re-order row in table DOM according to sorted rank
+      tbody.appendChild(row);
 
       // Update Rank Badge
       if (row.cells[0]) {

@@ -297,37 +297,47 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = '<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>';
+                window.TourmaContextPathTourneyId = tourneyId;
                 var tourneyName = '<%= tourneyName %>';
                 var preloadedTeams = <%= deTeamsJson %>;
-                var cutTarget = <%= cutTarget %>;
-                var tournamentType = '<%= tournamentType %>';
+                var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
+                var tournamentType = isMultiStage ? 'MULTI_STAGE' : 'SINGLE_STAGE';
                 try { localStorage.setItem('tourma_type_' + tourneyId, tournamentType); } catch(e) {}
                 var currentStage = <%= currentStage %>;
 
-                // Resolve advance count from config or localStorage
-                var advCount = 0;
-                try {
-                    var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
-                    if (multiCfg && multiCfg.stage1Config) {
-                        advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                var cutTarget = 0;
+                if (currentStage === 2) {
+                    cutTarget = 0; // Stage 2 always plays to Grand Final champion!
+                } else if (!isMultiStage) {
+                    // Single Stage = tìm vô địch, chơi hết rounds (full stage) — clear stale cut config
+                    try { localStorage.removeItem('tourma_advance_count_' + tourneyId); } catch (e) { }
+                    try { localStorage.removeItem('tourma_cut_target_' + tourneyId); } catch (e) { }
+                    cutTarget = 0;
+                } else {
+                    // Multi-Stage Stage 1 ONLY: read cutTarget from tourma_multi_config_ localStorage
+                    try {
+                        var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
+                        if (multiCfg && multiCfg.stage1Config) {
+                            var cfgAdv = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                            if (cfgAdv > 1) {
+                                cutTarget = cfgAdv;
+                                localStorage.setItem('tourma_advance_count_' + tourneyId, cfgAdv);
+                                localStorage.setItem('tourma_cut_target_' + tourneyId, cfgAdv);
+                            }
+                        }
+                    } catch (e) { }
+                    // Fallback: try tourma_advance_count_ key
+                    if (!cutTarget || cutTarget <= 1) {
+                        try {
+                            var adv = localStorage.getItem('tourma_advance_count_' + tourneyId)
+                                || localStorage.getItem('tourma_cut_target_' + tourneyId);
+                            if (adv) cutTarget = parseInt(adv, 10);
+                        } catch (e) { }
                     }
-                } catch(e) {}
-                if (!advCount || advCount <= 1) {
-                    var rawCut = localStorage.getItem('tourma_advance_count_' + tourneyId) ||
-                                 localStorage.getItem('tourma_cut_target_' + tourneyId);
-                    if (rawCut) advCount = parseInt(rawCut, 10);
+                    if (!cutTarget || cutTarget <= 1) {
+                        cutTarget = <%= cutTarget %>;
+                    }
                 }
-                if (!advCount || advCount <= 1) {
-                    advCount = <%= cutTarget %>;
-                }
-
-                var totalTeamsCount = (preloadedTeams && preloadedTeams.length > 0) ? preloadedTeams.length : 8;
-                if (advCount >= totalTeamsCount || advCount <= 1) {
-                    var p2 = 4;
-                    while (p2 * 2 <= totalTeamsCount) p2 *= 2;
-                    advCount = Math.max(2, p2 / 2);
-                }
-                cutTarget = advCount;
 
                 // Check stage2Teams from localStorage
                 var stage2TeamsRaw = null;
@@ -346,6 +356,7 @@
 
                 // For Stage 2: enforce advanceCount
                 if (currentStage === 2) {
+                    var advCount = <%= cutTarget %>;
                     if (advCount && advCount > 1 && finalTeams.length > advCount) {
                         finalTeams = finalTeams.slice(0, advCount);
                     }

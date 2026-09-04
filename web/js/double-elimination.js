@@ -58,16 +58,15 @@
                 }
             }
 
-            // cutTarget from localStorage only relevant for multi-stage (when not already set by JSP/config)
-            if (!this.cutTarget) {
-                // Only read from localStorage for Stage 2 (multi-stage scenario)
-                if (this.currentStage === 2) {
-                    try {
-                        var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
-                                     localStorage.getItem('tourma_cut_target_' + this.tournamentId);
-                        if (rawCut) this.cutTarget = parseInt(rawCut, 10);
-                    } catch (e) {}
-                }
+            // cutTarget only valid for Multi-Stage Stage 1; Single Stage and Stage 2 must always be 0 (play to Grand Final)
+            if (this.tournamentType === 'SINGLE_STAGE' || this.currentStage === 2) {
+                this.cutTarget = 0;
+            } else if (!this.cutTarget) {
+                try {
+                    var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
+                                 localStorage.getItem('tourma_cut_target_' + this.tournamentId);
+                    if (rawCut) this.cutTarget = parseInt(rawCut, 10);
+                } catch (e) {}
             }
 
             // Load teams — JSP preloadedTeams is the authoritative source (already resolved & sliced by server)
@@ -207,7 +206,7 @@
                 savedBracket = null;
             }
 
-            // Check if saved bracket team count and cutTarget match
+            // Check if saved bracket team count, exact seed sequence, and cutTarget match
             var savedBracketValid = false;
             var isCut = (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1);
             if (savedBracket && savedBracket.matchesMap && Object.keys(savedBracket.matchesMap).length > 0) {
@@ -217,7 +216,27 @@
                 } else if (!isCut && !hasGrandFinal && this.teamsList && this.teamsList.length >= 2) {
                     savedBracketValid = false;
                 } else {
-                    savedBracketValid = true;
+                    var savedTeams = savedBracket.teamsList || [];
+                    var currentNames = (this.teamsList || []).map(function(t) {
+                        return (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
+                    });
+                    var savedNames = savedTeams.map(function(t) {
+                        return (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
+                    });
+                    if (savedNames.length === currentNames.length && currentNames.length > 0) {
+                        var sameOrder = true;
+                        for (var si = 0; si < currentNames.length; si++) {
+                            if (savedNames[si] !== currentNames[si]) {
+                                sameOrder = false;
+                                break;
+                            }
+                        }
+                        savedBracketValid = sameOrder;
+                    } else if (currentNames.length === 0) {
+                        savedBracketValid = true;
+                    } else {
+                        savedBracketValid = false;
+                    }
                 }
             }
 
@@ -277,9 +296,13 @@
                         var mat = this.matchesMap[mKeys[k]];
                         if (mat.team1 && mat.team1.name && seedLookup[mat.team1.name] !== undefined) {
                             mat.team1.seed = seedLookup[mat.team1.name];
+                        } else if (mat.team1 && (!mat.team1.name || mat.team1.name.startsWith('W #') || mat.team1.name.startsWith('L #') || mat.team1.name === 'TBD')) {
+                            mat.team1.seed = '';
                         }
                         if (mat.team2 && mat.team2.name && seedLookup[mat.team2.name] !== undefined) {
                             mat.team2.seed = seedLookup[mat.team2.name];
+                        } else if (mat.team2 && (!mat.team2.name || mat.team2.name.startsWith('W #') || mat.team2.name.startsWith('L #') || mat.team2.name === 'TBD')) {
+                            mat.team2.seed = '';
                         }
                     }
                 }
@@ -533,6 +556,7 @@
 
                 for (var m = 0; m < ro.matches.length; m++) {
                     var matchObj = this.matchesMap[ro.matches[m].matchId] || ro.matches[m];
+                    matchObj.tournamentId = this.tournamentId;
                     var t1Name = matchObj.team1 ? matchObj.team1.name : '';
                     var t2Name = matchObj.team2 ? matchObj.team2.name : '';
                     var isBye = matchObj.isBye || (t1Name === 'BYE' || t2Name === 'BYE');
@@ -643,6 +667,7 @@
 
                 for (var g = 0; g < gfRound.matches.length; g++) {
                     var gfMatch = this.matchesMap[gfRound.matches[g].matchId] || gfRound.matches[g];
+                    gfMatch.tournamentId = this.tournamentId;
                     if (window.TourmaBracketCard) {
                         var gfCard = window.TourmaBracketCard.createNodeElement ?
                             window.TourmaBracketCard.createNodeElement(gfMatch) :
@@ -763,6 +788,7 @@
 
                 for (var lm = 0; lm < lro.matches.length; lm++) {
                     var matchObj = this.matchesMap[lro.matches[lm].matchId] || lro.matches[lm];
+                    matchObj.tournamentId = this.tournamentId;
                     if (window.TourmaBracketCard) {
                         var cardElem = window.TourmaBracketCard.createNodeElement ?
                             window.TourmaBracketCard.createNodeElement(matchObj) :
@@ -932,7 +958,10 @@
 
                 for (var m = 0; m < ro.matches.length; m++) {
                     var mData = this.matchesMap[ro.matches[m].matchId] || ro.matches[m];
-                    if (mData) mData.bracketType = ro.bracketType;
+                    if (mData) {
+                        mData.bracketType = ro.bracketType;
+                        mData.tournamentId = this.tournamentId;
+                    }
                     if (window.TourmaMatchCard) {
                         var cardElem = window.TourmaMatchCard.createCardElement(mData);
                         if (cardElem) container.appendChild(cardElem);

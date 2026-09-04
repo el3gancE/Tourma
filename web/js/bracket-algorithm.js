@@ -149,13 +149,13 @@
                                 matchesMap[p1Id].nextMatchId = mId;
                                 matchesMap[p1Id].nextMatchSlot = 1;
                                 t1Name = 'W #' + (matchesMap[p1Id].matchNumber || p1Id);
-                                s1 = matchesMap[p1Id].team1 ? matchesMap[p1Id].team1.seed : '';
+                                s1 = '';
                             }
                             if (p2Id && matchesMap[p2Id]) {
                                 matchesMap[p2Id].nextMatchId = mId;
                                 matchesMap[p2Id].nextMatchSlot = 2;
                                 t2Name = 'W #' + (matchesMap[p2Id].matchNumber || p2Id);
-                                s2 = matchesMap[p2Id].team2 ? matchesMap[p2Id].team2.seed : '';
+                                s2 = '';
                             }
                         } else {
                             s1 = numByeTeams + 1 + i;
@@ -231,7 +231,7 @@
                                     s1 = (w1 && w1.seed !== undefined && w1.seed !== null) ? w1.seed : '';
                                 } else {
                                     t1Name = 'W #' + (matchesMap[p1Id].matchNumber || p1Id);
-                                    s1 = matchesMap[p1Id].team1 ? matchesMap[p1Id].team1.seed : '';
+                                    s1 = '';
                                 }
                             }
                             if (p2Id && matchesMap[p2Id]) {
@@ -243,7 +243,7 @@
                                     s2 = (w2 && w2.seed !== undefined && w2.seed !== null) ? w2.seed : '';
                                 } else {
                                     t2Name = 'W #' + (matchesMap[p2Id].matchNumber || p2Id);
-                                    s2 = matchesMap[p2Id].team2 ? matchesMap[p2Id].team2.seed : '';
+                                    s2 = '';
                                 }
                             }
 
@@ -272,7 +272,7 @@
             }
 
             this.renumberMatchesContiguously(roundsList, matchesMap);
-            return { roundsList: roundsList, matchesMap: matchesMap };
+            return { teamsList: teamsList, roundsList: roundsList, matchesMap: matchesMap };
         },
 
         /**

@@ -263,6 +263,7 @@
         <script>
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
+                window.TourmaContextPathTourneyId = tourneyId;
                 var preloadedTeams = <%= teamsJson %>;
                 var cutTarget = <%= cutTarget %>; // from DB
                 var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
