@@ -101,7 +101,9 @@
                             <tr data-partner-id="<%= p.getId() %>" data-team-name="<%= p.getName() != null ? p.getName().replace("\"", "&quot;") : "" %>" data-tourney-count="<%= tCount %>" data-created-at="<%= createdMillis %>">
                                 <td class="row-stt" style="font-weight: 700; color: var(--team-text-muted);"><%= idx + 1 %></td>
                                 <td style="font-weight: 700; color: #ffffff;">
-                                    <%= p.getName() %>
+                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&partnerId=<%= p.getId() %>&teamName=<%= java.net.URLEncoder.encode(p.getName(), "UTF-8") %>" style="color: #ffffff; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color='#2dd4bf'" onmouseout="this.style.color='#ffffff'">
+                                        <%= p.getName() %>
+                                    </a>
                                 </td>
                                 <td style="text-align: center; font-weight: 700; color: var(--team-text-muted);">
                                     <span class="tourneys-participated-val" data-partner-id="<%= p.getId() %>" data-team-name="<%= p.getName() != null ? p.getName().replace("\"", "&quot;") : "" %>"><%= tCount %></span>

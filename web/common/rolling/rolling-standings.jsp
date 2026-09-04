@@ -148,7 +148,9 @@
                                     <span class="rank-badge rank-<%= rank %>">#<%= rank %></span>
                                 </td>
                                 <td style="font-weight: 700; color: #ffffff;">
-                                    <%= dto.getTeamName() %>
+                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&teamName=<%= java.net.URLEncoder.encode(dto.getTeamName(), "UTF-8") %>" style="color: #ffffff; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color='#2dd4bf'" onmouseout="this.style.color='#ffffff'">
+                                        <%= dto.getTeamName() %>
+                                    </a>
                                 </td>
                                 <td style="text-align: center; font-weight: 700; color: var(--rolling-text-muted);">
                                     <%= activeTourneys %>
@@ -174,7 +176,9 @@
                                     <span class="rank-badge rank-<%= rank %>">#<%= rank %></span>
                                 </td>
                                 <td style="font-weight: 700; color: #ffffff;">
-                                    <%= st.getNormalizedTeamName() %>
+                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&teamName=<%= java.net.URLEncoder.encode(st.getNormalizedTeamName(), "UTF-8") %>" style="color: #ffffff; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color='#2dd4bf'" onmouseout="this.style.color='#ffffff'">
+                                        <%= st.getNormalizedTeamName() %>
+                                    </a>
                                 </td>
                                 <td style="text-align: center; font-weight: 700; color: var(--rolling-text-muted);">
                                     <%= tourneyCount %>

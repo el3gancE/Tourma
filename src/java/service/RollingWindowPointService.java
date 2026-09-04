@@ -237,7 +237,7 @@ public class RollingWindowPointService {
     }
 
     // Helper: Parse JSON string into Map
-    private Map<String, Integer> parsePointsConfigJson(String jsonStr) {
+    public Map<String, Integer> parsePointsConfigJson(String jsonStr) {
         Map<String, Integer> map = new HashMap<>();
         if (jsonStr == null || jsonStr.trim().isEmpty()) return map;
         try {
@@ -254,7 +254,7 @@ public class RollingWindowPointService {
     }
 
     // Helper: Resolve points awarded for a given position
-    private int resolvePointsForPosition(int pos, Map<String, Integer> posPtsMap) {
+    public int resolvePointsForPosition(int pos, Map<String, Integer> posPtsMap) {
         if (posPtsMap.containsKey(String.valueOf(pos))) {
             return posPtsMap.get(String.valueOf(pos));
         } else if (pos == 1 && posPtsMap.containsKey("1")) {
