@@ -58,16 +58,15 @@
                 }
             }
 
-            // cutTarget from localStorage only relevant for multi-stage (when not already set by JSP/config)
-            if (!this.cutTarget) {
-                // Only read from localStorage for Stage 2 (multi-stage scenario)
-                if (this.currentStage === 2) {
-                    try {
-                        var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
-                                     localStorage.getItem('tourma_cut_target_' + this.tournamentId);
-                        if (rawCut) this.cutTarget = parseInt(rawCut, 10);
-                    } catch (e) {}
-                }
+            // cutTarget only valid for Multi-Stage Stage 1; Single Stage and Stage 2 must always be 0 (play to Grand Final)
+            if (this.tournamentType === 'SINGLE_STAGE' || this.currentStage === 2) {
+                this.cutTarget = 0;
+            } else if (!this.cutTarget) {
+                try {
+                    var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
+                                 localStorage.getItem('tourma_cut_target_' + this.tournamentId);
+                    if (rawCut) this.cutTarget = parseInt(rawCut, 10);
+                } catch (e) {}
             }
 
             // Load teams — JSP preloadedTeams is the authoritative source (already resolved & sliced by server)
@@ -101,12 +100,12 @@
                 return { name: tName, rawName: tName, seed: tSeed };
             };
 
-            // Priority 1: JSP server-provided teams (authoritative — already sliced to correct count)
-            if (this._preloadedTeams && this._preloadedTeams.length > 0) {
-                this.teamsList = this._preloadedTeams.map(mapTeam);
-            // Priority 2: stage2Teams from localStorage (only when JSP sent nothing, e.g. demo mode)
-            } else if (this.currentStage === 2 && stage2Teams && stage2Teams.length > 0) {
+            // Priority 1 for Stage 2: qualified teams advancing from Stage 1
+            if (this.currentStage === 2 && stage2Teams && stage2Teams.length > 0) {
                 this.teamsList = stage2Teams.map(mapTeam);
+            // Priority 2: JSP server-provided teams (for Single Stage / Stage 1)
+            } else if (this._preloadedTeams && this._preloadedTeams.length > 0) {
+                this.teamsList = this._preloadedTeams.map(mapTeam);
             } else {
                 // Priority 3: Fallback from localStorage tourma_teams_ / tourma_stage2_teams_
                 try {
@@ -207,45 +206,81 @@
                 savedBracket = null;
             }
 
-            // Check if saved bracket team count matches current teamsList
+            // Check if saved bracket team count, exact seed sequence, and cutTarget match
             var savedBracketValid = false;
+            var isCut = (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1);
             if (savedBracket && savedBracket.matchesMap && Object.keys(savedBracket.matchesMap).length > 0) {
-                // Determine how many unique teams appear in the saved bracket's first round
-                var savedTeamNames = {};
-                var keys = Object.keys(savedBracket.matchesMap);
-                for (var i = 0; i < keys.length; i++) {
-                    var m = savedBracket.matchesMap[keys[i]];
-                    var t1 = m.team1 ? m.team1.name : '';
-                    var t2 = m.team2 ? m.team2.name : '';
-                    if (t1 && t1 !== 'BYE' && !t1.startsWith('W #') && !t1.startsWith('L #') && t1 !== 'Winner UB' && t1 !== 'Winner LB') savedTeamNames[t1] = 1;
-                    if (t2 && t2 !== 'BYE' && !t2.startsWith('W #') && !t2.startsWith('L #') && t2 !== 'Winner UB' && t2 !== 'Winner LB') savedTeamNames[t2] = 1;
-                }
-                var savedTeamCount = Object.keys(savedTeamNames).length;
-                var isAllMatch = true;
-                if (this.teamsList && this.teamsList.length > 0) {
-                    for (var ti = 0; ti < this.teamsList.length; ti++) {
-                        var tm = this.teamsList[ti];
-                        var tmName = (typeof tm === 'object') ? (tm.name || tm.rawName) : tm;
-                        if (tmName && !savedTeamNames[tmName]) {
-                            isAllMatch = false;
-                            break;
-                        }
-                    }
-                }
-                // Accept saved bracket only if every team matches and team count matches
-                savedBracketValid = isAllMatch && (savedTeamCount === 0 || savedTeamCount === this.teamsList.length || Math.abs(savedTeamCount - this.teamsList.length) <= 1);
-
-                // Verify if cut stage format matches expected cut stage vs full bracket
-                var isCutExpected = (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1 && this.teamsList && this.cutTarget < this.teamsList.length);
-                var isSavedCut = (savedBracket && savedBracket.grandFinalsRound === null);
-                if (isCutExpected !== isSavedCut) {
+                var hasGrandFinal = !!(savedBracket.grandFinalsRound && savedBracket.grandFinalsRound.matches && savedBracket.grandFinalsRound.matches.length > 0);
+                if (isCut && hasGrandFinal) {
                     savedBracketValid = false;
+                } else if (!isCut && !hasGrandFinal && this.teamsList && this.teamsList.length >= 2) {
+                    savedBracketValid = false;
+                } else {
+                    var savedTeams = savedBracket.teamsList || [];
+                    var currentNames = (this.teamsList || []).map(function(t) {
+                        return (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
+                    });
+                    var savedNames = savedTeams.map(function(t) {
+                        return (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
+                    });
+                    if (savedNames.length === currentNames.length && currentNames.length > 0) {
+                        var sameOrder = true;
+                        for (var si = 0; si < currentNames.length; si++) {
+                            if (savedNames[si] !== currentNames[si]) {
+                                sameOrder = false;
+                                break;
+                            }
+                        }
+                        savedBracketValid = sameOrder;
+                    } else if (currentNames.length === 0) {
+                        savedBracketValid = true;
+                    } else {
+                        savedBracketValid = false;
+                    }
                 }
             }
 
             if (savedBracketValid && savedBracket) {
                 this.bracketData = savedBracket;
                 this.matchesMap = savedBracket.matchesMap || {};
+
+                // Re-link match references from rounds to matchesMap so object references remain 100% identical!
+                var self = this;
+                var relinkMatch = function(m) {
+                    if (!m) return m;
+                    var mKey = (m.matchId !== undefined && m.matchId !== null) ? m.matchId : m.id;
+                    if (mKey === undefined || mKey === null) return m;
+                    if (!self.matchesMap[mKey]) {
+                        self.matchesMap[mKey] = m;
+                    }
+                    return self.matchesMap[mKey];
+                };
+
+                if (this.bracketData.upperRounds) {
+                    for (var ur = 0; ur < this.bracketData.upperRounds.length; ur++) {
+                        var uRound = this.bracketData.upperRounds[ur];
+                        if (uRound && uRound.matches) {
+                            for (var um = 0; um < uRound.matches.length; um++) {
+                                uRound.matches[um] = relinkMatch(uRound.matches[um]);
+                            }
+                        }
+                    }
+                }
+                if (this.bracketData.lowerRounds) {
+                    for (var lr = 0; lr < this.bracketData.lowerRounds.length; lr++) {
+                        var lRound = this.bracketData.lowerRounds[lr];
+                        if (lRound && lRound.matches) {
+                            for (var lm = 0; lm < lRound.matches.length; lm++) {
+                                lRound.matches[lm] = relinkMatch(lRound.matches[lm]);
+                            }
+                        }
+                    }
+                }
+                if (this.bracketData.grandFinalsRound && this.bracketData.grandFinalsRound.matches) {
+                    for (var gm = 0; gm < this.bracketData.grandFinalsRound.matches.length; gm++) {
+                        this.bracketData.grandFinalsRound.matches[gm] = relinkMatch(this.bracketData.grandFinalsRound.matches[gm]);
+                    }
+                }
 
                 // Synchronize correct original seeds from this.teamsList to matchesMap in saved bracket
                 if (this.teamsList && this.teamsList.length > 0) {
@@ -261,9 +296,13 @@
                         var mat = this.matchesMap[mKeys[k]];
                         if (mat.team1 && mat.team1.name && seedLookup[mat.team1.name] !== undefined) {
                             mat.team1.seed = seedLookup[mat.team1.name];
+                        } else if (mat.team1 && (!mat.team1.name || mat.team1.name.startsWith('W #') || mat.team1.name.startsWith('L #') || mat.team1.name === 'TBD')) {
+                            mat.team1.seed = '';
                         }
                         if (mat.team2 && mat.team2.name && seedLookup[mat.team2.name] !== undefined) {
                             mat.team2.seed = seedLookup[mat.team2.name];
+                        } else if (mat.team2 && (!mat.team2.name || mat.team2.name.startsWith('W #') || mat.team2.name.startsWith('L #') || mat.team2.name === 'TBD')) {
+                            mat.team2.seed = '';
                         }
                     }
                 }
@@ -517,6 +556,7 @@
 
                 for (var m = 0; m < ro.matches.length; m++) {
                     var matchObj = this.matchesMap[ro.matches[m].matchId] || ro.matches[m];
+                    matchObj.tournamentId = this.tournamentId;
                     var t1Name = matchObj.team1 ? matchObj.team1.name : '';
                     var t2Name = matchObj.team2 ? matchObj.team2.name : '';
                     var isBye = matchObj.isBye || (t1Name === 'BYE' || t2Name === 'BYE');
@@ -529,6 +569,16 @@
                             window.TourmaBracketCard.createCardElement(matchObj);
                         if (cardElem) stack.appendChild(cardElem);
                     }
+                }
+                var hasVisibleCards = false;
+                for (var ci = 0; ci < stack.children.length; ci++) {
+                    if (!stack.children[ci].classList.contains('bye-empty-slot')) {
+                        hasVisibleCards = true;
+                        break;
+                    }
+                }
+                if (!hasVisibleCards && stack.children.length > 0) {
+                    col.style.display = 'none';
                 }
                 col.appendChild(stack);
                 wrapper.appendChild(col);
@@ -617,6 +667,7 @@
 
                 for (var g = 0; g < gfRound.matches.length; g++) {
                     var gfMatch = this.matchesMap[gfRound.matches[g].matchId] || gfRound.matches[g];
+                    gfMatch.tournamentId = this.tournamentId;
                     if (window.TourmaBracketCard) {
                         var gfCard = window.TourmaBracketCard.createNodeElement ?
                             window.TourmaBracketCard.createNodeElement(gfMatch) :
@@ -645,6 +696,14 @@
             var self = this;
 
             var lowerRounds = this.bracketData.lowerRounds || [];
+            if (lowerRounds.length === 0) {
+                var emptyNotice = document.createElement('div');
+                emptyNotice.className = 'de-empty-lb-notice';
+                emptyNotice.style.cssText = 'color: #94a3b8; font-size: 13px; font-style: italic; padding: 24px; text-align: center; width: 100%;';
+                emptyNotice.innerText = 'Nhánh Thua không có vòng phụ (Đội thua ở UB Final sẽ vào thẳng Grand Final).';
+                wrapper.appendChild(emptyNotice);
+                return;
+            }
 
             for (var lr = 0; lr < lowerRounds.length; lr++) {
                 var lro = lowerRounds[lr];
@@ -729,6 +788,7 @@
 
                 for (var lm = 0; lm < lro.matches.length; lm++) {
                     var matchObj = this.matchesMap[lro.matches[lm].matchId] || lro.matches[lm];
+                    matchObj.tournamentId = this.tournamentId;
                     if (window.TourmaBracketCard) {
                         var cardElem = window.TourmaBracketCard.createNodeElement ?
                             window.TourmaBracketCard.createNodeElement(matchObj) :
@@ -898,7 +958,10 @@
 
                 for (var m = 0; m < ro.matches.length; m++) {
                     var mData = this.matchesMap[ro.matches[m].matchId] || ro.matches[m];
-                    if (mData) mData.bracketType = ro.bracketType;
+                    if (mData) {
+                        mData.bracketType = ro.bracketType;
+                        mData.tournamentId = this.tournamentId;
+                    }
                     if (window.TourmaMatchCard) {
                         var cardElem = window.TourmaMatchCard.createCardElement(mData);
                         if (cardElem) container.appendChild(cardElem);
@@ -1498,6 +1561,17 @@
             }
 
             localStorage.setItem('tourma_stage1_completed_' + this.tournamentId, 'true');
+            if (window.StageEndPopup) {
+                window.StageEndPopup.update(
+                    this.tournamentId,
+                    'DOUBLE_ELIMINATION',
+                    this.matchesMap,
+                    this.teamsList,
+                    { cutTarget: this.cutTarget },
+                    null,
+                    1
+                );
+            }
         },
 
         checkFinalStage: function () {

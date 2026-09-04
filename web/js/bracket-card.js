@@ -45,8 +45,52 @@
             // An editable match must have 2 confirmed teams and NO BYE team
             var isPlayable = !isT1Placeholder && !isT2Placeholder && !hasBye;
 
-            var seed1 = isT1Bye ? '' : (t1.seed || '').toString().replace('#', '');
-            var seed2 = isT2Bye ? '' : (t2.seed || '').toString().replace('#', '');
+            var getDisplaySeed = function (rawSeed, matchData) {
+                if (rawSeed === undefined || rawSeed === null || rawSeed === '') return '';
+                var sNum = parseInt(String(rawSeed).replace('#', '').trim(), 10);
+                if (isNaN(sNum)) return '';
+                var cfgRaw = null;
+                try {
+                    var tid = (matchData && (matchData.tournamentId || matchData.tourneyId)) ||
+                              (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
+                              (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
+                              (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
+                              (window.TourmaSwissStage && window.TourmaSwissStage.tournamentId) ||
+                              (window.TourmaGroupStage && window.TourmaGroupStage.tournamentId) ||
+                              (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId) ||
+                              window.TourmaContextPathTourneyId;
+                    if (!tid) {
+                        var params = new URLSearchParams(window.location.search);
+                        tid = params.get('id');
+                    }
+                    if (tid) {
+                        cfgRaw = localStorage.getItem('tourma_hide_seed_config_' + tid);
+                    }
+                } catch (e) {}
+
+                if (cfgRaw) {
+                    try {
+                        var cfg = (typeof cfgRaw === 'string') ? JSON.parse(cfgRaw) : cfgRaw;
+                        if (cfg && cfg.isEnabled) {
+                            var rawVisible = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? String(cfg.visibleCount).trim() : '';
+                            if (rawVisible === '' || rawVisible === '0') {
+                                return ''; // Hide all seeds if input is empty or 0
+                            }
+                            var maxVisible = parseInt(rawVisible, 10);
+                            if (isNaN(maxVisible) || maxVisible <= 0) {
+                                return ''; // Hide all seeds
+                            }
+                            if (sNum > maxVisible) {
+                                return ''; // Hide seeds with number > maxVisible
+                            }
+                        }
+                    } catch (e) {}
+                }
+                return String(sNum);
+            };
+
+            var seed1 = (isT1Bye || isT1Placeholder) ? '' : getDisplaySeed(t1.seed, data);
+            var seed2 = (isT2Bye || isT2Placeholder) ? '' : getDisplaySeed(t2.seed, data);
 
             var t1ScoreDisp = (isDone && !hasBye && t1.score !== undefined && t1.score !== null && t1.score !== '') ? t1.score : '';
             var t2ScoreDisp = (isDone && !hasBye && t2.score !== undefined && t2.score !== null && t2.score !== '') ? t2.score : '';
@@ -72,14 +116,14 @@
                     '<div class="bracket-teams-box">' +
                         '<div class="bracket-team-row winner" data-team-name="' + t1Name + '">' +
                             '<div class="bracket-team-info">' +
-                                (seed1 ? ('<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.25);color:#2dd4bf;">' + seed1 + '</span>') : '') +
+                                (seed1 ? ('<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.25);color:#2dd4bf;">' + seed1 + '</span>') : '<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.1);border-color:rgba(45,212,191,0.25);"></span>') +
                                 '<span class="bracket-team-name" title="' + t1Name + '">' + t1Name + '</span>' +
                             '</div>' +
                             '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
                         '</div>' +
                         '<div class="bracket-team-row winner" data-team-name="' + t2Name + '">' +
                             '<div class="bracket-team-info">' +
-                                (seed2 ? ('<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.25);color:#2dd4bf;">' + seed2 + '</span>') : '') +
+                                (seed2 ? ('<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.25);color:#2dd4bf;">' + seed2 + '</span>') : '<span class="bracket-seed-badge" style="background:rgba(45,212,191,0.1);border-color:rgba(45,212,191,0.25);"></span>') +
                                 '<span class="bracket-team-name" title="' + t2Name + '">' + t2Name + '</span>' +
                             '</div>' +
                             '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
@@ -110,8 +154,12 @@
             var t1RowClass = 'bracket-team-row ' + (isT1Winner ? 'winner ' : '') + (isT1Loser ? 'loser ' : '') + (isT1Bye ? 'bye-row ' : '');
             var t2RowClass = 'bracket-team-row ' + (isT2Winner ? 'winner ' : '') + (isT2Loser ? 'loser ' : '') + (isT2Bye ? 'bye-row ' : '');
 
-            var t1SeedHtml = (isT1Bye || !seed1) ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : ('<span class="bracket-seed-badge">' + seed1 + '</span>');
-            var t2SeedHtml = (isT2Bye || !seed2) ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : ('<span class="bracket-seed-badge">' + seed2 + '</span>');
+            var t1SeedHtml = isT1Placeholder ? '' : 
+                             (isT1Bye ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : 
+                             ('<span class="bracket-seed-badge">' + (seed1 ? seed1 : '') + '</span>'));
+            var t2SeedHtml = isT2Placeholder ? '' : 
+                             (isT2Bye ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : 
+                             ('<span class="bracket-seed-badge">' + (seed2 ? seed2 : '') + '</span>'));
 
             var matchHeaderContent = matchHeaderLabel ? 
                 ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') : 

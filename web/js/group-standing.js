@@ -644,11 +644,22 @@
                 var topTeam = matchTops[m];
                 var botTeam = resolvedBots[m];
 
-                seedArray[topSlot - 1] = topTeam ? (topTeam.name || topTeam) : 'BYE';
-                seedArray[botSlot - 1] = botTeam ? (botTeam.name || botTeam) : 'BYE';
+                if (topTeam) {
+                    seedArray[topSlot - 1] = (typeof topTeam === 'object' && topTeam.name) ? topTeam.name : topTeam;
+                }
+                if (botTeam) {
+                    seedArray[botSlot - 1] = (typeof botTeam === 'object' && botTeam.name) ? botTeam.name : botTeam;
+                }
             }
 
-            return seedArray;
+            var cleanList = [];
+            for (var i = 0; i < seedArray.length; i++) {
+                if (seedArray[i] && seedArray[i] !== 'BYE') {
+                    cleanList.push(seedArray[i]);
+                }
+            }
+
+            return cleanList;
         }
     };
 })();

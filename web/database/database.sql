@@ -24,11 +24,14 @@ GO
 CREATE TABLE series (
     id VARCHAR(50) PRIMARY KEY,
     name NVARCHAR(255) NOT NULL,
-    ranking_model VARCHAR(50) NOT NULL DEFAULT 'ROLLING_WINDOW' CHECK (ranking_model IN ('ROLLING_WINDOW', 'FIFA_ELO')),
+    ranking_model VARCHAR(50) NOT NULL DEFAULT 'ROLLING_WINDOW' CHECK (ranking_model IN ('ROLLING_WINDOW', 'FIFA_ELO', 'LEAGUE_SYSTEM')),
     phase_size INT DEFAULT 10, -- Độ rộng cửa sổ trượt W (Ví dụ: W = 10 giải; 1-10 là Phase 1, 11-20 là Phase 2)
     current_phase INT DEFAULT 1, -- Phase hiện tại của Series
     initial_points INT DEFAULT 0, -- Điểm khởi đầu cho Rolling Window (0 điểm)
     initial_elo FLOAT DEFAULT 1000.0, -- Điểm Elo khởi điểm cho FIFA Elo (1000 điểm)
+    total_divisions INT DEFAULT 2, -- Số Hạng đấu cho League System (Hạng 1, Hạng 2...)
+    promotion_slots INT DEFAULT 2, -- Số suất Thăng hạng cứng cho League System
+    relegation_slots INT DEFAULT 2, -- Số suất Xuống hạng cứng cho League System
     status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'COMPLETED')),
     created_at DATETIME DEFAULT GETDATE()
 );
@@ -52,8 +55,13 @@ CREATE TABLE tournaments (
     tournament_type VARCHAR(20) NOT NULL DEFAULT 'SINGLE_STAGE' CHECK (tournament_type IN ('SINGLE_STAGE', 'MULTI_STAGE')),
     series_event_type VARCHAR(20) DEFAULT 'NONE' CHECK (series_event_type IN ('QUALIFIER', 'MAIN', 'NONE')), -- QUALIFIER (I=25), MAIN (I=45), NONE
     tier_name VARCHAR(10) NULL CHECK (tier_name IN ('S', 'A', 'B', 'C', 'D')), -- Tier cố định cho Rolling Series: S, A, B, C, D (NULL nếu là Giải đơn lẻ)
+    series_reward_points INT NULL, -- Điểm thưởng Vô địch nhập tay cho giải con trong Rolling Series
+    series_points_config NVARCHAR(MAX) NULL, -- Tùy chỉnh chi tiết điểm thưởng từng vị trí (JSON)
     tournament_index_in_series INT DEFAULT 1, -- Thứ tự giải trong Series (e.g. Giải thứ 1, 2, ... 11, 12)
     phase_number INT DEFAULT 1, -- Phase tương ứng (e.g. Giải thứ 12 -> Phase 2)
+    division_level INT DEFAULT 1, -- Cấp Hạng đấu trong League System (1 = Hạng 1, 2 = Hạng 2...)
+    season_number INT DEFAULT 1, -- Mùa giải trong League System (Mùa 1, Mùa 2...)
+    division_name NVARCHAR(100) NULL, -- Tên Hạng đấu hiển thị (e.g. "V-League 1", "Hạng Nhất")
     max_teams_per_group INT DEFAULT 4, -- Số đội tối đa mỗi bảng
     advancing_seats_count INT DEFAULT 16, -- Tổng số vé đi tiếp sang Stage sau
     linked_qualifier_tournament_id VARCHAR(50) NULL, -- Dùng cho mô hình "Giải trong Giải"
@@ -156,11 +164,22 @@ CREATE TABLE series_standings (
     id VARCHAR(50) PRIMARY KEY,
     series_id VARCHAR(50) NOT NULL,
     phase_number INT DEFAULT 1, -- Phase chốt xếp hạng hiện tại (Phase 1, Phase 2...)
+    division_level INT DEFAULT 1, -- Hạng đấu trong League System (1 = Hạng 1, 2 = Hạng 2...)
+    season_number INT DEFAULT 1, -- Mùa giải chốt xếp hạng trong League System
     normalized_team_name NVARCHAR(255) NOT NULL,
     partner_participant_id VARCHAR(50) NULL,
     group_name NVARCHAR(100) DEFAULT 'General', -- Dùng cho BXH Riêng từng Nhóm
     total_rolling_points INT DEFAULT 0, -- Điểm Rolling trượt tích lũy trong W giải gần nhất
     current_elo FLOAT DEFAULT 1000.0, -- Điểm Elo FIFA
+    matches_played INT DEFAULT 0, -- Tổng trận đã đấu (League System)
+    wins INT DEFAULT 0, -- Tổng trận thắng (League System)
+    draws INT DEFAULT 0, -- Tổng trận hòa (League System)
+    losses INT DEFAULT 0, -- Tổng trận thua (League System)
+    goals_for INT DEFAULT 0, -- Tổng bàn thắng (League System)
+    goals_against INT DEFAULT 0, -- Tổng bàn thua (League System)
+    goal_diff INT DEFAULT 0, -- Hiệu số bàn thắng thua (League System)
+    points INT DEFAULT 0, -- Điểm số tích lũy mùa giải (League System)
+    promotion_status VARCHAR(30) DEFAULT 'NONE' CHECK (promotion_status IN ('CHAMPION', 'PROMOTED', 'RETAINED', 'RELEGATED', 'NONE')), -- Trạng thái thăng / xuống hạng
     rank_overall INT DEFAULT 0, -- Thứ hạng trên BXH Series
     rank_in_group INT DEFAULT 0, -- Thứ hạng trên BXH Riêng từng Nhóm
     updated_at DATETIME DEFAULT GETDATE(),

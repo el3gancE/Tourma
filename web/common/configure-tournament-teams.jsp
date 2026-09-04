@@ -1,9 +1,26 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="dao.ParticipantDAO"%>
 <%@page import="model.Team"%>
 <%@page import="java.util.List"%>
 <%
     String tournamentId = request.getParameter("id");
+    String seriesIdParam = request.getParameter("seriesId");
+    if (seriesIdParam == null || seriesIdParam.trim().isEmpty()) {
+        if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+            try {
+                dao.TournamentDAO tDaoCheck = new dao.TournamentDAO();
+                model.Tournament tObj = tDaoCheck.getTournamentById(tournamentId);
+                if (tObj != null && tObj.getSeriesId() != null && !tObj.getSeriesId().trim().isEmpty()) {
+                    seriesIdParam = tObj.getSeriesId();
+                }
+            } catch (Exception ignore) {}
+        }
+    }
+    if (seriesIdParam != null && !seriesIdParam.trim().isEmpty()) {
+        response.sendRedirect(request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + seriesIdParam.trim());
+        return;
+    }
+
     String tourneyFormat = request.getParameter("format");
     String advSeatsParam = request.getParameter("advancingSeatsCount");
     String tournamentTypeParam = request.getParameter("tournamentType");
@@ -130,14 +147,22 @@
                                 </div>
 
                                 <div class="manage-toolbar">
-                                    <div class="manage-toolbar-left">
-                                        <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15);" onclick="window.shuffleTeams()">
-                                            <i class="fa-solid fa-shuffle text-mint"></i> Xáo Trộn Ngẫu Nhiên
+                                    <div class="manage-toolbar-left" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                        <span style="color: #94a3b8; font-size: 0.85rem;">Giữ top:</span>
+                                        <input type="number" id="lockTopSeedsInput" min="0" max="999" placeholder="0"
+                                               style="width: 52px; height: 32px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; color: #f8fafc; font-size: 0.85rem; text-align: center;"
+                                               onfocus="this.select()" onchange="window.saveHideSeedConfig()" oninput="window.saveHideSeedConfig()">
+                                        <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem;" onclick="window.shuffleTeams()">
+                                            Xáo trộn
+                                        </button>
+                                        <button type="button" id="btnToggleHideSeed" class="btn btn-secondary" onclick="window.toggleHideSeedMode()"
+                                                style="background: rgba(255, 255, 255, 0.06); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
+                                            Ẩn seed
                                         </button>
                                     </div>
                                     <div class="manage-toolbar-right">
-                                        <button type="button" class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);" onclick="window.deleteSelectedTeams()">
-                                            <i class="fa-solid fa-trash-can"></i> Xóa Đã Chọn
+                                        <button type="button" class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); height: 32px;" onclick="window.deleteSelectedTeams()">
+                                            Xóa đã chọn
                                         </button>
                                     </div>
                                 </div>
@@ -498,8 +523,13 @@
             };
 
             window.executeShuffleLogic = function() {
-                for (var i = currentTeamsList.length - 1; i > 0; i--) {
-                    var j = Math.floor(Math.random() * (i + 1));
+                var lockInput = document.getElementById('lockTopSeedsInput');
+                var lockCount = lockInput ? parseInt(lockInput.value, 10) : 0;
+                if (isNaN(lockCount) || lockCount < 0) lockCount = 0;
+                if (lockCount >= currentTeamsList.length) return;
+
+                for (var i = currentTeamsList.length - 1; i > lockCount; i--) {
+                    var j = lockCount + Math.floor(Math.random() * (i - lockCount + 1));
                     var temp = currentTeamsList[i];
                     currentTeamsList[i] = currentTeamsList[j];
                     currentTeamsList[j] = temp;
@@ -510,6 +540,10 @@
 
             // Shuffle current teams randomly (instantly shuffles table order)
             window.shuffleTeams = function() {
+                var textarea = document.getElementById('teamTextarea');
+                if (textarea && textarea.value && textarea.value.trim().length > 0) {
+                    window.addTeamsFromInput();
+                }
                 if (currentTeamsList.length <= 1) return;
                 window.executeShuffleLogic();
             };
@@ -680,9 +714,14 @@
                         var isCountChanged = (oldSnap.length !== currentTeamsList.length);
 
                         localStorage.removeItem('tourma_matches_' + tournamentId);
+                        localStorage.removeItem('tourma_matches_stage2_' + tournamentId);
+                        localStorage.removeItem('tourma_bracket_' + tournamentId);
+                        localStorage.removeItem('tourma_bracket_stage2_' + tournamentId);
                         localStorage.removeItem('tourma_de_matches_' + tournamentId);
+                        localStorage.removeItem('tourma_de_matches_stage2_' + tournamentId);
                         localStorage.removeItem('tourma_rr_matches_' + tournamentId);
                         localStorage.removeItem('tourma_group_matches_' + tournamentId);
+                        localStorage.removeItem('tourma_swiss_matches_' + tournamentId);
                         localStorage.removeItem('tourma_rr_round_inputs_' + tournamentId);
                         localStorage.removeItem('tourma_matches_demo');
                         localStorage.removeItem('tourma_de_matches_demo');
@@ -753,17 +792,10 @@
                     hasPriorBracket = true;
                 }
 
-                // Check if modification occurred
+                // Check if modification occurred (any team addition, deletion, rename, or seed reordering)
                 var isModified = false;
                 if (hasPriorBracket && initialTeamsSnapshot) {
-                    if (isRR) {
-                        // In Round Robin: ONLY consider modified if teams were added, removed, or renamed.
-                        // Shuffling the same team list does NOT reset the RR schedule!
-                        isModified = !isSameTeamSet(currentTeamsList, initialTeamsSnapshot);
-                    } else {
-                        // For SE and DE: any seed order change alters the bracket tree pairings
-                        isModified = (JSON.stringify(currentTeamsList) !== JSON.stringify(initialTeamsSnapshot));
-                    }
+                    isModified = (JSON.stringify(currentTeamsList) !== JSON.stringify(initialTeamsSnapshot));
                 }
 
                 // If bracket existed and teams were modified, show the confirmation popup
@@ -773,21 +805,32 @@
                     return false;
                 }
 
-                // Save current snapshot and check for team count changes
+                // Save current snapshot and clean stale match/bracket keys if modified
                 if (tournamentId) {
                     try {
                         var oldSnap = initialTeamsSnapshot || [];
+                        var isOrderChanged = (JSON.stringify(oldSnap) !== JSON.stringify(currentTeamsList));
+                        if (isOrderChanged) {
+                            localStorage.removeItem('tourma_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_matches_stage2_' + tournamentId);
+                            localStorage.removeItem('tourma_bracket_' + tournamentId);
+                            localStorage.removeItem('tourma_bracket_stage2_' + tournamentId);
+                            localStorage.removeItem('tourma_de_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_de_matches_stage2_' + tournamentId);
+                            localStorage.removeItem('tourma_rr_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_group_matches_' + tournamentId);
+                            localStorage.removeItem('tourma_swiss_matches_' + tournamentId);
+                        }
                         if (oldSnap.length !== currentTeamsList.length) {
                             localStorage.removeItem('tourma_group_assignments_' + tournamentId);
-                            localStorage.removeItem('tourma_group_matches_' + tournamentId);
-                            localStorage.removeItem('tourma_matches_' + tournamentId);
-                            localStorage.removeItem('tourma_de_matches_' + tournamentId);
-                            localStorage.removeItem('tourma_rr_matches_' + tournamentId);
                         }
                         localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));
                     } catch(e) {}
                 }
 
+                if (typeof window.saveHideSeedConfig === 'function') {
+                    window.saveHideSeedConfig();
+                }
                 persistState();
                 document.getElementById('finalTeamsInput').value = currentTeamsList.join('\n');
                 return true;
@@ -817,11 +860,78 @@
                 syncLatestStateOnNavigation();
             });
 
+            window.initHideSeedConfig = function() {
+                var btn = document.getElementById('btnToggleHideSeed');
+                var input = document.getElementById('lockTopSeedsInput');
+                if (!btn) return;
+
+                var isEnabled = false;
+                var visibleCount = '';
+                if (tournamentId) {
+                    try {
+                        var raw = localStorage.getItem('tourma_hide_seed_config_' + tournamentId);
+                        if (raw) {
+                            var cfg = JSON.parse(raw);
+                            isEnabled = !!cfg.isEnabled;
+                            visibleCount = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? cfg.visibleCount : '';
+                        }
+                    } catch(e) {}
+                }
+
+                if (input) {
+                    input.value = visibleCount;
+                }
+                window.applyHideSeedUI(isEnabled);
+            };
+
+            window.applyHideSeedUI = function(isEnabled) {
+                var btn = document.getElementById('btnToggleHideSeed');
+                if (!btn) return;
+
+                if (isEnabled) {
+                    btn.dataset.active = 'true';
+                    btn.style.background = '#10b981';
+                    btn.style.color = '#ffffff';
+                    btn.style.borderColor = '#10b981';
+                } else {
+                    btn.dataset.active = 'false';
+                    btn.style.background = 'rgba(255, 255, 255, 0.06)';
+                    btn.style.color = '#94a3b8';
+                    btn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                }
+            };
+
+            window.toggleHideSeedMode = function() {
+                var btn = document.getElementById('btnToggleHideSeed');
+                var isCurrentlyActive = (btn && btn.dataset.active === 'true');
+                var newActive = !isCurrentlyActive;
+                window.applyHideSeedUI(newActive);
+                window.saveHideSeedConfig();
+            };
+
+            window.saveHideSeedConfig = function() {
+                var btn = document.getElementById('btnToggleHideSeed');
+                var input = document.getElementById('lockTopSeedsInput');
+                var isEnabled = (btn && btn.dataset.active === 'true');
+                var visibleCount = input ? input.value.trim() : '';
+
+                var cfg = {
+                    isEnabled: isEnabled,
+                    visibleCount: visibleCount
+                };
+                if (tournamentId) {
+                    try {
+                        localStorage.setItem('tourma_hide_seed_config_' + tournamentId, JSON.stringify(cfg));
+                    } catch(e) {}
+                }
+            };
+
             // Initial render on page load
             window.addEventListener('DOMContentLoaded', () => {
                 syncLatestStateOnNavigation();
                 window.renderTable();
                 window.handleTextareaTyping();
+                window.initHideSeedConfig();
             });
         </script>
     </body>

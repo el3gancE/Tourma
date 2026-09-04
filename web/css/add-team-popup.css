@@ -1,0 +1,82 @@
+/* ============================================================================
+   TOURMA - REUSABLE ADD TEAM POPUP STYLESHEET
+   Obsidian glassmorphism theme for bulk team registration across all formats
+   ============================================================================ */
+
+.add-team-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(5, 8, 15, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.add-team-modal-card {
+  background: linear-gradient(135deg, rgba(18, 24, 38, 0.98) 0%, rgba(30, 41, 59, 0.95) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 560px;
+  padding: 2rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+  position: relative;
+}
+
+.add-team-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.85rem;
+}
+
+.add-team-modal-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.add-team-modal-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.add-team-modal-close:hover {
+  color: #ffffff;
+}
+
+.add-team-textarea {
+  width: 100%;
+  min-height: 150px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0.85rem;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.88rem;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.add-team-textarea:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+}

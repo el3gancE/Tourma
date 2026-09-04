@@ -15,11 +15,17 @@
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
     String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
 
+    String seriesIdVal = request.getParameter("seriesId");
+    if (seriesIdVal == null) seriesIdVal = "";
+
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId);
             if (t != null) {
+                if (t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
+                    seriesIdVal = t.getSeriesId().trim();
+                }
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
                 }
@@ -36,7 +42,15 @@
                 StringBuilder sb = new StringBuilder("[");
                 for (int i = 0; i < plist.size(); i++) {
                     if (i > 0) sb.append(",");
-                    sb.append("\"").append(plist.get(i).getRawName().replace("\"", "\\\"")).append("\"");
+                    Team tm = plist.get(i);
+                    String tName = tm != null ? tm.getName() : null;
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = tm != null ? tm.getRawName() : null;
+                    }
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = "Đội #" + (i + 1);
+                    }
+                    sb.append("\"").append(tName.replace("\"", "\\\"")).append("\"");
                 }
                 sb.append("]");
                 teamsJson = sb.toString();
@@ -92,10 +106,11 @@
             <jsp:param name="active" value="tournaments" />
         </jsp:include>
 
-        <!-- Sidebar Component (Step 4: Vòng Đấu) -->
+        <!-- Sidebar Component (Step 4: Vòng Đấu / Sơ Đồ Nhánh) -->
         <jsp:include page="/common/component/sidebar.jsp">
-            <jsp:param name="activeStep" value="<%= activeStepVal %>" />
-            <jsp:param name="id" value="${not empty param.id ? param.id : (tournament != null ? tournament.id : '')}" />
+            <jsp:param name="activeStep" value="bracket" />
+            <jsp:param name="id" value="<%= tourneyId %>" />
+            <jsp:param name="seriesId" value="<%= seriesIdVal %>" />
         </jsp:include>
 
         <!-- Main Content Area Shifted Right by Sidebar -->
@@ -248,9 +263,11 @@
         <script>
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
+                window.TourmaContextPathTourneyId = tourneyId;
                 var preloadedTeams = <%= teamsJson %>;
                 var cutTarget = <%= cutTarget %>; // from DB
                 var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
+                try { localStorage.setItem('tourma_type_' + tourneyId, isMultiStage ? 'MULTI_STAGE' : 'SINGLE_STAGE'); } catch (e) { }
                 var currentStage = <%= currentStage %>;
 
                 if (currentStage === 2) {

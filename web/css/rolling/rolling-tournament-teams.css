@@ -1,0 +1,100 @@
+/* ============================================================================
+   TOURMA - ROLLING WINDOW SERIES STEP 3: SUB-TOURNAMENT TEAMS MANAGEMENT STYLESHEET
+   Standard Project Design System (Obsidian Charcoal Theme)
+   ============================================================================ */
+
+.subtourney-teams-header-card {
+  background: var(--bg-card-surface, #181d29);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 14px);
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+.subtourney-teams-card {
+  background: var(--bg-card-surface, #181d29);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 14px);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.partner-checkbox-list {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  background: rgba(11, 13, 18, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.partner-checkbox-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition-fast, 0.18s ease);
+}
+
+.partner-checkbox-item:hover {
+  background: rgba(45, 212, 191, 0.08);
+  border-color: rgba(45, 212, 191, 0.3);
+}
+
+.partner-checkbox-item input[type="checkbox"] {
+  accent-color: #2dd4bf;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Fixed Position Centered Modal Overlay & Card */
+.team-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.team-modal-card {
+  background: #181d29 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 16px !important;
+  width: 100% !important;
+  max-width: 540px !important;
+  padding: 1.75rem !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7) !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  animation: modalFadeIn 0.2s ease-out !important;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -19,6 +19,10 @@
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId);
+            ParticipantDAO pDao = new ParticipantDAO();
+            List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
+            int totalTeamsCount = plist != null ? plist.size() : 8;
+
             if (t != null) {
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
@@ -28,12 +32,13 @@
                 }
                 if ("MULTI_STAGE".equals(tournamentType) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
+                    if (cutTarget >= totalTeamsCount || cutTarget <= 1) {
+                        cutTarget = Math.max(2, (int) Math.pow(2, Math.max(1, (int) Math.floor(Math.log(totalTeamsCount) / Math.log(2)) - 1)));
+                    }
                 } else {
                     cutTarget = 0;
                 }
             }
-            ParticipantDAO pDao = new ParticipantDAO();
-            List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
             if (plist != null && !plist.isEmpty()) {
                 int takeCount = plist.size();
                 // For multi-stage stage 2: server only sends the advancingSeatsCount teams
@@ -46,7 +51,15 @@
                 StringBuilder sb = new StringBuilder("[");
                 for (int i = 0; i < takeCount; i++) {
                     if (i > 0) sb.append(",");
-                    sb.append("\"").append(plist.get(i).getRawName().replace("\"", "\\\"")).append("\"");
+                    Team tm = plist.get(i);
+                    String tName = tm != null ? tm.getName() : null;
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = tm != null ? tm.getRawName() : null;
+                    }
+                    if (tName == null || tName.trim().isEmpty()) {
+                        tName = "Đội #" + (i + 1);
+                    }
+                    sb.append("\"").append(tName.replace("\"", "\\\"")).append("\"");
                 }
                 sb.append("]");
                 deTeamsJson = sb.toString();
@@ -284,45 +297,67 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = '<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>';
+                window.TourmaContextPathTourneyId = tourneyId;
                 var tourneyName = '<%= tourneyName %>';
                 var preloadedTeams = <%= deTeamsJson %>;
-                var cutTarget = <%= cutTarget %>;
-                var tournamentType = '<%= tournamentType %>';
+                var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
+                var tournamentType = isMultiStage ? 'MULTI_STAGE' : 'SINGLE_STAGE';
+                try { localStorage.setItem('tourma_type_' + tourneyId, tournamentType); } catch(e) {}
                 var currentStage = <%= currentStage %>;
 
-                // Resolve advance count from config or localStorage
-                var advCount = <%= cutTarget %>;
-                if (!advCount || advCount <= 1) {
+                var cutTarget = 0;
+                if (currentStage === 2) {
+                    cutTarget = 0; // Stage 2 always plays to Grand Final champion!
+                } else if (!isMultiStage) {
+                    // Single Stage = tìm vô địch, chơi hết rounds (full stage) — clear stale cut config
+                    try { localStorage.removeItem('tourma_advance_count_' + tourneyId); } catch (e) { }
+                    try { localStorage.removeItem('tourma_cut_target_' + tourneyId); } catch (e) { }
+                    cutTarget = 0;
+                } else {
+                    // Multi-Stage Stage 1 ONLY: read cutTarget from tourma_multi_config_ localStorage
                     try {
                         var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
                         if (multiCfg && multiCfg.stage1Config) {
-                            advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                            var cfgAdv = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                            if (cfgAdv > 1) {
+                                cutTarget = cfgAdv;
+                                localStorage.setItem('tourma_advance_count_' + tourneyId, cfgAdv);
+                                localStorage.setItem('tourma_cut_target_' + tourneyId, cfgAdv);
+                            }
                         }
-                    } catch(e) {}
-                }
-                if (!advCount || advCount <= 1) {
-                    var rawCut = localStorage.getItem('tourma_advance_count_' + tourneyId) ||
-                                 localStorage.getItem('tourma_cut_target_' + tourneyId);
-                    if (rawCut) advCount = parseInt(rawCut, 10);
+                    } catch (e) { }
+                    // Fallback: try tourma_advance_count_ key
+                    if (!cutTarget || cutTarget <= 1) {
+                        try {
+                            var adv = localStorage.getItem('tourma_advance_count_' + tourneyId)
+                                || localStorage.getItem('tourma_cut_target_' + tourneyId);
+                            if (adv) cutTarget = parseInt(adv, 10);
+                        } catch (e) { }
+                    }
+                    if (!cutTarget || cutTarget <= 1) {
+                        cutTarget = <%= cutTarget %>;
+                    }
                 }
 
                 // Check stage2Teams from localStorage
                 var stage2TeamsRaw = null;
                 try { stage2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
 
-                // Resolve team list — server-provided preloadedTeams is authoritative
+                // Resolve team list
                 var finalTeams = [];
-                if (preloadedTeams && preloadedTeams.length > 0) {
-                    // Server (JSP/DB) has the correct, authoritative team list
+                if (currentStage === 2 && stage2TeamsRaw && stage2TeamsRaw.length > 0) {
+                    // Stage 2: qualified teams advancing from Stage 1 MUST take priority!
+                    finalTeams = stage2TeamsRaw;
+                } else if (preloadedTeams && preloadedTeams.length > 0) {
                     finalTeams = preloadedTeams;
-                } else if (currentStage === 2 && stage2TeamsRaw && stage2TeamsRaw.length > 0) {
-                    // Fallback: use localStorage stage2Teams only when server sent nothing (demo/offline mode)
+                } else if (stage2TeamsRaw && stage2TeamsRaw.length > 0) {
                     finalTeams = stage2TeamsRaw;
                 }
 
-                // For Stage 2: enforce advanceCount only when server didn't pre-slice (i.e. finalTeams came from localStorage)
+                // For Stage 2: enforce advanceCount
                 if (currentStage === 2) {
-                    if (preloadedTeams && preloadedTeams.length === 0 && advCount && advCount > 1 && finalTeams.length > advCount) {
+                    var advCount = <%= cutTarget %>;
+                    if (advCount && advCount > 1 && finalTeams.length > advCount) {
                         finalTeams = finalTeams.slice(0, advCount);
                     }
                     cutTarget = 0; // Stage 2 plays to Grand Final champion!
