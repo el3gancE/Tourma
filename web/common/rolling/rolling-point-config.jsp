@@ -50,9 +50,15 @@
     String s1Format = (reqS1F != null && !reqS1F.trim().isEmpty()) ? reqS1F.trim().toUpperCase() : "GROUP_STAGE";
     String s2Format = (reqS2F != null && !reqS2F.trim().isEmpty()) ? reqS2F.trim().toUpperCase() : "SINGLE_ELIMINATION";
 
-    int cutTarget = (tournament != null && tournament.getAdvancingSeatsCount() > 1) ? tournament.getAdvancingSeatsCount() : 4;
-    if (cutTarget >= nTeams || cutTarget <= 1) {
-        cutTarget = Math.max(2, (int) Math.pow(2, Math.max(1, (int) Math.floor(Math.log(nTeams) / Math.log(2)) - 1)));
+    int cutTarget = (tournament != null && tournament.getAdvancingSeatsCount() > 1) ? tournament.getAdvancingSeatsCount() : 0;
+    if (s1Format.contains("SWISS")) {
+        cutTarget = 8;
+    } else if (cutTarget <= 1) {
+        int pow2 = 2;
+        while (pow2 * 2 < nTeams) {
+            pow2 *= 2;
+        }
+        cutTarget = Math.max(2, pow2);
     }
     int s2Teams = cutTarget;
 
@@ -82,18 +88,21 @@
         } else if ("ROUND_ROBIN".equals(s2Format)) {
             posList.add(new PositionItem("1", "Champion", s2Header));
             if (s2Teams >= 2) posList.add(new PositionItem("2", "Runner-up"));
-            for (int p = 3; p <= Math.min(s2Teams, 8); p++) {
+            for (int p = 3; p <= Math.min(s2Teams, 32); p++) {
                 posList.add(new PositionItem(String.valueOf(p), "Hạng " + p));
             }
         } else {
-            // SINGLE_ELIMINATION
+            // SINGLE_ELIMINATION (Dynamic for any number of advancing teams)
             posList.add(new PositionItem("1", "Champion", s2Header));
             if (s2Teams >= 2) posList.add(new PositionItem("2", "Runner-up"));
-            if (s2Teams >= 4) posList.add(new PositionItem("3-4", "Semi-final"));
-            if (s2Teams >= 8) posList.add(new PositionItem("5-8", "Quarter-final"));
-            if (s2Teams >= 16) posList.add(new PositionItem("9-16", "Round of 16"));
-            if (s2Teams >= 32) posList.add(new PositionItem("17-32", "Round of 32"));
-            if (s2Teams >= 64) posList.add(new PositionItem("33-64", "Round of 64"));
+            int curLim = 4;
+            while (curLim <= s2Teams) {
+                int sR = (curLim / 2) + 1;
+                int eR = curLim;
+                String label = (curLim == 4) ? "Semi-final" : ((curLim == 8) ? "Quarter-final" : ("Round of " + curLim));
+                posList.add(new PositionItem(sR + "-" + eR, label));
+                curLim *= 2;
+            }
         }
 
         // Stage 1 Eliminated Placements
@@ -194,6 +203,9 @@
         }
     } else {
         // GROUP_STAGE
+        posList.add(new PositionItem("1", "Nhất Bảng / Vô Địch"));
+        posList.add(new PositionItem("2", "Nhì Bảng / Á Quân"));
+        posList.add(new PositionItem("3-4", "Hạng 3-4"));
         posList.add(new PositionItem("stage1_eliminated", "Vòng bảng"));
     }
 %>
@@ -258,6 +270,8 @@
                 <form id="pointConfigForm" action="${pageContext.request.contextPath}/rolling/point-config" method="POST">
                     <input type="hidden" name="tournamentId" value="<%= tourneyId %>">
                     <input type="hidden" name="seriesId" value="<%= seriesIdVal %>">
+                    <input type="hidden" name="clientFormat" id="clientFormatInput" value="<%= tourneyFormat %>">
+                    <input type="hidden" name="clientStage1Format" id="clientStage1FormatInput" value="<%= s1Format %>">
 
                     <!-- DYNAMICALLY GENERATED POSITION / ROUND POINT INPUTS -->
                     <div style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
@@ -287,9 +301,9 @@
                             <%  }
                                 if (i == 0 || "1".equals(item.key)) {
                                     String champVal = "";
-                                    if (savedChampPoints != null && savedChampPoints >= 0) {
+                                    if (savedChampPoints != null && savedChampPoints > 0) {
                                         champVal = String.valueOf(savedChampPoints);
-                                    } else if (savedPointsMap.containsKey("1")) {
+                                    } else if (savedPointsMap.containsKey("1") && savedPointsMap.get("1") != null && savedPointsMap.get("1") > 0) {
                                         champVal = String.valueOf(savedPointsMap.get("1"));
                                     }
                             %>
@@ -299,13 +313,13 @@
                                         <i class="fa-solid fa-trophy" style="margin-right: 0.35rem;"></i> <%= item.label %>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 0.35rem;">
-                                        <input type="number" name="champPoints" value="<%= champVal %>" placeholder="0" min="0" class="form-control" style="width: 110px; font-size: 0.95rem; font-weight: 800; color: #fbbf24; text-align: right; border-color: rgba(251, 191, 36, 0.4);">
+                                        <input type="number" name="champPoints" value="<%= champVal %>" placeholder="0" min="0" onfocus="this.select()" class="form-control" style="width: 110px; font-size: 0.95rem; font-weight: 800; color: #fbbf24; text-align: right; border-color: rgba(251, 191, 36, 0.4);">
                                         <span style="font-size: 0.8rem; font-weight: 700; color: #fbbf24;">pts</span>
                                     </div>
                                 </div>
                             <% } else {
                                 String posVal = "";
-                                if (savedPointsMap.containsKey(item.key)) {
+                                if (savedPointsMap.containsKey(item.key) && savedPointsMap.get(item.key) != null && savedPointsMap.get(item.key) > 0) {
                                     posVal = String.valueOf(savedPointsMap.get(item.key));
                                 }
                             %>
@@ -315,7 +329,7 @@
                                         <%= item.label %>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 0.35rem;">
-                                        <input type="number" name="point_pos_<%= item.key %>" value="<%= posVal %>" placeholder="0" min="0" class="form-control" style="width: 100px; font-size: 0.88rem; font-weight: 700; text-align: right;">
+                                        <input type="number" name="point_pos_<%= item.key %>" value="<%= posVal %>" placeholder="0" min="0" onfocus="this.select()" class="form-control" style="width: 100px; font-size: 0.88rem; font-weight: 700; text-align: right;">
                                         <span style="font-size: 0.78rem; font-weight: 600; color: #94a3b8;">pts</span>
                                     </div>
                                 </div>
@@ -330,7 +344,7 @@
                             <i class="fa-solid fa-arrow-left"></i> Quay Lại Bước 3
                         </a>
                         <button type="submit" class="btn btn-mint" style="font-weight: 800; font-size: 0.95rem; padding: 0.65rem 1.5rem; border-radius: 8px;">
-                            Lưu Cấu Hình & Hoàn Tất <i class="fa-solid fa-check-circle"></i>
+                            Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>
                         </button>
                     </div>
                 </form>
@@ -366,6 +380,11 @@
                     fmtHeader.innerText = isMulti ? ("MULTI_STAGE (" + s1Format + " ➔ " + s2Format + ")") : fmt;
                 }
 
+                var clientFmtEl = document.getElementById("clientFormatInput");
+                if (clientFmtEl) clientFmtEl.value = fmt;
+                var clientS1FmtEl = document.getElementById("clientStage1FormatInput");
+                if (clientS1FmtEl) clientS1FmtEl.value = isMulti ? s1Format : fmt;
+
                 // Re-render inputs dynamically if local format differs or is non-SE
                 var container = document.querySelector("#pointConfigForm div[style*='flex-direction: column']");
                 if (!container) return;
@@ -388,16 +407,24 @@
                         }
                     } catch(e) {}
                 }
-                if (!advCount || advCount <= 1) {
-                    var rawCut = localStorage.getItem('tourma_advance_count_' + tid) ||
-                                 localStorage.getItem('tourma_cut_target_' + tid);
-                    if (rawCut) advCount = parseInt(rawCut, 10);
-                }
-                if (!advCount || advCount <= 1 || advCount >= nTeams) {
-                    advCount = <%= cutTarget %>;
-                }
-                if (advCount >= nTeams || advCount <= 1) {
-                    advCount = Math.max(2, Math.pow(2, Math.max(1, Math.floor(Math.log2(nTeams)) - 1)));
+                if (s1Format.indexOf('SWISS') !== -1) {
+                    advCount = 8;
+                } else {
+                    if (!advCount || advCount <= 1) {
+                        var rawCut = localStorage.getItem('tourma_advance_count_' + tid) ||
+                                     localStorage.getItem('tourma_cut_target_' + tid);
+                        if (rawCut) advCount = parseInt(rawCut, 10);
+                    }
+                    if (!advCount || advCount <= 1) {
+                        advCount = <%= cutTarget %>;
+                    }
+                    if (!advCount || advCount <= 1) {
+                        var pow2 = 2;
+                        while (pow2 * 2 < nTeams) {
+                            pow2 *= 2;
+                        }
+                        advCount = Math.max(2, pow2);
+                    }
                 }
                 var cutTarget = advCount;
                 var s2Teams = cutTarget;
@@ -416,7 +443,14 @@
                     }
                 }
 
-                var savedPointsJson = <%= savedJson != null ? savedJson : "{}" %>;
+                var serverSavedJson = <%= (savedJson != null && !savedJson.trim().isEmpty() && !savedJson.equals("{}")) ? savedJson : "{}" %>;
+                var localPointsJson = null;
+                try {
+                    var rawLocal = localStorage.getItem('tourma_points_config_' + tid);
+                    if (rawLocal) localPointsJson = JSON.parse(rawLocal);
+                } catch(e) {}
+
+                var savedPointsJson = Object.assign({}, serverSavedJson || {}, localPointsJson || {});
 
                 var posItems = [];
 
@@ -446,18 +480,21 @@
                     } else if (s2Format === 'ROUND_ROBIN') {
                         posItems.push({ key: "1", label: "Champion", isChamp: true, stageHeader: s2Header });
                         if (s2Teams >= 2) posItems.push({ key: "2", label: "Runner-up" });
-                        for (var p = 3; p <= Math.min(s2Teams, 8); p++) {
+                        for (var p = 3; p <= Math.min(s2Teams, 32); p++) {
                             posItems.push({ key: String(p), label: "Hạng " + p });
                         }
                     } else {
-                        // SINGLE_ELIMINATION (Default Stage 2)
+                        // SINGLE_ELIMINATION (Dynamic for any number of advancing teams)
                         posItems.push({ key: "1", label: "Champion", isChamp: true, stageHeader: s2Header });
                         if (s2Teams >= 2) posItems.push({ key: "2", label: "Runner-up" });
-                        if (s2Teams >= 4) posItems.push({ key: "3-4", label: "Semi-final" });
-                        if (s2Teams >= 8) posItems.push({ key: "5-8", label: "Quarter-final" });
-                        if (s2Teams >= 16) posItems.push({ key: "9-16", label: "Round of 16" });
-                        if (s2Teams >= 32) posItems.push({ key: "17-32", label: "Round of 32" });
-                        if (s2Teams >= 64) posItems.push({ key: "33-64", label: "Round of 64" });
+                        var curLim = 4;
+                        while (curLim <= s2Teams) {
+                            var sR = Math.floor(curLim / 2) + 1;
+                            var eR = curLim;
+                            var label = (curLim === 4) ? "Semi-final" : ((curLim === 8) ? "Quarter-final" : ("Round of " + curLim));
+                            posItems.push({ key: sR + "-" + eR, label: label });
+                            curLim *= 2;
+                        }
                     }
 
                     // Stage 1 Eliminated Placements
@@ -548,13 +585,17 @@
                         posItems.push({ key: String(p), label: lbl, isChamp: (p === 1) });
                     }
                 } else if (fmt === 'GROUP_STAGE') {
+                    posItems.push({ key: "1", label: "Nhất Bảng / Vô Địch", isChamp: true });
+                    posItems.push({ key: "2", label: "Nhì Bảng / Á Quân" });
+                    posItems.push({ key: "3-4", label: "Hạng 3-4" });
                     posItems.push({ key: "stage1_eliminated", label: "Vòng bảng" });
                 }
 
                 if (posItems.length > 0) {
                     var html = "";
                     posItems.forEach(function(item) {
-                        var val = savedPointsJson[item.key] !== undefined ? savedPointsJson[item.key] : "";
+                        var rawVal = savedPointsJson[item.key];
+                        var val = (rawVal !== undefined && rawVal !== null && Number(rawVal) > 0) ? rawVal : "";
                         if (item.stageHeader) {
                             var isS2 = item.stageHeader.indexOf("STAGE 2") !== -1;
                             var badgeColor = isS2 ? "#fbbf24" : "#2dd4bf";
@@ -567,17 +608,33 @@
                                 '<i class="fa-solid ' + icon + '"></i> ' + item.stageHeader + '</span></div>';
                         }
                         if (item.isChamp) {
-                            var champVal = "<%= savedChampPoints != null ? savedChampPoints : "" %>" || val;
+                            var champVal = (savedPointsJson["1"] !== undefined && savedPointsJson["1"] !== null && Number(savedPointsJson["1"]) > 0) ? savedPointsJson["1"] : ("<%= (savedChampPoints != null && savedChampPoints > 0) ? savedChampPoints : "" %>" || val);
                             html += '<div style="display: flex; align-items: center; justify-content: space-between; background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.25); padding: 0.75rem 1rem; border-radius: 8px;">' +
                                 '<div style="font-weight: 800; color: #fbbf24; font-size: 0.9rem;"><i class="fa-solid fa-trophy" style="margin-right: 0.35rem;"></i> ' + item.label + '</div>' +
-                                '<div style="display: flex; align-items: center; gap: 0.35rem;"><input type="number" name="champPoints" value="' + champVal + '" placeholder="0" min="0" class="form-control" style="width: 110px; font-size: 0.95rem; font-weight: 800; color: #fbbf24; text-align: right; border-color: rgba(251, 191, 36, 0.4);"><span style="font-size: 0.8rem; font-weight: 700; color: #fbbf24;">pts</span></div></div>';
+                                '<div style="display: flex; align-items: center; gap: 0.35rem;"><input type="number" name="champPoints" value="' + champVal + '" placeholder="0" min="0" onfocus="this.select()" class="form-control" style="width: 110px; font-size: 0.95rem; font-weight: 800; color: #fbbf24; text-align: right; border-color: rgba(251, 191, 36, 0.4);"><span style="font-size: 0.8rem; font-weight: 700; color: #fbbf24;">pts</span></div></div>';
                         } else {
                             html += '<div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.65rem 1rem; border-radius: 8px;">' +
                                 '<div style="font-weight: 700; color: #f8fafc; font-size: 0.85rem;">' + item.label + '</div>' +
-                                '<div style="display: flex; align-items: center; gap: 0.35rem;"><input type="number" name="point_pos_' + item.key + '" value="' + val + '" placeholder="0" min="0" class="form-control" style="width: 100px; font-size: 0.88rem; font-weight: 700; text-align: right;"><span style="font-size: 0.78rem; font-weight: 600; color: #94a3b8;">pts</span></div></div>';
+                                '<div style="display: flex; align-items: center; gap: 0.35rem;"><input type="number" name="point_pos_' + item.key + '" value="' + val + '" placeholder="0" min="0" onfocus="this.select()" class="form-control" style="width: 100px; font-size: 0.88rem; font-weight: 700; text-align: right;"><span style="font-size: 0.78rem; font-weight: 600; color: #94a3b8;">pts</span></div></div>';
                         }
                     });
                     container.innerHTML = html;
+
+                    container.addEventListener('input', function () {
+                        var cfg = {};
+                        var allInputs = container.querySelectorAll('input[type="number"]');
+                        allInputs.forEach(function (inp) {
+                            var n = inp.name;
+                            var v = parseInt(inp.value, 10);
+                            if (!isNaN(v)) {
+                                if (n === 'champPoints') cfg["1"] = v;
+                                else if (n.startsWith('point_pos_')) cfg[n.replace('point_pos_', '')] = v;
+                            }
+                        });
+                        try {
+                            localStorage.setItem('tourma_points_config_' + tid, JSON.stringify(cfg));
+                        } catch (e) {}
+                    });
                 }
             }
 

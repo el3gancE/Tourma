@@ -30,7 +30,7 @@
 
     List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
     if (tournamentsList == null && series != null) {
-        tournamentsList = tournamentDAO.getTournamentsBySeriesId(series.getId());
+        tournamentsList = seriesDAO.getTournamentsBySeriesId(series.getId());
     }
 
     List<SeriesStanding> standingsList = (List<SeriesStanding>) request.getAttribute("standingsList");
@@ -227,9 +227,9 @@
             window.seriesPhaseSize = <%= phaseSize %>;
         </script>
         <!-- Engine Algorithms for Series Standings Calculation -->
-        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings.js"></script>
+        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>

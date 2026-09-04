@@ -36,7 +36,7 @@
 
     List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
     if (tournamentsList == null && series != null) {
-        tournamentsList = tournamentDAO.getTournamentsBySeriesId(series.getId());
+        tournamentsList = seriesDAO.getTournamentsBySeriesId(series.getId());
     }
 
     Map<String, Integer> teamCountMap = (Map<String, Integer>) request.getAttribute("teamCountMap");

@@ -333,19 +333,20 @@
                 var stage2TeamsRaw = null;
                 try { stage2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
 
-                // Resolve team list — server-provided preloadedTeams is authoritative
+                // Resolve team list
                 var finalTeams = [];
-                if (preloadedTeams && preloadedTeams.length > 0) {
-                    // Server (JSP/DB) has the correct, authoritative team list
+                if (currentStage === 2 && stage2TeamsRaw && stage2TeamsRaw.length > 0) {
+                    // Stage 2: qualified teams advancing from Stage 1 MUST take priority!
+                    finalTeams = stage2TeamsRaw;
+                } else if (preloadedTeams && preloadedTeams.length > 0) {
                     finalTeams = preloadedTeams;
-                } else if (currentStage === 2 && stage2TeamsRaw && stage2TeamsRaw.length > 0) {
-                    // Fallback: use localStorage stage2Teams only when server sent nothing (demo/offline mode)
+                } else if (stage2TeamsRaw && stage2TeamsRaw.length > 0) {
                     finalTeams = stage2TeamsRaw;
                 }
 
-                // For Stage 2: enforce advanceCount only when server didn't pre-slice (i.e. finalTeams came from localStorage)
+                // For Stage 2: enforce advanceCount
                 if (currentStage === 2) {
-                    if (preloadedTeams && preloadedTeams.length === 0 && advCount && advCount > 1 && finalTeams.length > advCount) {
+                    if (advCount && advCount > 1 && finalTeams.length > advCount) {
                         finalTeams = finalTeams.slice(0, advCount);
                     }
                     cutTarget = 0; // Stage 2 plays to Grand Final champion!

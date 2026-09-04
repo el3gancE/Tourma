@@ -48,7 +48,7 @@ public class RollingCreateTournamentServlet extends HttpServlet {
 
         int nextIndex = 1;
         if (selectedSeries != null) {
-            List<Tournament> existingTourneys = tournamentDAO.getTournamentsBySeriesId(selectedSeries.getId());
+            List<Tournament> existingTourneys = seriesDAO.getTournamentsBySeriesId(selectedSeries.getId());
             nextIndex = existingTourneys.size() + 1;
         }
 
@@ -77,7 +77,7 @@ public class RollingCreateTournamentServlet extends HttpServlet {
             }
         }
 
-        List<Tournament> existingTourneys = tournamentDAO.getTournamentsBySeriesId(seriesId);
+        List<Tournament> existingTourneys = seriesDAO.getTournamentsBySeriesId(seriesId);
         int indexInSeries = (existingTourneys != null) ? (existingTourneys.size() + 1) : 1;
 
         String tournamentId = "TOURNEY_" + System.currentTimeMillis();
@@ -95,7 +95,10 @@ public class RollingCreateTournamentServlet extends HttpServlet {
         t.setTournamentType("SINGLE_STAGE");
 
         try {
-            boolean created = tournamentDAO.createSubTournamentInSeries(t);
+            boolean created = seriesDAO.createSubTournamentInSeries(t);
+            if (!created) {
+                created = createSubTournamentSafe(t);
+            }
 
             if (created) {
                 // Proceed to Step 2: Configure Format
@@ -107,6 +110,36 @@ public class RollingCreateTournamentServlet extends HttpServlet {
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Lỗi DB: " + e.getMessage());
             doGet(request, response);
+        }
+    }
+
+    private boolean createSubTournamentSafe(Tournament t) {
+        if (t == null || t.getId() == null || t.getName() == null) return false;
+        String sql = "INSERT INTO tournaments (id, series_id, name, tournament_type, tier_name, tournament_index_in_series, phase_number, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        dao.DBContext db = new dao.DBContext();
+        
+        String tier = t.getTierName();
+        if (tier != null) {
+            tier = tier.replace("Tier ", "").trim();
+        }
+        if (tier == null || (!tier.equals("S") && !tier.equals("A") && !tier.equals("B") && !tier.equals("C") && !tier.equals("D"))) {
+            tier = "S";
+        }
+
+        try (java.sql.Connection conn = db.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, t.getId());
+            ps.setString(2, t.getSeriesId());
+            ps.setString(3, t.getName());
+            ps.setString(4, t.getTournamentType() != null ? t.getTournamentType() : "SINGLE_STAGE");
+            ps.setString(5, tier);
+            ps.setInt(6, t.getTournamentIndexInSeries() > 0 ? t.getTournamentIndexInSeries() : 1);
+            ps.setInt(7, t.getPhaseNumber() > 0 ? t.getPhaseNumber() : 1);
+            ps.setString(8, t.getStatus() != null ? t.getStatus() : "DRAFT");
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }

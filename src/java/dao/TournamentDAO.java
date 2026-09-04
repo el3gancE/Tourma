@@ -381,19 +381,27 @@ public class TournamentDAO {
         return false;
     }
 
-    public boolean updateTournamentFormatAndType(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format) {
+    public boolean updateTournamentFormatAndType(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format, int advancingSeatsCount) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
         if (format == null || format.trim().isEmpty()) format = "SINGLE_ELIMINATION";
         if (tournamentType == null || tournamentType.trim().isEmpty()) tournamentType = "SINGLE_STAGE";
 
-        String sqlTourney = "UPDATE tournaments SET tournament_type = ? WHERE id = ?";
+        String sqlTourney = (advancingSeatsCount > 0)
+            ? "UPDATE tournaments SET tournament_type = ?, advancing_seats_count = ? WHERE id = ?"
+            : "UPDATE tournaments SET tournament_type = ? WHERE id = ?";
 
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sqlTourney)) {
-                ps.setString(1, tournamentType.trim().toUpperCase());
-                ps.setString(2, tournamentId.trim());
+                if (advancingSeatsCount > 0) {
+                    ps.setString(1, tournamentType.trim().toUpperCase());
+                    ps.setInt(2, advancingSeatsCount);
+                    ps.setString(3, tournamentId.trim());
+                } else {
+                    ps.setString(1, tournamentType.trim().toUpperCase());
+                    ps.setString(2, tournamentId.trim());
+                }
                 ps.executeUpdate();
             }
 
@@ -439,8 +447,12 @@ public class TournamentDAO {
         return false;
     }
 
+    public boolean updateTournamentFormatAndType(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format) {
+        return updateTournamentFormatAndType(tournamentId, format, tournamentType, stage1Format, stage2Format, 0);
+    }
+
     public boolean updateTournamentFormatAndType(String tournamentId, String format, String tournamentType) {
-        return updateTournamentFormatAndType(tournamentId, format, tournamentType, null, null);
+        return updateTournamentFormatAndType(tournamentId, format, tournamentType, null, null, 0);
     }
 
     public List<String> getStageFormats(String tournamentId) {

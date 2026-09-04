@@ -550,7 +550,13 @@
             }
 
             this.saveGroupsState();
-            window.location.href = 'group-stage.jsp?id=' + this.tournamentId + '&format=GROUP_STAGE';
+            var urlParams = new URLSearchParams(window.location.search);
+            var seriesId = urlParams.get('seriesId');
+            var target = 'group-stage.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GROUP_STAGE';
+            if (seriesId) {
+                target += '&seriesId=' + encodeURIComponent(seriesId);
+            }
+            window.location.href = target;
         }
     };
 

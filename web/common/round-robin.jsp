@@ -232,7 +232,10 @@
                     var s2TeamsRaw = null;
                     try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
                     if (s2TeamsRaw && s2TeamsRaw.length > 0) {
-                        preloadedTeams = s2TeamsRaw;
+                        preloadedTeams = s2TeamsRaw.filter(function(t) {
+                            var n = (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
+                            return n !== 'BYE' && n.trim() !== '';
+                        });
                     } else if (advCount && advCount > 1 && preloadedTeams && preloadedTeams.length > advCount) {
                         preloadedTeams = preloadedTeams.slice(0, advCount);
                     }

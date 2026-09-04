@@ -11,8 +11,12 @@
     String tourneyName = (tournament != null) ? tournament.getName() : "Giải Đấu Con";
     String seriesIdVal = (series != null && series.getId() != null) ? series.getId() : "";
     String seriesName = (series != null) ? series.getName() : "Series";
+    String tourneyFormat = (tournament != null && tournament.getFormat() != null) ? tournament.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
     int teamCount = (currentTeams != null) ? currentTeams.size() : 0;
     int partnerCount = (partnerList != null) ? partnerList.size() : 0;
+
+    String nextStepUrl = request.getContextPath() + "/rolling/point-config?id=" + tourneyId + "&seriesId=" + seriesIdVal;
+    String nextStepLabel = "Tiếp theo";
 
     // Order partnerList by Series Standings rank (Rank 1, 2, 3...)
     List<PartnerParticipant> orderedPartners = new ArrayList<>();
@@ -214,8 +218,8 @@
                 <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=<%= tourneyId %>&seriesId=<%= seriesIdVal %>" class="btn btn-secondary" style="font-weight: 700;">
                     <i class="fa-solid fa-arrow-left"></i> Quay lại Bước 2: Thể Thức
                 </a>
-                <a href="${pageContext.request.contextPath}/rolling/point-config?id=<%= tourneyId %>&seriesId=<%= seriesIdVal %>" class="btn btn-mint" style="font-weight: 800; border-radius: 10px; padding: 0.65rem 1.5rem;">
-                    Tiếp Theo: Set Điểm <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>
+                <a id="nextStepBtn" href="<%= nextStepUrl %>" class="btn btn-mint" style="font-weight: 800; border-radius: 10px; padding: 0.65rem 1.5rem;">
+                    Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>
                 </a>
             </div>
 
@@ -312,6 +316,6 @@
             </div>
         </div>
 
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>

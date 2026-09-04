@@ -101,12 +101,12 @@
                 return { name: tName, rawName: tName, seed: tSeed };
             };
 
-            // Priority 1: JSP server-provided teams (authoritative — already sliced to correct count)
-            if (this._preloadedTeams && this._preloadedTeams.length > 0) {
-                this.teamsList = this._preloadedTeams.map(mapTeam);
-            // Priority 2: stage2Teams from localStorage (only when JSP sent nothing, e.g. demo mode)
-            } else if (this.currentStage === 2 && stage2Teams && stage2Teams.length > 0) {
+            // Priority 1 for Stage 2: qualified teams advancing from Stage 1
+            if (this.currentStage === 2 && stage2Teams && stage2Teams.length > 0) {
                 this.teamsList = stage2Teams.map(mapTeam);
+            // Priority 2: JSP server-provided teams (for Single Stage / Stage 1)
+            } else if (this._preloadedTeams && this._preloadedTeams.length > 0) {
+                this.teamsList = this._preloadedTeams.map(mapTeam);
             } else {
                 // Priority 3: Fallback from localStorage tourma_teams_ / tourma_stage2_teams_
                 try {
@@ -546,6 +546,16 @@
                         if (cardElem) stack.appendChild(cardElem);
                     }
                 }
+                var hasVisibleCards = false;
+                for (var ci = 0; ci < stack.children.length; ci++) {
+                    if (!stack.children[ci].classList.contains('bye-empty-slot')) {
+                        hasVisibleCards = true;
+                        break;
+                    }
+                }
+                if (!hasVisibleCards && stack.children.length > 0) {
+                    col.style.display = 'none';
+                }
                 col.appendChild(stack);
                 wrapper.appendChild(col);
             }
@@ -661,6 +671,14 @@
             var self = this;
 
             var lowerRounds = this.bracketData.lowerRounds || [];
+            if (lowerRounds.length === 0) {
+                var emptyNotice = document.createElement('div');
+                emptyNotice.className = 'de-empty-lb-notice';
+                emptyNotice.style.cssText = 'color: #94a3b8; font-size: 13px; font-style: italic; padding: 24px; text-align: center; width: 100%;';
+                emptyNotice.innerText = 'Nhánh Thua không có vòng phụ (Đội thua ở UB Final sẽ vào thẳng Grand Final).';
+                wrapper.appendChild(emptyNotice);
+                return;
+            }
 
             for (var lr = 0; lr < lowerRounds.length; lr++) {
                 var lro = lowerRounds[lr];

@@ -953,12 +953,14 @@
                                 if (drawEl && cfg.drawPoints !== undefined) drawEl.value = cfg.drawPoints;
                                 if (lossEl && cfg.lossPoints !== undefined) lossEl.value = cfg.lossPoints;
                                 if (legsEl && cfg.legsCount !== undefined) legsEl.value = cfg.legsCount;
-                            } else if (sFormat === 'SINGLE_ELIMINATION' && cfg.advanceCount) {
+                            } else if (sFormat === 'SINGLE_ELIMINATION') {
                                 var el = document.getElementById(prefix + 'AdvanceSE');
-                                if (el) el.value = cfg.advanceCount;
-                            } else if (sFormat === 'DOUBLE_ELIMINATION' && cfg.advanceCount) {
+                                var cnt = (cfg && cfg.advanceCount) ? cfg.advanceCount : parseInt(localStorage.getItem('tourma_advance_count_' + tournamentId) || '0', 10);
+                                if (el && cnt > 0) el.value = cnt;
+                            } else if (sFormat === 'DOUBLE_ELIMINATION') {
                                 var el = document.getElementById(prefix + 'AdvanceDE');
-                                if (el) el.value = cfg.advanceCount;
+                                var cnt = (cfg && cfg.advanceCount) ? cfg.advanceCount : parseInt(localStorage.getItem('tourma_advance_count_' + tournamentId) || '0', 10);
+                                if (el && cnt > 0) el.value = cnt;
                             }
                         };
 

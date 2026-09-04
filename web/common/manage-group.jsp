@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="dao.TournamentDAO" %>
 <%@ page import="model.Tournament" %>
 <%
@@ -6,6 +6,8 @@
     if (tournamentId == null || tournamentId.trim().isEmpty()) {
         tournamentId = "demo";
     }
+    String seriesId = request.getParameter("seriesId");
+    if (seriesId == null) seriesId = "";
 
     TournamentDAO tDao = new TournamentDAO();
     Tournament tourney = tDao.getTournamentById(tournamentId);
@@ -34,6 +36,7 @@
     <jsp:include page="/common/component/sidebar.jsp">
         <jsp:param name="activeStep" value="manage-group" />
         <jsp:param name="id" value="<%= tournamentId %>" />
+        <jsp:param name="seriesId" value="<%= seriesId %>" />
         <jsp:param name="format" value="GROUP_STAGE" />
     </jsp:include>
 
@@ -57,8 +60,8 @@
                 <button type="button" class="btn-mg-distribute" onclick="TourmaManageGroup.handleAutoDistribute()">
                     Ngẫu Nhiên
                 </button>
-                <button type="button" class="btn btn-mint" onclick="TourmaManageGroup.saveAndReturn()" style="font-size: 0.8rem; padding: 0.45rem 0.9rem;">
-                    <i class="fa-solid fa-check"></i> Lưu & Vào Vòng Bảng
+                <button type="button" class="btn btn-mint" onclick="TourmaManageGroup.saveAndReturn()" style="font-size: 0.8rem; padding: 0.45rem 0.9rem; font-weight: 700;">
+                    Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>
                 </button>
             </div>
         </div>
@@ -97,6 +100,9 @@
         </div>
     </div>
 
+    <script>
+        window.contextPath = '${pageContext.request.contextPath}';
+    </script>
     <script src="${pageContext.request.contextPath}/js/manage-group.js"></script>
 </body>
 </html>

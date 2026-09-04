@@ -20,7 +20,7 @@
             while (pow2 < numTeams) {
                 pow2 *= 2;
             }
-            return Math.max(4, pow2);
+            return pow2;
         },
 
         /**
@@ -406,9 +406,9 @@
             // 3. GENERATE GRAND FINALS (Only if NOT a Cut Stage)
             // ====================================================================
             var grandFinalsRound = null;
-            if (!isCutStage && upperRounds.length > 0 && lowerRounds.length > 0) {
+            if (!isCutStage && upperRounds.length > 0) {
                 var ubFinalMatch = upperRounds[upperRounds.length - 1].matches[0];
-                var lbFinalMatch = lowerRounds[lowerRounds.length - 1].matches[0];
+                var lbFinalMatch = (lowerRounds.length > 0) ? lowerRounds[lowerRounds.length - 1].matches[0] : null;
 
                 var gf1Id = internalIdCounter++;
 
@@ -419,7 +419,7 @@
                     roundNumber: totalUbRounds + 1,
                     status: 'SCHEDULED',
                     team1: { name: 'Winner UB', seed: '', score: '' },
-                    team2: { name: 'Winner LB', seed: '', score: '' },
+                    team2: { name: lbFinalMatch ? 'Winner LB' : 'Loser UB', seed: '', score: '' },
                     winnerId: null,
                     nextMatchId: null,
                     nextMatchSlot: 1,
@@ -429,6 +429,10 @@
                 if (ubFinalMatch) {
                     ubFinalMatch.nextMatchId = gf1Id;
                     ubFinalMatch.nextMatchSlot = 1;
+                    if (!lbFinalMatch) {
+                        ubFinalMatch.dropToMatchId = gf1Id;
+                        ubFinalMatch.dropToMatchSlot = 2;
+                    }
                 }
                 if (lbFinalMatch) {
                     lbFinalMatch.nextMatchId = gf1Id;

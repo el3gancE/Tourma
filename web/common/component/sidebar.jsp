@@ -43,8 +43,7 @@
             SeriesDAO sDao = new SeriesDAO();
             currentSeries = sDao.getSeriesById(seriesId.trim());
             if (currentSeries != null) {
-                TournamentDAO tDaoSub = new TournamentDAO();
-                subTourneys = tDaoSub.getTournamentsBySeriesId(currentSeries.getId());
+                subTourneys = sDao.getTournamentsBySeriesId(currentSeries.getId());
             }
         } catch (Exception e) {}
     }
@@ -166,7 +165,7 @@
 
         <!-- MỤC RIÊNG CHO GROUP STAGE: QUẢN LÝ BẢNG ĐẤU -->
         <li class="sidebar-menu-item" id="sidebarMenuManageGroup" style="<%= "GROUP_STAGE".equalsIgnoreCase(format) ? "" : "display: none;" %>">
-            <a href="${pageContext.request.contextPath}/common/manage-group.jsp?id=<%= tournamentId %>&format=GROUP_STAGE"
+            <a href="${pageContext.request.contextPath}/common/manage-group.jsp?id=<%= tournamentId %>&seriesId=<%= seriesId %>&format=GROUP_STAGE"
                class="sidebar-menu-link <%= "manage-group".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid fa-pen-to-square menu-icon text-mint"></i>
                 <span>Quản Lý Bảng Đấu</span>

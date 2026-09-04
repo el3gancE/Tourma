@@ -109,7 +109,11 @@
             if (!teams) {
                 teams = [];
             }
-            this.teamsList = teams.slice(0, 24);
+            this.teamsList = teams.filter(function(t) {
+                if (!t) return false;
+                var n = (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
+                return n !== 'BYE' && n.trim() !== '';
+            }).slice(0, 24);
 
             // Update team count badge in top toolbar
             var countBadge = document.getElementById('tournamentTeamCountBadge');

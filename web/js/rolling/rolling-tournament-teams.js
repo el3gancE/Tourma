@@ -59,13 +59,43 @@
     var tbody = document.querySelector('#subtourneyTeamsTable tbody');
     if (!tbody) return;
     var rows = Array.from(tbody.querySelectorAll('tr.team-table-row'));
+    var teamNamesList = [];
+
     rows.forEach(function (r, idx) {
       r.setAttribute('data-index', idx);
       var seedBadge = r.querySelector('.seed-badge');
       if (seedBadge) {
         seedBadge.textContent = (idx + 1);
       }
+      var nameSpan = r.querySelector('td:nth-child(2) span');
+      if (nameSpan) {
+        var tName = nameSpan.textContent.trim();
+        if (tName) {
+          teamNamesList.push({ name: tName, rawName: tName, seed: idx + 1 });
+        }
+      }
     });
+
+    // Update count badges
+    var inputCountEl = document.getElementById('inputCountDisplay');
+    if (inputCountEl) inputCountEl.innerText = rows.length + ' Đội';
+    var managedCountEl = document.getElementById('managedCountDisplay');
+    if (managedCountEl) managedCountEl.innerText = rows.length + ' Đội';
+
+    // Persist to localStorage for subsequent steps
+    var tid = getTourneyId();
+    if (tid && teamNamesList.length > 0) {
+      try {
+        localStorage.setItem('tourma_teams_' + tid, JSON.stringify(teamNamesList));
+      } catch (e) {}
+    }
+  }
+
+  function getTourneyId() {
+    var inp = document.querySelector('input[name="tournamentId"]');
+    if (inp && inp.value) return inp.value;
+    var params = new URLSearchParams(window.location.search);
+    return params.get('id') || params.get('tournamentId');
   }
 
   window.initSubtourneyDragAndDrop = function () {
@@ -83,6 +113,8 @@
       row.addEventListener('drop', handleDrop);
       row.addEventListener('dragend', handleDragEnd);
     });
+
+    reindexSubtourneyRows();
   };
 
   window.openPartnerSelectModal = function () {
@@ -153,7 +185,7 @@
   };
 
   window.filterTournamentTeams = function (query) {
-    var filter = query.toLowerCase();
+    var filter = (query || '').toLowerCase().trim();
     var rows = document.querySelectorAll('#subtourneyTeamsTable tbody tr');
     rows.forEach(function (row) {
       var teamNameCell = row.cells[1];
@@ -197,15 +229,10 @@
       return;
     }
     if (confirm('Bạn có chắc chắn muốn xóa ' + selected.length + ' đội đã chọn khỏi giải con này?')) {
-      selected.forEach(function (cb) {
-        var row = cb.closest('tr');
-        if (row) {
-          var removeForm = row.querySelector('form');
-          if (removeForm) removeForm.submit();
-          else row.remove();
-        }
-      });
-      reindexSubtourneyRows();
+      var bulkForm = document.getElementById('bulkRemoveTeamsForm');
+      if (bulkForm) {
+        bulkForm.submit();
+      }
     }
   };
 

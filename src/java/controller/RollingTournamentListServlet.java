@@ -59,7 +59,7 @@ public class RollingTournamentListServlet extends HttpServlet {
 
         if (series != null) {
             seriesId = series.getId();
-            tournamentsList = tournamentDAO.getTournamentsBySeriesId(seriesId);
+            tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
 
             if (tournamentsList != null) {
                 for (Tournament t : tournamentsList) {

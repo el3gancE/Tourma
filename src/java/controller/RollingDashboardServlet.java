@@ -55,7 +55,7 @@ public class RollingDashboardServlet extends HttpServlet {
 
         if (series != null) {
             seriesId = series.getId();
-            tournamentsList = tournamentDAO.getTournamentsBySeriesId(seriesId);
+            tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
             standingsList = seriesDAO.getStandingsBySeriesId(seriesId);
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
         }

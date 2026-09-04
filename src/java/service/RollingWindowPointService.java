@@ -116,8 +116,7 @@ public class RollingWindowPointService {
         }
 
         // 2. Fetch all sub-tournaments in Series, ordered chronologically
-        TournamentDAO tDao = new TournamentDAO();
-        List<Tournament> allTourneys = tDao.getTournamentsBySeriesId(seriesId.trim());
+        List<Tournament> allTourneys = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
         if (allTourneys == null || allTourneys.isEmpty()) {
             return new ArrayList<>(dtoMap.values());
         }
@@ -286,6 +285,12 @@ public class RollingWindowPointService {
             return posPtsMap.get("33-64");
         } else if (pos >= 65 && pos <= 128 && posPtsMap.containsKey("65-128")) {
             return posPtsMap.get("65-128");
+        } else if (pos >= 9 && pos <= 11 && posPtsMap.containsKey("swiss_2-3")) {
+            return posPtsMap.get("swiss_2-3");
+        } else if (pos >= 12 && pos <= 14 && posPtsMap.containsKey("swiss_1-3")) {
+            return posPtsMap.get("swiss_1-3");
+        } else if (pos >= 15 && pos <= 16 && posPtsMap.containsKey("swiss_0-3")) {
+            return posPtsMap.get("swiss_0-3");
         } else if (posPtsMap.containsKey("stage1_eliminated")) {
             return posPtsMap.get("stage1_eliminated");
         } else if (posPtsMap.containsKey("swiss_2-3") && pos >= 9) {
