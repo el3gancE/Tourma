@@ -1,8 +1,9 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="model.Series, model.PartnerParticipant, java.util.List"%>
+<%@page import="model.Series, model.PartnerParticipant, java.util.List, java.util.Map, java.util.HashMap"%>
 <%
     Series series = (Series) request.getAttribute("series");
     List<PartnerParticipant> partnerList = (List<PartnerParticipant>) request.getAttribute("partnerList");
+    Map<String, Integer> tourneysCountMap = (Map<String, Integer>) request.getAttribute("tourneysCountMap");
 
     String seriesIdVal = (series != null && series.getId() != null) ? series.getId() : "";
     String seriesName = (series != null) ? series.getName() : "VBA Pro League 2026 Circuit";
@@ -78,8 +79,15 @@
                     <thead>
                         <tr>
                             <th style="width: 50px;">STT</th>
-                            <th>Tên Đội</th>
-                            <th>Ngày Đăng Ký</th>
+                            <th class="sortable-th" onclick="sortTable('name')" style="cursor: pointer; user-select: none;">
+                                Tên Đội <i class="fa-solid fa-sort-up sort-icon sort-icon-name" style="margin-left: 4px; color: #2dd4bf;"></i>
+                            </th>
+                            <th class="sortable-th" onclick="sortTable('tourneys')" style="text-align: center; width: 170px; cursor: pointer; user-select: none;">
+                                Số giải tham dự <i class="fa-solid fa-sort sort-icon sort-icon-tourneys" style="margin-left: 4px; color: #64748b;"></i>
+                            </th>
+                            <th class="sortable-th" onclick="sortTable('date')" style="cursor: pointer; user-select: none;">
+                                Ngày Đăng Ký <i class="fa-solid fa-sort sort-icon sort-icon-date" style="margin-left: 4px; color: #64748b;"></i>
+                            </th>
                             <th style="text-align: right;">Thao Tác</th>
                         </tr>
                     </thead>
@@ -87,11 +95,16 @@
                         <% if (partnerList != null && !partnerList.isEmpty()) {
                             for (int idx = 0; idx < partnerList.size(); idx++) {
                                 PartnerParticipant p = partnerList.get(idx);
+                                int tCount = (tourneysCountMap != null && tourneysCountMap.containsKey(p.getId())) ? tourneysCountMap.get(p.getId()) : 0;
+                                long createdMillis = (p.getCreatedAt() != null) ? p.getCreatedAt().getTime() : 0L;
                         %>
-                            <tr>
-                                <td style="font-weight: 700; color: var(--team-text-muted);"><%= idx + 1 %></td>
+                            <tr data-partner-id="<%= p.getId() %>" data-team-name="<%= p.getName() != null ? p.getName().replace("\"", "&quot;") : "" %>" data-tourney-count="<%= tCount %>" data-created-at="<%= createdMillis %>">
+                                <td class="row-stt" style="font-weight: 700; color: var(--team-text-muted);"><%= idx + 1 %></td>
                                 <td style="font-weight: 700; color: #ffffff;">
                                     <%= p.getName() %>
+                                </td>
+                                <td style="text-align: center; font-weight: 700; color: var(--team-text-muted);">
+                                    <span class="tourneys-participated-val" data-partner-id="<%= p.getId() %>" data-team-name="<%= p.getName() != null ? p.getName().replace("\"", "&quot;") : "" %>"><%= tCount %></span>
                                 </td>
                                 <td style="color: var(--team-text-muted); font-size: 0.82rem;">
                                     <%= p.getCreatedAt() != null ? p.getCreatedAt().toString().substring(0, 16) : "-" %>
@@ -110,7 +123,7 @@
                         <% } 
                         } else { %>
                             <tr>
-                                <td colspan="4" style="text-align: center; padding: 3rem; color: var(--team-text-muted);">
+                                <td colspan="5" style="text-align: center; padding: 3rem; color: var(--team-text-muted);">
                                     <i class="fa-solid fa-users-slash" style="font-size: 2.5rem; margin-bottom: 0.75rem; display: block; opacity: 0.5;"></i>
                                     Chưa có đội bóng nào đăng ký cho Series này. Hãy bấm "+ Đăng Ký Đội Bóng Mới" để bắt đầu.
                                 </td>
@@ -127,6 +140,6 @@
             <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
         </jsp:include>
 
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-team-list.js"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-team-list.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>

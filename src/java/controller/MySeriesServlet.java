@@ -31,6 +31,16 @@ public class MySeriesServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String action = request.getParameter("action");
+        String seriesId = request.getParameter("seriesId");
+
+        if ("delete".equalsIgnoreCase(action) && seriesId != null && !seriesId.trim().isEmpty()) {
+            SeriesDAO dao = new SeriesDAO();
+            dao.deleteSeries(seriesId.trim());
+            response.sendRedirect(request.getContextPath() + "/my-series");
+            return;
+        }
+
         doGet(request, response);
     }
 }
