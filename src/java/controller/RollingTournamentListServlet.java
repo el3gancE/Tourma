@@ -56,6 +56,7 @@ public class RollingTournamentListServlet extends HttpServlet {
 
         List<Tournament> tournamentsList = null;
         Map<String, Integer> teamCountMap = new HashMap<>();
+        Map<String, List<String>> stageFormatsMap = new HashMap<>();
 
         if (series != null) {
             seriesId = series.getId();
@@ -66,6 +67,9 @@ public class RollingTournamentListServlet extends HttpServlet {
                     List<Team> teams = participantDAO.getTeamsByTournamentId(t.getId());
                     int count = (teams != null) ? teams.size() : 0;
                     teamCountMap.put(t.getId(), count);
+
+                    List<String> formats = getStageFormatsSafe(t.getId());
+                    stageFormatsMap.put(t.getId(), formats);
                 }
             }
         }
@@ -73,8 +77,27 @@ public class RollingTournamentListServlet extends HttpServlet {
         request.setAttribute("series", series);
         request.setAttribute("tournamentsList", tournamentsList);
         request.setAttribute("teamCountMap", teamCountMap);
+        request.setAttribute("stageFormatsMap", stageFormatsMap);
 
         request.getRequestDispatcher("/common/rolling/rolling-tournament-list.jsp").forward(request, response);
+    }
+
+    private List<String> getStageFormatsSafe(String tournamentId) {
+        List<String> list = new java.util.ArrayList<>();
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return list;
+        String sql = "SELECT format FROM tournament_stages WHERE tournament_id = ? ORDER BY stage_order ASC";
+        dao.DBContext db = new dao.DBContext();
+        try (java.sql.Connection conn = db.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId.trim());
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String f = rs.getString("format");
+                    if (f != null) list.add(f.trim().toUpperCase());
+                }
+            }
+        } catch (Exception ignore) {}
+        return list;
     }
 
     @Override
