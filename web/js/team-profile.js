@@ -626,7 +626,8 @@
           name: t.name,
           format: fmtLabel,
           achievement: achievement,
-          pointsEarned: ptsEarned
+          pointsEarned: ptsEarned,
+          stt: targetPlayedTourneys
         });
       }
     });
@@ -730,7 +731,8 @@
         elChampSection.style.display = '';
         if (elChampBadges) {
           var badgesHtml = '';
-          championTourneysList.forEach(function (ct) {
+          var reversedChampList = championTourneysList.slice().reverse();
+          reversedChampList.forEach(function (ct) {
             badgesHtml += '<div class="champion-badge-pill">' +
               '<i class="fa-solid fa-crown"></i> ' + ct.name + ' <span class="tier-tag">[' + ct.tier + ']</span>' +
               '</div>';
@@ -742,20 +744,23 @@
       }
     }
 
-    // Update Performance Table (STT, Tên Giải Đấu, Thể Thức, Thành Tích plain text without icons, Điểm Nhận Được)
+    // Update Performance Table (Most recent tournament at top, highest STT at top)
     var elTbody = document.getElementById('profPerformanceTbody');
     if (elTbody) {
       if (tourneyPerformances.length > 0) {
+        var reversedPerformances = tourneyPerformances.slice().reverse();
         var rowsHtml = '';
-        tourneyPerformances.forEach(function (perf, idx) {
+        reversedPerformances.forEach(function (perf, idx) {
           var achClass = "muted";
           if (perf.achievement === "Vô Địch") achClass = "champ";
           else if (perf.achievement === "Á Quân") achClass = "runner-up";
           else if (perf.achievement === "Bán Kết") achClass = "semi";
           else if (perf.achievement === "Tứ Kết") achClass = "quarter";
 
+          var sttVal = (perf.stt !== undefined && perf.stt !== null && perf.stt > 0) ? perf.stt : (reversedPerformances.length - idx);
+
           rowsHtml += '<tr>' +
-            '<td style="font-weight: 700; color: var(--text-muted);">' + (idx + 1) + '</td>' +
+            '<td style="font-weight: 700; color: var(--text-muted);">' + sttVal + '</td>' +
             '<td style="font-weight: 700; color: #ffffff;">' + perf.name + '</td>' +
             '<td style="color: var(--text-muted); font-size: 0.82rem;">' + perf.format + '</td>' +
             '<td><span class="achievement-text ' + achClass + '">' + perf.achievement + '</span></td>' +

@@ -238,7 +238,7 @@
                                 else if ("Tứ Kết".equalsIgnoreCase(perf.getAchievement())) achClass = "quarter";
                         %>
                             <tr>
-                                <td style="font-weight: 700; color: var(--text-muted);"><%= idx + 1 %></td>
+                                <td style="font-weight: 700; color: var(--text-muted);"><%= (perf.getStt() > 0) ? perf.getStt() : (performanceList.size() - idx) %></td>
                                 <td style="font-weight: 700; color: #ffffff;">
                                     <%= perf.getTournamentName() %>
                                 </td>

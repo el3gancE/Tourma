@@ -39,6 +39,7 @@ public class TeamProfileServlet extends HttpServlet {
         private String achievement;
         private int rank;
         private int pointsEarned;
+        private int stt;
 
         public String getTournamentId() { return tournamentId; }
         public void setTournamentId(String tournamentId) { this.tournamentId = tournamentId; }
@@ -60,6 +61,9 @@ public class TeamProfileServlet extends HttpServlet {
 
         public int getPointsEarned() { return pointsEarned; }
         public void setPointsEarned(int pointsEarned) { this.pointsEarned = pointsEarned; }
+
+        public int getStt() { return stt; }
+        public void setStt(int stt) { this.stt = stt; }
     }
 
     public static class ChampionTournamentDTO {
@@ -364,11 +368,15 @@ public class TeamProfileServlet extends HttpServlet {
                         perf.setAchievement(achievement);
                         perf.setRank(tourneyRank);
                         perf.setPointsEarned(ptsEarned);
+                        perf.setStt(totalTourneysPlayed);
 
                         performanceList.add(perf);
                     }
                 }
             }
+
+            java.util.Collections.reverse(performanceList);
+            java.util.Collections.reverse(championTourneys);
         }
 
         if (highestRank == 999) {
