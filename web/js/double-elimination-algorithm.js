@@ -308,11 +308,12 @@
             if (upperRounds[0] && lowerRounds[0]) {
                 var ubR1Matches = upperRounds[0].matches;
                 var lbR1Matches = lowerRounds[0].matches;
+                var totalUbR1 = ubR1Matches.length;
                 var totalLbR1 = lbR1Matches.length;
 
                 for (var k = 0; k < totalLbR1; k++) {
-                    var ubM1 = ubR1Matches[2 * k];
-                    var ubM2 = ubR1Matches[2 * k + 1];
+                    var ubM1 = ubR1Matches[k];
+                    var ubM2 = ubR1Matches[totalUbR1 - 1 - k];
 
                     if (ubM1 && lbR1Matches[k]) {
                         ubM1.dropToMatchId = lbR1Matches[k].matchId;
@@ -348,7 +349,7 @@
                 }
             }
 
-            // UB Round 2+ losers drop to Major LB rounds with Branch-Aware Cross-Over Inversion
+            // UB Round 2+ losers drop to Major LB rounds with Branch-Aware Cross-Over
             for (var ur = 2; ur <= ubStopRound; ur++) {
                 var targetLbRoundIdx = (ur - 1) * 2 - 1;
                 if (upperRounds[ur - 1] && lowerRounds[targetLbRoundIdx]) {
@@ -357,14 +358,13 @@
                     var mCount = ubMatches.length;
 
                     for (var u = 0; u < mCount; u++) {
-                        // Anti-rematch cross-over: Invert indices within each half so opposite branches meet
                         var targetIdx = u;
                         if (mCount >= 4) {
                             var halfM = Math.floor(mCount / 2);
                             if (u < halfM) {
                                 targetIdx = halfM - 1 - u;
                             } else {
-                                targetIdx = halfM + (mCount - 1 - u);
+                                targetIdx = u;
                             }
                         } else if (mCount === 2) {
                             targetIdx = (u === 0) ? 1 : 0;
