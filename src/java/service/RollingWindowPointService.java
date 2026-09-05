@@ -265,6 +265,74 @@ public class RollingWindowPointService {
     }
 
     /**
+     * Returns tournament points matrix from DB for all tournaments in series.
+     * Index i matches tournament i in chronological order.
+     * Each Map has key = lowercase team name, value = points earned in that tournament.
+     */
+    public List<Map<String, Integer>> getTourneyPointsPerTournament(String seriesId) {
+        List<Map<String, Integer>> result = new ArrayList<>();
+        if (seriesId == null || seriesId.trim().isEmpty()) return result;
+
+        SeriesDAO seriesDAO = new SeriesDAO();
+        List<Tournament> allTourneys = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
+        if (allTourneys == null || allTourneys.isEmpty()) return result;
+
+        ParticipantDAO pDao = new ParticipantDAO();
+        for (Tournament t : allTourneys) {
+            Map<String, Integer> ptsMap = new HashMap<>();
+            String tCfgRaw = t.getSeriesPointsConfig();
+            if (tCfgRaw == null || tCfgRaw.trim().isEmpty() || !tCfgRaw.trim().startsWith("{")) {
+                tCfgRaw = "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+            }
+            Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
+            Map<String, Integer> matchPlacements = pDao.getTournamentPlacements(t.getId());
+            List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
+            if (tourneyTeams != null) {
+                for (Team tm : tourneyTeams) {
+                    if (tm.getRawName() == null) continue;
+                    String pk = tm.getRawName().trim().toLowerCase();
+                    Integer matchPos = matchPlacements.get(tm.getId());
+                    if (matchPos == null) {
+                        matchPos = matchPlacements.get(pk);
+                    }
+                    int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
+                    int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
+                    ptsMap.put(pk, pts);
+                }
+            }
+            result.add(ptsMap);
+        }
+        return result;
+    }
+
+    /**
+     * Returns tournament participation matrix from DB for all tournaments in series.
+     */
+    public List<Map<String, Boolean>> getTourneyParticipationPerTournament(String seriesId) {
+        List<Map<String, Boolean>> result = new ArrayList<>();
+        if (seriesId == null || seriesId.trim().isEmpty()) return result;
+
+        SeriesDAO seriesDAO = new SeriesDAO();
+        List<Tournament> allTourneys = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
+        if (allTourneys == null || allTourneys.isEmpty()) return result;
+
+        ParticipantDAO pDao = new ParticipantDAO();
+        for (Tournament t : allTourneys) {
+            Map<String, Boolean> partMap = new HashMap<>();
+            List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
+            if (tourneyTeams != null) {
+                for (Team tm : tourneyTeams) {
+                    if (tm.getRawName() != null) {
+                        partMap.put(tm.getRawName().trim().toLowerCase(), true);
+                    }
+                }
+            }
+            result.add(partMap);
+        }
+        return result;
+    }
+
+    /**
      * Recalculates and persists the updated standings & expired points into the database
      */
     public boolean recalculateAndPersistStandings(String seriesId) {

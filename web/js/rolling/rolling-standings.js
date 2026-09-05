@@ -45,7 +45,7 @@
     var cTarget = t.replace(/[^a-z0-9]/g, '');
     var c = n.replace(/[^a-z0-9]/g, '');
     if (c && cTarget && c === cTarget) return true;
-    if (c.length >= 3 && cTarget.length >= 3 && (c.indexOf(cTarget) !== -1 || cTarget.indexOf(c) !== -1)) {
+    if (c.length >= 4 && cTarget.length >= 4 && (c.indexOf(cTarget) !== -1 || cTarget.indexOf(c) !== -1)) {
       return true;
     }
     return false;
@@ -220,7 +220,7 @@
     });
   };
 
-  // Parse points and participation for a single tournament
+  // Parse points and participation for a single tournament identically to team-profile.js
   function parseTournamentResults(t, teamDataMap) {
     var localPtsCfg = {};
     try {
@@ -461,6 +461,8 @@
               var name = row.name;
               if (!isMultiStage) {
                 awardTeamPoints(name, String(idx + 1));
+              } else {
+                awardTeamPoints(name, "stage1_eliminated", String(idx + 1));
               }
             });
           }
@@ -534,10 +536,8 @@
                     else awardTeamPoints(st.name, "stage1_eliminated", "group_rank_" + rNum);
                   });
                 } else {
-                  grpList.forEach(function (st, rIdx) {
-                    if (rIdx >= 2) {
-                      awardTeamPoints(st.name, "stage1_eliminated");
-                    }
+                  grpList.forEach(function (st) {
+                    awardTeamPoints(st.name, "stage1_eliminated");
                   });
                 }
               }
@@ -584,12 +584,14 @@
                 if (t1N) markTeamParticipated(t1N);
                 if (t2N) markTeamParticipated(t2N);
 
-                var mRes = resolveWinnerAndLoser(m);
-                if (mRes.loser) {
-                  awardTeamPoints(mRes.loser, posKey, "stage1_eliminated");
-                }
-                if (mRes.winner && distFromFinal === 0 && !isMultiStage) {
-                  awardTeamPoints(mRes.winner, "1");
+                if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                  var mRes = resolveWinnerAndLoser(m);
+                  if (mRes.loser) {
+                    awardTeamPoints(mRes.loser, posKey, "stage1_eliminated");
+                  }
+                  if (mRes.winner && distFromFinal === 0 && !isMultiStage) {
+                    awardTeamPoints(mRes.winner, "1");
+                  }
                 }
               });
             }
@@ -636,34 +638,36 @@
               if (t1N) markTeamParticipated(t1N);
               if (t2N) markTeamParticipated(t2N);
 
-              var mRes = resolveWinnerAndLoser(m);
-              var roundDiff = 0;
-              if (matchDistToFinal[mk] !== undefined) {
-                roundDiff = matchDistToFinal[mk];
-              } else {
-                var rNum = m.roundNumber || m.round || 1;
-                roundDiff = Math.max(0, totalFullRounds - rNum);
-              }
+              if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                var mRes = resolveWinnerAndLoser(m);
+                var roundDiff = 0;
+                if (matchDistToFinal[mk] !== undefined) {
+                  roundDiff = matchDistToFinal[mk];
+                } else {
+                  var rNum = m.roundNumber || m.round || 1;
+                  roundDiff = Math.max(0, totalFullRounds - rNum);
+                }
 
-              var posKey2 = "";
-              if (roundDiff === 0) {
-                posKey2 = "2";
-              } else if (roundDiff === 1) {
-                posKey2 = "3-4";
-              } else if (roundDiff === 2) {
-                posKey2 = "5-8";
-              } else {
-                var teamsInRound2 = Math.pow(2, roundDiff + 1);
-                var sP2 = Math.pow(2, roundDiff) + 1;
-                var eP2 = teamsInRound2;
-                posKey2 = sP2 + "-" + eP2;
-              }
+                var posKey2 = "";
+                if (roundDiff === 0) {
+                  posKey2 = "2";
+                } else if (roundDiff === 1) {
+                  posKey2 = "3-4";
+                } else if (roundDiff === 2) {
+                  posKey2 = "5-8";
+                } else {
+                  var teamsInRound2 = Math.pow(2, roundDiff + 1);
+                  var sP2 = Math.pow(2, roundDiff) + 1;
+                  var eP2 = teamsInRound2;
+                  posKey2 = sP2 + "-" + eP2;
+                }
 
-              if (mRes.loser) {
-                awardTeamPoints(mRes.loser, posKey2, "stage1_eliminated");
-              }
-              if (mRes.winner && roundDiff === 0 && !isMultiStage) {
-                awardTeamPoints(mRes.winner, "1");
+                if (mRes.loser) {
+                  awardTeamPoints(mRes.loser, posKey2, "stage1_eliminated");
+                }
+                if (mRes.winner && roundDiff === 0 && !isMultiStage) {
+                  awardTeamPoints(mRes.winner, "1");
+                }
               }
             });
           }
@@ -702,9 +706,14 @@
               var lrNum = lrIdx + 1;
               var offset = totalLbR - 1 - lrIdx;
               var roundObj = lowerRounds[lrIdx];
+              var rawTitle = (roundObj && roundObj.title) ? roundObj.title.trim() : ('LB Round ' + lrNum);
+
+              var isLbCut = isMultiStage && (lrIdx === totalLbR - 1 || rawTitle.toLowerCase().indexOf("qualification") !== -1 || rawTitle.toLowerCase().indexOf("lb cut") !== -1);
 
               var posKey = (offset === 0) ? "3" : ((offset === 1) ? "4" : "5-8");
-              if (offset >= 2) {
+              if (isMultiStage) {
+                posKey = isLbCut ? "s1_lb_cut" : ("s1_lb_r" + lrNum);
+              } else if (offset >= 2) {
                 var k = Math.floor((offset - 2) / 2);
                 var tStart = Math.pow(2, k + 2) + 1;
                 var hSize = Math.pow(2, k + 1);
@@ -720,9 +729,11 @@
                     if (t1N) markTeamParticipated(t1N);
                     if (t2N) markTeamParticipated(t2N);
 
-                    var res = resolveWinnerAndLoser(m);
-                    if (res.loser) {
-                      awardTeamPoints(res.loser, posKey, "stage1_eliminated");
+                    if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                      var res = resolveWinnerAndLoser(m);
+                      if (res.loser) {
+                        awardTeamPoints(res.loser, posKey, "stage1_eliminated");
+                      }
                     }
                   }
                 });
@@ -732,16 +743,18 @@
 
           if (!isMultiStage && gfRound && gfRound.matches && gfRound.matches.length > 0) {
             var gfMatches = gfRound.matches;
-            var gfFinal = (gfMatches.length > 1 && gfMatches[1].winnerId) ? gfMatches[1] : gfMatches[0];
+            var gfFinal = (gfMatches.length > 1 && (gfMatches[1].winnerId || gfMatches[1].winner || gfMatches[1].status === 'COMPLETED')) ? gfMatches[1] : gfMatches[0];
             if (gfFinal) {
               var t1N = extractName(gfFinal.team1) || (gfFinal.team1Name ? extractName(gfFinal.team1Name) : null);
               var t2N = extractName(gfFinal.team2) || (gfFinal.team2Name ? extractName(gfFinal.team2Name) : null);
               if (t1N) markTeamParticipated(t1N);
               if (t2N) markTeamParticipated(t2N);
 
-              var resGF = resolveWinnerAndLoser(gfFinal);
-              if (resGF.winner) awardTeamPoints(resGF.winner, "1");
-              if (resGF.loser) awardTeamPoints(resGF.loser, "2");
+              if (gfFinal.winnerId || gfFinal.winner || gfFinal.status === 'COMPLETED' || gfFinal.status === 'DONE') {
+                var resGF = resolveWinnerAndLoser(gfFinal);
+                if (resGF.winner) awardTeamPoints(resGF.winner, "1");
+                if (resGF.loser) awardTeamPoints(resGF.loser, "2");
+              }
             }
           }
         } catch (e) {}
@@ -846,8 +859,11 @@
             if (lowerRoundsS2 && lowerRoundsS2.length > 0) {
               var totalLbR2 = lowerRoundsS2.length;
               for (var lrIdx2 = 0; lrIdx2 < totalLbR2; lrIdx2++) {
+                var lrNum2 = lrIdx2 + 1;
                 var offset2 = totalLbR2 - 1 - lrIdx2;
                 var roundObj2 = lowerRoundsS2[lrIdx2];
+                var rawTitle2 = (roundObj2 && roundObj2.title) ? roundObj2.title.trim() : ('LB Round ' + lrNum2);
+
                 var posKey2 = (offset2 === 0) ? "3" : ((offset2 === 1) ? "4" : "5-8");
                 if (offset2 >= 2) {
                   var k2 = Math.floor((offset2 - 2) / 2);
@@ -865,9 +881,11 @@
                       if (t1N) markTeamParticipated(t1N);
                       if (t2N) markTeamParticipated(t2N);
 
-                      var res2 = resolveWinnerAndLoser(m);
-                      if (res2.loser) {
-                        awardTeamPoints(res2.loser, posKey2);
+                      if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                        var res2 = resolveWinnerAndLoser(m);
+                        if (res2.loser) {
+                          awardTeamPoints(res2.loser, posKey2, "s2_lb_r" + lrNum2);
+                        }
                       }
                     }
                   });
@@ -877,16 +895,18 @@
 
             if (gfRoundS2 && gfRoundS2.matches && gfRoundS2.matches.length > 0) {
               var gfMatchesS2 = gfRoundS2.matches;
-              var gfFinalS2 = (gfMatchesS2.length > 1 && gfMatchesS2[1].winnerId) ? gfMatchesS2[1] : gfMatchesS2[0];
+              var gfFinalS2 = (gfMatchesS2.length > 1 && (gfMatchesS2[1].winnerId || gfMatchesS2[1].winner || gfMatchesS2[1].status === 'COMPLETED')) ? gfMatchesS2[1] : gfMatches[0];
               if (gfFinalS2) {
                 var t1N = extractName(gfFinalS2.team1) || (gfFinalS2.team1Name ? extractName(gfFinalS2.team1Name) : null);
                 var t2N = extractName(gfFinalS2.team2) || (gfFinalS2.team2Name ? extractName(gfFinalS2.team2Name) : null);
                 if (t1N) markTeamParticipated(t1N);
                 if (t2N) markTeamParticipated(t2N);
 
-                var resGFS2 = resolveWinnerAndLoser(gfFinalS2);
-                if (resGFS2.winner) awardTeamPoints(resGFS2.winner, "1");
-                if (resGFS2.loser) awardTeamPoints(resGFS2.loser, "2");
+                if (gfFinalS2.winnerId || gfFinalS2.winner || gfFinalS2.status === 'COMPLETED' || gfFinalS2.status === 'DONE') {
+                  var resGFS2 = resolveWinnerAndLoser(gfFinalS2);
+                  if (resGFS2.winner) awardTeamPoints(resGFS2.winner, "1");
+                  if (resGFS2.loser) awardTeamPoints(resGFS2.loser, "2");
+                }
               }
             }
           } catch (e) {}
@@ -930,12 +950,14 @@
                   if (t1N) markTeamParticipated(t1N);
                   if (t2N) markTeamParticipated(t2N);
 
-                  var resS2 = resolveWinnerAndLoser(m);
-                  if (distS2 === 0 && resS2.winner) {
-                    awardTeamPoints(resS2.winner, "1");
-                  }
-                  if (resS2.loser) {
-                    awardTeamPoints(resS2.loser, posKeyS2);
+                  if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                    var resS2 = resolveWinnerAndLoser(m);
+                    if (distS2 === 0 && resS2.winner) {
+                      awardTeamPoints(resS2.winner, "1");
+                    }
+                    if (resS2.loser) {
+                      awardTeamPoints(resS2.loser, posKeyS2);
+                    }
                   }
                 });
               }
@@ -982,40 +1004,53 @@
                 if (t1N) markTeamParticipated(t1N);
                 if (t2N) markTeamParticipated(t2N);
 
-                var resS2 = resolveWinnerAndLoser(m);
-                var roundDiffS2 = 0;
-                if (matchDistToFinalS2[mk] !== undefined) {
-                  roundDiffS2 = matchDistToFinalS2[mk];
-                } else {
-                  var rNumS2 = m.roundNumber || m.round || 1;
-                  roundDiffS2 = Math.max(0, totalS2FullRounds - rNumS2);
-                }
+                if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                  var resS2 = resolveWinnerAndLoser(m);
+                  var roundDiffS2 = 0;
+                  if (matchDistToFinalS2[mk] !== undefined) {
+                    roundDiffS2 = matchDistToFinalS2[mk];
+                  } else {
+                    var rNumS2 = m.roundNumber || m.round || 1;
+                    roundDiffS2 = Math.max(0, totalS2FullRounds - rNumS2);
+                  }
 
-                var posKeyS2 = "";
-                if (roundDiffS2 === 0) {
-                  posKeyS2 = "2";
-                } else if (roundDiffS2 === 1) {
-                  posKeyS2 = "3-4";
-                } else if (roundDiffS2 === 2) {
-                  posKeyS2 = "5-8";
-                } else {
-                  var teamsInRS2 = Math.pow(2, roundDiffS2 + 1);
-                  var sPS2 = Math.pow(2, roundDiffS2) + 1;
-                  var ePS2 = teamsInRS2;
-                  posKeyS2 = sPS2 + "-" + ePS2;
-                }
+                  var posKeyS2_2 = "";
+                  if (roundDiffS2 === 0) {
+                    posKeyS2_2 = "2";
+                  } else if (roundDiffS2 === 1) {
+                    posKeyS2_2 = "3-4";
+                  } else if (roundDiffS2 === 2) {
+                    posKeyS2_2 = "5-8";
+                  } else {
+                    var teamsInRoundS2 = Math.pow(2, roundDiffS2 + 1);
+                    var sPos = Math.floor(teamsInRoundS2 / 2) + 1;
+                    var ePos = teamsInRoundS2;
+                    posKeyS2_2 = sPos + "-" + ePos;
+                  }
 
-                if (distS2 === 0 && resS2.winner) {
-                  awardTeamPoints(resS2.winner, "1");
-                }
-                if (resS2.loser) {
-                  awardTeamPoints(resS2.loser, posKeyS2);
+                  if (roundDiffS2 === 0 && resS2.winner) {
+                    awardTeamPoints(resS2.winner, "1");
+                  }
+                  if (resS2.loser) {
+                    awardTeamPoints(resS2.loser, posKeyS2_2);
+                  }
                 }
               });
             }
           } catch (e) {}
         }
       }
+    }
+
+    // Champion override
+    var rawChamp = getStorageData(['tourma_champion_'], t.id);
+    if (rawChamp) {
+      try {
+        var cName = extractName(rawChamp) || (typeof rawChamp === 'string' ? rawChamp.trim() : null);
+        if (cName) {
+          awardTeamPoints(cName, "1");
+        }
+      } catch (e) {}
     }
 
     return { pointsMap: teamPointsAwarded, participatedMap: teamParticipated };
@@ -1031,7 +1066,6 @@
     var tbody = standingsTable.querySelector('tbody');
     if (!tbody) return;
 
-    var rows = Array.from(tbody.querySelectorAll('tr'));
     var teamDataMap = {};
 
     // 1. Populate official partner participants
@@ -1044,39 +1078,8 @@
           totalPts: 0,
           lastPts: 0,
           droppedPts: 0,
-          activeTourneys: 0,
-          row: null
+          activeTourneys: 0
         };
-      }
-    });
-
-    // 2. Map existing table DOM rows to teamDataMap
-    rows.forEach(function (row) {
-      var teamNameCell = row.cells[1];
-      if (teamNameCell) {
-        var teamName = teamNameCell.textContent.trim();
-        var key = teamName.toLowerCase();
-        if (!teamDataMap[key]) {
-          var foundK = null;
-          Object.keys(teamDataMap).forEach(function (pk) {
-            if (foundK) return;
-            if (isTeamSelf(teamName, pk)) foundK = pk;
-          });
-          if (foundK) {
-            teamDataMap[foundK].row = row;
-          } else {
-            teamDataMap[key] = {
-              name: teamName,
-              totalPts: 0,
-              lastPts: 0,
-              droppedPts: 0,
-              activeTourneys: 0,
-              row: row
-            };
-          }
-        } else {
-          teamDataMap[key].row = row;
-        }
       }
     });
 
@@ -1112,14 +1115,37 @@
       }
     }
 
-    // Parse results for all sub-tournaments from 0 up to targetIdx
+    // Parse results for all sub-tournaments from 0 to totalTourneys - 1
     var tourneyPointsArray = [];
     var tourneyParticipatedArray = [];
 
-    for (var tIdx = 0; tIdx <= targetIdx; tIdx++) {
-      var res = parseTournamentResults(subTourneys[tIdx], teamDataMap);
-      tourneyPointsArray[tIdx] = res.pointsMap;
-      tourneyParticipatedArray[tIdx] = res.participatedMap;
+    for (var tIdx = 0; tIdx < totalTourneys; tIdx++) {
+      var serverPts = (window.serverTourneyPoints && window.serverTourneyPoints[tIdx]) ? Object.assign({}, window.serverTourneyPoints[tIdx]) : {};
+      var serverPart = (window.serverTourneyParticipation && window.serverTourneyParticipation[tIdx]) ? Object.assign({}, window.serverTourneyParticipation[tIdx]) : {};
+
+      var localRes = parseTournamentResults(subTourneys[tIdx], teamDataMap);
+
+      // Merge local live results on top of server data
+      var mergedPts = Object.assign({}, serverPts);
+      if (localRes && localRes.pointsMap) {
+        Object.keys(localRes.pointsMap).forEach(function (k) {
+          if (localRes.pointsMap[k] > 0 || mergedPts[k] === undefined) {
+            mergedPts[k] = localRes.pointsMap[k];
+          }
+        });
+      }
+
+      var mergedPart = Object.assign({}, serverPart);
+      if (localRes && localRes.participatedMap) {
+        Object.keys(localRes.participatedMap).forEach(function (k) {
+          if (localRes.participatedMap[k]) {
+            mergedPart[k] = true;
+          }
+        });
+      }
+
+      tourneyPointsArray[tIdx] = mergedPts;
+      tourneyParticipatedArray[tIdx] = mergedPart;
     }
 
     // 1. Calculate Previous Milestone Standings (for Rank Fluctuation comparison)
@@ -1128,29 +1154,33 @@
       var prevTargetIdx = targetIdx - 1;
       var prevWindowStart = Math.max(0, prevTargetIdx - phaseSize + 1);
       var prevWindowEnd = prevTargetIdx;
-      var prevTotals = {};
+      var prevScores = [];
 
-      Object.keys(teamDataMap).forEach(function (k) {
-        prevTotals[k] = 0;
-      });
-
-      for (var pIdx = prevWindowStart; pIdx <= prevWindowEnd; pIdx++) {
-        var pMap = tourneyPointsArray[pIdx] || {};
-        Object.keys(pMap).forEach(function (k) {
-          if (prevTotals[k] !== undefined) {
-            prevTotals[k] += pMap[k];
+      Object.keys(teamDataMap).forEach(function (pk) {
+        var sumPts = 0;
+        for (var pIdx = prevWindowStart; pIdx <= prevWindowEnd; pIdx++) {
+          var pMap = tourneyPointsArray[pIdx] || {};
+          if (pMap[pk] !== undefined) {
+            sumPts += pMap[pk];
           }
+        }
+        var prevLastPts = (tourneyPointsArray[prevTargetIdx] && tourneyPointsArray[prevTargetIdx][pk]) ? tourneyPointsArray[prevTargetIdx][pk] : 0;
+        prevScores.push({
+          key: pk,
+          name: teamDataMap[pk].name,
+          pts: sumPts,
+          lastPts: prevLastPts
         });
-      }
-
-      var prevSortedKeys = Object.keys(prevTotals);
-      prevSortedKeys.sort(function (a, b) {
-        if (prevTotals[b] !== prevTotals[a]) return prevTotals[b] - prevTotals[a];
-        return a.localeCompare(b);
       });
 
-      prevSortedKeys.forEach(function (k, prIdx) {
-        prevRankMap[k] = prIdx + 1;
+      prevScores.sort(function (a, b) {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
+        return a.name.localeCompare(b.name);
+      });
+
+      prevScores.forEach(function (st, prIdx) {
+        prevRankMap[st.key] = prIdx + 1;
       });
     }
 
@@ -1170,7 +1200,7 @@
         if (ptsMap[k] !== undefined) {
           totalPts += ptsMap[k];
         }
-        if (partMap[k]) {
+        if (partMap[k] || (ptsMap[k] !== undefined && ptsMap[k] > 0)) {
           playedCount += 1;
         }
       }
@@ -1184,7 +1214,7 @@
       entry.droppedPts = droppedTourneyPts;
     });
 
-    // 3. Sort Teams for Current Milestone
+    // 3. Sort Teams for Current Milestone (Exact same comparator as team-profile.js)
     var teamDataArray = Object.keys(teamDataMap).map(function (k) { return teamDataMap[k]; });
     teamDataArray.sort(function (a, b) {
       if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
@@ -1192,16 +1222,13 @@
       return a.name.localeCompare(b.name);
     });
 
-    // 4. Clean up any empty table notice row if present
-    var emptyNotice = tbody.querySelector('td[colspan]');
-    if (emptyNotice && teamDataArray.length > 0) {
-      tbody.innerHTML = '';
-    }
-
+    // 4. Render Table DOM cleanly with full exact rankings & fluctuations
+    tbody.innerHTML = '';
     var ctx = (typeof window.appContextPath !== 'undefined' && window.appContextPath) ? window.appContextPath : '';
     var seriesId = (typeof window.seriesIdVal !== 'undefined' && window.seriesIdVal) ? window.seriesIdVal : '';
 
-    // 5. Update Table DOM with Animated Order & Rank Fluctuations
+    var frag = document.createDocumentFragment();
+
     teamDataArray.forEach(function (data, rankIdx) {
       var rank = rankIdx + 1;
       var teamKey = data.name.toLowerCase().trim();
@@ -1222,74 +1249,51 @@
         rankChangeHtml = '<span class="rank-change same" title="Giải đầu tiên">-</span>';
       }
 
-      var row = data.row;
-      if (!row) {
-        row = document.createElement('tr');
-        row.innerHTML = '<td></td><td></td><td></td><td></td><td></td><td></td>';
-        data.row = row;
+      var row = document.createElement('tr');
+      row.setAttribute('data-team-name', data.name);
+
+      var lastPtsText = data.lastPts > 0 ? ('<span style="color: #2dd4bf; font-weight: 700;">+' + data.lastPts + ' pts</span>') : '<span style="color: #94a3b8;">0 pts</span>';
+
+      var netChange = data.lastPts - (data.droppedPts || 0);
+      var changeText = '0 pts';
+      var changeColor = '#94a3b8';
+      if (netChange > 0) {
+        changeText = '+' + netChange + ' pts';
+        changeColor = '#2dd4bf';
+      } else if (netChange < 0) {
+        changeText = netChange + ' pts';
+        changeColor = '#ef4444';
       }
 
-      // Re-order row in DOM
-      tbody.appendChild(row);
+      row.innerHTML = 
+        '<td style="font-weight: 800; color: #ffffff;">' +
+          '<div class="rank-wrap">' +
+            '<span class="rank-badge rank-' + rank + '">#' + rank + '</span>' +
+            rankChangeHtml +
+          '</div>' +
+        '</td>' +
+        '<td style="font-weight: 700; color: #ffffff;">' +
+          '<a href="' + ctx + '/team-profile?seriesId=' + encodeURIComponent(seriesId) + '&teamName=' + encodeURIComponent(data.name) + '" style="color: #ffffff; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color=\'#2dd4bf\'" onmouseout="this.style.color=\'#ffffff\'">' +
+            data.name +
+          '</a>' +
+        '</td>' +
+        '<td style="text-align: center; font-weight: 700; color: var(--rolling-text-muted);">' +
+          data.activeTourneys +
+        '</td>' +
+        '<td style="text-align: right; font-weight: 800; font-size: 1.05rem; color: #fbbf24;">' +
+          data.totalPts + ' pts' +
+        '</td>' +
+        '<td style="text-align: right; font-weight: 700;">' +
+          lastPtsText +
+        '</td>' +
+        '<td style="text-align: right; font-weight: 700; color: ' + changeColor + ';">' +
+          changeText +
+        '</td>';
 
-      // Col 0: Rank + Rank Change
-      if (row.cells[0]) {
-        row.cells[0].style.fontWeight = '800';
-        row.cells[0].style.color = '#ffffff';
-        row.cells[0].innerHTML = '<div class="rank-wrap">' +
-          '<span class="rank-badge rank-' + rank + '">#' + rank + '</span>' +
-          rankChangeHtml +
-          '</div>';
-      }
-
-      // Col 1: Team Name Link
-      if (row.cells[1]) {
-        row.cells[1].style.fontWeight = '700';
-        row.cells[1].style.color = '#ffffff';
-        row.cells[1].innerHTML = '<a href="' + ctx + '/team-profile?seriesId=' + encodeURIComponent(seriesId) + '&teamName=' + encodeURIComponent(data.name) + '" style="color: #ffffff; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color=\'#2dd4bf\'" onmouseout="this.style.color=\'#ffffff\'">' +
-          data.name +
-          '</a>';
-      }
-
-      // Col 2: Active Tournaments Played
-      if (row.cells[2]) {
-        row.cells[2].style.textAlign = 'center';
-        row.cells[2].style.fontWeight = '700';
-        row.cells[2].style.color = 'var(--rolling-text-muted)';
-        row.cells[2].textContent = data.activeTourneys;
-      }
-
-      // Col 3: Total Active Points
-      if (row.cells[3]) {
-        row.cells[3].style.textAlign = 'right';
-        row.cells[3].style.fontWeight = '800';
-        row.cells[3].innerHTML = '<strong style="color: #fbbf24; font-weight: 800; font-size: 1.05rem;">' + data.totalPts + ' pts</strong>';
-      }
-
-      // Col 4: Last Tournament Points
-      if (row.cells[4]) {
-        row.cells[4].style.textAlign = 'right';
-        row.cells[4].style.fontWeight = '700';
-        row.cells[4].innerHTML = data.lastPts > 0 ? ('<span style="color: #2dd4bf; font-weight: 700;">+' + data.lastPts + ' pts</span>') : '<span style="color: #94a3b8;">0 pts</span>';
-      }
-
-      // Col 5: Net Fluctuation / Expiry
-      if (row.cells[5]) {
-        row.cells[5].style.textAlign = 'right';
-        row.cells[5].style.fontWeight = '700';
-        var netChange = data.lastPts - (data.droppedPts || 0);
-        var changeText = '0 pts';
-        var changeColor = '#94a3b8';
-        if (netChange > 0) {
-          changeText = '+' + netChange + ' pts';
-          changeColor = '#2dd4bf';
-        } else if (netChange < 0) {
-          changeText = netChange + ' pts';
-          changeColor = '#ef4444';
-        }
-        row.cells[5].innerHTML = '<span style="color: ' + changeColor + '; font-weight: 700;">' + changeText + '</span>';
-      }
+      frag.appendChild(row);
     });
+
+    tbody.appendChild(frag);
   }
 
   // =========================================================================
@@ -1324,15 +1328,15 @@
     }, 150);
   };
 
-  // Automatically compute and sync on page load so standings are never 0
+  // Automatically compute and sync on page load so standings are never 0 and always ranked accurately
   document.addEventListener('DOMContentLoaded', function () {
     computeStandingsForMilestone('LATEST');
   });
   setTimeout(function () {
     computeStandingsForMilestone('LATEST');
-  }, 50);
+  }, 30);
   setTimeout(function () {
     computeStandingsForMilestone('LATEST');
-  }, 200);
+  }, 150);
 
 })();

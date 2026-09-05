@@ -305,6 +305,46 @@
                 <%  }
                 } %>
             ];
+            <%
+                List<java.util.Map<String, Integer>> serverTourneyPoints = (series != null) ? RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId()) : null;
+                List<java.util.Map<String, Boolean>> serverTourneyParticipation = (series != null) ? RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId()) : null;
+            %>
+            window.serverTourneyPoints = [
+                <% if (serverTourneyPoints != null) {
+                    for (int sIdx = 0; sIdx < serverTourneyPoints.size(); sIdx++) {
+                        java.util.Map<String, Integer> map = serverTourneyPoints.get(sIdx);
+                        StringBuilder sb = new StringBuilder("{");
+                        if (map != null) {
+                            int count = 0;
+                            for (java.util.Map.Entry<String, Integer> e : map.entrySet()) {
+                                if (count++ > 0) sb.append(",");
+                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":").append(e.getValue());
+                            }
+                        }
+                        sb.append("}");
+                %>
+                    <%= sb.toString() %><%= (sIdx < serverTourneyPoints.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
+            window.serverTourneyParticipation = [
+                <% if (serverTourneyParticipation != null) {
+                    for (int sIdx = 0; sIdx < serverTourneyParticipation.size(); sIdx++) {
+                        java.util.Map<String, Boolean> map = serverTourneyParticipation.get(sIdx);
+                        StringBuilder sb = new StringBuilder("{");
+                        if (map != null) {
+                            int count = 0;
+                            for (java.util.Map.Entry<String, Boolean> e : map.entrySet()) {
+                                if (count++ > 0) sb.append(",");
+                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":true");
+                            }
+                        }
+                        sb.append("}");
+                %>
+                    <%= sb.toString() %><%= (sIdx < serverTourneyParticipation.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
             window.seriesPhaseSize = <%= phaseSize %>;
             window.seriesIdVal = "<%= seriesIdVal %>";
             window.appContextPath = "${pageContext.request.contextPath}";

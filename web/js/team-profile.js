@@ -1420,7 +1420,8 @@
     var partnerList = Object.values(teamDataMap);
     partnerList.sort(function (a, b) {
       if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-      return b.lastPts - a.lastPts;
+      if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
+      return a.name.localeCompare(b.name);
     });
 
     var currentRank = 0;
@@ -1462,7 +1463,8 @@
 
       stepScores.sort(function (a, b) {
         if (b.pts !== a.pts) return b.pts - a.pts;
-        return b.lastPts - a.lastPts;
+        if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
+        return a.name.localeCompare(b.name);
       });
 
       for (var rankIdx = 0; rankIdx < stepScores.length; rankIdx++) {
