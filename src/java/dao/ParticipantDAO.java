@@ -216,34 +216,23 @@ public class ParticipantDAO {
                         maxRound = rNum;
                     }
 
-                    if (rNum == maxRound) {
+                    int diff = maxRound - rNum;
+                    if (diff == 0) {
                         if (!placementMap.containsKey(winner)) {
                             placementMap.put(winner, 1);
                             if (idToNameMap.containsKey(winner)) placementMap.put(idToNameMap.get(winner), 1);
                         }
-
                         String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
                         if (loser != null && !placementMap.containsKey(loser)) {
                             placementMap.put(loser, 2);
                             if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 2);
                         }
-                    } else if (rNum == maxRound - 1 && maxRound > 1) {
+                    } else if (diff >= 1) {
                         String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
                         if (loser != null && !placementMap.containsKey(loser)) {
-                            placementMap.put(loser, 3);
-                            if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 3);
-                        }
-                    } else if (rNum == maxRound - 2 && maxRound > 2) {
-                        String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
-                        if (loser != null && !placementMap.containsKey(loser)) {
-                            placementMap.put(loser, 5);
-                            if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 5);
-                        }
-                    } else if (rNum <= maxRound - 3) {
-                        String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
-                        if (loser != null && !placementMap.containsKey(loser)) {
-                            placementMap.put(loser, 9);
-                            if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 9);
+                            int pos = (int) Math.pow(2, diff) + 1;
+                            placementMap.put(loser, pos);
+                            if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), pos);
                         }
                     }
                 }

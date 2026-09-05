@@ -103,6 +103,14 @@
         </li>
 
         <li class="sidebar-menu-item">
+            <a href="${pageContext.request.contextPath}/rolling-hof?id=<%= currentSeries.getId() %>"
+               class="sidebar-menu-link <%= "hof".equals(activeStep) || "rolling-hof".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-crown menu-icon text-gold"></i>
+                <span>Bảng Vàng</span>
+            </a>
+        </li>
+
+        <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/team-list?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "team-list".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid fa-users menu-icon text-mint"></i>

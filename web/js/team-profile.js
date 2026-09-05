@@ -206,27 +206,39 @@
     return 0;
   }
 
+  var storageDataCache = {};
   function getStorageData(prefixList, id) {
-    if (!prefixList || prefixList.length === 0) return null;
-    if (id) {
-      for (var i = 0; i < prefixList.length; i++) {
-        var key = prefixList[i] + id;
-        var val = localStorage.getItem(key);
-        if (val) return val;
+    if (!prefixList || prefixList.length === 0 || !id) return null;
+    var cacheKey = prefixList.join('|') + '__' + id;
+    if (storageDataCache[cacheKey] !== undefined) {
+      return storageDataCache[cacheKey];
+    }
+    for (var i = 0; i < prefixList.length; i++) {
+      var key = prefixList[i] + id;
+      var val = localStorage.getItem(key);
+      if (val) {
+        storageDataCache[cacheKey] = val;
+        return val;
       }
-      var allKeys = Object.keys(localStorage);
-      for (var j = 0; j < allKeys.length; j++) {
-        var k = allKeys[j];
-        for (var p = 0; p < prefixList.length; p++) {
-          if (k.indexOf(prefixList[p]) === 0 && (k.indexOf(id) !== -1 || k.slice(-id.length) === id)) {
-            var v = localStorage.getItem(k);
-            if (v) return v;
+    }
+    var allKeys = Object.keys(localStorage);
+    for (var j = 0; j < allKeys.length; j++) {
+      var k = allKeys[j];
+      for (var p = 0; p < prefixList.length; p++) {
+        if (k.indexOf(prefixList[p]) === 0 && (k.indexOf(id) !== -1 || k.slice(-id.length) === id)) {
+          var v = localStorage.getItem(k);
+          if (v) {
+            storageDataCache[cacheKey] = v;
+            return v;
           }
         }
       }
     }
+    storageDataCache[cacheKey] = null;
     return null;
   }
+
+  var partnerKeyCache = {};
 
   function calculateAndSyncTeamProfile() {
     var targetTeamName = (window.profileTeamName || '').trim();
@@ -280,18 +292,26 @@
     var championTourneysList = [];
     var tourneyPerformances = [];
 
-    // Helper to find partner key
+    // Helper to find partner key with memoization
     function findPartnerKey(name) {
       if (!name) return null;
-      var k = name.trim().toLowerCase();
-      if (teamDataMap[k]) return k;
+      var raw = String(name).trim();
+      if (partnerKeyCache[raw] !== undefined) return partnerKeyCache[raw];
+      var k = raw.toLowerCase();
+      if (teamDataMap[k]) {
+        partnerKeyCache[raw] = k;
+        return k;
+      }
       var matchK = null;
-      Object.keys(teamDataMap).forEach(function (pk) {
-        if (matchK) return;
-        if (isTeamSelf(pk, name)) {
+      var mapKeys = Object.keys(teamDataMap);
+      for (var idx = 0; idx < mapKeys.length; idx++) {
+        var pk = mapKeys[idx];
+        if (isTeamSelf(pk, raw)) {
           matchK = pk;
+          break;
         }
-      });
+      }
+      partnerKeyCache[raw] = matchK;
       return matchK;
     }
 
@@ -1420,7 +1440,8 @@
     var partnerList = Object.values(teamDataMap);
     partnerList.sort(function (a, b) {
       if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-      return b.lastPts - a.lastPts;
+      if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
+      return a.name.localeCompare(b.name);
     });
 
     var currentRank = 0;
@@ -1462,7 +1483,8 @@
 
       stepScores.sort(function (a, b) {
         if (b.pts !== a.pts) return b.pts - a.pts;
-        return b.lastPts - a.lastPts;
+        if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
+        return a.name.localeCompare(b.name);
       });
 
       for (var rankIdx = 0; rankIdx < stepScores.length; rankIdx++) {
@@ -1585,6 +1607,19 @@
       }
     }
 
+    // Render Special Honors & Badges using TeamBadgeEngine
+    if (typeof TeamBadgeEngine !== 'undefined' && TeamBadgeEngine.renderBadges) {
+      TeamBadgeEngine.renderBadges('teamBadgesContainer', targetTeamName, {
+        subTournaments: subTourneys,
+        championTourneys: championTourneysList,
+        tourneyPerformances: tourneyPerformances,
+        teamDataMap: teamDataMap,
+        currentRank: currentRank,
+        highestRank: highestBXHRank,
+        totalAccumulatedPoints: totalAccumPoints
+      });
+    }
+
     // Update Performance Table (Most recent tournament at top, highest STT at top)
     var elTbody = document.getElementById('profPerformanceTbody');
     if (elTbody) {
@@ -1623,19 +1658,28 @@
     }
   }
 
-  // Auto-run on DOM ready and with retry intervals to guarantee synchronization
+  // Debounced runner
+  var syncTimeout = null;
+  function debouncedSync() {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(function () {
+      calculateAndSyncTeamProfile();
+    }, 20);
+  }
+
+  // Auto-run on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', calculateAndSyncTeamProfile);
   } else {
     calculateAndSyncTeamProfile();
   }
-  setTimeout(calculateAndSyncTeamProfile, 10);
-  setTimeout(calculateAndSyncTeamProfile, 50);
-  setTimeout(calculateAndSyncTeamProfile, 150);
-  setTimeout(calculateAndSyncTeamProfile, 300);
 
   if (typeof window !== 'undefined' && window.addEventListener) {
-    window.addEventListener('storage', calculateAndSyncTeamProfile);
+    window.addEventListener('storage', function () {
+      storageDataCache = {};
+      partnerKeyCache = {};
+      debouncedSync();
+    });
   }
 
 })();

@@ -54,7 +54,6 @@ public class RollingStandingsServlet extends HttpServlet {
             seriesId = series.getId();
             service.RollingWindowPointService serviceEngine = service.RollingWindowPointService.getInstance();
             standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(seriesId);
-
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
             standingsList = seriesDAO.getStandingsBySeriesId(seriesId);
         }

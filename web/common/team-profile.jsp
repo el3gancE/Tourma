@@ -52,10 +52,11 @@
         <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         
-        <!-- Main Design System CSS, Sidebar CSS & Dedicated Team Profile CSS -->
+        <!-- Main Design System CSS, Sidebar CSS, Dedicated Team Profile CSS & Badges CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=<%= System.currentTimeMillis() %>">
     </head>
     <body>
         <!-- Shared Navigation Header Component -->
@@ -79,11 +80,17 @@
             <!-- Top Profile Card -->
             <div class="team-profile-main-card">
                 
-                <!-- Team Name & Join Date Row -->
+                <!-- Team Name & Join Date Row with Badges on Top Right -->
                 <div class="team-profile-title-row">
-                    <h1 class="team-profile-name"><%= teamName %></h1>
-                    <div class="team-profile-join-date">
-                        <i class="fa-solid fa-calendar-days text-mint"></i> Ngày tham gia chuỗi: <%= joinDateStr %>
+                    <div>
+                        <h1 class="team-profile-name"><%= teamName %></h1>
+                        <div class="team-profile-join-date">
+                            <i class="fa-solid fa-calendar-days text-mint"></i> Ngày tham gia chuỗi: <%= joinDateStr %>
+                        </div>
+                    </div>
+                    <!-- Badges Top Right Container -->
+                    <div class="team-profile-badges-top" id="teamBadgesContainer">
+                        <!-- Dynamically rendered by TeamBadgeEngine -->
                     </div>
                 </div>
 
@@ -333,6 +340,8 @@
                 %>
             ];
         </script>
+        <!-- Modular Team Badge Engine & Unified Profile Stats Script -->
+        <script src="${pageContext.request.contextPath}/js/team-badge-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/team-profile.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>
