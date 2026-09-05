@@ -37,6 +37,18 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.sortable-th {
+  transition: all 0.18s ease;
+}
+
+.sortable-th:hover {
+  color: #2dd4bf !important;
+}
+
+.sortable-th:hover .sort-icon {
+  color: #2dd4bf !important;
+}
+
 .team-list-table td {
   padding: 0.65rem 0.85rem;
   font-size: 0.82rem;

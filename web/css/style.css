@@ -425,3 +425,39 @@ h1, h2, h3, h4, h5, h6 {
   .nav-links { display: none; }
   .stats-row { grid-template-columns: 1fr; }
 }
+
+/* ========================================================= */
+/* TIER TAG COLOR PALETTE (S: Gold, A: Purple, B: Emerald, C: Blue, D: White) */
+/* ========================================================= */
+.tier-tag {
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: inline-block;
+  margin-left: 0.55rem;
+  letter-spacing: 0.5px;
+}
+
+.tier-tag.tier-s, .tourney-badge-tier.tier-s, .meta-tag.tier-s {
+  color: #fbbf24 !important;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+}
+
+.tier-tag.tier-a, .tourney-badge-tier.tier-a, .meta-tag.tier-a {
+  color: #c084fc !important;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.4);
+}
+
+.tier-tag.tier-b, .tourney-badge-tier.tier-b, .meta-tag.tier-b {
+  color: #34d399 !important;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+}
+
+.tier-tag.tier-c, .tourney-badge-tier.tier-c, .meta-tag.tier-c {
+  color: #60a5fa !important;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.4);
+}
+
+.tier-tag.tier-d, .tourney-badge-tier.tier-d, .meta-tag.tier-d {
+  color: #ffffff !important;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+}

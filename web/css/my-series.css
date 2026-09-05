@@ -240,6 +240,32 @@ body, button, input, select, textarea, .series-card-title, .filter-pill-btn {
   flex-shrink: 0;
 }
 
+.btn-delete-series {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 7px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  white-space: nowrap !important;
+  text-decoration: none !important;
+  transition: all 0.18s ease;
+  font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-delete-series:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+}
+
 .btn-view-series-card {
   background: rgba(251, 191, 36, 0.15);
   color: #fbbf24;

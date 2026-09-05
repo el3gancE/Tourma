@@ -177,9 +177,10 @@
           if (ptsText) initPts = parseInt(ptsText, 10) || 0;
         }
         var initLastPts = 0;
-        if (row.cells[4]) {
-          var lastPtsText = row.cells[4].textContent.replace(/[^0-9]/g, '');
-          if (lastPtsText) initLastPts = parseInt(lastPtsText, 10) || 0;
+        var initTourneys = 0;
+        if (row.cells[2]) {
+          var tourneysText = row.cells[2].textContent.replace(/[^0-9]/g, '');
+          if (tourneysText) initTourneys = parseInt(tourneysText, 10) || 0;
         }
         teamDataMap[key] = {
           name: teamName,
@@ -187,7 +188,7 @@
           lastPts: initLastPts,
           expiredPts: 0,
           droppedPts: 0,
-          activeTourneys: 0,
+          activeTourneys: initTourneys,
           row: row,
           hasLocalUpdates: false
         };
@@ -218,10 +219,57 @@
 
       var ptsCfg = Object.assign({}, t.pointsConfig || {}, localPtsCfg || {});
       var teamTourneyPoints = {}; // key -> points awarded in this tournament
+      var teamParticipatedInThisTourney = {};
+
+      // Helper to mark a team as participated in this tournament
+      function markTeamParticipated(name) {
+        if (!name) return;
+        var key = name.toLowerCase().trim();
+        var targetEntry = teamDataMap[key];
+        if (!targetEntry) {
+          var cleanKey = key.replace(/[^a-z0-9]/g, '');
+          Object.keys(teamDataMap).forEach(function (k) {
+            if (targetEntry) return;
+            var cK = k.replace(/[^a-z0-9]/g, '');
+            if (cK === cleanKey || (cK.length >= 3 && cleanKey.length >= 3 && (cK.indexOf(cleanKey) !== -1 || cleanKey.indexOf(cK) !== -1))) {
+              targetEntry = teamDataMap[k];
+              key = k;
+            }
+          });
+        }
+        if (!targetEntry) return;
+
+        if (!targetEntry.hasLocalUpdates) {
+          targetEntry.hasLocalUpdates = true;
+          targetEntry.totalPts = 0;
+          targetEntry.lastPts = 0;
+          targetEntry.activeTourneys = 0;
+        }
+
+        if (isActiveWindow && !teamParticipatedInThisTourney[key]) {
+          teamParticipatedInThisTourney[key] = true;
+          targetEntry.activeTourneys += 1;
+        }
+      }
+
+      // Check registered team list for tournament t to mark participation
+      try {
+        var rawTList = getStorageData(['tourma_teams_'], t.id);
+        if (rawTList) {
+          var tArr = JSON.parse(rawTList);
+          if (Array.isArray(tArr)) {
+            tArr.forEach(function (tm) {
+              var n = extractName(tm);
+              if (n) markTeamParticipated(n);
+            });
+          }
+        }
+      } catch (e) { }
 
       // Helper to award points to a team
       function awardTeamPoints(name, positionKey, altKey) {
         if (!name) return;
+        markTeamParticipated(name);
         var key = name.toLowerCase().trim();
         var targetEntry = teamDataMap[key];
         if (!targetEntry) {
@@ -246,15 +294,8 @@
         var diff = pts - prevPts;
         teamTourneyPoints[key] = pts;
 
-        if (!targetEntry.hasLocalUpdates) {
-          targetEntry.hasLocalUpdates = true;
-          targetEntry.totalPts = 0;
-          targetEntry.lastPts = 0;
-        }
-
         if (isActiveWindow) {
           targetEntry.totalPts += diff;
-          if (prevPts === 0) targetEntry.activeTourneys += 1;
           if (isLatestTourney) {
             targetEntry.lastPts = pts;
           }

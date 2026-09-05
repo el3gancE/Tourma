@@ -1,5 +1,6 @@
 package controller;
 
+import dao.ParticipantDAO;
 import dao.SeriesDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -7,9 +8,16 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import model.PartnerParticipant;
 import model.Series;
+import model.Team;
+import model.Tournament;
 
 /**
  * Controller Servlet for Rolling Window Series Partner Team List Screen
@@ -44,13 +52,26 @@ public class RollingTeamListServlet extends HttpServlet {
         }
 
         List<PartnerParticipant> partnerList = null;
+        Map<String, Integer> tourneysCountMap = new HashMap<>();
+
         if (series != null) {
             seriesId = series.getId();
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
+
+            service.RollingWindowPointService serviceEngine = service.RollingWindowPointService.getInstance();
+            List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(seriesId);
+            if (standingsDTOList != null) {
+                for (service.RollingWindowPointService.RollingStandingDTO dto : standingsDTOList) {
+                    if (dto.getPartnerParticipantId() != null) {
+                        tourneysCountMap.put(dto.getPartnerParticipantId(), dto.getActiveTourneysCount());
+                    }
+                }
+            }
         }
 
         request.setAttribute("series", series);
         request.setAttribute("partnerList", partnerList);
+        request.setAttribute("tourneysCountMap", tourneysCountMap);
 
         request.getRequestDispatcher("/common/rolling/rolling-team-list.jsp").forward(request, response);
     }

@@ -160,23 +160,21 @@ public class RollingWindowPointService {
                 if (dtoMap.containsKey(teamKey)) {
                     RollingStandingDTO dto = dtoMap.get(teamKey);
 
+                    // Every participated tournament in the active window counts as +1 played tournament!
+                    if (isActiveWindow) {
+                        dto.setActiveTourneysCount(dto.getActiveTourneysCount() + 1);
+                    }
+
                     Integer matchPos = matchPlacements.get(team.getId());
                     if (matchPos == null && team.getRawName() != null) {
                         matchPos = matchPlacements.get(team.getRawName().trim().toLowerCase());
                     }
 
-                    if (matchPos == null || matchPos <= 0) {
-                        continue;
-                    }
-                    int pos = matchPos;
-
-                    int pts = resolvePointsForPosition(pos, posPtsMap);
+                    int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
+                    int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
 
                     if (isActiveWindow) {
                         dto.setTotalActivePoints(dto.getTotalActivePoints() + pts);
-                        if (pts > 0) {
-                            dto.setActiveTourneysCount(dto.getActiveTourneysCount() + 1);
-                        }
                     } else {
                         // Point Expiry / Khấu trừ điểm do vượt cửa sổ trượt W
                         dto.setExpiredPoints(dto.getExpiredPoints() + pts);
@@ -236,8 +234,150 @@ public class RollingWindowPointService {
         return false;
     }
 
+    /**
+     * DTO for representing the team's highest BXH rank and the first tournament milestone where it was achieved
+     */
+    public static class HighestRankDTO {
+        private int highestRank;
+        private String tournamentId;
+        private String tournamentName;
+
+        public HighestRankDTO(int highestRank, String tournamentId, String tournamentName) {
+            this.highestRank = highestRank;
+            this.tournamentId = tournamentId;
+            this.tournamentName = tournamentName;
+        }
+
+        public int getHighestRank() { return highestRank; }
+        public String getTournamentId() { return tournamentId; }
+        public String getTournamentName() { return tournamentName; }
+    }
+
+    /**
+     * Calculates the highest BXH rank ever achieved by a team across all tournament milestones in a series.
+     */
+    public int calculateHighestRankAcrossHistory(String seriesId, String teamName) {
+        HighestRankDTO dto = calculateHighestRankWithTourneyAcrossHistory(seriesId, teamName);
+        return (dto != null) ? dto.getHighestRank() : 0;
+    }
+
+    /**
+     * Calculates the highest BXH rank and the FIRST sub-tournament where the team reached that rank.
+     */
+    public HighestRankDTO calculateHighestRankWithTourneyAcrossHistory(String seriesId, String teamName) {
+        if (seriesId == null || seriesId.trim().isEmpty() || teamName == null || teamName.trim().isEmpty()) {
+            return new HighestRankDTO(0, "", "");
+        }
+
+        SeriesDAO seriesDAO = new SeriesDAO();
+        Series series = seriesDAO.getSeriesById(seriesId.trim());
+        if (series == null) return new HighestRankDTO(0, "", "");
+
+        int windowSize = (series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
+
+        List<PartnerParticipant> partners = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
+        if (partners == null || partners.isEmpty()) return new HighestRankDTO(0, "", "");
+
+        String targetKey = teamName.trim().toLowerCase();
+        boolean isPartner = false;
+        for (PartnerParticipant p : partners) {
+            if (p.getName() != null && p.getName().trim().equalsIgnoreCase(teamName.trim())) {
+                isPartner = true;
+                break;
+            }
+        }
+        if (!isPartner) return new HighestRankDTO(0, "", "");
+
+        List<Tournament> allTourneys = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
+        if (allTourneys == null || allTourneys.isEmpty()) {
+            return new HighestRankDTO(0, "", "");
+        }
+
+        List<Tournament> configuredTourneys = new ArrayList<>();
+        for (Tournament t : allTourneys) {
+            if (t.getSeriesPointsConfig() != null && !t.getSeriesPointsConfig().trim().isEmpty()) {
+                configuredTourneys.add(t);
+            }
+        }
+
+        if (configuredTourneys.isEmpty()) return new HighestRankDTO(0, "", "");
+
+        ParticipantDAO pDao = new ParticipantDAO();
+        int totalTourneys = configuredTourneys.size();
+        List<Map<String, Integer>> tourneyPointsList = new ArrayList<>();
+
+        for (int tIdx = 0; tIdx < totalTourneys; tIdx++) {
+            Tournament t = configuredTourneys.get(tIdx);
+            Map<String, Integer> posPtsMap = parsePointsConfigJson(t.getSeriesPointsConfig());
+            Map<String, Integer> matchPlacements = pDao.getTournamentPlacements(t.getId());
+            List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
+
+            Map<String, Integer> ptsForTourney = new HashMap<>();
+            if (tourneyTeams != null) {
+                for (Team team : tourneyTeams) {
+                    if (team.getRawName() == null) continue;
+                    String k = team.getRawName().trim().toLowerCase();
+                    Integer matchPos = matchPlacements.get(team.getId());
+                    if (matchPos == null) {
+                        matchPos = matchPlacements.get(k);
+                    }
+                    if (matchPos != null && matchPos > 0) {
+                        int pts = resolvePointsForPosition(matchPos, posPtsMap);
+                        ptsForTourney.put(k, pts);
+                    }
+                }
+            }
+            tourneyPointsList.add(ptsForTourney);
+        }
+
+        int highestRank = 999;
+        String firstTourneyId = "";
+        String firstTourneyName = "";
+
+        // Compute standings at each milestone
+        for (int step = 0; step < totalTourneys; step++) {
+            int activeStart = Math.max(0, step - windowSize + 1);
+            List<Map.Entry<String, Integer>> standingsAtStep = new ArrayList<>();
+
+            for (PartnerParticipant p : partners) {
+                if (p.getName() == null) continue;
+                String pk = p.getName().trim().toLowerCase();
+                int totalPts = 0;
+                for (int w = activeStart; w <= step; w++) {
+                    Integer pts = tourneyPointsList.get(w).get(pk);
+                    if (pts != null) {
+                        totalPts += pts;
+                    }
+                }
+                standingsAtStep.add(new java.util.AbstractMap.SimpleEntry<>(pk, totalPts));
+            }
+
+            standingsAtStep.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+
+            for (int r = 0; r < standingsAtStep.size(); r++) {
+                Map.Entry<String, Integer> entry = standingsAtStep.get(r);
+                if (entry.getKey().equalsIgnoreCase(targetKey)) {
+                    int rankAtStep = r + 1;
+                    if (entry.getValue() > 0) {
+                        if (rankAtStep < highestRank) {
+                            highestRank = rankAtStep;
+                            firstTourneyId = configuredTourneys.get(step).getId();
+                            firstTourneyName = configuredTourneys.get(step).getName();
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (highestRank == 999) {
+            return new HighestRankDTO(0, "", "");
+        }
+        return new HighestRankDTO(highestRank, firstTourneyId, firstTourneyName);
+    }
+
     // Helper: Parse JSON string into Map
-    private Map<String, Integer> parsePointsConfigJson(String jsonStr) {
+    public Map<String, Integer> parsePointsConfigJson(String jsonStr) {
         Map<String, Integer> map = new HashMap<>();
         if (jsonStr == null || jsonStr.trim().isEmpty()) return map;
         try {
@@ -254,7 +394,7 @@ public class RollingWindowPointService {
     }
 
     // Helper: Resolve points awarded for a given position
-    private int resolvePointsForPosition(int pos, Map<String, Integer> posPtsMap) {
+    public int resolvePointsForPosition(int pos, Map<String, Integer> posPtsMap) {
         if (posPtsMap.containsKey(String.valueOf(pos))) {
             return posPtsMap.get(String.valueOf(pos));
         } else if (pos == 1 && posPtsMap.containsKey("1")) {

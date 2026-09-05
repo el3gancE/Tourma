@@ -438,4 +438,65 @@ public class SeriesDAO {
     public boolean recalculateSeriesStandings(String seriesId) {
         return service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId);
     }
+
+    public boolean deleteSeries(String seriesId) {
+        if (seriesId == null || seriesId.trim().isEmpty()) return false;
+        String id = seriesId.trim();
+
+        // 1. Delete all sub-tournaments properly (cascades matches, teams, stages)
+        List<Tournament> tourneys = getTournamentsBySeriesId(id);
+        TournamentDAO tournamentDAO = new TournamentDAO();
+        if (tourneys != null) {
+            for (Tournament t : tourneys) {
+                try {
+                    tournamentDAO.deleteTournament(t.getId());
+                } catch (Exception ignore) {}
+            }
+        }
+
+        String sqlHist = "DELETE FROM series_tournament_history WHERE series_id = ?";
+        String sqlStandings = "DELETE FROM series_standings WHERE series_id = ?";
+        String sqlPartners = "DELETE FROM partner_participants WHERE series_id = ?";
+        String sqlTourneys = "DELETE FROM tournaments WHERE series_id = ?";
+        String sqlSeries = "DELETE FROM series WHERE id = ?";
+
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = conn.prepareStatement(sqlHist)) {
+                    ps.setString(1, id);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlStandings)) {
+                    ps.setString(1, id);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlPartners)) {
+                    ps.setString(1, id);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlTourneys)) {
+                    ps.setString(1, id);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlSeries)) {
+                    ps.setString(1, id);
+                    int rows = ps.executeUpdate();
+                    conn.commit();
+                    return rows > 0;
+                }
+            } catch (Exception ex) {
+                conn.rollback();
+                throw ex;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

@@ -98,6 +98,13 @@
                                 </div>
 
                                 <div class="series-card-footer">
+                                    <form action="${pageContext.request.contextPath}/my-series" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa Series \'${s.name}\'?\nToàn bộ các giải con, lịch sử và bảng xếp hạng thuộc Series này sẽ bị xóa.');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="seriesId" value="${s.id}">
+                                        <button type="submit" class="btn-delete-series" title="Xóa Series">
+                                            <i class="fa-solid fa-trash-can"></i> Xóa
+                                        </button>
+                                    </form>
                                     <c:choose>
                                         <c:when test="${s.rankingModel == 'ROLLING_WINDOW'}">
                                             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=${s.id}" class="btn-view-series-card">

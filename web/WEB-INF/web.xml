@@ -60,6 +60,20 @@
         <url-pattern>/my-series.jsp</url-pattern>
     </servlet-mapping>
 
+    <!-- 5. Team Profile Servlet -->
+    <servlet>
+        <servlet-name>TeamProfileServlet</servlet-name>
+        <servlet-class>controller.TeamProfileServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TeamProfileServlet</servlet-name>
+        <url-pattern>/team-profile</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>TeamProfileServlet</servlet-name>
+        <url-pattern>/team-profile.jsp</url-pattern>
+    </servlet-mapping>
+
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
         <welcome-file>index.html</welcome-file>

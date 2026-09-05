@@ -1,4 +1,4 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="vi">
@@ -84,7 +84,7 @@
                                             ${t.tournamentType == 'MULTI_STAGE' ? 'MULTI STAGE' : 'SINGLE STAGE'}
                                         </span>
                                         <c:if test="${not empty t.tierName}">
-                                            <span class="tourney-badge-tier">TIER ${t.tierName}</span>
+                                            <span class="tourney-badge-tier tier-${t.tierName.toLowerCase()}">TIER ${t.tierName}</span>
                                         </c:if>
                                         <span class="status-pill ${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' ? 'in-progress' : 'incoming')}" id="statusPill_${t.id}">
                                             ${t.status == 'COMPLETED' ? 'Completed' : (t.status == 'ONGOING' ? 'In Progress' : 'Incoming')}

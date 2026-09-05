@@ -293,62 +293,49 @@
                 prevLbMatchIds = currentRoundIds;
             }
 
+            // ====================================================================
             // Link Drop Downs from Upper Bracket to Lower Bracket
+            // Standard Anti-Rematch Cross-Over Engine:
+            // 1. In LB Round 1: Pair losers from adjacent UB R1 feeder matches (within the same quadrant).
+            //    ubR1[2*k] drops to lbR1[k] Slot 1
+            //    ubR1[2*k + 1] drops to lbR1[k] Slot 2
+            // 2. In Major LB Rounds (LB R2, LB R4, LB R6...):
+            //    Slot 1 comes from preceding LB round winner (same side).
+            //    Slot 2 comes from UB drop-downs with Cross-Over Inversion (targetIdx = mCount - 1 - u).
+            //    This guarantees Top-Half losers drop into Bottom-Half LB matches and vice versa!
+            // ====================================================================
+
             if (upperRounds[0] && lowerRounds[0]) {
                 var ubR1Matches = upperRounds[0].matches;
                 var lbR1Matches = lowerRounds[0].matches;
                 var totalUbR1 = ubR1Matches.length;
                 var totalLbR1 = lbR1Matches.length;
 
-                for (var u = 0; u < totalUbR1; u++) {
-                    var targetLbIndex, targetLbSlot;
+                for (var k = 0; k < totalLbR1; k++) {
+                    var ubM1 = ubR1Matches[k];
+                    var ubM2 = ubR1Matches[totalUbR1 - 1 - k];
 
-                    if (totalUbR1 >= 8) {
-                        var half = totalLbR1;
-                        var quarter = Math.floor(half / 2);
-
-                        if (u < quarter) {
-                            targetLbIndex = u;
-                            targetLbSlot = 1;
-                        } else if (u < half) {
-                            targetLbIndex = u;
-                            targetLbSlot = 1;
-                        } else if (u < half + quarter) {
-                            targetLbIndex = quarter + (half + quarter - 1 - u);
-                            targetLbSlot = 2;
+                    if (ubM1 && lbR1Matches[k]) {
+                        ubM1.dropToMatchId = lbR1Matches[k].matchId;
+                        ubM1.dropToMatchSlot = 1;
+                        var isBye1 = (ubM1.team1.name === 'BYE' || ubM1.team2.name === 'BYE');
+                        if (isBye1) {
+                            lbR1Matches[k].team1.name = 'BYE';
+                            lbR1Matches[k].team1.seed = '';
                         } else {
-                            targetLbIndex = (totalUbR1 - 1 - u);
-                            targetLbSlot = 2;
+                            lbR1Matches[k].team1.name = 'L #' + ubM1.matchId;
                         }
-                    } else if (u < totalLbR1) {
-                        targetLbIndex = u;
-                        targetLbSlot = 1;
-                    } else {
-                        targetLbIndex = (totalUbR1 - 1 - u);
-                        targetLbSlot = 2;
                     }
 
-                    var ubM = ubR1Matches[u];
-                    var isUbBye = (ubM.team1.name === 'BYE' || ubM.team2.name === 'BYE');
-
-                    if (lbR1Matches[targetLbIndex]) {
-                        ubM.dropToMatchId = lbR1Matches[targetLbIndex].matchId;
-                        ubM.dropToMatchSlot = targetLbSlot;
-                        
-                        if (isUbBye) {
-                            if (targetLbSlot === 1) {
-                                lbR1Matches[targetLbIndex].team1.name = 'BYE';
-                                lbR1Matches[targetLbIndex].team1.seed = '';
-                            } else {
-                                lbR1Matches[targetLbIndex].team2.name = 'BYE';
-                                lbR1Matches[targetLbIndex].team2.seed = '';
-                            }
+                    if (ubM2 && lbR1Matches[k]) {
+                        ubM2.dropToMatchId = lbR1Matches[k].matchId;
+                        ubM2.dropToMatchSlot = 2;
+                        var isBye2 = (ubM2.team1.name === 'BYE' || ubM2.team2.name === 'BYE');
+                        if (isBye2) {
+                            lbR1Matches[k].team2.name = 'BYE';
+                            lbR1Matches[k].team2.seed = '';
                         } else {
-                            if (targetLbSlot === 1) {
-                                lbR1Matches[targetLbIndex].team1.name = 'L #' + ubM.matchId;
-                            } else {
-                                lbR1Matches[targetLbIndex].team2.name = 'L #' + ubM.matchId;
-                            }
+                            lbR1Matches[k].team2.name = 'L #' + ubM2.matchId;
                         }
                     }
                 }
@@ -362,7 +349,7 @@
                 }
             }
 
-            // UB Round 2+ losers drop to Major LB rounds
+            // UB Round 2+ losers drop to Major LB rounds with Branch-Aware Cross-Over
             for (var ur = 2; ur <= ubStopRound; ur++) {
                 var targetLbRoundIdx = (ur - 1) * 2 - 1;
                 if (upperRounds[ur - 1] && lowerRounds[targetLbRoundIdx]) {
@@ -374,18 +361,10 @@
                         var targetIdx = u;
                         if (mCount >= 4) {
                             var halfM = Math.floor(mCount / 2);
-                            if (ur % 2 === 0) {
-                                if (u < halfM) {
-                                    targetIdx = u;
-                                } else {
-                                    targetIdx = halfM + (mCount - 1 - u);
-                                }
+                            if (u < halfM) {
+                                targetIdx = halfM - 1 - u;
                             } else {
-                                if (u < halfM) {
-                                    targetIdx = halfM - 1 - u;
-                                } else {
-                                    targetIdx = u;
-                                }
+                                targetIdx = u;
                             }
                         } else if (mCount === 2) {
                             targetIdx = (u === 0) ? 1 : 0;

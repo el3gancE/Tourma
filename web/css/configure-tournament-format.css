@@ -124,3 +124,94 @@ body, button, input, select, textarea, .form-header-title, .section-label-upperc
   color: var(--text-muted, #94a3b8);
   margin-bottom: 0.4rem;
 }
+
+/* Tier Switcher Widget on Format Screen */
+.tier-switcher-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(18, 22, 31, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.75rem;
+  border-radius: 10px;
+  transition: var(--transition-fast, 0.18s ease);
+}
+
+.tier-pills-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tier-pill-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tier-pill-btn[data-tier="S"] {
+  color: #fbbf24;
+}
+
+.tier-pill-btn[data-tier="A"] {
+  color: #c084fc;
+}
+
+.tier-pill-btn[data-tier="B"] {
+  color: #34d399;
+}
+
+.tier-pill-btn[data-tier="C"] {
+  color: #60a5fa;
+}
+
+.tier-pill-btn[data-tier="D"] {
+  color: #ffffff;
+}
+
+.tier-pill-btn:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.tier-pill-btn[data-tier="S"]:hover, .tier-pill-btn.active.tier-s {
+  background: rgba(251, 191, 36, 0.2) !important;
+  border-color: #fbbf24 !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+}
+
+.tier-pill-btn[data-tier="A"]:hover, .tier-pill-btn.active.tier-a {
+  background: rgba(192, 132, 252, 0.2) !important;
+  border-color: #c084fc !important;
+  color: #c084fc !important;
+  box-shadow: 0 0 10px rgba(192, 132, 252, 0.35);
+}
+
+.tier-pill-btn[data-tier="B"]:hover, .tier-pill-btn.active.tier-b {
+  background: rgba(52, 211, 153, 0.2) !important;
+  border-color: #34d399 !important;
+  color: #34d399 !important;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.35);
+}
+
+.tier-pill-btn[data-tier="C"]:hover, .tier-pill-btn.active.tier-c {
+  background: rgba(96, 165, 250, 0.2) !important;
+  border-color: #60a5fa !important;
+  color: #60a5fa !important;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.35);
+}
+
+.tier-pill-btn[data-tier="D"]:hover, .tier-pill-btn.active.tier-d {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+

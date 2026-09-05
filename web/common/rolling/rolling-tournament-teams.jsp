@@ -1,11 +1,13 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="model.Series, model.Tournament, model.Team, model.PartnerParticipant, model.SeriesStanding, java.util.List, java.util.ArrayList, java.util.Map, java.util.HashMap"%>
+<%@page import="model.Series, model.Tournament, model.Team, model.PartnerParticipant, model.SeriesStanding, service.RollingWindowPointService.RollingStandingDTO, java.util.List, java.util.ArrayList, java.util.Map, java.util.HashMap"%>
 <%
     Tournament tournament = (Tournament) request.getAttribute("tournament");
     Series series = (Series) request.getAttribute("series");
     List<Team> currentTeams = (List<Team>) request.getAttribute("currentTeams");
     List<PartnerParticipant> partnerList = (List<PartnerParticipant>) request.getAttribute("partnerList");
     List<SeriesStanding> standingsList = (List<SeriesStanding>) request.getAttribute("standingsList");
+    List<RollingStandingDTO> standingsDTOList = (List<RollingStandingDTO>) request.getAttribute("standingsDTOList");
+    List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
 
     String tourneyId = (tournament != null) ? tournament.getId() : "";
     String tourneyName = (tournament != null) ? tournament.getName() : "Giải Đấu Con";
@@ -14,19 +16,45 @@
     String tourneyFormat = (tournament != null && tournament.getFormat() != null) ? tournament.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
     int teamCount = (currentTeams != null) ? currentTeams.size() : 0;
     int partnerCount = (partnerList != null) ? partnerList.size() : 0;
+    int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
 
     String nextStepUrl = request.getContextPath() + "/rolling/point-config?id=" + tourneyId + "&seriesId=" + seriesIdVal;
     String nextStepLabel = "Tiếp theo";
 
-    // Order partnerList by Series Standings rank (Rank 1, 2, 3...)
+    // Order partnerList by Series Rolling Standings rank (Rank 1, 2, 3...)
     List<PartnerParticipant> orderedPartners = new ArrayList<>();
-    if (standingsList != null) {
+    Map<String, Integer> partnerRankMap = new HashMap<>();
+    Map<String, Integer> partnerPointsMap = new HashMap<>();
+
+    if (standingsDTOList != null && !standingsDTOList.isEmpty()) {
+        for (RollingStandingDTO dto : standingsDTOList) {
+            String tName = dto.getTeamName();
+            int r = dto.getRank();
+            int pts = dto.getTotalActivePoints();
+            if (tName != null) {
+                String key = tName.trim().toLowerCase();
+                partnerRankMap.put(key, r);
+                partnerPointsMap.put(key, pts);
+                if (partnerList != null) {
+                    for (PartnerParticipant p : partnerList) {
+                        if (p.getName() != null && p.getName().trim().equalsIgnoreCase(tName.trim()) && !orderedPartners.contains(p)) {
+                            orderedPartners.add(p);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    } else if (standingsList != null && !standingsList.isEmpty()) {
         for (int r = 0; r < standingsList.size(); r++) {
             SeriesStanding st = standingsList.get(r);
             if (st.getNormalizedTeamName() != null) {
+                String key = st.getNormalizedTeamName().trim().toLowerCase();
+                partnerRankMap.put(key, r + 1);
+                partnerPointsMap.put(key, st.getTotalRollingPoints());
                 if (partnerList != null) {
                     for (PartnerParticipant p : partnerList) {
-                        if (p.getName() != null && p.getName().equalsIgnoreCase(st.getNormalizedTeamName()) && !orderedPartners.contains(p)) {
+                        if (p.getName() != null && p.getName().trim().equalsIgnoreCase(st.getNormalizedTeamName().trim()) && !orderedPartners.contains(p)) {
                             orderedPartners.add(p);
                             break;
                         }
@@ -35,10 +63,16 @@
             }
         }
     }
+
     if (partnerList != null) {
         for (PartnerParticipant p : partnerList) {
             if (!orderedPartners.contains(p)) {
                 orderedPartners.add(p);
+                String key = (p.getName() != null) ? p.getName().trim().toLowerCase() : "";
+                if (!partnerRankMap.containsKey(key)) {
+                    partnerRankMap.put(key, orderedPartners.size());
+                    partnerPointsMap.put(key, 0);
+                }
             }
         }
     }
@@ -142,6 +176,11 @@
                             <button type="button" id="btnToggleHideSeed" class="btn btn-secondary" onclick="window.toggleHideSeedMode()"
                                     style="background: rgba(255, 255, 255, 0.06); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
                                 Ẩn seed
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="window.sortByRollingStandings()"
+                                    style="background: rgba(45, 212, 191, 0.12); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;"
+                                    title="Sắp xếp danh sách đội tham gia theo Bảng Xếp Hạng tổng sau giải gần nhất">
+                                <i class="fa-solid fa-arrow-down-wide-short"></i> Xếp theo BXH
                             </button>
                         </div>
                         <div class="manage-toolbar-right" style="display: flex; gap: 0.5rem; align-items: center;">
@@ -290,11 +329,14 @@
                     <input type="hidden" name="tournamentId" value="<%= tourneyId %>">
                     <input type="hidden" name="seriesId" value="<%= seriesIdVal %>">
 
-                    <!-- SINGLE COLUMN VERTICAL LIST - ONLY SHOWING TEAM NAME -->
-                    <div class="partner-checkbox-list">
+                    <!-- SINGLE COLUMN VERTICAL LIST - ORDERED BY ROLLING STANDINGS -->
+                    <div class="partner-checkbox-list" id="partnerModalCheckboxList">
                         <% if (orderedPartners != null && !orderedPartners.isEmpty()) {
                             for (int pIdx = 0; pIdx < orderedPartners.size(); pIdx++) {
                                 PartnerParticipant p = orderedPartners.get(pIdx);
+                                String pKey = (p.getName() != null) ? p.getName().trim().toLowerCase() : "";
+                                int pRank = partnerRankMap.containsKey(pKey) ? partnerRankMap.get(pKey) : (pIdx + 1);
+                                int pPts = partnerPointsMap.containsKey(pKey) ? partnerPointsMap.get(pKey) : 0;
 
                                 boolean isAlreadyIn = false;
                                 if (currentTeams != null) {
@@ -306,12 +348,16 @@
                                     }
                                 }
                         %>
-                            <label class="partner-checkbox-item" data-index="<%= pIdx %>">
+                            <label class="partner-checkbox-item" data-index="<%= pIdx %>" data-team-name="<%= p.getName() != null ? p.getName() : "" %>" data-rank="<%= pRank %>" data-points="<%= pPts %>" style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; border-radius: 8px; margin-bottom: 0.4rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); cursor: pointer; transition: all 0.2s ease;">
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                                     <input type="checkbox" name="selectedTeamNames" value="<%= p.getName() %>" class="partner-cb-input" data-index="<%= pIdx %>" <%= isAlreadyIn ? "checked disabled" : "" %>>
+                                    <span class="rank-badge rank-<%= pRank %>" style="display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 24px; padding: 0 6px; font-size: 0.75rem; font-weight: 800; border-radius: 6px; background: rgba(255,255,255,0.08); color: <%= (pRank == 1) ? "#fbbf24" : (pRank == 2 ? "#e2e8f0" : (pRank == 3 ? "#f97316" : "#cbd5e1")) %>; border: 1px solid <%= (pRank == 1) ? "rgba(251,191,36,0.3)" : (pRank == 2 ? "rgba(226,232,240,0.2)" : (pRank == 3 ? "rgba(249,115,22,0.3)" : "rgba(255,255,255,0.1)")) %>;">#<%= pRank %></span>
                                     <span style="font-size: 0.9rem; font-weight: 700; color: <%= isAlreadyIn ? "#94a3b8" : "#ffffff" %>;">
-                                        <%= p.getName() %> <%= isAlreadyIn ? "(Đã thêm)" : "" %>
+                                        <%= p.getName() %> <%= isAlreadyIn ? "<span style='font-size: 0.75rem; font-weight: 500; color: #64748b; margin-left: 0.35rem;'>(Đã thêm)</span>" : "" %>
                                     </span>
+                                </div>
+                                <div style="font-size: 0.82rem; font-weight: 800; color: #fbbf24;">
+                                    <%= pPts %> pts
                                 </div>
                             </label>
                         <% } 
@@ -332,6 +378,46 @@
             </div>
         </div>
 
+        <script>
+            window.seriesSubTournaments = [
+                <% if (tournamentsList != null) {
+                    for (int i = 0; i < tournamentsList.size(); i++) {
+                        Tournament t = tournamentsList.get(i);
+                        String rawCfg = (t != null) ? t.getSeriesPointsConfig() : null;
+                        String cfgJson = (rawCfg != null && rawCfg.trim().startsWith("{") && rawCfg.trim().endsWith("}")) 
+                            ? rawCfg.trim() : "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                        String safeName = (t != null && t.getName() != null) ? t.getName().replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
+                        String safeId = (t != null && t.getId() != null) ? t.getId() : "";
+                        int tIdx = (t != null && t.getTournamentIndexInSeries() > 0) ? t.getTournamentIndexInSeries() : (i + 1);
+                %>
+                    {
+                        id: "<%= safeId %>",
+                        name: "<%= safeName %>",
+                        index: <%= tIdx %>,
+                        format: "<%= (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "" %>",
+                        pointsConfig: <%= cfgJson %>
+                    }<%= (i < tournamentsList.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
+            window.seriesPhaseSize = <%= phaseSize %>;
+            window.seriesStandingsRankMap = {
+                <% 
+                int mapIdx = 0;
+                for (Map.Entry<String, Integer> entry : partnerRankMap.entrySet()) {
+                    int pts = partnerPointsMap.containsKey(entry.getKey()) ? partnerPointsMap.get(entry.getKey()) : 0;
+                %>
+                    "<%= entry.getKey().replace("\"", "\\\"") %>": { "rank": <%= entry.getValue() %>, "points": <%= pts %> }<%= (mapIdx < partnerRankMap.size() - 1) ? "," : "" %>
+                <%
+                    mapIdx++;
+                }
+                %>
+            };
+        </script>
+        <!-- Engine Algorithms for Realtime Series Standings Sync -->
+        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>

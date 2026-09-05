@@ -82,9 +82,16 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         List<Team> currentTeams = participantDAO.getTeamsByTournamentId(tournament.getId());
         List<PartnerParticipant> partnerList = new ArrayList<>();
         List<model.SeriesStanding> standingsList = new ArrayList<>();
+        List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = new ArrayList<>();
+        List<Tournament> tournamentsList = new ArrayList<>();
         if (seriesId != null && !seriesId.trim().isEmpty()) {
-            partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
-            standingsList = seriesDAO.getStandingsBySeriesId(seriesId);
+            try {
+                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
+            } catch (Exception ignore) {}
+            partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
+            standingsDTOList = service.RollingWindowPointService.getInstance().calculateSeriesStandingsWithExpiry(seriesId.trim());
+            standingsList = seriesDAO.getStandingsBySeriesId(seriesId.trim());
+            tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
         }
 
         request.setAttribute("tournament", tournament);
@@ -92,6 +99,8 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         request.setAttribute("currentTeams", currentTeams);
         request.setAttribute("partnerList", partnerList);
         request.setAttribute("standingsList", standingsList);
+        request.setAttribute("standingsDTOList", standingsDTOList);
+        request.setAttribute("tournamentsList", tournamentsList);
 
         request.getRequestDispatcher("/common/rolling/rolling-tournament-teams.jsp").forward(request, response);
     }

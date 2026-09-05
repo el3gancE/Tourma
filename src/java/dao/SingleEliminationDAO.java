@@ -96,16 +96,26 @@ public class SingleEliminationDAO extends DBContext {
      * @return boolean success
      */
     public boolean updateMatchScoreAndAdvance(int matchId, int score1, int score2, String winnerFlag) {
-        String updateSql = "UPDATE matches SET team1_score = ?, team2_score = ?, status = 'COMPLETED' WHERE id = ?";
+        String updateSql = "UPDATE matches SET team1_score = ?, team2_score = ?, status = 'COMPLETED', winner_id = (CASE WHEN ? = 'team1' THEN team1_id ELSE team2_id END) WHERE id = ?";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(updateSql)) {
             ps.setInt(1, score1);
             ps.setInt(2, score2);
-            ps.setInt(3, matchId);
+            ps.setString(3, (winnerFlag != null && !winnerFlag.trim().isEmpty()) ? winnerFlag.trim().toLowerCase() : (score1 > score2 ? "team1" : "team2"));
+            ps.setInt(4, matchId);
             ps.executeUpdate();
             return true;
         } catch (Exception e) {
-            return false;
+            try (Connection conn2 = getConnection();
+                 PreparedStatement ps2 = conn2.prepareStatement("UPDATE matches SET team1_score = ?, team2_score = ?, status = 'COMPLETED' WHERE id = ?")) {
+                ps2.setInt(1, score1);
+                ps2.setInt(2, score2);
+                ps2.setInt(3, matchId);
+                ps2.executeUpdate();
+                return true;
+            } catch (Exception ex) {
+                return false;
+            }
         }
     }
 

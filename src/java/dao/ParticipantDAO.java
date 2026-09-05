@@ -176,7 +176,7 @@ public class ParticipantDAO {
         }
 
         DBContext db = new DBContext();
-        String sql = "SELECT round_number, team1_id, team2_id, winner_id FROM matches WHERE tournament_id = ? AND status = 'FINISHED' ORDER BY round_number DESC";
+        String sql = "SELECT * FROM matches WHERE tournament_id = ? ORDER BY round_number DESC";
 
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -187,13 +187,36 @@ public class ParticipantDAO {
                     int rNum = rs.getInt("round_number");
                     String t1 = rs.getString("team1_id");
                     String t2 = rs.getString("team2_id");
-                    String winner = rs.getString("winner_id");
+                    
+                    String winner = null;
+                    try { winner = rs.getString("winner_id"); } catch (Exception ignore) {}
+                    if (winner == null) {
+                        try { winner = rs.getString("winner_team_id"); } catch (Exception ignore) {}
+                    }
+
+                    int s1 = -1, s2 = -1;
+                    try { s1 = rs.getInt("score1"); if (rs.wasNull()) s1 = -1; } catch (Exception ignore) {}
+                    if (s1 == -1) {
+                        try { s1 = rs.getInt("team1_score"); if (rs.wasNull()) s1 = -1; } catch (Exception ignore) {}
+                    }
+                    try { s2 = rs.getInt("score2"); if (rs.wasNull()) s2 = -1; } catch (Exception ignore) {}
+                    if (s2 == -1) {
+                        try { s2 = rs.getInt("team2_score"); if (rs.wasNull()) s2 = -1; } catch (Exception ignore) {}
+                    }
+
+                    if (winner == null && s1 >= 0 && s2 >= 0 && s1 != s2) {
+                        winner = (s1 > s2) ? t1 : t2;
+                    }
+
+                    if (winner == null) {
+                        continue;
+                    }
 
                     if (maxRound == -1) {
                         maxRound = rNum;
                     }
 
-                    if (rNum == maxRound && winner != null) {
+                    if (rNum == maxRound) {
                         if (!placementMap.containsKey(winner)) {
                             placementMap.put(winner, 1);
                             if (idToNameMap.containsKey(winner)) placementMap.put(idToNameMap.get(winner), 1);
@@ -205,20 +228,22 @@ public class ParticipantDAO {
                             if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 2);
                         }
                     } else if (rNum == maxRound - 1 && maxRound > 1) {
-                        if (winner != null) {
-                            String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
-                            if (loser != null && !placementMap.containsKey(loser)) {
-                                placementMap.put(loser, 3);
-                                if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 3);
-                            }
+                        String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
+                        if (loser != null && !placementMap.containsKey(loser)) {
+                            placementMap.put(loser, 3);
+                            if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 3);
                         }
                     } else if (rNum == maxRound - 2 && maxRound > 2) {
-                        if (winner != null) {
-                            String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
-                            if (loser != null && !placementMap.containsKey(loser)) {
-                                placementMap.put(loser, 5);
-                                if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 5);
-                            }
+                        String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
+                        if (loser != null && !placementMap.containsKey(loser)) {
+                            placementMap.put(loser, 5);
+                            if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 5);
+                        }
+                    } else if (rNum <= maxRound - 3) {
+                        String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
+                        if (loser != null && !placementMap.containsKey(loser)) {
+                            placementMap.put(loser, 9);
+                            if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 9);
                         }
                     }
                 }
