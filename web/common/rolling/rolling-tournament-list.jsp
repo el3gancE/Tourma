@@ -95,7 +95,7 @@
         <!-- Design System CSS & Dedicated CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-list.css">
     </head>
     <body>
         <!-- Shared Navigation Header Component -->
@@ -181,9 +181,11 @@
                     <div class="tourney-card" data-id="<%= t.getId() %>" data-stage-type="<%= isMulti ? "MULTI_STAGE" : "SINGLE_STAGE" %>" data-stage1-format="<%= s1Fmt %>" data-stage2-format="<%= s2Fmt %>" data-db-status="<%= t.getStatus() != null ? t.getStatus() : "" %>" data-db-champion="<%= championName != null ? championName.replace("\"", "&quot;") : "" %>" data-name="<%= t.getName() %>">
                         <div class="tourney-card-main">
                             <div class="tourney-card-top-row">
-                                <h3 class="tourney-card-title" style="margin: 0;"><%= t.getName() %></h3>
+                                <h3 class="tourney-card-title" style="margin: 0; display: inline-flex; align-items: center;">
+                                    <%= t.getName() %>
+                                    <span class="tier-tag tier-<%= tierName.toLowerCase() %>" style="margin-left: 0.55rem; font-size: 0.95rem; font-weight: 800;">[<%= tierName %>]</span>
+                                </h3>
                                 <span class="tourney-badge-type"><%= stageTypeLabel %></span>
-                                <span class="tourney-badge-tier">TIER <%= tierName %></span>
                                 <span class="status-pill <%= statusClass %>">
                                     <%= statusStr %>
                                 </span>

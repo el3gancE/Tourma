@@ -96,12 +96,16 @@
                                         <div class="form-group">
                                             <label class="form-label" for="tierName">Cấp Độ Giải Đấu (Tier) (*)</label>
                                             <select id="tierName" name="tierName" class="form-control" required>
-                                                <option value="S">S</option>
-                                                <option value="A">A</option>
-                                                <option value="B">B</option>
-                                                <option value="C">C</option>
-                                                <option value="D">D</option>
+                                                <option value="" selected disabled>-- Chọn Cấp Độ Giải Đấu (Tier) --</option>
+                                                <option value="S">Tier S (Vàng Gold)</option>
+                                                <option value="A">Tier A (Tím)</option>
+                                                <option value="B">Tier B (Xanh Emerald)</option>
+                                                <option value="C">Tier C (Xanh Blue)</option>
+                                                <option value="D">Tier D (Trắng)</option>
                                             </select>
+                                            <div id="tierErrorMsg" style="display: none; color: #f87171; font-size: 0.82rem; margin-top: 0.4rem; font-weight: 600;">
+                                                <i class="fa-solid fa-circle-exclamation"></i> Vui lòng chọn Tier cho giải đấu! Đây là thông tin bắt buộc.
+                                            </div>
                                         </div>
 
                                         <!-- SUBMIT BUTTONS -->
@@ -117,6 +121,36 @@
                                     </form>
                         </div>
                     </main>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            var form = document.getElementById('createTournamentForm');
+                            var tierSelect = document.getElementById('tierName');
+                            var errorMsg = document.getElementById('tierErrorMsg');
+
+                            if (form && tierSelect) {
+                                form.addEventListener('submit', function(e) {
+                                    if (!tierSelect.value || tierSelect.value.trim() === '') {
+                                        e.preventDefault();
+                                        tierSelect.focus();
+                                        tierSelect.style.borderColor = '#ef4444';
+                                        tierSelect.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.25)';
+                                        if (errorMsg) errorMsg.style.display = 'block';
+                                        alert('Vui lòng chọn Cấp Độ (Tier) cho giải đấu! Đây là thông tin bắt buộc.');
+                                        return false;
+                                    }
+                                });
+
+                                tierSelect.addEventListener('change', function() {
+                                    if (this.value) {
+                                        this.style.borderColor = '';
+                                        this.style.boxShadow = '';
+                                        if (errorMsg) errorMsg.style.display = 'none';
+                                    }
+                                });
+                            }
+                        });
+                    </script>
                 </body>
 
                 </html>

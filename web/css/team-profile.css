@@ -202,9 +202,43 @@
 }
 
 .champion-badge-pill .tier-tag {
-  color: #fde68a;
   font-size: 0.78rem;
-  opacity: 0.9;
+  font-weight: 800;
+  margin-left: 0.2rem;
+}
+
+/* Tier Tag Colors (S: Vàng gold, A: Tím, B: Xanh emerald, C: Xanh blue, D: Trắng) */
+.tier-tag {
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: inline-block;
+  margin-left: 0.55rem;
+  letter-spacing: 0.5px;
+}
+
+.tier-tag.tier-s, .tourney-badge-tier.tier-s, .meta-tag.tier-s {
+  color: #fbbf24 !important; /* Vàng gold */
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+}
+
+.tier-tag.tier-a, .tourney-badge-tier.tier-a, .meta-tag.tier-a {
+  color: #c084fc !important; /* Tím */
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.4);
+}
+
+.tier-tag.tier-b, .tourney-badge-tier.tier-b, .meta-tag.tier-b {
+  color: #34d399 !important; /* Xanh emerald */
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+}
+
+.tier-tag.tier-c, .tourney-badge-tier.tier-c, .meta-tag.tier-c {
+  color: #60a5fa !important; /* Xanh blue */
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.4);
+}
+
+.tier-tag.tier-d, .tourney-badge-tier.tier-d, .meta-tag.tier-d {
+  color: #ffffff !important; /* Trắng */
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
 }
 
 /* Performance Table Card */

@@ -1405,6 +1405,7 @@
         tourneyPerformances.push({
           id: t.id,
           name: t.name,
+          tier: (t.tierName || "A").toUpperCase(),
           format: fmtLabel,
           achievement: achievement,
           pointsEarned: ptsEarned,
@@ -1435,8 +1436,10 @@
     }
 
     // Calculate highest rank achieved on the BXH across all series milestones
+    var highestBXHRank = 0;
     var highestBXHTourneyName = "";
     var highestBXHTourneyUrl = "";
+    var highestBXHTourneyTier = "";
 
     for (var step = 0; step < totalTourneys; step++) {
       var stepActiveStart = Math.max(0, step - phaseSize + 1);
@@ -1470,6 +1473,7 @@
               highestBXHRank = stepRank;
               var curT = subTourneys[step];
               highestBXHTourneyName = curT ? curT.name : "";
+              highestBXHTourneyTier = curT ? (curT.tierName || "A").toUpperCase() : "A";
               highestBXHTourneyUrl = curT ? getTournamentFinalStageUrl(curT) : "#";
             }
           }
@@ -1491,6 +1495,7 @@
         if (!highestBXHTourneyName && totalTourneys > 0) {
           var lastT = subTourneys[totalTourneys - 1];
           highestBXHTourneyName = lastT ? lastT.name : "";
+          highestBXHTourneyTier = lastT ? (lastT.tierName || "A").toUpperCase() : "A";
           highestBXHTourneyUrl = lastT ? getTournamentFinalStageUrl(lastT) : "#";
         }
       }
@@ -1570,7 +1575,7 @@
             var tObj = subTourneys.find(function (x) { return x.id === ct.id; }) || { id: ct.id, name: ct.name, tierName: ct.tier };
             var badgeUrl = getTournamentFinalStageUrl(tObj);
             badgesHtml += '<a href="' + badgeUrl + '" class="champion-badge-pill" style="text-decoration: none; cursor: pointer;" title="Xem giai đoạn cuối giải ' + ct.name + '">' +
-              '<i class="fa-solid fa-crown"></i> ' + ct.name + ' <span class="tier-tag">[' + ct.tier + ']</span>' +
+              '<i class="fa-solid fa-crown"></i> ' + ct.name +
               '</a>';
           });
           elChampBadges.innerHTML = badgesHtml;
@@ -1596,6 +1601,7 @@
           var sttVal = (perf.stt !== undefined && perf.stt !== null && perf.stt > 0) ? perf.stt : (reversedPerformances.length - idx);
           var tObj = subTourneys.find(function (x) { return x.id === perf.id; }) || { id: perf.id, name: perf.name };
           var tourneyUrl = getTournamentFinalStageUrl(tObj);
+          var pTier = (perf.tier || (tObj && tObj.tierName) || 'A').toUpperCase();
 
           rowsHtml += '<tr>' +
             '<td style="font-weight: 700; color: var(--text-muted);">' + sttVal + '</td>' +
@@ -1603,6 +1609,7 @@
               '<a href="' + tourneyUrl + '" class="tourney-name-link" style="color: #ffffff; text-decoration: none; font-weight: 700; transition: color 0.18s ease;" onmouseover="this.style.color=\'#2dd4bf\'" onmouseout="this.style.color=\'#ffffff\'" title="Xem giai đoạn cuối giải ' + perf.name + '">' +
                 perf.name +
               '</a>' +
+              '<span class="tier-tag tier-' + pTier.toLowerCase() + '" style="margin-left: 0.55rem;">[' + pTier + ']</span>' +
             '</td>' +
             '<td style="color: var(--text-muted); font-size: 0.82rem; font-weight: 600;">' + perf.format + '</td>' +
             '<td><span class="achievement-text ' + achClass + '">' + perf.achievement + '</span></td>' +

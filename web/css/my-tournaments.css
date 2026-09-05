@@ -184,10 +184,50 @@ body, button, input, select, textarea, .tourney-card-title, .filter-pill-btn {
   font-weight: 800;
   padding: 0.22rem 0.65rem;
   border-radius: 5px;
-  background: rgba(251, 191, 36, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.25);
   letter-spacing: 0.02em;
+}
+
+.tier-tag {
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: inline-block;
+  margin-left: 0.55rem;
+  letter-spacing: 0.5px;
+}
+
+.tier-tag.tier-s, .tourney-badge-tier.tier-s {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+}
+
+.tier-tag.tier-a, .tourney-badge-tier.tier-a {
+  background: rgba(192, 132, 252, 0.12);
+  color: #c084fc !important;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.4);
+}
+
+.tier-tag.tier-b, .tourney-badge-tier.tier-b {
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+}
+
+.tier-tag.tier-c, .tourney-badge-tier.tier-c {
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa !important;
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.4);
+}
+
+.tier-tag.tier-d, .tourney-badge-tier.tier-d {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
 }
 
 .status-pill {

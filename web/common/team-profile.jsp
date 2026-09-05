@@ -12,6 +12,7 @@
     int currentRank = (Integer) request.getAttribute("currentRank");
     int highestRank = (Integer) request.getAttribute("highestRank");
     String highestRankTourneyName = (String) request.getAttribute("highestRankTourneyName");
+    String highestRankTourneyTier = (String) request.getAttribute("highestRankTourneyTier");
     String highestRankTourneyUrl = (String) request.getAttribute("highestRankTourneyUrl");
     int currentPoints = (Integer) request.getAttribute("currentPoints");
     int totalAccumulatedPoints = (Integer) request.getAttribute("totalAccumulatedPoints");
@@ -203,7 +204,7 @@
                                 String badgeUrl = (ct.getFinalStageUrl() != null && !ct.getFinalStageUrl().isEmpty()) ? ct.getFinalStageUrl() : "#";
                         %>
                             <a href="<%= badgeUrl %>" class="champion-badge-pill" style="text-decoration: none; cursor: pointer;" title="Xem giai đoạn cuối giải <%= ct.getTournamentName() %>">
-                                <i class="fa-solid fa-crown"></i> <%= ct.getTournamentName() %> <span class="tier-tag">[<%= ct.getTierName() %>]</span>
+                                <i class="fa-solid fa-crown"></i> <%= ct.getTournamentName() %>
                             </a>
                         <% } 
                         } %>
@@ -239,6 +240,7 @@
                                 else if ("Á Quân".equalsIgnoreCase(perf.getAchievement())) achClass = "runner-up";
                                 else if ("Bán Kết".equalsIgnoreCase(perf.getAchievement())) achClass = "semi";
                                 else if ("Tứ Kết".equalsIgnoreCase(perf.getAchievement())) achClass = "quarter";
+                                String pTier = (perf.getTierName() != null && !perf.getTierName().isEmpty()) ? perf.getTierName().toUpperCase() : "A";
                         %>
                             <tr>
                                 <td style="font-weight: 700; color: var(--text-muted);"><%= (perf.getStt() > 0) ? perf.getStt() : (performanceList.size() - idx) %></td>
@@ -246,6 +248,7 @@
                                     <a href="<%= (perf.getFinalStageUrl() != null && !perf.getFinalStageUrl().isEmpty()) ? perf.getFinalStageUrl() : "#" %>" class="tourney-name-link" style="color: #ffffff; text-decoration: none; font-weight: 700; transition: color 0.18s ease;" onmouseover="this.style.color='#2dd4bf'" onmouseout="this.style.color='#ffffff'" title="Xem giai đoạn cuối giải <%= perf.getTournamentName() %>">
                                         <%= perf.getTournamentName() %>
                                     </a>
+                                    <span class="tier-tag tier-<%= pTier.toLowerCase() %>" style="margin-left: 0.55rem;">[<%= pTier %>]</span>
                                 </td>
                                 <td style="color: var(--text-muted); font-size: 0.82rem;">
                                     <%= perf.getFormatLabel() %>

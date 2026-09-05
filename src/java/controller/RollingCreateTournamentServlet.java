@@ -67,6 +67,12 @@ public class RollingCreateTournamentServlet extends HttpServlet {
         String name = request.getParameter("name");
         String tierName = request.getParameter("tierName");
 
+        if (tierName == null || tierName.trim().isEmpty()) {
+            request.setAttribute("errorMessage", "Vui lòng chọn Cấp Độ (Tier) cho giải đấu! Đây là thông tin bắt buộc.");
+            doGet(request, response);
+            return;
+        }
+
         SeriesDAO seriesDAO = new SeriesDAO();
         TournamentDAO tournamentDAO = new TournamentDAO();
 
@@ -87,7 +93,7 @@ public class RollingCreateTournamentServlet extends HttpServlet {
         t.setId(tournamentId);
         t.setName(name);
         t.setSeriesId(seriesId);
-        t.setTierName(tierName != null && !tierName.trim().isEmpty() ? tierName.trim() : "S");
+        t.setTierName(tierName.trim().toUpperCase());
         t.setTournamentIndexInSeries(indexInSeries);
         t.setPhaseNumber(1);
         t.setStatus("DRAFT");

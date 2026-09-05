@@ -154,6 +154,7 @@ public class TeamProfileServlet extends HttpServlet {
         int currentRank = 0;
         int highestRank = 0;
         String highestRankTourneyName = "";
+        String highestRankTourneyTier = "";
         String highestRankTourneyUrl = "";
         int currentPoints = 0;
         int totalAccumulatedPoints = 0;
@@ -388,6 +389,7 @@ public class TeamProfileServlet extends HttpServlet {
                 highestRankTourneyName = hDto.getTournamentName();
                 Tournament hTourney = tournamentDAO.getTournamentById(hDto.getTournamentId());
                 if (hTourney != null) {
+                    highestRankTourneyTier = (hTourney.getTierName() != null) ? hTourney.getTierName().toUpperCase() : "A";
                     boolean isMultiH = "MULTI_STAGE".equalsIgnoreCase(hTourney.getTournamentType());
                     List<String> stgFormatsH = tournamentDAO.getStageFormats(hTourney.getId());
                     String s1FmtH = (stgFormatsH != null && !stgFormatsH.isEmpty()) ? stgFormatsH.get(0) : hTourney.getFormat();
@@ -414,6 +416,7 @@ public class TeamProfileServlet extends HttpServlet {
         request.setAttribute("currentRank", currentRank);
         request.setAttribute("highestRank", highestRank);
         request.setAttribute("highestRankTourneyName", highestRankTourneyName);
+        request.setAttribute("highestRankTourneyTier", highestRankTourneyTier);
         request.setAttribute("highestRankTourneyUrl", highestRankTourneyUrl);
         request.setAttribute("currentPoints", currentPoints);
         request.setAttribute("totalAccumulatedPoints", totalAccumulatedPoints);
