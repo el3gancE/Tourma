@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="model.Series, model.Tournament, model.PartnerParticipant, controller.TeamProfileServlet.TourneyPerformanceDTO, controller.TeamProfileServlet.ChampionTournamentDTO, java.util.List, java.text.SimpleDateFormat"%>
+<%@page import="model.Series, model.Tournament, model.PartnerParticipant, controller.TeamProfileServlet.TourneyPerformanceDTO, controller.TeamProfileServlet.ChampionTournamentDTO, java.util.List, java.util.Map, java.text.SimpleDateFormat"%>
 <%
     Series series = (Series) request.getAttribute("series");
     PartnerParticipant partner = (PartnerParticipant) request.getAttribute("partner");
@@ -12,6 +12,7 @@
     int currentRank = (Integer) request.getAttribute("currentRank");
     int highestRank = (Integer) request.getAttribute("highestRank");
     String highestRankTourneyName = (String) request.getAttribute("highestRankTourneyName");
+    String highestRankTourneyUrl = (String) request.getAttribute("highestRankTourneyUrl");
     int currentPoints = (Integer) request.getAttribute("currentPoints");
     int totalAccumulatedPoints = (Integer) request.getAttribute("totalAccumulatedPoints");
     int totalWins = (Integer) request.getAttribute("totalWins");
@@ -98,12 +99,12 @@
                     </div>
 
                     <!-- 2. Hạng Cao Nhất -->
-                    <div class="team-stat-box">
+                    <div class="team-stat-box <%= (highestRank == 1 && currentPoints > 0) ? "highlight-gold" : "" %>">
                         <div class="team-stat-label">
                             <i class="fa-solid fa-crown text-gold"></i> HẠNG CAO NHẤT
                         </div>
-                        <div class="team-stat-val" id="profHighestRank">
-                            <%= (highestRank > 0) ? ("#" + highestRank) : "-" %><% if (highestRankTourneyName != null && !highestRankTourneyName.isEmpty()) { %><span class="rank-tourney-name">(<%= highestRankTourneyName %>)</span><% } %>
+                        <div class="team-stat-val <%= (highestRank == 1 && currentPoints > 0) ? "color-gold" : "" %>" id="profHighestRank">
+                            <%= (highestRank > 0) ? ("#" + highestRank) : "-" %><% if (highestRank > 0 && highestRankTourneyName != null && !highestRankTourneyName.isEmpty()) { %><span class="rank-tourney-name">(<a href="<%= (highestRankTourneyUrl != null && !highestRankTourneyUrl.isEmpty()) ? highestRankTourneyUrl : "#" %>" class="rank-tourney-link" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;" title="Xem giai đoạn cuối giải <%= highestRankTourneyName %>"><%= highestRankTourneyName %></a>)</span><% } %>
                         </div>
                     </div>
 
@@ -198,10 +199,12 @@
                     </div>
                     <div class="team-champion-badges-flex" id="profChampionBadges">
                         <% if (champCount > 0 && championTourneys != null) { 
-                            for (ChampionTournamentDTO ct : championTourneys) { %>
-                            <div class="champion-badge-pill">
+                            for (ChampionTournamentDTO ct : championTourneys) { 
+                                String badgeUrl = (ct.getFinalStageUrl() != null && !ct.getFinalStageUrl().isEmpty()) ? ct.getFinalStageUrl() : "#";
+                        %>
+                            <a href="<%= badgeUrl %>" class="champion-badge-pill" style="text-decoration: none; cursor: pointer;" title="Xem giai đoạn cuối giải <%= ct.getTournamentName() %>">
                                 <i class="fa-solid fa-crown"></i> <%= ct.getTournamentName() %> <span class="tier-tag">[<%= ct.getTierName() %>]</span>
-                            </div>
+                            </a>
                         <% } 
                         } %>
                     </div>
@@ -240,7 +243,9 @@
                             <tr>
                                 <td style="font-weight: 700; color: var(--text-muted);"><%= (perf.getStt() > 0) ? perf.getStt() : (performanceList.size() - idx) %></td>
                                 <td style="font-weight: 700; color: #ffffff;">
-                                    <%= perf.getTournamentName() %>
+                                    <a href="<%= (perf.getFinalStageUrl() != null && !perf.getFinalStageUrl().isEmpty()) ? perf.getFinalStageUrl() : "#" %>" class="tourney-name-link" style="color: #ffffff; text-decoration: none; font-weight: 700; transition: color 0.18s ease;" onmouseover="this.style.color='#2dd4bf'" onmouseout="this.style.color='#ffffff'" title="Xem giai đoạn cuối giải <%= perf.getTournamentName() %>">
+                                        <%= perf.getTournamentName() %>
+                                    </a>
                                 </td>
                                 <td style="color: var(--text-muted); font-size: 0.82rem;">
                                     <%= perf.getFormatLabel() %>
@@ -269,6 +274,8 @@
         </main>
 
         <script>
+            window.appContextPath = "${pageContext.request.contextPath}";
+            window.seriesIdVal = "<%= seriesIdVal %>";
             window.profileTeamName = "<%= teamName.replace("\\", "\\\\").replace("\"", "\\\"") %>";
             window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
             window.seriesPartners = [
@@ -289,6 +296,7 @@
             window.seriesSubTournaments = [
                 <% 
                 List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
+                Map<String, List<String>> stageFormatsMap = (Map<String, List<String>>) request.getAttribute("stageFormatsMap");
                 if (tournamentsList != null) {
                     for (int i = 0; i < tournamentsList.size(); i++) {
                         Tournament t = tournamentsList.get(i);
@@ -299,6 +307,10 @@
                         String safeId = (t != null && t.getId() != null) ? t.getId() : "";
                         String tier = (t != null && t.getTierName() != null) ? t.getTierName().toUpperCase() : "A";
                         int tIdx = (t != null && t.getTournamentIndexInSeries() > 0) ? t.getTournamentIndexInSeries() : (i + 1);
+                        boolean isMulti = (t != null && "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType()));
+                        List<String> stgFormats = (stageFormatsMap != null) ? stageFormatsMap.get(safeId) : null;
+                        String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : (t != null ? t.getFormat() : "");
+                        String s2Fmt = (stgFormats != null && stgFormats.size() > 1) ? stgFormats.get(1) : "SINGLE_ELIMINATION";
                 %>
                     {
                         id: "<%= safeId %>",
@@ -306,6 +318,10 @@
                         tierName: "<%= tier %>",
                         index: <%= tIdx %>,
                         format: "<%= (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "" %>",
+                        isMultiStage: <%= isMulti %>,
+                        tournamentType: "<%= (t != null && t.getTournamentType() != null) ? t.getTournamentType().toUpperCase() : "" %>",
+                        stage1Format: "<%= (s1Fmt != null) ? s1Fmt.toUpperCase() : "" %>",
+                        stage2Format: "<%= (s2Fmt != null) ? s2Fmt.toUpperCase() : "" %>",
                         pointsConfig: <%= cfgJson %>
                     }<%= (i < tournamentsList.size() - 1) ? "," : "" %>
                 <% 
