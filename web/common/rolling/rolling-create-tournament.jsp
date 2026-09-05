@@ -95,13 +95,13 @@
                                         <!-- 2. CẤP ĐỘ GIẢI ĐẤU (TIER S, A, B, C, D) -->
                                         <div class="form-group">
                                             <label class="form-label" for="tierName">Cấp Độ Giải Đấu (Tier) (*)</label>
-                                            <select id="tierName" name="tierName" class="form-control" required>
-                                                <option value="" selected disabled>-- Chọn Cấp Độ Giải Đấu (Tier) --</option>
-                                                <option value="S">Tier S (Vàng Gold)</option>
-                                                <option value="A">Tier A (Tím)</option>
-                                                <option value="B">Tier B (Xanh Emerald)</option>
-                                                <option value="C">Tier C (Xanh Blue)</option>
-                                                <option value="D">Tier D (Trắng)</option>
+                                            <select id="tierName" name="tierName" class="form-control" required style="font-weight: 700;">
+                                                <option value="" selected disabled style="color: #94a3b8; font-weight: normal; background: #12161f;">-- Chọn Cấp Độ Giải Đấu (Tier) --</option>
+                                                <option value="S" style="color: #fbbf24; font-weight: 800; background: #12161f;">Tier S</option>
+                                                <option value="A" style="color: #c084fc; font-weight: 800; background: #12161f;">Tier A</option>
+                                                <option value="B" style="color: #34d399; font-weight: 800; background: #12161f;">Tier B</option>
+                                                <option value="C" style="color: #60a5fa; font-weight: 800; background: #12161f;">Tier C</option>
+                                                <option value="D" style="color: #ffffff; font-weight: 800; background: #12161f;">Tier D</option>
                                             </select>
                                             <div id="tierErrorMsg" style="display: none; color: #f87171; font-size: 0.82rem; margin-top: 0.4rem; font-weight: 600;">
                                                 <i class="fa-solid fa-circle-exclamation"></i> Vui lòng chọn Tier cho giải đấu! Đây là thông tin bắt buộc.
@@ -128,7 +128,29 @@
                             var tierSelect = document.getElementById('tierName');
                             var errorMsg = document.getElementById('tierErrorMsg');
 
+                            var tierColors = {
+                                'S': '#fbbf24',
+                                'A': '#c084fc',
+                                'B': '#34d399',
+                                'C': '#60a5fa',
+                                'D': '#ffffff'
+                            };
+
+                            function updateSelectColor() {
+                                if (!tierSelect) return;
+                                var val = tierSelect.value;
+                                if (tierColors[val]) {
+                                    tierSelect.style.color = tierColors[val];
+                                    tierSelect.style.fontWeight = '800';
+                                } else {
+                                    tierSelect.style.color = '#94a3b8';
+                                    tierSelect.style.fontWeight = 'normal';
+                                }
+                            }
+
                             if (form && tierSelect) {
+                                updateSelectColor();
+
                                 form.addEventListener('submit', function(e) {
                                     if (!tierSelect.value || tierSelect.value.trim() === '') {
                                         e.preventDefault();
@@ -142,6 +164,7 @@
                                 });
 
                                 tierSelect.addEventListener('change', function() {
+                                    updateSelectColor();
                                     if (this.value) {
                                         this.style.borderColor = '';
                                         this.style.boxShadow = '';
