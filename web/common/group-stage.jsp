@@ -13,6 +13,7 @@
     TournamentDAO tDao = new TournamentDAO();
     Tournament tourney = tDao.getTournamentById(tournamentId);
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
+    String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
 
     ParticipantDAO pDao = new ParticipantDAO();
     List<Team> dbTeamsList = null;
@@ -130,6 +131,7 @@
     <script>
         window.groupTournamentId = "<%= tournamentId %>";
         window.dbGroupMatches = <%= dbMatchesJson %>;
+        window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
         window.serverTeams = [
             <% if (dbTeamsList != null && !dbTeamsList.isEmpty()) { 
                 for (int i = 0; i < dbTeamsList.size(); i++) {

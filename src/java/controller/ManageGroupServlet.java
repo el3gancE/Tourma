@@ -25,6 +25,7 @@ public class ManageGroupServlet extends HttpServlet {
 
         if (tournament != null) {
             request.setAttribute("tournament", tournament);
+            request.setAttribute("dbGroupAssignments", tournament.getGroupAssignments());
         }
 
         request.getRequestDispatcher("/common/manage-group.jsp").forward(request, response);
@@ -33,6 +34,22 @@ public class ManageGroupServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json;charset=UTF-8");
+
+        String tournamentId = request.getParameter("tournamentId");
+        if (tournamentId == null || tournamentId.trim().isEmpty()) {
+            tournamentId = request.getParameter("id");
+        }
+
+        String groupAssignmentsJson = request.getParameter("groupAssignments");
+        if (tournamentId != null && groupAssignmentsJson != null && !groupAssignmentsJson.trim().isEmpty()) {
+            TournamentDAO tDao = new TournamentDAO();
+            boolean ok = tDao.saveGroupAssignments(tournamentId.trim(), groupAssignmentsJson);
+            response.getWriter().print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu chia bảng vào CSDL!" : "Lỗi lưu chia bảng!") + "\"}");
+            return;
+        }
+
         doGet(request, response);
     }
 }

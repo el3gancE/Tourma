@@ -32,8 +32,21 @@
     var cTarget = t.replace(/[^a-z0-9]/g, '');
     var c = n.replace(/[^a-z0-9]/g, '');
     if (c && cTarget && c === cTarget) return true;
-    if (c.length >= 4 && cTarget.length >= 4 && (c.indexOf(cTarget) !== -1 || cTarget.indexOf(c) !== -1)) {
-      return true;
+
+    // Strict number check: if either or both have digits, digits MUST match exactly
+    var d1 = n.replace(/[^0-9]/g, '');
+    var d2 = t.replace(/[^0-9]/g, '');
+    if (d1 !== d2) {
+      if (d1 !== '' || d2 !== '') return false;
+    }
+
+    // Substring match only for long strings with close length difference
+    if (c.length >= 6 && cTarget.length >= 6) {
+      if (Math.abs(c.length - cTarget.length) <= 3) {
+        if (c.indexOf(cTarget) !== -1 || cTarget.indexOf(c) !== -1) {
+          return true;
+        }
+      }
     }
     return false;
   }
@@ -67,24 +80,16 @@
       return storageDataCache[cacheKey];
     }
     for (var i = 0; i < prefixList.length; i++) {
-      var key = prefixList[i] + id;
-      var val = localStorage.getItem(key);
+      var p = prefixList[i];
+      var val = localStorage.getItem(p + id);
       if (val) {
         storageDataCache[cacheKey] = val;
         return val;
       }
-    }
-    var allKeys = Object.keys(localStorage);
-    for (var j = 0; j < allKeys.length; j++) {
-      var k = allKeys[j];
-      for (var p = 0; p < prefixList.length; p++) {
-        if (k.indexOf(prefixList[p]) === 0 && (k.indexOf(id) !== -1 || k.slice(-id.length) === id)) {
-          var v = localStorage.getItem(k);
-          if (v) {
-            storageDataCache[cacheKey] = v;
-            return v;
-          }
-        }
+      val = localStorage.getItem(p + 'tournament_' + id);
+      if (val) {
+        storageDataCache[cacheKey] = val;
+        return val;
       }
     }
     storageDataCache[cacheKey] = null;

@@ -99,4 +99,18 @@ public class Tournament {
 
     public String getChampionName() { return championName; }
     public void setChampionName(String championName) { this.championName = championName; }
+
+    private String groupAssignments;
+    private String stage2Teams;
+    private String multiStageConfig;
+
+    public String getGroupAssignments() { return groupAssignments; }
+    public void setGroupAssignments(String groupAssignments) { this.groupAssignments = groupAssignments; }
+
+    public String getStage2Teams() { return stage2Teams; }
+    public void setStage2Teams(String stage2Teams) { this.stage2Teams = stage2Teams; }
+
+    public String getMultiStageConfig() { return multiStageConfig; }
+    public void setMultiStageConfig(String multiStageConfig) { this.multiStageConfig = multiStageConfig; }
 }
+

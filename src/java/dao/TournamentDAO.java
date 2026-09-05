@@ -55,6 +55,22 @@ public class TournamentDAO {
                     }
                 } catch (Exception ignore) {
                 }
+                try {
+                    t.setSeriesPointsConfig(rs.getString("series_points_config"));
+                } catch (Exception ignore) {
+                }
+                try {
+                    t.setGroupAssignments(rs.getString("group_assignments"));
+                } catch (Exception ignore) {
+                }
+                try {
+                    t.setStage2Teams(rs.getString("stage2_teams"));
+                } catch (Exception ignore) {
+                }
+                try {
+                    t.setMultiStageConfig(rs.getString("multi_stage_config"));
+                } catch (Exception ignore) {
+                }
                 list.add(t);
             }
         } catch (Exception e) {
@@ -114,6 +130,18 @@ public class TournamentDAO {
                         t.setSeriesPointsConfig(rs.getString("series_points_config"));
                     } catch (Exception ignore) {
                     }
+                    try {
+                        t.setGroupAssignments(rs.getString("group_assignments"));
+                    } catch (Exception ignore) {
+                    }
+                    try {
+                        t.setStage2Teams(rs.getString("stage2_teams"));
+                    } catch (Exception ignore) {
+                    }
+                    try {
+                        t.setMultiStageConfig(rs.getString("multi_stage_config"));
+                    } catch (Exception ignore) {
+                    }
                     return t;
                 }
             }
@@ -164,6 +192,15 @@ public class TournamentDAO {
                     } catch (Exception ignore) {}
                     try {
                         t.setSeriesPointsConfig(rs.getString("series_points_config"));
+                    } catch (Exception ignore) {}
+                    try {
+                        t.setGroupAssignments(rs.getString("group_assignments"));
+                    } catch (Exception ignore) {}
+                    try {
+                        t.setStage2Teams(rs.getString("stage2_teams"));
+                    } catch (Exception ignore) {}
+                    try {
+                        t.setMultiStageConfig(rs.getString("multi_stage_config"));
                     } catch (Exception ignore) {}
                     list.add(t);
                 }
@@ -473,5 +510,98 @@ public class TournamentDAO {
             e.printStackTrace();
         }
         return list;
+    }
+
+    public boolean saveGroupAssignments(String tournamentId, String groupAssignmentsJson) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String sql = "UPDATE tournaments SET group_assignments = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, groupAssignmentsJson);
+            ps.setString(2, tournamentId.trim());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public String getGroupAssignments(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return null;
+        String sql = "SELECT group_assignments FROM tournaments WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString("group_assignments");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean saveStage2Teams(String tournamentId, String stage2TeamsJson) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String sql = "UPDATE tournaments SET stage2_teams = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, stage2TeamsJson);
+            ps.setString(2, tournamentId.trim());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public String getStage2Teams(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return null;
+        String sql = "SELECT stage2_teams FROM tournaments WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString("stage2_teams");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean saveMultiStageConfig(String tournamentId, String multiStageConfigJson) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String sql = "UPDATE tournaments SET multi_stage_config = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, multiStageConfigJson);
+            ps.setString(2, tournamentId.trim());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public String getMultiStageConfig(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return null;
+        String sql = "SELECT multi_stage_config FROM tournaments WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString("multi_stage_config");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

@@ -53,6 +53,8 @@ public class SingleEliminationServlet extends HttpServlet {
         request.setAttribute("tournament", tournament);
         request.setAttribute("roundMap", roundMap);
         request.setAttribute("dbMatchesJson", dbMatchesJson);
+        request.setAttribute("dbStage2Teams", tournament.getStage2Teams());
+        request.setAttribute("dbMultiStageConfig", tournament.getMultiStageConfig());
 
         // Forward to single-elimination.jsp
         request.getRequestDispatcher("/common/single-elimination.jsp").forward(request, response);
@@ -62,6 +64,7 @@ public class SingleEliminationServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
+        request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
 
@@ -70,6 +73,28 @@ public class SingleEliminationServlet extends HttpServlet {
             String tournamentId = request.getParameter("tournamentId");
             String stageParam = request.getParameter("stage");
             int stage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
+
+            if ("saveStage2Teams".equalsIgnoreCase(action)) {
+                String stage2TeamsJson = request.getParameter("stage2Teams");
+                if (tournamentId != null && stage2TeamsJson != null && !stage2TeamsJson.trim().isEmpty()) {
+                    boolean ok = tournamentDAO.saveStage2Teams(tournamentId, stage2TeamsJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu danh sách Vòng 2 vào CSDL!" : "Lỗi lưu Vòng 2!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc stage2Teams!\"}");
+                }
+                return;
+            }
+
+            if ("saveMultiStageConfig".equalsIgnoreCase(action)) {
+                String multiConfigJson = request.getParameter("multiConfig");
+                if (tournamentId != null && multiConfigJson != null && !multiConfigJson.trim().isEmpty()) {
+                    boolean ok = tournamentDAO.saveMultiStageConfig(tournamentId, multiConfigJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu cấu hình Multi-Stage vào CSDL!" : "Lỗi lưu cấu hình!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc multiConfig!\"}");
+                }
+                return;
+            }
 
             // ACTION 1: Batch Sync entire bracket structure to DB
             if ("batchSync".equalsIgnoreCase(action) || "sync".equalsIgnoreCase(action)) {

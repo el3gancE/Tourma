@@ -41,9 +41,11 @@ public class GroupStageServlet extends HttpServlet {
         }
 
         String dbMatchesJson = groupStageDAO.getMatchesJsonForFrontend(tournamentId, stage);
+        String dbGroupAssignments = tournament.getGroupAssignments();
 
         request.setAttribute("tournament", tournament);
         request.setAttribute("dbMatchesJson", dbMatchesJson);
+        request.setAttribute("dbGroupAssignments", dbGroupAssignments);
         request.getRequestDispatcher("/common/group-stage.jsp").forward(request, response);
     }
 
@@ -69,6 +71,49 @@ public class GroupStageServlet extends HttpServlet {
             int stage = 1;
             if (stageParam != null && !stageParam.trim().isEmpty()) {
                 try { stage = Integer.parseInt(stageParam.trim()); } catch (NumberFormatException ignore) {}
+            }
+
+            if ("saveGroupAssignments".equalsIgnoreCase(action)) {
+                String groupAssignmentsJson = request.getParameter("groupAssignments");
+                if (groupAssignmentsJson == null || groupAssignmentsJson.trim().isEmpty()) {
+                    StringBuilder sb = new StringBuilder();
+                    try (BufferedReader reader = request.getReader()) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            sb.append(line);
+                        }
+                    }
+                    groupAssignmentsJson = sb.toString();
+                }
+                if (tournamentId != null && groupAssignmentsJson != null && !groupAssignmentsJson.trim().isEmpty()) {
+                    boolean ok = tournamentDAO.saveGroupAssignments(tournamentId, groupAssignmentsJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu chia bảng vào CSDL!" : "Lỗi lưu chia bảng!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc dữ liệu groupAssignments!\"}");
+                }
+                return;
+            }
+
+            if ("saveStage2Teams".equalsIgnoreCase(action)) {
+                String stage2TeamsJson = request.getParameter("stage2Teams");
+                if (tournamentId != null && stage2TeamsJson != null && !stage2TeamsJson.trim().isEmpty()) {
+                    boolean ok = tournamentDAO.saveStage2Teams(tournamentId, stage2TeamsJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu danh sách Vòng 2 vào CSDL!" : "Lỗi lưu Vòng 2!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc stage2Teams!\"}");
+                }
+                return;
+            }
+
+            if ("saveMultiStageConfig".equalsIgnoreCase(action)) {
+                String multiConfigJson = request.getParameter("multiConfig");
+                if (tournamentId != null && multiConfigJson != null && !multiConfigJson.trim().isEmpty()) {
+                    boolean ok = tournamentDAO.saveMultiStageConfig(tournamentId, multiConfigJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu cấu hình Multi-Stage vào CSDL!" : "Lỗi lưu cấu hình!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc multiConfig!\"}");
+                }
+                return;
             }
 
             if ("batchSync".equalsIgnoreCase(action)) {

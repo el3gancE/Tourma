@@ -21,6 +21,10 @@
     String tournamentType = "SINGLE_STAGE";
     Tournament currentTournament = null;
 
+    List<String> stageFormats = null;
+    String stage1Format = "SINGLE_ELIMINATION";
+    String stage2Format = "SINGLE_ELIMINATION";
+
     if (!tournamentId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
@@ -32,6 +36,13 @@
                 if (seriesId.trim().isEmpty() && currentTournament.getSeriesId() != null) {
                     seriesId = currentTournament.getSeriesId();
                 }
+            }
+            stageFormats = tDao.getStageFormats(tournamentId);
+            if (stageFormats != null && stageFormats.size() > 0) {
+                stage1Format = stageFormats.get(0);
+            }
+            if (stageFormats != null && stageFormats.size() > 1) {
+                stage2Format = stageFormats.get(1);
             }
         } catch (Exception e) {}
     }
@@ -63,7 +74,19 @@
         targetBracketUrl = "swiss-stage.jsp";
     }
 
-    boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType);
+    String targetBracketUrlStage1 = "single-elimination.jsp";
+    if ("DOUBLE_ELIMINATION".equalsIgnoreCase(stage1Format)) targetBracketUrlStage1 = "double-elimination.jsp";
+    else if ("ROUND_ROBIN".equalsIgnoreCase(stage1Format)) targetBracketUrlStage1 = "round-robin.jsp";
+    else if ("GROUP_STAGE".equalsIgnoreCase(stage1Format)) targetBracketUrlStage1 = "group-stage.jsp";
+    else if ("SWISS_LITE".equalsIgnoreCase(stage1Format) || "SWISS".equalsIgnoreCase(stage1Format)) targetBracketUrlStage1 = "swiss-stage.jsp";
+
+    String targetBracketUrlStage2 = "single-elimination.jsp";
+    if ("DOUBLE_ELIMINATION".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "double-elimination.jsp";
+    else if ("ROUND_ROBIN".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "round-robin.jsp";
+    else if ("GROUP_STAGE".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "group-stage.jsp";
+    else if ("SWISS_LITE".equalsIgnoreCase(stage2Format) || "SWISS".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "swiss-stage.jsp";
+
+    boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType) || (stageFormats != null && stageFormats.size() >= 2);
     boolean hasSeries = (currentSeries != null);
     boolean hasTournament = (currentTournament != null);
 %>
@@ -223,7 +246,7 @@
 
         <!-- MULTI-STAGE: VÒNG 1 (Stage 1 - SƠ ĐỒ / LỊCH ĐẤU & TỈ SỐ) -->
         <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1" style="<%= isMultiStage ? "" : "display: none;" %>">
-            <a id="sidebarLinkStage1" href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&stage=1<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
+            <a id="sidebarLinkStage1" href="${pageContext.request.contextPath}/common/<%= targetBracketUrlStage1 %>?id=<%= tournamentId %>&stage=1<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
                class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && "1".equals(request.getParameter("stage"))) || ("bracket".equals(activeStep) && request.getParameter("stage") == null && isMultiStage) ? "active" : "" %>">
                 <i class="fa-solid fa-diagram-project menu-icon text-mint"></i>
                 <span id="sidebarTextStage1">Trận Đấu Vòng 1</span>
@@ -232,7 +255,7 @@
 
         <!-- MULTI-STAGE: VÒNG 2 (Stage 2 - SƠ ĐỒ / LỊCH ĐẤU & TỈ SỐ) -->
         <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2" style="<%= isMultiStage ? "" : "display: none;" %>">
-            <a id="sidebarLinkStage2" href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&stage=2<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
+            <a id="sidebarLinkStage2" href="${pageContext.request.contextPath}/common/<%= targetBracketUrlStage2 %>?id=<%= tournamentId %>&stage=2<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
                class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && "2".equals(request.getParameter("stage"))) ? "active" : "" %>">
                 <i class="fa-solid fa-trophy menu-icon text-gold"></i>
                 <span id="sidebarTextStage2">Trận Đấu Vòng 2</span>
@@ -257,9 +280,13 @@
     var tid = '<%= tournamentId %>';
     if (!tid) return;
     try {
+        var dbIsMulti = <%= isMultiStage ? "true" : "false" %>;
+        var dbS1Format = '<%= stage1Format %>';
+        var dbS2Format = '<%= stage2Format %>';
+
         var tType = localStorage.getItem('tourma_type_' + tid);
         var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tid);
-        var isMulti = (tType === 'MULTI_STAGE' || !!multiCfgRaw);
+        var isMulti = (dbIsMulti || tType === 'MULTI_STAGE' || !!multiCfgRaw);
         var m1 = document.getElementById('sidebarMenuStage1');
         var m2 = document.getElementById('sidebarMenuStage2');
         var sSingle = document.getElementById('sidebarMenuSingleStage');
@@ -277,10 +304,16 @@
             if (sSingle) sSingle.style.display = 'none';
             if (menuRR) menuRR.style.display = 'none';
 
+            var s1Format = dbS1Format || 'SINGLE_ELIMINATION';
+            var s2Format = dbS2Format || 'SINGLE_ELIMINATION';
+
             if (multiCfgRaw) {
-                var mCfg = JSON.parse(multiCfgRaw);
-                var s1Format = mCfg.stage1Format || 'SINGLE_ELIMINATION';
-                var s2Format = mCfg.stage2Format || 'DOUBLE_ELIMINATION';
+                try {
+                    var mCfg = JSON.parse(multiCfgRaw);
+                    if (mCfg.stage1Format) s1Format = mCfg.stage1Format;
+                    if (mCfg.stage2Format) s2Format = mCfg.stage2Format;
+                } catch(e) {}
+            }
 
                 var getPageForFormat = function(fmt) {
                     if (fmt === 'SINGLE_ELIMINATION') return 'single-elimination.jsp';

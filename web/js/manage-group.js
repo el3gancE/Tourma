@@ -41,12 +41,20 @@
                 } catch (e) { this.teamsList = []; }
             }
 
-            // Load saved group assignments (default is empty object {})
-            var savedGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
-            if (savedGroupsRaw) {
-                try { this.groups = JSON.parse(savedGroupsRaw); } catch (e) { this.groups = {}; }
+            // Priority 1: From Database (window.DB_GROUP_ASSIGNMENTS)
+            if (window.DB_GROUP_ASSIGNMENTS && typeof window.DB_GROUP_ASSIGNMENTS === 'object' && Object.keys(window.DB_GROUP_ASSIGNMENTS).length > 0) {
+                this.groups = window.DB_GROUP_ASSIGNMENTS;
+                try {
+                    localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
+                } catch (e) {}
             } else {
-                this.groups = {}; // Default: NO groups created initially!
+                // Priority 2: Fallback to localStorage
+                var savedGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
+                if (savedGroupsRaw) {
+                    try { this.groups = JSON.parse(savedGroupsRaw); } catch (e) { this.groups = {}; }
+                } else {
+                    this.groups = {}; // Default: NO groups created initially!
+                }
             }
         },
 
@@ -522,6 +530,22 @@
 
             localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
 
+            // Sync directly to DB in background
+            try {
+                var cPath = window.contextPath || '';
+                var targetUrl = (cPath ? cPath : '') + '/group-stage';
+                var params = new URLSearchParams();
+                params.append('action', 'saveGroupAssignments');
+                params.append('tournamentId', this.tournamentId);
+                params.append('groupAssignments', JSON.stringify(this.groups));
+
+                fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: params.toString()
+                }).catch(function(err) {});
+            } catch (e) {}
+
             // Reset match schedule whenever team count or assignments change
             localStorage.removeItem('tourma_group_matches_' + this.tournamentId);
             localStorage.removeItem('tourma_matches_' + this.tournamentId);
@@ -556,7 +580,26 @@
             if (seriesId) {
                 target += '&seriesId=' + encodeURIComponent(seriesId);
             }
-            window.location.href = target;
+
+            // Ensure DB persistence completes before redirect
+            try {
+                var cPath = window.contextPath || '';
+                var targetUrl = (cPath ? cPath : '') + '/group-stage';
+                var params = new URLSearchParams();
+                params.append('action', 'saveGroupAssignments');
+                params.append('tournamentId', this.tournamentId);
+                params.append('groupAssignments', JSON.stringify(this.groups));
+
+                fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: params.toString()
+                }).finally(function() {
+                    window.location.href = target;
+                });
+            } catch (e) {
+                window.location.href = target;
+            }
         }
     };
 

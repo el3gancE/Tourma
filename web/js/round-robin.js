@@ -363,6 +363,21 @@
 
             localStorage.setItem('tourma_stage2_teams_' + this.tournamentId, JSON.stringify(finalStage2Teams));
 
+            // Sync Stage 2 Teams to DB
+            try {
+                var cPath = window.contextPath || '';
+                var targetUrl = (cPath ? cPath : '') + '/round-robin';
+                var pS2 = new URLSearchParams();
+                pS2.append('action', 'saveStage2Teams');
+                pS2.append('tournamentId', this.tournamentId);
+                pS2.append('stage2Teams', JSON.stringify(finalStage2Teams));
+                fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: pS2.toString()
+                }).catch(function(err) {});
+            } catch (e) {}
+
             var multiCfg = null;
             try {
                 multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + this.tournamentId)) || {};
@@ -397,6 +412,21 @@
             multiCfg.stage2MatchesCreated = true;
             localStorage.setItem('tourma_multi_config_' + this.tournamentId, JSON.stringify(multiCfg));
             localStorage.setItem('tourma_stage1_completed_' + this.tournamentId, 'true');
+
+            // Sync multi-stage config to DB
+            try {
+                var cPath = window.contextPath || '';
+                var targetUrl = (cPath ? cPath : '') + '/round-robin';
+                var pCfg = new URLSearchParams();
+                pCfg.append('action', 'saveMultiStageConfig');
+                pCfg.append('tournamentId', this.tournamentId);
+                pCfg.append('multiConfig', JSON.stringify(multiCfg));
+                fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: pCfg.toString()
+                }).catch(function(err) {});
+            } catch (e) {}
         },
 
         checkFinalStage: function () {

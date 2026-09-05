@@ -240,15 +240,23 @@
                 }
             }
 
-            var savedGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
-            if (savedGroupsRaw) {
+            // Priority 1: Database Group Assignments
+            if (window.DB_GROUP_ASSIGNMENTS && typeof window.DB_GROUP_ASSIGNMENTS === 'object' && Object.keys(window.DB_GROUP_ASSIGNMENTS).length > 0) {
+                this.groups = window.DB_GROUP_ASSIGNMENTS;
                 try {
-                    this.groups = JSON.parse(savedGroupsRaw);
-                } catch (e) {
+                    localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
+                } catch (e) {}
+            } else {
+                var savedGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
+                if (savedGroupsRaw) {
+                    try {
+                        this.groups = JSON.parse(savedGroupsRaw);
+                    } catch (e) {
+                        this.divideTeamsIntoGroups();
+                    }
+                } else {
                     this.divideTeamsIntoGroups();
                 }
-            } else {
-                this.divideTeamsIntoGroups();
             }
 
             var dbMatches = window.dbGroupMatches;
@@ -479,6 +487,22 @@
             try {
                 localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
                 localStorage.setItem('tourma_group_matches_' + this.tournamentId, JSON.stringify(this.groupMatches));
+
+                // Sync group assignments to DB in background
+                try {
+                    var cPath = window.contextPath || '';
+                    var targetUrl = (cPath ? cPath : '') + '/group-stage';
+                    var params = new URLSearchParams();
+                    params.append('action', 'saveGroupAssignments');
+                    params.append('tournamentId', this.tournamentId);
+                    params.append('groupAssignments', JSON.stringify(this.groups));
+
+                    fetch(targetUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: params.toString()
+                    }).catch(function(err) {});
+                } catch (e) {}
             } catch (e) {}
             this.checkAndTriggerStage2Cut();
             if (window.StageEndPopup) {
@@ -607,6 +631,21 @@
 
             localStorage.setItem('tourma_stage2_teams_' + this.tournamentId, JSON.stringify(finalStage2Teams));
 
+            // Sync Stage 2 Teams to DB
+            try {
+                var cPath = window.contextPath || '';
+                var targetUrl = (cPath ? cPath : '') + '/group-stage';
+                var pS2 = new URLSearchParams();
+                pS2.append('action', 'saveStage2Teams');
+                pS2.append('tournamentId', this.tournamentId);
+                pS2.append('stage2Teams', JSON.stringify(finalStage2Teams));
+                fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: pS2.toString()
+                }).catch(function(err) {});
+            } catch (e) {}
+
             var s2Format = multiCfg.stage2Format || 'SINGLE_ELIMINATION';
 
             if (s2Format === 'SINGLE_ELIMINATION' && window.TourmaSingleElimAlgorithm) {
@@ -633,6 +672,21 @@
             multiCfg.stage2MatchesCreated = true;
             localStorage.setItem('tourma_multi_config_' + this.tournamentId, JSON.stringify(multiCfg));
             localStorage.setItem('tourma_stage1_completed_' + this.tournamentId, 'true');
+
+            // Sync multi-stage config to DB
+            try {
+                var cPath = window.contextPath || '';
+                var targetUrl = (cPath ? cPath : '') + '/group-stage';
+                var pCfg = new URLSearchParams();
+                pCfg.append('action', 'saveMultiStageConfig');
+                pCfg.append('tournamentId', this.tournamentId);
+                pCfg.append('multiConfig', JSON.stringify(multiCfg));
+                fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: pCfg.toString()
+                }).catch(function(err) {});
+            } catch (e) {}
         },
 
         bindEvents: function () {

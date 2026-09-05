@@ -40,6 +40,14 @@
                     cutTarget = 0;
                 }
             }
+            String dbStage2Teams = (t != null) ? t.getStage2Teams() : null;
+            String dbMultiStageConfig = (t != null) ? t.getMultiStageConfig() : null;
+            if (request.getAttribute("dbStage2Teams") != null) {
+                dbStage2Teams = (String) request.getAttribute("dbStage2Teams");
+            }
+            if (request.getAttribute("dbMultiStageConfig") != null) {
+                dbMultiStageConfig = (String) request.getAttribute("dbMultiStageConfig");
+            }
             if (plist != null && !plist.isEmpty()) {
                 int takeCount = plist.size();
                 // For multi-stage stage 2: server only sends the advancingSeatsCount teams
@@ -352,9 +360,11 @@
                     }
                 }
 
-                // Check stage2Teams from localStorage
-                var stage2TeamsRaw = null;
-                try { stage2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                // Check stage2Teams from DB first, then fallback to localStorage
+                var stage2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
+                if (!stage2TeamsRaw || stage2TeamsRaw.length === 0) {
+                    try { stage2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                }
 
                 // Resolve team list
                 var finalTeams = [];

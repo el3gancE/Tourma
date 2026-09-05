@@ -1386,6 +1386,33 @@
             localStorage.setItem('tourma_stage2_teams_' + this.tournamentId, JSON.stringify(shuffledStage2Teams));
             localStorage.setItem('tourma_stage1_completed_' + this.tournamentId, 'true');
 
+            // Sync Stage 2 Teams & Multi-Stage Config to DB
+            try {
+                var cPath = window.contextPath || '';
+                var targetUrl = (cPath ? cPath : '') + '/single-elimination';
+                var pS2 = new URLSearchParams();
+                pS2.append('action', 'saveStage2Teams');
+                pS2.append('tournamentId', this.tournamentId);
+                pS2.append('stage2Teams', JSON.stringify(shuffledStage2Teams));
+                fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: pS2.toString()
+                }).catch(function(err) {});
+
+                if (multiCfg) {
+                    var pCfg = new URLSearchParams();
+                    pCfg.append('action', 'saveMultiStageConfig');
+                    pCfg.append('tournamentId', this.tournamentId);
+                    pCfg.append('multiConfig', JSON.stringify(multiCfg));
+                    fetch(targetUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: pCfg.toString()
+                    }).catch(function(err) {});
+                }
+            } catch (e) {}
+
             // Check Stage 2 format
             var s2Format = 'SINGLE_ELIMINATION';
             if (multiCfg && multiCfg.stage2Format) {

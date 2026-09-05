@@ -15,6 +15,8 @@
     String activeStepVal = (currentStage == 2) ? "standings2" : "standings1";
     String currentStageStr = (currentStage == 2) ? "2" : "1";
     int cutTarget = 0;
+    String dbStage2Teams = null;
+    String dbMultiStageConfig = null;
 
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
@@ -27,6 +29,8 @@
                 if ("MULTI_STAGE".equals(t.getTournamentType()) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
                 }
+                dbStage2Teams = t.getStage2Teams();
+                dbMultiStageConfig = t.getMultiStageConfig();
             }
             ParticipantDAO pDao = new ParticipantDAO();
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
@@ -184,13 +188,15 @@
 
                 if (currentStage === 2) {
                     var advCount = <%= cutTarget %>;
-                    if (!advCount || advCount <= 1) {
+                    var dbMultiCfg = <%= (dbMultiStageConfig != null && !dbMultiStageConfig.trim().isEmpty() && !dbMultiStageConfig.trim().equals("{}")) ? dbMultiStageConfig : "null" %>;
+                    var multiCfg = dbMultiCfg;
+                    if (!multiCfg) {
                         try {
-                            var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
-                            if (multiCfg && multiCfg.stage1Config) {
-                                advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
-                            }
+                            multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
                         } catch(e) {}
+                    }
+                    if (multiCfg && multiCfg.stage1Config) {
+                        advCount = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
                     }
                     if (!advCount || advCount <= 1) {
                         try {
@@ -199,8 +205,10 @@
                         } catch(e) {}
                     }
 
-                    var s2TeamsRaw = null;
-                    try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                    var s2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
+                    if (!s2TeamsRaw || s2TeamsRaw.length === 0) {
+                        try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                    }
                     if (s2TeamsRaw && s2TeamsRaw.length > 0) {
                         preloadedTeams = s2TeamsRaw.filter(function(t) {
                             var n = (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);

@@ -122,6 +122,40 @@
      STANDINGS ALGORITHM HELPERS & DYNAMIC RE-CALCULATION FROM COMPLETED TOURNAMENTS
      ========================================================================= */
 
+  function normalizeStr(str) {
+    if (!str) return '';
+    try {
+      return String(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    } catch (e) {
+      return String(str).toLowerCase().trim();
+    }
+  }
+
+  function isTeamSelf(name, targetKey) {
+    if (!name || !targetKey) return false;
+    var n = normalizeStr(name);
+    var t = normalizeStr(targetKey);
+    if (n === t) return true;
+    var cTarget = t.replace(/[^a-z0-9]/g, '');
+    var c = n.replace(/[^a-z0-9]/g, '');
+    if (c && cTarget && c === cTarget) return true;
+
+    var d1 = n.replace(/[^0-9]/g, '');
+    var d2 = t.replace(/[^0-9]/g, '');
+    if (d1 !== d2) {
+      if (d1 !== '' || d2 !== '') return false;
+    }
+
+    if (c.length >= 6 && cTarget.length >= 6) {
+      if (Math.abs(c.length - cTarget.length) <= 3) {
+        if (c.indexOf(cTarget) !== -1 || cTarget.indexOf(c) !== -1) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   function extractName(obj) {
     if (!obj) return null;
     if (typeof obj === 'string') {
@@ -222,23 +256,13 @@
   }
 
   function getStorageData(prefixList, id) {
-    if (!prefixList || prefixList.length === 0) return null;
-    if (id) {
-      for (var i = 0; i < prefixList.length; i++) {
-        var key = prefixList[i] + id;
-        var val = localStorage.getItem(key);
-        if (val) return val;
-      }
-      var allKeys = Object.keys(localStorage);
-      for (var j = 0; j < allKeys.length; j++) {
-        var k = allKeys[j];
-        for (var p = 0; p < prefixList.length; p++) {
-          if (k.indexOf(prefixList[p]) === 0 && (k.indexOf(id) !== -1 || k.slice(-id.length) === id)) {
-            var v = localStorage.getItem(k);
-            if (v) return v;
-          }
-        }
-      }
+    if (!prefixList || prefixList.length === 0 || !id) return null;
+    for (var i = 0; i < prefixList.length; i++) {
+      var p = prefixList[i];
+      var val = localStorage.getItem(p + id);
+      if (val) return val;
+      val = localStorage.getItem(p + 'tournament_' + id);
+      if (val) return val;
     }
     return null;
   }
@@ -299,7 +323,8 @@
           if (localPtsRaw) localPtsCfg = JSON.parse(localPtsRaw) || {};
         } catch (e) {}
 
-        var ptsCfg = Object.assign({}, t.pointsConfig || {}, localPtsCfg || {});
+        // Priority: DB pointsConfig first, fallback to localPtsCfg
+        var ptsCfg = Object.assign({}, localPtsCfg || {}, t.pointsConfig || {});
         var teamTourneyPoints = {};
         var teamParticipatedInThisTourney = {};
 
@@ -308,15 +333,15 @@
           var key = name.toLowerCase().trim();
           var targetEntry = teamDataMap[key];
           if (!targetEntry) {
-            var cleanKey = key.replace(/[^a-z0-9]/g, '');
-            Object.keys(teamDataMap).forEach(function (k) {
-              if (targetEntry) return;
-              var cK = k.replace(/[^a-z0-9]/g, '');
-              if (cK === cleanKey || (cK.length >= 3 && cleanKey.length >= 3 && (cK.indexOf(cleanKey) !== -1 || cleanKey.indexOf(cK) !== -1))) {
+            var mapKeys = Object.keys(teamDataMap);
+            for (var mIdx = 0; mIdx < mapKeys.length; mIdx++) {
+              var k = mapKeys[mIdx];
+              if (isTeamSelf(name, k)) {
                 targetEntry = teamDataMap[k];
                 key = k;
+                break;
               }
-            });
+            }
           }
           if (!targetEntry) return;
 
@@ -352,15 +377,15 @@
           var key = name.toLowerCase().trim();
           var targetEntry = teamDataMap[key];
           if (!targetEntry) {
-            var cleanKey = key.replace(/[^a-z0-9]/g, '');
-            Object.keys(teamDataMap).forEach(function (k) {
-              if (targetEntry) return;
-              var cK = k.replace(/[^a-z0-9]/g, '');
-              if (cK === cleanKey || (cK.length >= 3 && cleanKey.length >= 3 && (cK.indexOf(cleanKey) !== -1 || cleanKey.indexOf(cK) !== -1))) {
+            var mapKeys = Object.keys(teamDataMap);
+            for (var mIdx = 0; mIdx < mapKeys.length; mIdx++) {
+              var k = mapKeys[mIdx];
+              if (isTeamSelf(name, k)) {
                 targetEntry = teamDataMap[k];
                 key = k;
+                break;
               }
-            });
+            }
           }
           if (!targetEntry) return;
 

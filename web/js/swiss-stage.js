@@ -560,6 +560,21 @@
             if (!isSameS2Teams || !multiCfg.stage2MatchesCreated) {
               localStorage.setItem('tourma_stage2_teams_' + tournamentId, JSON.stringify(shuffledStage2Teams));
 
+              // Sync Stage 2 Teams to DB
+              try {
+                var cPath = window.contextPath || '';
+                var targetUrl = (cPath ? cPath : '') + '/swiss-system';
+                var pS2 = new URLSearchParams();
+                pS2.append('action', 'saveStage2Teams');
+                pS2.append('tournamentId', tournamentId);
+                pS2.append('stage2Teams', JSON.stringify(shuffledStage2Teams));
+                fetch(targetUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                  body: pS2.toString()
+                }).catch(function(err) {});
+              } catch (e) {}
+
               var s2Format = multiCfg.stage2Format || 'SINGLE_ELIMINATION';
               if (s2Format === 'SINGLE_ELIMINATION') {
                 if (window.TourmaBracketAlgorithm && typeof window.TourmaBracketAlgorithm.generateSingleElimination === 'function') {
@@ -582,6 +597,21 @@
 
               multiCfg.stage2MatchesCreated = true;
               localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(multiCfg));
+
+              // Sync multi-stage config to DB
+              try {
+                var cPath = window.contextPath || '';
+                var targetUrl = (cPath ? cPath : '') + '/swiss-system';
+                var pCfg = new URLSearchParams();
+                pCfg.append('action', 'saveMultiStageConfig');
+                pCfg.append('tournamentId', tournamentId);
+                pCfg.append('multiConfig', JSON.stringify(multiCfg));
+                fetch(targetUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                  body: pCfg.toString()
+                }).catch(function(err) {});
+              } catch (e) {}
             }
           } catch(e) {}
         }

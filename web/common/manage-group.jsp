@@ -13,6 +13,7 @@
     Tournament tourney = tDao.getTournamentById(tournamentId);
 
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
+    String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -102,6 +103,7 @@
 
     <script>
         window.contextPath = '${pageContext.request.contextPath}';
+        window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
     </script>
     <script src="${pageContext.request.contextPath}/js/manage-group.js"></script>
 </body>

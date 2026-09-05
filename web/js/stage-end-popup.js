@@ -391,8 +391,10 @@
                 // 3. Resolve Stage 2 URL
                 var s2Url = this.resolveStage2Url(tid);
 
-                // 4. Redirect immediately to Stage 2
-                window.location.href = s2Url;
+                // 4. Redirect to Stage 2 (short timeout ensures background AJAX sync to DB flushes)
+                setTimeout(function () {
+                    window.location.href = s2Url;
+                }, 150);
             } catch (e) {
                 console.error('[StageEndPopup] confirmStageEnd error:', e);
             }
