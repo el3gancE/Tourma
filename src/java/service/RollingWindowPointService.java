@@ -343,15 +343,16 @@ public class RollingWindowPointService {
         if (standings.isEmpty()) return false;
 
         DBContext db = new DBContext();
-        String updateSql = "UPDATE series_standings SET total_rolling_points = ?, updated_at = CURRENT_TIMESTAMP WHERE series_id = ? AND partner_participant_id = ?";
+        String updateSql = "UPDATE series_standings SET total_rolling_points = ?, rank_overall = ?, updated_at = CURRENT_TIMESTAMP WHERE series_id = ? AND partner_participant_id = ?";
 
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(updateSql)) {
             conn.setAutoCommit(false);
             for (RollingStandingDTO dto : standings) {
                 ps.setInt(1, dto.getTotalActivePoints());
-                ps.setString(2, seriesId.trim());
-                ps.setString(3, dto.getPartnerParticipantId());
+                ps.setInt(2, dto.getRank());
+                ps.setString(3, seriesId.trim());
+                ps.setString(4, dto.getPartnerParticipantId());
                 ps.addBatch();
             }
             ps.executeBatch();

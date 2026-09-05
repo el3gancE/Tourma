@@ -520,11 +520,35 @@ public class TournamentDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, groupAssignmentsJson);
             ps.setString(2, tournamentId.trim());
-            return ps.executeUpdate() > 0;
+            boolean ok = ps.executeUpdate() > 0;
+            if (ok) {
+                try {
+                    new dao.GroupStageDAO().syncGroupsAndGroupTeams(tournamentId.trim(), 1, groupAssignmentsJson);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+            return ok;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public String getSeriesIdByTournamentId(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return null;
+        String sql = "SELECT series_id FROM tournaments WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString("series_id");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public String getGroupAssignments(String tournamentId) {

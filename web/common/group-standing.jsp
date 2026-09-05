@@ -14,6 +14,7 @@
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
 
     String dbMatchesJson = "[]";
+    String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
     try {
         GroupStageDAO gsDao = new GroupStageDAO();
         String j = gsDao.getMatchesJsonForFrontend(tournamentId, 1);
@@ -94,6 +95,7 @@
     <script>
         window.groupTournamentId = "<%= tournamentId %>";
         window.dbGroupMatches = <%= dbMatchesJson %>;
+        window.dbGroupAssignments = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
 
         document.addEventListener('DOMContentLoaded', function () {
             var urlParams = new URLSearchParams(window.location.search);
@@ -106,6 +108,9 @@
             try {
                 var gRaw = localStorage.getItem('tourma_group_assignments_' + tid);
                 if (gRaw) groups = JSON.parse(gRaw);
+                if ((!groups || Object.keys(groups).length === 0) && window.dbGroupAssignments) {
+                    groups = window.dbGroupAssignments;
+                }
 
                 var mRaw = localStorage.getItem('tourma_group_matches_' + tid);
                 if (mRaw) matches = JSON.parse(mRaw);

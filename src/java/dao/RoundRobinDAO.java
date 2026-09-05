@@ -323,6 +323,13 @@ public class RoundRobinDAO extends DBContext {
                 }
             }
 
+            try {
+                String sId = new TournamentDAO().getSeriesIdByTournamentId(tournamentId);
+                if (sId != null && !sId.trim().isEmpty()) {
+                    new SeriesDAO().recalculateSeriesStandings(sId.trim());
+                }
+            } catch (Exception ignore) {}
+
             return true;
         } catch (Exception e) {
             e.printStackTrace();
