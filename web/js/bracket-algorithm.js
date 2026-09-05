@@ -104,7 +104,11 @@
             for (var t = 0; t < numTeams; t++) {
                 var item = teamsList[t];
                 var tName = (typeof item === 'object' && item) ? (item.name || item.rawName || '') : (item || '');
-                currentTeamPool.push({ seed: t + 1, name: tName });
+                var tSeed = '';
+                if (typeof item === 'object' && item && item.seed !== undefined && item.seed !== null && item.seed !== '') {
+                    tSeed = item.seed;
+                }
+                currentTeamPool.push({ seed: tSeed, name: tName });
             }
 
             var bracketSize = Math.pow(2, Math.ceil(Math.log2(numTeams)));
@@ -158,12 +162,14 @@
                                 s2 = '';
                             }
                         } else {
-                            s1 = numByeTeams + 1 + i;
-                            s2 = currentTeamsInRound - i;
-                            var t1Obj = (s1 <= numTeams) ? currentTeamPool[s1 - 1] : { name: 'TBD', seed: s1 };
-                            var t2Obj = (s2 <= numTeams) ? currentTeamPool[s2 - 1] : { name: 'TBD', seed: s2 };
+                            var p1Idx = numByeTeams + 1 + i;
+                            var p2Idx = currentTeamsInRound - i;
+                            var t1Obj = (p1Idx <= numTeams) ? currentTeamPool[p1Idx - 1] : { name: 'TBD', seed: '' };
+                            var t2Obj = (p2Idx <= numTeams) ? currentTeamPool[p2Idx - 1] : { name: 'TBD', seed: '' };
                             t1Name = t1Obj.name;
                             t2Name = t2Obj.name;
+                            s1 = (t1Obj.seed !== undefined && t1Obj.seed !== null && t1Obj.seed !== '') ? t1Obj.seed : '';
+                            s2 = (t2Obj.seed !== undefined && t2Obj.seed !== null && t2Obj.seed !== '') ? t2Obj.seed : '';
                         }
 
                         var match = {
@@ -191,8 +197,8 @@
                             var s1 = pair[0];
                             var s2 = pair[1];
 
-                            var t1 = (s1 <= numTeams) ? currentTeamPool[s1 - 1] : { name: 'BYE', seed: s1 };
-                            var t2 = (s2 <= numTeams) ? currentTeamPool[s2 - 1] : { name: 'BYE', seed: s2 };
+                            var t1 = (s1 <= numTeams) ? currentTeamPool[s1 - 1] : { name: 'BYE', seed: '' };
+                            var t2 = (s2 <= numTeams) ? currentTeamPool[s2 - 1] : { name: 'BYE', seed: '' };
                             var isBye = (t1.name === 'BYE' || t2.name === 'BYE');
 
                             var mId = internalIdCounter++;
@@ -201,8 +207,8 @@
                                 matchNumber: mId,
                                 roundNumber: currentRoundNumber,
                                 status: isBye ? 'COMPLETED' : 'SCHEDULED',
-                                team1: { name: t1.name, seed: (t1.name === 'BYE' ? '' : t1.seed), score: '' },
-                                team2: { name: t2.name, seed: (t2.name === 'BYE' ? '' : t2.seed), score: '' },
+                                team1: { name: t1.name, seed: (t1.name === 'BYE' ? '' : (t1.seed !== undefined && t1.seed !== null ? t1.seed : '')), score: '' },
+                                team2: { name: t2.name, seed: (t2.name === 'BYE' ? '' : (t2.seed !== undefined && t2.seed !== null ? t2.seed : '')), score: '' },
                                 winnerId: isBye ? (t1.name === 'BYE' ? 'team2' : 'team1') : null,
                                 nextMatchId: null,
                                 nextMatchSlot: (i % 2 === 0) ? 1 : 2

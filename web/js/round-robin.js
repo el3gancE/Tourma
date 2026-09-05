@@ -195,7 +195,47 @@
                 }
             }
 
-            if (isValidSaved) {
+            var hasDbMatches = (dbMatches && Array.isArray(dbMatches) && dbMatches.length > 0);
+
+            if (hasDbMatches && this.teamsList && this.teamsList.length > 0 && window.TourmaRoundRobinAlgorithm) {
+                // Restore directly from database!
+                var generated = window.TourmaRoundRobinAlgorithm.generateRoundRobin(this.teamsList, this.config);
+                this.roundsList = generated.rounds;
+                this.matchesMap = generated.matchesMap;
+
+                for (var i = 0; i < dbMatches.length; i++) {
+                    var dbm = dbMatches[i];
+                    var mKey = dbm.matchId || dbm.id;
+                    if (this.matchesMap[mKey]) {
+                        var localM = this.matchesMap[mKey];
+                        localM.status = dbm.status || 'SCHEDULED';
+                        if (dbm.team1 && dbm.team1.score !== undefined) localM.team1.score = dbm.team1.score;
+                        else if (dbm.team1Score != null) localM.team1.score = String(dbm.team1Score);
+                        if (dbm.team2 && dbm.team2.score !== undefined) localM.team2.score = dbm.team2.score;
+                        else if (dbm.team2Score != null) localM.team2.score = String(dbm.team2Score);
+                        if (dbm.winnerId) {
+                            localM.winnerId = dbm.winnerId;
+                        }
+                    }
+                }
+
+                // If savedData had uncommitted scores, merge them
+                if (isValidSaved && savedData && savedData.matchesMap) {
+                    var sks = Object.keys(savedData.matchesMap);
+                    for (var ki = 0; ki < sks.length; ki++) {
+                        var sm = savedData.matchesMap[sks[ki]];
+                        var curm = this.matchesMap[sks[ki]];
+                        if (sm && curm && (!curm.team1.score || curm.team1.score === '') && (sm.team1 && sm.team1.score !== '')) {
+                            curm.team1.score = sm.team1.score;
+                            curm.team2.score = sm.team2.score;
+                            curm.winnerId = sm.winnerId;
+                            curm.status = sm.status;
+                        }
+                    }
+                }
+
+                this.persistLocal();
+            } else if (isValidSaved) {
                 this.roundsList = savedData.rounds;
                 this.matchesMap = savedData.matchesMap || {};
 
@@ -223,6 +263,7 @@
                         }
                     }
                 }
+                this.syncMatchesToDB(true);
             } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaRoundRobinAlgorithm) {
                 // Clear stale cache and regenerate fresh schedule
                 try {
@@ -234,22 +275,8 @@
                 var generated = window.TourmaRoundRobinAlgorithm.generateRoundRobin(this.teamsList, this.config);
                 this.roundsList = generated.rounds;
                 this.matchesMap = generated.matchesMap;
-
-                if (this.currentStage === 1 && dbMatches && dbMatches.length > 0) {
-                    for (var i = 0; i < dbMatches.length; i++) {
-                        var dbm = dbMatches[i];
-                        if (this.matchesMap[dbm.id]) {
-                            var localM = this.matchesMap[dbm.id];
-                            localM.status = dbm.status;
-                            localM.team1.score = (dbm.team1Score != null) ? String(dbm.team1Score) : '';
-                            localM.team2.score = (dbm.team2Score != null) ? String(dbm.team2Score) : '';
-                            if (dbm.winnerId) {
-                                localM.winnerId = (dbm.winnerId === localM.team1.name) ? 'team1' : 'team2';
-                            }
-                        }
-                    }
-                }
                 this.persistLocal();
+                this.syncMatchesToDB(false);
             }
         },
 
@@ -741,11 +768,23 @@
                 }
             } catch (e) {}
 
+            // Send reset request to DB
+            var rParams = new URLSearchParams();
+            rParams.append('action', 'reset');
+            rParams.append('tournamentId', this.tournamentId);
+            rParams.append('stage', this.currentStage || 1);
+            fetch('round-robin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: rParams.toString()
+            }).catch(function () {});
+
             if (window.TourmaRoundRobinAlgorithm) {
                 var gen = window.TourmaRoundRobinAlgorithm.generateRoundRobin(this.teamsList, this.config);
                 this.roundsList = gen.rounds;
                 this.matchesMap = gen.matchesMap;
                 this.persistLocal();
+                this.syncMatchesToDB(false);
                 this.renderRoundSelectorTabs();
                 this.renderFixtures();
             }
@@ -794,7 +833,7 @@
 
                 var s1 = Number(targetMatch.team1.score);
                 var s2 = Number(targetMatch.team2.score);
-                targetMatch.winnerId = (s1 > s2) ? 'team1' : ((s2 > s1) ? 'team2' : null);
+                targetMatch.winnerId = (s1 > s2) ? 'team1' : ((s2 > s1) ? 'team2' : 'draw');
 
                 self.persistLocal();
                 self.renderFixtures();
@@ -812,11 +851,20 @@
          * Send AJAX save request
          */
         saveMatchAJAX: function (matchId, t1Score, t2Score, winner) {
+            var targetMatch = this.matchesMap ? this.matchesMap[matchId] : null;
+            var t1Name = (targetMatch && targetMatch.team1) ? (targetMatch.team1.name || targetMatch.team1.rawName || '') : '';
+            var t2Name = (targetMatch && targetMatch.team2) ? (targetMatch.team2.name || targetMatch.team2.rawName || '') : '';
+
             var params = new URLSearchParams();
+            params.append('action', 'updateScore');
+            params.append('tournamentId', this.tournamentId);
+            params.append('stage', this.currentStage || 1);
             params.append('matchId', matchId);
             params.append('team1Score', t1Score);
             params.append('team2Score', t2Score);
             params.append('winner', winner || '');
+            params.append('team1Name', t1Name);
+            params.append('team2Name', t2Name);
 
             fetch('round-robin', {
                 method: 'POST',
@@ -827,10 +875,47 @@
             }).then(function (res) {
                 return res.json();
             }).then(function (data) {
-                console.log('Round Robin match updated:', data);
+                console.log('Round Robin match updated in DB:', data);
             }).catch(function (err) {
                 console.warn('AJAX save notice:', err);
             });
+        },
+
+        /**
+         * Batch Sync entire Round Robin fixtures to SQL Server matches table
+         */
+        syncMatchesToDB: function (isUpdateOnly) {
+            if (!this.tournamentId || !this.matchesMap) return;
+            var list = [];
+            var keys = Object.keys(this.matchesMap);
+            for (var i = 0; i < keys.length; i++) {
+                var m = this.matchesMap[keys[i]];
+                if (!m) continue;
+                list.push({
+                    matchId: m.matchId || m.id,
+                    roundNumber: m.roundNumber || 1,
+                    matchNumber: m.matchNumber || m.matchId || m.id,
+                    team1: m.team1 || {},
+                    team2: m.team2 || {},
+                    winnerId: m.winnerId || null,
+                    status: m.status || 'PENDING'
+                });
+            }
+            if (list.length === 0) return;
+
+            var params = new URLSearchParams();
+            params.append('action', 'batchSync');
+            params.append('tournamentId', this.tournamentId);
+            params.append('stage', this.currentStage || 1);
+            params.append('matchesJson', JSON.stringify(list));
+
+            fetch('round-robin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: params.toString()
+            }).then(function (res) { return res.json(); })
+              .then(function (data) { console.log('[RR DB batchSync]', data); })
+              .catch(function (err) { console.warn('[RR DB batchSync error]', err); });
         }
     };
 

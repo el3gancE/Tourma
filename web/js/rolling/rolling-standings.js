@@ -1091,6 +1091,10 @@
   // MAIN STANDINGS RECALCULATION BY MILESTONE
   // =========================================================================
   function computeStandingsForMilestone(milestoneVal) {
+    storageDataCache = {};
+    parsedTournamentResultsCache = {};
+    teamKeyLookupCache = {};
+
     var standingsTable = document.getElementById('rollingStandingsTable');
     if (!standingsTable) return;
 
@@ -1328,48 +1332,44 @@
   }
 
   // =========================================================================
-  // PUBLIC EVENT HANDLERS
+  // PUBLIC EVENT HANDLERS & AUTO-UPDATE
   // =========================================================================
   window.onMilestoneChange = function (milestoneVal) {
     computeStandingsForMilestone(milestoneVal);
   };
 
   window.syncLatestStandings = function () {
-    storageDataCache = {};
-    parsedTournamentResultsCache = {};
-    teamKeyLookupCache = {};
-
-    var btn = document.getElementById('btnSyncLatest');
-    var icon = document.getElementById('syncLatestIcon');
-
-    if (icon) icon.classList.add('fa-spin');
-    if (btn) btn.disabled = true;
-
     var milestoneSelect = document.getElementById('milestoneSelect');
     if (milestoneSelect) milestoneSelect.value = 'LATEST';
-
-    setTimeout(function () {
-      computeStandingsForMilestone('LATEST');
-
-      if (icon) icon.classList.remove('fa-spin');
-      if (btn) {
-        btn.disabled = false;
-        var origHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check text-mint"></i> Đã cập nhật!';
-        setTimeout(function () {
-          btn.innerHTML = origHtml;
-        }, 1800);
-      }
-    }, 150);
+    computeStandingsForMilestone('LATEST');
   };
 
-  // Automatically compute and sync on page load so standings are never 0 and always ranked accurately
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-      computeStandingsForMilestone('LATEST');
-    });
-  } else {
-    computeStandingsForMilestone('LATEST');
+  window.refreshRollingStandings = function () {
+    var milestoneSelect = document.getElementById('milestoneSelect');
+    var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
+    computeStandingsForMilestone(curVal);
+  };
+
+  // Automatically compute and sync on page load and lifecycle events so standings are always 100% up-to-date
+  function triggerAutoUpdate() {
+    var milestoneSelect = document.getElementById('milestoneSelect');
+    var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
+    computeStandingsForMilestone(curVal);
   }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', triggerAutoUpdate);
+  } else {
+    triggerAutoUpdate();
+  }
+
+  window.addEventListener('pageshow', triggerAutoUpdate);
+  window.addEventListener('focus', triggerAutoUpdate);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      triggerAutoUpdate();
+    }
+  });
+  window.addEventListener('storage', triggerAutoUpdate);
 
 })();

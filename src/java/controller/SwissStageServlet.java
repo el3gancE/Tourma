@@ -3,6 +3,7 @@ package controller;
 import dao.ParticipantDAO;
 import dao.SwissSystemDAO;
 import dao.TournamentDAO;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
@@ -17,10 +18,9 @@ import model.Team;
 import model.Tournament;
 
 /**
- * Controller for Swiss System Tournament Stage Page & AJAX Score Updates.
- * Loads DB Teams and Matches via ParticipantDAO & SwissSystemDAO.
+ * Controller for Swiss System Tournament Stage Page & AJAX Score Updates / Batch Sync.
  */
-@WebServlet(name = "SwissStageServlet", urlPatterns = {"/common/swiss-stage"})
+@WebServlet(name = "SwissStageServlet", urlPatterns = {"/swiss-stage", "/common/swiss-stage"})
 public class SwissStageServlet extends HttpServlet {
 
     private final SwissSystemDAO swissDAO = new SwissSystemDAO();
@@ -34,12 +34,8 @@ public class SwissStageServlet extends HttpServlet {
         String idParam = request.getParameter("id");
         String tournamentId = (idParam != null && !idParam.trim().isEmpty()) ? idParam : "demo";
 
-        int intTourneyId = 1;
-        try {
-            intTourneyId = Integer.parseInt(tournamentId);
-        } catch (NumberFormatException e) {
-            intTourneyId = 1;
-        }
+        String stageParam = request.getParameter("stage");
+        int stage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
 
         // Fetch tournament details from DB
         Tournament tournament = tournamentDAO.getTournamentById(tournamentId);
@@ -54,11 +50,15 @@ public class SwissStageServlet extends HttpServlet {
         List<Team> dbTeamsList = participantDAO.getTeamsByTournamentId(tournamentId);
 
         // Fetch round map for Swiss system from DB
-        Map<Integer, List<Match>> roundMap = swissDAO.getSwissRounds(intTourneyId);
+        Map<Integer, List<Match>> roundMap = swissDAO.getSwissRounds(tournamentId);
+
+        // Fetch preloaded matches JSON directly from database
+        String dbMatchesJson = swissDAO.getMatchesJsonForFrontend(tournamentId, stage);
 
         request.setAttribute("tournament", tournament);
         request.setAttribute("dbTeamsList", dbTeamsList);
         request.setAttribute("roundMap", roundMap);
+        request.setAttribute("dbMatchesJson", dbMatchesJson);
 
         // Forward to swiss-stage.jsp
         request.getRequestDispatcher("/common/swiss-stage.jsp").forward(request, response);
@@ -68,21 +68,84 @@ public class SwissStageServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
+        request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
 
         try {
-            String matchIdStr = request.getParameter("matchId");
+            String action = request.getParameter("action");
+            if (action == null || action.trim().isEmpty()) {
+                action = "updateScore";
+            }
+
+            String tournamentId = request.getParameter("tournamentId");
+            if (tournamentId == null || tournamentId.trim().isEmpty()) {
+                tournamentId = request.getParameter("id");
+            }
+
+            String stageParam = request.getParameter("stage");
+            int stage = 1;
+            if (stageParam != null && !stageParam.trim().isEmpty()) {
+                try { stage = Integer.parseInt(stageParam.trim()); } catch (NumberFormatException ignore) {}
+            }
+
+            if ("batchSync".equalsIgnoreCase(action)) {
+                String matchesJson = request.getParameter("matchesJson");
+                if (matchesJson == null || matchesJson.trim().isEmpty()) {
+                    StringBuilder sb = new StringBuilder();
+                    try (BufferedReader reader = request.getReader()) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            sb.append(line);
+                        }
+                    }
+                    matchesJson = sb.toString();
+                }
+
+                if (tournamentId != null && matchesJson != null && !matchesJson.trim().isEmpty()) {
+                    boolean ok = swissDAO.syncSwissMatches(tournamentId, stage, matchesJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đồng bộ Swiss thành công!" : "Lỗi lưu Swiss vào DB!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc dữ liệu matchesJson!\"}");
+                }
+                return;
+            }
+
+            if ("reset".equalsIgnoreCase(action)) {
+                if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+                    boolean ok = swissDAO.resetSwissMatches(tournamentId, stage);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã đặt lại Swiss trong CSDL" : "Lỗi reset") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId!\"}");
+                }
+                return;
+            }
+
+            // Update score
+            String matchKey = request.getParameter("matchKey");
+            if (matchKey == null || matchKey.trim().isEmpty()) {
+                matchKey = request.getParameter("matchId");
+            }
+
             String score1Str = request.getParameter("team1Score");
             String score2Str = request.getParameter("team2Score");
             String status = request.getParameter("status");
+            String team1Name = request.getParameter("team1Name");
+            String team2Name = request.getParameter("team2Name");
+            String winner = request.getParameter("winner");
 
-            if (matchIdStr != null && score1Str != null && score2Str != null) {
-                int matchId = Integer.parseInt(matchIdStr);
+            if (matchKey != null && score1Str != null && score2Str != null) {
                 int score1 = Integer.parseInt(score1Str);
                 int score2 = Integer.parseInt(score2Str);
 
-                boolean success = swissDAO.updateSwissMatchScore(matchId, score1, score2, status);
+                boolean success;
+                if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+                    success = swissDAO.updateSwissMatchScore(tournamentId, stage, matchKey, score1, score2, status, team1Name, team2Name, winner);
+                } else {
+                    int numId = 1;
+                    try { numId = Integer.parseInt(matchKey.replaceAll("\\D+", "")); } catch (Exception ignore) {}
+                    success = swissDAO.updateSwissMatchScore(numId, score1, score2, status);
+                }
 
                 if (success) {
                     out.print("{\"status\":\"success\",\"message\":\"Cập nhật tỷ số Swiss thành công!\"}");

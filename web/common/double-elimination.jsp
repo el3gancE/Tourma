@@ -12,6 +12,7 @@
     String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
     String tourneyName = "Giải Đấu Double Elimination";
     String deTeamsJson = "[]";
+    String dbMatchesJson = "[]";
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
 
@@ -64,7 +65,19 @@
                 sb.append("]");
                 deTeamsJson = sb.toString();
             }
+
+            dao.DoubleEliminationDAO deDao = new dao.DoubleEliminationDAO();
+            String jsonM = deDao.getMatchesJsonForFrontend(tourneyId, currentStage);
+            if (jsonM != null && !jsonM.trim().isEmpty() && !jsonM.trim().equals("[]")) {
+                dbMatchesJson = jsonM;
+            }
         } catch (Exception e) {}
+    }
+    if (request.getAttribute("dbMatchesJson") != null) {
+        String reqJson = (String) request.getAttribute("dbMatchesJson");
+        if (reqJson != null && !reqJson.trim().isEmpty() && !reqJson.trim().equals("[]")) {
+            dbMatchesJson = reqJson;
+        }
     }
 %>
 <!DOCTYPE html>
@@ -369,7 +382,8 @@
                     teamsList: finalTeams,
                     cutTarget: cutTarget,
                     tournamentType: tournamentType,
-                    stage: currentStage
+                    stage: currentStage,
+                    dbMatches: <%= dbMatchesJson %>
                 });
             });
         </script>

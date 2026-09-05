@@ -1,0 +1,230 @@
+﻿=== ALL localStorage.setItem CALLS IN WEB ===
+
+Key: 'tourma_tier_' + tournamentId
+  Files (1): common\configure-tournament-format.jsp
+  Value samples: tier
+
+Key: "tourma_type_" + tournamentId
+  Files (1): common\configure-tournament-format.jsp
+  Value samples: selectedType
+
+Key: storageKeyFormat
+  Files (1): common\configure-tournament-format.jsp
+  Value samples: selectedVal
+
+Key: 'tourma_multi_config_' + tournamentId
+  Files (2): common\configure-tournament-format.jsp, js\swiss-stage.js
+  Value samples: JSON.stringify(multiConfig | JSON.stringify(multiCfg | JSON.stringify(mCfg
+
+Key: 'tourma_rr_config_' + tournamentId
+  Files (1): common\configure-tournament-format.jsp
+  Value samples: JSON.stringify(rrConfig
+
+Key: 'tourma_advance_count_' + tournamentId
+  Files (1): common\configure-tournament-format.jsp
+  Value samples: advanceCountToSave
+
+Key: 'tourma_cut_target_' + tournamentId
+  Files (1): common\configure-tournament-format.jsp
+  Value samples: advanceCountToSave
+
+Key: localStorageKey
+  Files (1): common\configure-tournament-teams.jsp
+  Value samples: JSON.stringify(currentTeamsList | JSON.stringify(currentTeamsList
+
+Key: 'tourma_teams_snapshot_' + tournamentId
+  Files (1): common\configure-tournament-teams.jsp
+  Value samples: JSON.stringify(initialTeamsSnapshot | JSON.stringify(currentTeamsList | JSON.stringify(currentTeamsList
+
+Key: 'tourma_hide_seed_config_' + tournamentId
+  Files (1): common\configure-tournament-teams.jsp
+  Value samples: JSON.stringify(cfg
+
+Key: 'tourma_type_' + tourneyId
+  Files (3): common\double-elimination.jsp, common\round-robin.jsp, common\single-elimination.jsp
+  Value samples: tournamentType | tType | isMultiStage ? 'MULTI_STAGE' : 'SINGLE_STAGE'
+
+Key: 'tourma_advance_count_' + tourneyId
+  Files (2): common\double-elimination.jsp, common\single-elimination.jsp
+  Value samples: cfgAdv | cfgAdv
+
+Key: 'tourma_cut_target_' + tourneyId
+  Files (2): common\double-elimination.jsp, common\single-elimination.jsp
+  Value samples: cfgAdv | cfgAdv
+
+Key: 'tourma_group_matches_' + tid
+  Files (1): common\group-standing.jsp
+  Value samples: JSON.stringify(gMatches | JSON.stringify(gMatches
+
+Key: 'tourma_points_config_' + tid
+  Files (1): common\rolling\rolling-point-config.jsp
+  Value samples: JSON.stringify(cfg
+
+Key: 'tourma_points_config_' + tourneyId
+  Files (1): common\rolling\rolling-point-config.jsp
+  Value samples: JSON.stringify(config
+
+Key: 'tourma_de_round_inputs_' + self.tournamentId
+  Files (1): js\double-elimination.js
+  Value samples: JSON.stringify(self.roundRandomInputs | JSON.stringify(self.roundRandomInputs | JSON.stringify(self.roundRandomInputs
+
+Key: 'tourma_de_view_' + this.tournamentId
+  Files (1): js\double-elimination.js
+  Value samples: mode
+
+Key: storageKey
+  Files (3): js\double-elimination.js, js\single-elimination.js, js\swiss-stage.js
+  Value samples: this.isQuickMode ? 'true' : 'false' | this.isQuickMode ? 'true' : 'false' | JSON.stringify(matchesMap
+
+Key: 'tourma_multi_config_' + this.tournamentId
+  Files (4): js\double-elimination.js, js\group-stage.js, js\round-robin.js, js\single-elimination.js
+  Value samples: JSON.stringify(mCfg | JSON.stringify(multiCfg | JSON.stringify(multiCfg
+
+Key: sKey
+  Files (1): js\double-elimination.js
+  Value samples: JSON.stringify(this.bracketData
+
+Key: 'tourma_matches_stage2_' + this.tournamentId
+  Files (4): js\double-elimination.js, js\group-stage.js, js\round-robin.js, js\single-elimination.js
+  Value samples: JSON.stringify(this.matchesMap | JSON.stringify(seStage2Bracket.matchesMap || {} | JSON.stringify(deBracket.matchesMap || {}
+
+Key: 'tourma_matches_' + this.tournamentId
+  Files (1): js\double-elimination.js
+  Value samples: JSON.stringify(this.matchesMap
+
+Key: 'tourma_teams_' + this.tournamentId
+  Files (3): js\double-elimination.js, js\group-stage.js, js\round-robin.js
+  Value samples: JSON.stringify(this.teamsList | JSON.stringify(this.teamsList | JSON.stringify(this.teamsList
+
+Key: 'tourma_stage2_teams_' + this.tournamentId
+  Files (4): js\double-elimination.js, js\group-stage.js, js\round-robin.js, js\single-elimination.js
+  Value samples: JSON.stringify(finalStage2Teams | JSON.stringify(finalStage2Teams | JSON.stringify(finalStage2Teams
+
+Key: 'tourma_bracket_stage2_' + this.tournamentId
+  Files (4): js\double-elimination.js, js\group-stage.js, js\round-robin.js, js\single-elimination.js
+  Value samples: JSON.stringify(seStage2Bracket | JSON.stringify(seBracket | JSON.stringify(seStage2Bracket
+
+Key: 'tourma_de_matches_stage2_' + this.tournamentId
+  Files (3): js\double-elimination.js, js\group-stage.js, js\round-robin.js
+  Value samples: JSON.stringify(deBracket | JSON.stringify(deBracket | JSON.stringify(deBracket
+
+Key: 'tourma_rr_matches_' + this.tournamentId
+  Files (2): js\double-elimination.js, js\single-elimination.js
+  Value samples: JSON.stringify(rrBracket | JSON.stringify(rrBracket
+
+Key: 'tourma_stage1_completed_' + this.tournamentId
+  Files (4): js\double-elimination.js, js\group-stage.js, js\round-robin.js, js\single-elimination.js
+  Value samples: 'true' | 'true' | 'true'
+
+Key: 'tourma_final_locked_' + this.tournamentId
+  Files (1): js\final-stage-popup.js
+  Value samples: 'true'
+
+Key: 'tourma_champion_' + this.tournamentId
+  Files (1): js\final-stage-popup.js
+  Value samples: this.championName
+
+Key: 'tourma_group_assignments_' + tournamentId
+  Files (1): js\group-stage.js
+  Value samples: JSON.stringify(updatedGroups
+
+Key: 'tourma_group_assignments_' + this.tournamentId
+  Files (2): js\group-stage.js, js\manage-group.js
+  Value samples: JSON.stringify(this.groups | JSON.stringify(this.groups
+
+Key: 'tourma_group_matches_' + this.tournamentId
+  Files (1): js\group-stage.js
+  Value samples: JSON.stringify(this.groupMatches
+
+Key: 'tourma_rr_matches_stage2_' + this.tournamentId
+  Files (2): js\group-stage.js, js\round-robin.js
+  Value samples: JSON.stringify(rrBracket | JSON.stringify(rrBracket
+
+Key: 'tourma_teams_' + tid
+  Files (1): js\rolling\rolling-tournament-teams.js
+  Value samples: JSON.stringify(teamNamesList | JSON.stringify(teamNames
+
+Key: 'tourma_hide_seed_config_' + tid
+  Files (1): js\rolling\rolling-tournament-teams.js
+  Value samples: JSON.stringify(cfg
+
+Key: 'tourma_advance_count_' + this.tournamentId
+  Files (1): js\round-robin.js
+  Value samples: cfgAdv
+
+Key: 'tourma_cut_target_' + this.tournamentId
+  Files (1): js\round-robin.js
+  Value samples: cfgAdv
+
+Key: storageKeyRR
+  Files (1): js\round-robin.js
+  Value samples: JSON.stringify(payload
+
+Key: storageKeyMatches
+  Files (1): js\round-robin.js
+  Value samples: JSON.stringify(this.matchesMap
+
+Key: 'tourma_rr_round_inputs_' + self.tournamentId
+  Files (1): js\round-robin.js
+  Value samples: JSON.stringify(self.roundRandomInputs
+
+Key: 'tourma_round_inputs_' + self.tournamentId
+  Files (1): js\single-elimination.js
+  Value samples: JSON.stringify(self.roundRandomInputs
+
+Key: storageKeyViewMode
+  Files (1): js\single-elimination.js
+  Value samples: mode
+
+Key: key
+  Files (1): js\single-elimination.js
+  Value samples: JSON.stringify(dataObj
+
+Key: 'tourma_de_matches_' + this.tournamentId
+  Files (1): js\single-elimination.js
+  Value samples: JSON.stringify(deBracket
+
+Key: 'tourma_stage1_locked_' + tid
+  Files (1): js\stage-end-popup.js
+  Value samples: 'true'
+
+Key: 'tourma_stage1_completed_' + tid
+  Files (1): js\stage-end-popup.js
+  Value samples: 'true'
+
+Key: 'tourma_stage1_locked_' + this.tournamentId
+  Files (1): js\stage-end-popup.js
+  Value samples: 'false'
+
+Key: "tourma_swiss_quick_mode_" + tournamentId
+  Files (1): js\swiss-stage.js
+  Value samples: isQuickMode ? "true" : "false"
+
+Key: 'tourma_stage2_teams_' + tournamentId
+  Files (1): js\swiss-stage.js
+  Value samples: JSON.stringify(shuffledStage2Teams
+
+Key: 'tourma_bracket_stage2_' + tournamentId
+  Files (1): js\swiss-stage.js
+  Value samples: JSON.stringify(seBracket
+
+Key: 'tourma_matches_stage2_' + tournamentId
+  Files (1): js\swiss-stage.js
+  Value samples: JSON.stringify(seBracket.matchesMap || {}
+
+Key: 'tourma_de_matches_' + tournamentId
+  Files (1): js\swiss-stage.js
+  Value samples: JSON.stringify(deBracket
+
+Key: 'tourma_rr_matches_' + tournamentId
+  Files (1): js\swiss-stage.js
+  Value samples: JSON.stringify(rrBracket
+
+Key: storageKeyTeams
+  Files (1): js\swiss-stage.js
+  Value samples: JSON.stringify(teamsList
+
+Key: "tourma_swiss_view_mode_" + tournamentId
+  Files (1): js\swiss-stage.js
+  Value samples: mode
+

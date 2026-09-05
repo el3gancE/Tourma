@@ -1,5 +1,6 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="dao.TournamentDAO" %>
+<%@ page import="dao.GroupStageDAO" %>
 <%@ page import="model.Tournament" %>
 <%
     String tournamentId = request.getParameter("id");
@@ -11,6 +12,15 @@
     Tournament tourney = tDao.getTournamentById(tournamentId);
 
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
+
+    String dbMatchesJson = "[]";
+    try {
+        GroupStageDAO gsDao = new GroupStageDAO();
+        String j = gsDao.getMatchesJsonForFrontend(tournamentId, 1);
+        if (j != null && !j.trim().isEmpty() && !j.trim().equals("[]")) {
+            dbMatchesJson = j;
+        }
+    } catch (Exception ignore) {}
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -82,6 +92,9 @@
 
     <script src="${pageContext.request.contextPath}/js/group-standing.js"></script>
     <script>
+        window.groupTournamentId = "<%= tournamentId %>";
+        window.dbGroupMatches = <%= dbMatchesJson %>;
+
         document.addEventListener('DOMContentLoaded', function () {
             var urlParams = new URLSearchParams(window.location.search);
             var tid = urlParams.get('id') || 'demo';
@@ -96,6 +109,17 @@
 
                 var mRaw = localStorage.getItem('tourma_group_matches_' + tid);
                 if (mRaw) matches = JSON.parse(mRaw);
+
+                // Fallback to DB matches if localStorage is missing matches
+                if ((!matches || Object.keys(matches).length === 0) && window.dbGroupMatches && window.dbGroupMatches.length > 0) {
+                    matches = {};
+                    for (var i = 0; i < window.dbGroupMatches.length; i++) {
+                        var dbm = window.dbGroupMatches[i];
+                        var gk = dbm.groupKey || 'A';
+                        if (!matches[gk]) matches[gk] = [];
+                        matches[gk].push(dbm);
+                    }
+                }
 
                 var groupCfgRaw = localStorage.getItem('tourma_group_config_' + tid);
                 if (groupCfgRaw) {
@@ -140,23 +164,31 @@
 
             try {
                 var mRaw = localStorage.getItem('tourma_group_matches_' + tid);
-                if (!mRaw) return;
-                var gMatches = JSON.parse(mRaw);
+                if (mRaw) {
+                    var gMatches = JSON.parse(mRaw);
 
-                for (var gKey in gMatches) {
-                    var mList = gMatches[gKey] || [];
-                    for (var i = 0; i < mList.length; i++) {
-                        var m = mList[i];
-                        m.team1.score = '';
-                        m.team2.score = '';
-                        m.winnerId = null;
-                        m.status = 'SCHEDULED';
+                    for (var gKey in gMatches) {
+                        var mList = gMatches[gKey] || [];
+                        for (var i = 0; i < mList.length; i++) {
+                            var m = mList[i];
+                            m.team1.score = '';
+                            m.team2.score = '';
+                            m.winnerId = null;
+                            m.status = 'SCHEDULED';
+                        }
                     }
-                }
 
-                localStorage.setItem('tourma_group_matches_' + tid, JSON.stringify(gMatches));
-                location.reload();
+                    localStorage.setItem('tourma_group_matches_' + tid, JSON.stringify(gMatches));
+                }
             } catch(e) {}
+
+            fetch('group-stage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: 'action=reset&tournamentId=' + encodeURIComponent(tid) + '&stage=1'
+            }).finally(function() {
+                location.reload();
+            });
         }
 
         function randomizeAllMatchesStanding(tid) {
@@ -164,6 +196,7 @@
                 var mRaw = localStorage.getItem('tourma_group_matches_' + tid);
                 if (!mRaw) return;
                 var gMatches = JSON.parse(mRaw);
+                var allMatches = [];
 
                 for (var gKey in gMatches) {
                     var mList = gMatches[gKey] || [];
@@ -185,12 +218,28 @@
                         } else {
                             m.winnerId = 'draw';
                         }
+                        allMatches.push(m);
                     }
                 }
 
                 localStorage.setItem('tourma_group_matches_' + tid, JSON.stringify(gMatches));
+
+                var params = new URLSearchParams();
+                params.append('action', 'batchSync');
+                params.append('tournamentId', tid);
+                params.append('stage', '1');
+                params.append('matchesJson', JSON.stringify(allMatches));
+
+                fetch('group-stage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                    body: params.toString()
+                }).finally(function() {
+                    location.reload();
+                });
+            } catch(e) {
                 location.reload();
-            } catch(e) {}
+            }
         }
     </script>
 </body>

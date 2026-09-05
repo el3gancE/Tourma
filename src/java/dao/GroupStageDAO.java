@@ -16,91 +16,27 @@ import java.util.regex.Pattern;
 import model.Match;
 
 /**
- * Dedicated DAO for Swiss System Tournament Format.
- * Manages Swiss round matches (33 matches across 5 rounds), Buchholz standings,
+ * Dedicated Data Access Object for Group Stage Format.
+ * Manages matches partitioned into groups (A, B, C...),
  * and SQL Server 'matches' table persistence.
  */
-public class SwissSystemDAO extends DBContext {
+public class GroupStageDAO extends DBContext {
 
-    public static class SWMatchDTO {
-        public String matchKey;
-        public int roundIndex;
+    public static class GSMatchDTO {
+        public String matchId;
+        public String groupKey;
+        public int roundNumber;
         public int matchNumber;
-        public String recordPool;
         public String team1Name;
         public Integer team1Score;
         public String team2Name;
         public Integer team2Score;
-        public String winnerId;
+        public String winnerId; // "team1", "team2", or "draw"
         public String status;
     }
 
     /**
-     * Fetch all Swiss matches for a tournament, grouped by Round Number
-     */
-    public Map<Integer, List<Match>> getSwissRounds(int tournamentId) {
-        return getSwissRounds(String.valueOf(tournamentId));
-    }
-
-    public Map<Integer, List<Match>> getSwissRounds(String tournamentId) {
-        Map<Integer, List<Match>> roundMap = new HashMap<>();
-        List<Match> matchList = getMatchesByTournamentId(tournamentId);
-
-        for (Match m : matchList) {
-            roundMap.computeIfAbsent(m.getRoundNumber(), k -> new ArrayList<>()).add(m);
-        }
-
-        return roundMap;
-    }
-
-    /**
-     * Query matches from database table
-     */
-    public List<Match> getMatchesByTournamentId(String tournamentId) {
-        List<Match> list = new ArrayList<>();
-        String sql = "SELECT m.*, "
-                + "t1.raw_name AS t1_name, t1.original_seed AS t1_seed, "
-                + "t2.raw_name AS t2_name, t2.original_seed AS t2_seed, "
-                + "tw.raw_name AS winner_name "
-                + "FROM matches m "
-                + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "WHERE m.tournament_id = ? "
-                + "ORDER BY m.round_number ASC, m.id ASC";
-
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tournamentId);
-            try (ResultSet rs = ps.executeQuery()) {
-                int seq = 1;
-                while (rs.next()) {
-                    Match m = new Match();
-                    String rawId = rs.getString("id");
-                    m.setId(parseNumericMatchId(rawId, seq++));
-                    m.setRoundNumber(rs.getInt("round_number"));
-                    m.setTeam1Name(rs.getString("t1_name"));
-                    m.setTeam2Name(rs.getString("t2_name"));
-
-                    int s1 = rs.getInt("score1");
-                    if (!rs.wasNull()) m.setTeam1Score(s1);
-
-                    int s2 = rs.getInt("score2");
-                    if (!rs.wasNull()) m.setTeam2Score(s2);
-
-                    String status = rs.getString("status");
-                    m.setStatus("FINISHED".equalsIgnoreCase(status) ? "COMPLETED" : (status != null ? status : "SCHEDULED"));
-                    list.add(m);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-    /**
-     * Get JSON array of Swiss matches for frontend engine
+     * Get JSON array of Group Stage matches for frontend engine
      */
     public String getMatchesJsonForFrontend(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) {
@@ -137,11 +73,11 @@ public class SwissSystemDAO extends DBContext {
                     String matchCode = rs.getString("match_code");
                     if (matchCode == null) matchCode = "";
 
-                    // Extract pool key if present in match_code, e.g. "Vòng 1 (0-0) #1"
-                    String poolKey = "0-0";
-                    Matcher poolMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(matchCode);
-                    if (poolMatcher.find()) {
-                        poolKey = poolMatcher.group(1);
+                    // Extract group key, e.g. "Bảng A - Trận #1"
+                    String groupKey = "A";
+                    Matcher gMatcher = Pattern.compile("Bảng\\s+([A-Za-z0-9]+)").matcher(matchCode);
+                    if (gMatcher.find()) {
+                        groupKey = gMatcher.group(1);
                     }
 
                     int matchNumber = seq;
@@ -152,11 +88,11 @@ public class SwissSystemDAO extends DBContext {
 
                     String t1Name = rs.getString("t1_name");
                     int s1Val = rs.getInt("score1");
-                    int s1 = rs.wasNull() ? 0 : s1Val;
+                    String s1 = rs.wasNull() ? "" : String.valueOf(s1Val);
 
                     String t2Name = rs.getString("t2_name");
                     int s2Val = rs.getInt("score2");
-                    int s2 = rs.wasNull() ? 0 : s2Val;
+                    String s2 = rs.wasNull() ? "" : String.valueOf(s2Val);
 
                     String winnerIdCol = rs.getString("winner_id");
                     String winnerSlot = "";
@@ -165,6 +101,8 @@ public class SwissSystemDAO extends DBContext {
                             winnerSlot = "team1";
                         } else if (winnerIdCol.equals(rs.getString("team2_id"))) {
                             winnerSlot = "team2";
+                        } else {
+                            winnerSlot = "draw";
                         }
                     }
 
@@ -173,22 +111,20 @@ public class SwissSystemDAO extends DBContext {
                         status = "COMPLETED";
                     }
 
-                    String matchKey = "R" + roundNumber + "_" + poolKey + "_M" + matchNumber;
+                    String matchId = "GS_" + groupKey + "_" + matchNumber;
                     if (rawId != null && rawId.contains("_M")) {
-                        matchKey = rawId.substring(rawId.indexOf("_M") + 2);
+                        matchId = rawId.substring(rawId.indexOf("_M") + 2);
                     }
 
                     sb.append("{");
-                    sb.append("\"matchKey\":\"").append(escapeJson(matchKey)).append("\",");
-                    sb.append("\"roundIndex\":").append(roundNumber).append(",");
-                    sb.append("\"recordPool\":\"").append(escapeJson(poolKey)).append("\",");
+                    sb.append("\"matchId\":\"").append(escapeJson(matchId)).append("\",");
+                    sb.append("\"groupKey\":\"").append(escapeJson(groupKey)).append("\",");
+                    sb.append("\"roundNumber\":").append(roundNumber).append(",");
                     sb.append("\"matchNumber\":").append(matchNumber).append(",");
-                    sb.append("\"team1\":{\"name\":\"").append(escapeJson(t1Name != null ? t1Name : "TBD")).append("\"},");
-                    sb.append("\"team2\":{\"name\":\"").append(escapeJson(t2Name != null ? t2Name : "TBD")).append("\"},");
-                    sb.append("\"team1Score\":").append(s1).append(",");
-                    sb.append("\"team2Score\":").append(s2).append(",");
+                    sb.append("\"team1\":{\"name\":\"").append(escapeJson(t1Name != null ? t1Name : "")).append("\",\"score\":\"").append(escapeJson(s1)).append("\"},");
+                    sb.append("\"team2\":{\"name\":\"").append(escapeJson(t2Name != null ? t2Name : "")).append("\",\"score\":\"").append(escapeJson(s2)).append("\"},");
                     sb.append("\"winnerId\":").append(winnerSlot.isEmpty() ? "null" : "\"" + winnerSlot + "\"").append(",");
-                    sb.append("\"status\":\"").append(escapeJson(status != null ? status : "PENDING")).append("\"");
+                    sb.append("\"status\":\"").append(escapeJson(status != null ? status : "SCHEDULED")).append("\"");
                     sb.append("}");
                 }
             }
@@ -201,10 +137,10 @@ public class SwissSystemDAO extends DBContext {
     }
 
     /**
-     * Batch Sync / Persist full Swiss stage structure to 'matches' table
+     * Batch Sync / Persist full Group Stage fixtures to 'matches' table
      */
-    public boolean syncSwissMatches(String tournamentId, int stageOrder, String matchesDataJson) {
-        List<SWMatchDTO> list = parseSWMatchJson(matchesDataJson);
+    public boolean syncGroupMatches(String tournamentId, int stageOrder, String matchesDataJson) {
+        List<GSMatchDTO> list = parseGSMatchJson(matchesDataJson);
         if (list.isEmpty()) {
             return false;
         }
@@ -235,27 +171,21 @@ public class SwissSystemDAO extends DBContext {
                     + "            source.team1_id, source.team2_id, source.score1, source.score2, source.winner_id, source.status);";
 
             try (PreparedStatement ps = conn.prepareStatement(mergeSql)) {
-                for (SWMatchDTO m : list) {
-                    String matchDbId = tournamentId + "_S" + stageOrder + "_M" + m.matchKey;
+                for (GSMatchDTO m : list) {
+                    String matchDbId = tournamentId + "_S" + stageOrder + "_M" + m.matchId;
                     String t1Id = lookupTeamId(teamMap, m.team1Name);
                     String t2Id = lookupTeamId(teamMap, m.team2Name);
                     String winnerId = "team1".equalsIgnoreCase(m.winnerId) ? t1Id : ("team2".equalsIgnoreCase(m.winnerId) ? t2Id : null);
 
-                    String status = "PENDING";
-                    if ("COMPLETED".equalsIgnoreCase(m.status) || "FINISHED".equalsIgnoreCase(m.status) || "DONE".equalsIgnoreCase(m.status)) {
-                        status = "FINISHED";
-                    } else if ("READY".equalsIgnoreCase(m.status)) {
-                        status = "READY";
-                    }
-
-                    String matchCode = "Vòng " + m.roundIndex + " (" + (m.recordPool != null ? m.recordPool : "0-0") + ") #" + m.matchNumber;
+                    String status = ("COMPLETED".equalsIgnoreCase(m.status) || "FINISHED".equalsIgnoreCase(m.status) || (m.team1Score != null && m.team2Score != null)) ? "FINISHED" : "PENDING";
+                    String matchCode = "Bảng " + (m.groupKey != null ? m.groupKey : "A") + " - Trận #" + m.matchNumber;
 
                     ps.setString(1, matchDbId);
                     ps.setString(2, tournamentId);
                     ps.setString(3, stageId);
-                    ps.setInt(4, m.roundIndex);
+                    ps.setInt(4, m.roundNumber);
                     ps.setString(5, matchCode);
-                    ps.setString(6, "SWISS");
+                    ps.setString(6, "GROUP");
                     setNullableString(ps, 7, t1Id);
                     setNullableString(ps, 8, t2Id);
                     setNullableInt(ps, 9, m.team1Score);
@@ -275,11 +205,11 @@ public class SwissSystemDAO extends DBContext {
     }
 
     /**
-     * Update score for a Swiss match
+     * Update score and status for a Group Stage match
      */
-    public boolean updateSwissMatchScore(String tournamentId, int stageOrder, String matchKey,
-                                         Integer score1, Integer score2, String status,
-                                         String team1Name, String team2Name, String winner) {
+    public boolean updateGroupMatchScore(String tournamentId, int stageOrder, String matchId,
+                                         Integer score1, Integer score2, String winnerFlag,
+                                         String team1Name, String team2Name) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) {
             return false;
         }
@@ -287,26 +217,24 @@ public class SwissSystemDAO extends DBContext {
         try (Connection conn = getConnection()) {
             String stageId = getOrCreateStageId(conn, tournamentId, stageOrder);
             Map<String, String> teamMap = getTeamNameToIdMap(conn, tournamentId);
-            String matchDbId = tournamentId + "_S" + stageOrder + "_M" + matchKey;
+            String matchDbId = tournamentId + "_S" + stageOrder + "_M" + matchId;
             String t1Id = lookupTeamId(teamMap, team1Name);
             String t2Id = lookupTeamId(teamMap, team2Name);
 
             String winnerId = null;
-            if ("team1".equalsIgnoreCase(winner)) {
+            if ("team1".equalsIgnoreCase(winnerFlag)) {
                 winnerId = t1Id;
-            } else if ("team2".equalsIgnoreCase(winner)) {
+            } else if ("team2".equalsIgnoreCase(winnerFlag)) {
                 winnerId = t2Id;
-            } else if (winner != null && !winner.trim().isEmpty()) {
-                winnerId = lookupTeamId(teamMap, winner);
+            } else if (winnerFlag != null && !winnerFlag.trim().isEmpty() && !"draw".equalsIgnoreCase(winnerFlag)) {
+                winnerId = lookupTeamId(teamMap, winnerFlag);
             }
             if (winnerId == null && score1 != null && score2 != null) {
                 winnerId = (score1 > score2) ? t1Id : ((score2 > score1) ? t2Id : null);
             }
 
-            String dbStatus = ("COMPLETED".equalsIgnoreCase(status) || "FINISHED".equalsIgnoreCase(status) || (score1 != null && score2 != null)) ? "FINISHED" : "READY";
-
             String updateSql = "UPDATE matches SET "
-                    + "score1 = ?, score2 = ?, status = ?, "
+                    + "score1 = ?, score2 = ?, status = 'FINISHED', "
                     + "team1_id = COALESCE(?, team1_id), "
                     + "team2_id = COALESCE(?, team2_id), "
                     + "winner_id = ? "
@@ -316,29 +244,27 @@ public class SwissSystemDAO extends DBContext {
             try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
                 setNullableInt(ps, 1, score1);
                 setNullableInt(ps, 2, score2);
-                ps.setString(3, dbStatus);
-                setNullableString(ps, 4, t1Id);
-                setNullableString(ps, 5, t2Id);
-                setNullableString(ps, 6, winnerId);
-                ps.setString(7, matchDbId);
-                ps.setString(8, "%_M" + matchKey);
+                setNullableString(ps, 3, t1Id);
+                setNullableString(ps, 4, t2Id);
+                setNullableString(ps, 5, winnerId);
+                ps.setString(6, matchDbId);
+                ps.setString(7, "%_M" + matchId);
                 updated = ps.executeUpdate();
             }
 
             if (updated == 0) {
                 String insertSql = "INSERT INTO matches (id, tournament_id, stage_id, round_number, match_code, bracket_type, team1_id, team2_id, score1, score2, winner_id, status) "
-                        + "VALUES (?, ?, ?, 1, ?, 'SWISS', ?, ?, ?, ?, ?, ?)";
+                        + "VALUES (?, ?, ?, 1, ?, 'GROUP', ?, ?, ?, ?, ?, 'FINISHED')";
                 try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
                     psIns.setString(1, matchDbId);
                     psIns.setString(2, tournamentId);
                     psIns.setString(3, stageId);
-                    psIns.setString(4, "Trận #" + matchKey);
+                    psIns.setString(4, "Trận #" + matchId);
                     setNullableString(psIns, 5, t1Id);
                     setNullableString(psIns, 6, t2Id);
                     setNullableInt(psIns, 7, score1);
                     setNullableInt(psIns, 8, score2);
                     setNullableString(psIns, 9, winnerId);
-                    psIns.setString(10, dbStatus);
                     psIns.executeUpdate();
                 }
             }
@@ -351,27 +277,9 @@ public class SwissSystemDAO extends DBContext {
     }
 
     /**
-     * Backward-compatible simple updateSwissMatchScore
+     * Reset all Group Stage matches for a tournament stage
      */
-    public boolean updateSwissMatchScore(int matchId, int score1, int score2, String status) {
-        String dbStatus = ("COMPLETED".equalsIgnoreCase(status) || "FINISHED".equalsIgnoreCase(status)) ? "FINISHED" : "READY";
-        String updateSql = "UPDATE matches SET score1 = ?, score2 = ?, status = ? WHERE id LIKE ?";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(updateSql)) {
-            ps.setInt(1, score1);
-            ps.setInt(2, score2);
-            ps.setString(3, dbStatus);
-            ps.setString(4, "%_M" + matchId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /**
-     * Reset Swiss matches for a stage
-     */
-    public boolean resetSwissMatches(String tournamentId, int stageOrder) {
+    public boolean resetGroupMatches(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) {
             return false;
         }
@@ -426,9 +334,9 @@ public class SwissSystemDAO extends DBContext {
         }
 
         String stageId = tournamentId + "_S" + stageOrder;
-        String stageName = (stageOrder == 2) ? "Giai đoạn 2 (Swiss System)" : "Giai đoạn 1 (Swiss System)";
+        String stageName = (stageOrder == 2) ? "Giai đoạn 2 (Group Stage)" : "Giai đoạn 1 (Group Stage)";
         String insertStage = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format, status) "
-                + "VALUES (?, ?, ?, ?, 'SWISS_LITE', 'PENDING')";
+                + "VALUES (?, ?, ?, ?, 'GROUP_STAGE', 'PENDING')";
         try (PreparedStatement ps = conn.prepareStatement(insertStage)) {
             ps.setString(1, stageId);
             ps.setString(2, tournamentId);
@@ -463,24 +371,11 @@ public class SwissSystemDAO extends DBContext {
     }
 
     private String lookupTeamId(Map<String, String> teamMap, String teamName) {
-        if (teamMap == null || teamMap.isEmpty() || teamName == null || teamName.trim().isEmpty() || "TBD".equalsIgnoreCase(teamName.trim())) {
+        if (teamMap == null || teamMap.isEmpty() || teamName == null || teamName.trim().isEmpty() || "BYE".equalsIgnoreCase(teamName.trim())) {
             return null;
         }
         String norm = teamName.trim().toLowerCase();
         return teamMap.get(norm);
-    }
-
-    private int parseNumericMatchId(String str, int defaultVal) {
-        if (str == null || str.trim().isEmpty()) return defaultVal;
-        try {
-            return Integer.parseInt(str.trim());
-        } catch (NumberFormatException e) {
-            Matcher m = Pattern.compile("(\\d+)$").matcher(str.trim());
-            if (m.find()) {
-                return Integer.parseInt(m.group(1));
-            }
-        }
-        return defaultVal;
     }
 
     private void setNullableString(PreparedStatement ps, int paramIndex, String val) throws SQLException {
@@ -504,8 +399,8 @@ public class SwissSystemDAO extends DBContext {
                 .replace("\t", "\\t");
     }
 
-    private List<SWMatchDTO> parseSWMatchJson(String json) {
-        List<SWMatchDTO> list = new ArrayList<>();
+    private List<GSMatchDTO> parseGSMatchJson(String json) {
+        List<GSMatchDTO> list = new ArrayList<>();
         if (json == null || json.trim().isEmpty()) return list;
 
         Pattern objPattern = Pattern.compile("\\{([^{}]+(?:\\{[^{}]*\\}[^{}]*)*)\\}");
@@ -513,15 +408,12 @@ public class SwissSystemDAO extends DBContext {
 
         while (objMatcher.find()) {
             String block = objMatcher.group(1);
-            SWMatchDTO dto = new SWMatchDTO();
+            GSMatchDTO dto = new GSMatchDTO();
 
-            dto.matchKey = parseJsonString(block, "matchKey", null);
-            if (dto.matchKey == null) {
-                dto.matchKey = parseJsonString(block, "id", "M" + (list.size() + 1));
-            }
-            dto.roundIndex = parseJsonInt(block, "roundIndex", parseJsonInt(block, "roundNumber", 1));
+            dto.matchId = parseJsonString(block, "matchId", "GS_A_" + (list.size() + 1));
+            dto.groupKey = parseJsonString(block, "groupKey", "A");
+            dto.roundNumber = parseJsonInt(block, "roundNumber", 1);
             dto.matchNumber = parseJsonInt(block, "matchNumber", list.size() + 1);
-            dto.recordPool = parseJsonString(block, "recordPool", "0-0");
 
             String t1Block = extractSubObject(block, "team1");
             if (t1Block != null) {

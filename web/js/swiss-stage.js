@@ -630,7 +630,20 @@
     }
     var storageKey = (currentStage === 2) ? ("tourma_swiss_matches_stage2_" + tournamentId) : ("tourma_swiss_matches_" + tournamentId);
     try { localStorage.removeItem(storageKey); } catch(e) {}
+
+    // Send reset to backend DB
+    var rParams = new URLSearchParams();
+    rParams.append('action', 'reset');
+    rParams.append('tournamentId', tournamentId);
+    rParams.append('stage', currentStage);
+    fetch((window.swissContextPath || '') + '/common/swiss-stage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: rParams.toString()
+    }).catch(function() {});
+
     initFullSwissMatchesStructure();
+    syncSwissMatchesToDB(false);
     if (currentStage === 1) {
       try {
         localStorage.removeItem('tourma_stage2_teams_' + tournamentId);
@@ -774,15 +787,53 @@
     }
 
     // 3. Matches Loading
-    try {
-      var rawM = localStorage.getItem(storageKeyMatches);
-      if (rawM) {
-        matchesMap = JSON.parse(rawM);
+    var hasDbMatches = (window.dbSwissMatches && Array.isArray(window.dbSwissMatches) && window.dbSwissMatches.length > 0);
+    if (hasDbMatches) {
+      initFullSwissMatchesStructure();
+      for (var di = 0; di < window.dbSwissMatches.length; di++) {
+        var dm = window.dbSwissMatches[di];
+        var mk = dm.matchKey;
+        if (matchesMap[mk]) {
+          var targetM = matchesMap[mk];
+          if (dm.team1 && dm.team1.name && dm.team1.name !== 'TBD') targetM.team1 = dm.team1;
+          if (dm.team2 && dm.team2.name && dm.team2.name !== 'TBD') targetM.team2 = dm.team2;
+          targetM.team1Score = (dm.team1Score !== undefined && dm.team1Score !== null) ? dm.team1Score : 0;
+          targetM.team2Score = (dm.team2Score !== undefined && dm.team2Score !== null) ? dm.team2Score : 0;
+          targetM.winnerId = dm.winnerId || null;
+          targetM.status = dm.status || 'PENDING';
+        }
       }
-    } catch (e) {}
-
-    // Auto-heal / repair matchesMap structure
-    validateAndRepairMatchesMap();
+      try {
+        var rawLocal = localStorage.getItem(storageKeyMatches);
+        if (rawLocal) {
+          var parsedLocal = JSON.parse(rawLocal);
+          if (parsedLocal && typeof parsedLocal === 'object') {
+            Object.keys(parsedLocal).forEach(function(k) {
+              var pl = parsedLocal[k];
+              var tm = matchesMap[k];
+              if (pl && tm && (pl.status === 'COMPLETED' || pl.winnerId) && (!tm.winnerId || tm.status !== 'COMPLETED')) {
+                tm.team1 = pl.team1;
+                tm.team2 = pl.team2;
+                tm.team1Score = pl.team1Score;
+                tm.team2Score = pl.team2Score;
+                tm.winnerId = pl.winnerId;
+                tm.status = pl.status;
+              }
+            });
+          }
+        }
+      } catch (e) {}
+      saveSwissMatches();
+    } else {
+      try {
+        var rawM = localStorage.getItem(storageKeyMatches);
+        if (rawM) {
+          matchesMap = JSON.parse(rawM);
+        }
+      } catch (e) {}
+      validateAndRepairMatchesMap();
+      syncSwissMatchesToDB(false);
+    }
 
     // Render initial view mode
     switchSwissViewMode(currentViewMode);
@@ -797,7 +848,51 @@
       var storageKey = (currentStage === 2) ? ("tourma_swiss_matches_stage2_" + tournamentId) : ("tourma_swiss_matches_" + tournamentId);
       localStorage.setItem(storageKey, JSON.stringify(matchesMap));
       checkSwissStageCompletion();
+      syncSwissMatchesToDB(true);
     } catch (e) {}
+  }
+
+  function syncSwissMatchesToDB(isUpdateOnly) {
+    if (!tournamentId || !matchesMap) return;
+    var list = [];
+    Object.keys(matchesMap).forEach(function(k) {
+      var m = matchesMap[k];
+      if (!m) return;
+      var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
+      var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
+      list.push({
+        matchKey: m.matchKey || k,
+        roundIndex: m.roundIndex || 1,
+        matchNumber: m.matchNumber || 1,
+        recordPool: m.recordPool || '0-0',
+        team1Name: t1Name,
+        team1Score: (m.team1Score !== undefined && m.team1Score !== null) ? m.team1Score : 0,
+        team2Name: t2Name,
+        team2Score: (m.team2Score !== undefined && m.team2Score !== null) ? m.team2Score : 0,
+        winnerId: m.winnerId || null,
+        status: m.status || 'PENDING'
+      });
+    });
+    if (list.length === 0) return;
+
+    var stageParam = new URLSearchParams(window.location.search).get('stage');
+    var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
+    var contextPath = window.swissContextPath || '';
+    var url = contextPath + '/common/swiss-stage';
+
+    var params = new URLSearchParams();
+    params.append('action', 'batchSync');
+    params.append('tournamentId', tournamentId);
+    params.append('stage', currentStage);
+    params.append('matchesJson', JSON.stringify(list));
+
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: params.toString()
+    }).then(function(res) { return res.json(); })
+      .then(function(data) { console.log('[Swiss DB batchSync]', data); })
+      .catch(function(err) { console.warn('[Swiss DB batchSync error]', err); });
   }
 
   // View Mode Switcher: LIST vs BRACKET (Persisted to localStorage)
@@ -1416,10 +1511,25 @@
 
       // Sync via AJAX with Servlet
       try {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", window.swissContextPath + "/common/swiss-stage", true);
-        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-        xhr.send("matchId=" + (m.id || 1) + "&team1Score=" + s1 + "&team2Score=" + s2 + "&status=COMPLETED");
+        var stageParam = new URLSearchParams(window.location.search).get('stage');
+        var curStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
+        var p = new URLSearchParams();
+        p.append('action', 'updateScore');
+        p.append('tournamentId', tournamentId);
+        p.append('stage', curStage);
+        p.append('matchKey', m.matchKey);
+        p.append('team1Score', s1);
+        p.append('team2Score', s2);
+        p.append('status', 'FINISHED');
+        p.append('team1Name', t1Name);
+        p.append('team2Name', t2Name);
+        p.append('winner', (s1 > s2) ? 'team1' : 'team2');
+
+        fetch((window.swissContextPath || '') + "/common/swiss-stage", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+          body: p.toString()
+        }).catch(function () {});
       } catch (e) {}
     });
   }

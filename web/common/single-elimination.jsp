@@ -2,6 +2,7 @@
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="dao.TournamentDAO"%>
 <%@page import="dao.ParticipantDAO"%>
+<%@page import="dao.SingleEliminationDAO"%>
 <%@page import="model.Tournament"%>
 <%@page import="model.Team"%>
 <%@page import="java.util.List"%>
@@ -9,6 +10,7 @@
     String tourneyId = request.getParameter("id");
     String tourneyName = "Giải Đấu Single Elimination";
     String teamsJson = "[]";
+    String dbMatchesJson = "[]";
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
     String stageParam = request.getParameter("stage");
@@ -54,6 +56,12 @@
                 }
                 sb.append("]");
                 teamsJson = sb.toString();
+            }
+
+            SingleEliminationDAO seDao = new SingleEliminationDAO();
+            String jsonM = seDao.getMatchesJsonForFrontend(tourneyId, currentStage);
+            if (jsonM != null && !jsonM.trim().isEmpty() && !jsonM.trim().equals("[]")) {
+                dbMatchesJson = jsonM;
             }
         } catch (Exception e) {}
     }
@@ -332,8 +340,9 @@
                     '| cutTarget(DB)=', <%= cutTarget %>,
                     '| tourma_multi_config_=', localStorage.getItem('tourma_multi_config_' + tourneyId),
                     '| tourma_advance_count_=', localStorage.getItem('tourma_advance_count_' + tourneyId));
-                window.SingleEliminationEngine.init(tourneyId, null, preloadedTeams, cutTarget, currentStage);
-                console.log('[JSP init] final cutTarget passed to engine=', cutTarget);
+                var dbMatches = <%= dbMatchesJson %>;
+                window.SingleEliminationEngine.init(tourneyId, dbMatches, preloadedTeams, cutTarget, currentStage);
+                console.log('[JSP init] final cutTarget passed to engine=', cutTarget, '| dbMatches loaded=', (dbMatches ? dbMatches.length : 0));
             });
         </script>
     </body>

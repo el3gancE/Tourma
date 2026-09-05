@@ -10,6 +10,7 @@
     String safeTourneyId = (tourneyId != null) ? tourneyId : "";
     String tourneyName = "Giải Đấu Vòng Tròn Tính Điểm";
     String teamsJson = "[]";
+    String dbMatchesJson = "[]";
     String stageParam = request.getParameter("stage");
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
     String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
@@ -50,7 +51,19 @@
                 sb.append("]");
                 teamsJson = sb.toString();
             }
+
+            dao.RoundRobinDAO rrDao = new dao.RoundRobinDAO();
+            String jsonM = rrDao.getMatchesJsonForFrontend(tourneyId, currentStage);
+            if (jsonM != null && !jsonM.trim().isEmpty() && !jsonM.trim().equals("[]")) {
+                dbMatchesJson = jsonM;
+            }
         } catch (Exception e) {}
+    }
+    if (request.getAttribute("dbMatchesJson") != null) {
+        String reqJson = (String) request.getAttribute("dbMatchesJson");
+        if (reqJson != null && !reqJson.trim().isEmpty() && !reqJson.trim().equals("[]")) {
+            dbMatchesJson = reqJson;
+        }
     }
 %>
 <!DOCTYPE html>
@@ -241,7 +254,7 @@
                     }
                     cutTarget = 0; // Stage 2 plays to find a champion!
                 }
-                window.TourmaRoundRobin.init(tourneyId, null, preloadedTeams, currentStage, cutTarget);
+                window.TourmaRoundRobin.init(tourneyId, <%= dbMatchesJson %>, preloadedTeams, currentStage, cutTarget);
             });
         </script>
     </body>

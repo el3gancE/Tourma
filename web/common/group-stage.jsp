@@ -16,9 +16,21 @@
 
     ParticipantDAO pDao = new ParticipantDAO();
     List<Team> dbTeamsList = null;
+    String dbMatchesJson = "[]";
     try {
         dbTeamsList = pDao.getTeamsByTournamentId(tournamentId);
+        dao.GroupStageDAO gsDao = new dao.GroupStageDAO();
+        String j = gsDao.getMatchesJsonForFrontend(tournamentId, 1);
+        if (j != null && !j.trim().isEmpty() && !j.trim().equals("[]")) {
+            dbMatchesJson = j;
+        }
     } catch (Exception ignore) {}
+    if (request.getAttribute("dbMatchesJson") != null) {
+        String reqJson = (String) request.getAttribute("dbMatchesJson");
+        if (reqJson != null && !reqJson.trim().isEmpty() && !reqJson.trim().equals("[]")) {
+            dbMatchesJson = reqJson;
+        }
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -116,6 +128,8 @@
 
     <!-- JS SCRIPTS -->
     <script>
+        window.groupTournamentId = "<%= tournamentId %>";
+        window.dbGroupMatches = <%= dbMatchesJson %>;
         window.serverTeams = [
             <% if (dbTeamsList != null && !dbTeamsList.isEmpty()) { 
                 for (int i = 0; i < dbTeamsList.size(); i++) {

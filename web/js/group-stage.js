@@ -251,9 +251,83 @@
                 this.divideTeamsIntoGroups();
             }
 
-            var needsRegenerate = false;
+            var dbMatches = window.dbGroupMatches;
+            var hasDbMatches = (dbMatches && Array.isArray(dbMatches) && dbMatches.length > 0);
             var savedMatchesRaw = localStorage.getItem('tourma_group_matches_' + this.tournamentId);
-            if (savedMatchesRaw) {
+
+            if (hasDbMatches) {
+                // 1. Generate base group matches
+                this.generateAllGroupMatches(true);
+
+                // 2. Restore score and status from DB matches
+                for (var i = 0; i < dbMatches.length; i++) {
+                    var dbm = dbMatches[i];
+                    var targetM = null;
+
+                    if (dbm.matchId && this.matchesMap[dbm.matchId]) {
+                        targetM = this.matchesMap[dbm.matchId];
+                    } else {
+                        var t1 = dbm.team1 ? dbm.team1.name : '';
+                        var t2 = dbm.team2 ? dbm.team2.name : '';
+                        for (var mid in this.matchesMap) {
+                            var cand = this.matchesMap[mid];
+                            if (cand.groupKey === dbm.groupKey && cand.team1 && cand.team1.name === t1 && cand.team2 && cand.team2.name === t2) {
+                                targetM = cand;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (targetM) {
+                        if (dbm.team1 && dbm.team1.score !== undefined && dbm.team1.score !== '') {
+                            targetM.team1.score = String(dbm.team1.score);
+                        } else if (dbm.team1Score != null) {
+                            targetM.team1.score = String(dbm.team1Score);
+                        }
+
+                        if (dbm.team2 && dbm.team2.score !== undefined && dbm.team2.score !== '') {
+                            targetM.team2.score = String(dbm.team2.score);
+                        } else if (dbm.team2Score != null) {
+                            targetM.team2.score = String(dbm.team2Score);
+                        }
+
+                        if (dbm.winnerId) {
+                            targetM.winnerId = dbm.winnerId;
+                        }
+
+                        if (dbm.status) {
+                            targetM.status = (dbm.status === 'FINISHED' || dbm.status === 'COMPLETED') ? 'COMPLETED' : 'SCHEDULED';
+                        } else if (targetM.team1.score !== '' && targetM.team2.score !== '') {
+                            targetM.status = 'COMPLETED';
+                        }
+                    }
+                }
+
+                // Merge any uncommitted local storage scores if available
+                if (savedMatchesRaw) {
+                    try {
+                        var cachedGroups = JSON.parse(savedMatchesRaw);
+                        for (var gk in cachedGroups) {
+                            var cList = cachedGroups[gk] || [];
+                            for (var ci = 0; ci < cList.length; ci++) {
+                                var cm = cList[ci];
+                                if (cm && cm.matchId && this.matchesMap[cm.matchId]) {
+                                    var cur = this.matchesMap[cm.matchId];
+                                    if ((!cur.team1.score || cur.team1.score === '') && (cm.team1 && cm.team1.score !== '')) {
+                                        cur.team1.score = cm.team1.score;
+                                        cur.team2.score = cm.team2.score;
+                                        cur.winnerId = cm.winnerId;
+                                        cur.status = cm.status;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                this.saveMatchesState();
+            } else if (savedMatchesRaw) {
+                var needsRegenerate = false;
                 try {
                     this.groupMatches = JSON.parse(savedMatchesRaw);
                     this.matchesMap = {};
@@ -272,19 +346,21 @@
                         }
                     }
 
-                    // If group matches were saved under old cache without round numbers, regenerate!
                     if (!hasValidRounds) {
                         needsRegenerate = true;
+                    } else {
+                        // Have local matches, sync to DB
+                        this.syncMatchesToDB(false);
                     }
                 } catch (e) {
                     needsRegenerate = true;
                 }
-            } else {
-                needsRegenerate = true;
-            }
 
-            if (needsRegenerate) {
-                this.generateAllGroupMatches();
+                if (needsRegenerate) {
+                    this.generateAllGroupMatches(false);
+                }
+            } else {
+                this.generateAllGroupMatches(false);
             }
         },
 
@@ -361,7 +437,7 @@
             return rounds;
         },
 
-        generateAllGroupMatches: function () {
+        generateAllGroupMatches: function (skipSync) {
             this.groupMatches = {};
             this.matchesMap = {};
             var globalMatchId = 1;
@@ -393,6 +469,9 @@
             }
 
             this.saveMatchesState();
+            if (!skipSync) {
+                this.syncMatchesToDB(false);
+            }
         },
 
         saveMatchesState: function () {
@@ -405,6 +484,64 @@
             if (window.StageEndPopup) {
                 window.StageEndPopup.update(this.tournamentId, 'GROUP_STAGE', this.matchesMap, this.teamsList, this.config, this.groupMatches, 1);
             }
+            this.syncMatchesToDB(true);
+        },
+
+        syncMatchesToDB: function (isUpdateOnly) {
+            if (!this.tournamentId || this.tournamentId === 'demo') return;
+            var self = this;
+            if (this._syncTimeout) clearTimeout(this._syncTimeout);
+            this._syncTimeout = setTimeout(function () {
+                self._doSyncMatchesToDB(isUpdateOnly);
+            }, 250);
+        },
+
+        _doSyncMatchesToDB: function (isUpdateOnly) {
+            if (!this.tournamentId || this.tournamentId === 'demo') return;
+
+            var allMatches = [];
+            for (var gKey in this.groupMatches) {
+                var mList = this.groupMatches[gKey] || [];
+                for (var i = 0; i < mList.length; i++) {
+                    var m = mList[i];
+                    allMatches.push({
+                        matchId: m.matchId,
+                        groupKey: m.groupKey || gKey,
+                        roundNumber: m.roundNumber || 1,
+                        matchNumber: m.matchNumber || (i + 1),
+                        team1: {
+                            name: m.team1 ? m.team1.name : '',
+                            score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : ''
+                        },
+                        team2: {
+                            name: m.team2 ? m.team2.name : '',
+                            score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : ''
+                        },
+                        winnerId: m.winnerId || null,
+                        status: m.status || 'SCHEDULED'
+                    });
+                }
+            }
+
+            if (allMatches.length === 0) return;
+
+            var params = new URLSearchParams();
+            params.append('action', 'batchSync');
+            params.append('tournamentId', this.tournamentId);
+            params.append('stage', '1');
+            params.append('matchesJson', JSON.stringify(allMatches));
+
+            fetch('group-stage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: params.toString()
+            }).then(function (res) {
+                return res.json();
+            }).then(function (data) {
+                console.log('[TourmaGroupStage] Synced matches to DB:', data);
+            }).catch(function (err) {
+                console.warn('[TourmaGroupStage] Sync to DB error:', err);
+            });
         },
 
         checkAndTriggerStage2Cut: function () {
@@ -554,6 +691,27 @@
 
             this.saveMatchesState();
             this.renderMatchesView();
+
+            if (this.tournamentId && this.tournamentId !== 'demo') {
+                var params = new URLSearchParams();
+                params.append('action', 'updateScore');
+                params.append('tournamentId', this.tournamentId);
+                params.append('stage', '1');
+                params.append('matchId', matchId);
+                params.append('team1Score', String(mObj.team1.score));
+                params.append('team2Score', String(mObj.team2.score));
+                params.append('winner', mObj.winnerId || '');
+                params.append('team1Name', mObj.team1 ? mObj.team1.name : '');
+                params.append('team2Name', mObj.team2 ? mObj.team2.name : '');
+
+                fetch('group-stage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                    body: params.toString()
+                }).then(function (res) { return res.json(); })
+                  .then(function (data) { console.log('[TourmaGroupStage] Score saved to DB:', data); })
+                  .catch(function (err) { console.warn('[TourmaGroupStage] DB score save failed:', err); });
+            }
         },
 
         randomizeAllMatches: function () {
@@ -612,6 +770,19 @@
 
             if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ kết quả thi đấu và đưa giải đấu về từ đầu?')) {
                 return;
+            }
+
+            // DB Reset
+            if (this.tournamentId && this.tournamentId !== 'demo') {
+                var params = new URLSearchParams();
+                params.append('action', 'reset');
+                params.append('tournamentId', this.tournamentId);
+                params.append('stage', '1');
+                fetch('group-stage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                    body: params.toString()
+                }).catch(function (err) { console.warn('[TourmaGroupStage] DB reset failed:', err); });
             }
 
             var groupKeys = Object.keys(this.groupMatches);
