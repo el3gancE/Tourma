@@ -1,0 +1,475 @@
+/* ============================================================================
+   TOURMA - ROLLING SERIES HALL OF FAME (BẢNG VÀNG) DEDICATED STYLESHEET
+   Compact text, frameless / borderless minimal aesthetic with tier filters
+   ============================================================================ */
+
+.hof-header-banner {
+  background: linear-gradient(135deg, rgba(20, 24, 35, 0.85) 0%, rgba(26, 32, 44, 0.75) 100%);
+  border-radius: var(--radius-md, 10px);
+  padding: 1rem 1.4rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hof-header-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hof-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.hof-crown-icon-box {
+  width: 40px;
+  height: 40px;
+  background: rgba(251, 191, 36, 0.12);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #fbbf24;
+  flex-shrink: 0;
+}
+
+.hof-main-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hof-subtitle {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+
+/* ============================================================================
+   BALANCED 50-50 SYMMETRIC 2-PANEL GRID (FRAMELESS / NO BORDER)
+   ============================================================================ */
+.hof-split-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.hof-card-panel {
+  background: rgba(20, 24, 35, 0.6);
+  border-radius: var(--radius-md, 10px);
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hof-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.hof-panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.hof-panel-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.hof-panel-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(45, 212, 191, 0.12);
+  color: #2dd4bf;
+  white-space: nowrap;
+}
+
+.hof-panel-badge.gold {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+.hof-panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ============================================================================
+   TIER FILTER PILLS (SINGLE SELECT & MULTI SELECT)
+   ============================================================================ */
+.hof-tier-filter-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  background: rgba(15, 18, 26, 0.6);
+  padding: 0.15rem 0.2rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hof-tier-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.hof-tier-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hof-tier-btn.active[data-tier="ALL"] {
+  background: rgba(45, 212, 191, 0.15);
+  border-color: rgba(45, 212, 191, 0.35);
+  color: #2dd4bf;
+}
+
+.hof-tier-btn.active.tier-s,
+.hof-tier-btn.active[data-tier="S"] {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
+}
+
+.hof-tier-btn.active.tier-a,
+.hof-tier-btn.active[data-tier="A"] {
+  background: rgba(192, 132, 252, 0.15);
+  border-color: rgba(192, 132, 252, 0.4);
+  color: #c084fc;
+}
+
+.hof-tier-btn.active.tier-b,
+.hof-tier-btn.active[data-tier="B"] {
+  background: rgba(52, 211, 153, 0.15);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #34d399;
+}
+
+.hof-tier-btn.active.tier-c,
+.hof-tier-btn.active[data-tier="C"] {
+  background: rgba(96, 165, 250, 0.15);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #60a5fa;
+}
+
+.hof-tier-btn.active.tier-d,
+.hof-tier-btn.active[data-tier="D"] {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.hof-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.hof-search-box i {
+  position: absolute;
+  left: 0.5rem;
+  font-size: 0.68rem;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.hof-search-input {
+  background: rgba(15, 18, 26, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  font-size: 0.72rem !important;
+  padding: 0.25rem 0.5rem 0.25rem 1.45rem !important;
+  border-radius: 6px !important;
+  width: 120px;
+  transition: all 0.2s ease;
+}
+
+.hof-search-input:focus {
+  border-color: #2dd4bf !important;
+  outline: none;
+}
+
+.hof-table-wrapper {
+  flex: 1;
+  overflow-x: auto;
+  min-height: 320px;
+}
+
+/* ============================================================================
+   FRAMELESS / BORDERLESS TABLE STYLING WITH COMPACT TEXT
+   ============================================================================ */
+.hof-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.hof-table th {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.hof-table td {
+  padding: 0.55rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.78rem;
+  text-align: left;
+  vertical-align: middle;
+  transition: background 0.15s ease;
+  height: 42px;
+  box-sizing: border-box;
+}
+
+.hof-table .text-left {
+  text-align: left !important;
+}
+
+.hof-table .text-right {
+  text-align: right !important;
+}
+
+.hof-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Left Table: Tournament Name & Direct Link */
+.hof-tourney-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hof-tourney-link {
+  color: #f1f5f9;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-decoration: none;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hof-tourney-link:hover {
+  color: #2dd4bf;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Tier text inside table without border/box */
+.hof-tier-text {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+.hof-tier-text.tier-s { color: #fbbf24; }
+.hof-tier-text.tier-a { color: #c084fc; }
+.hof-tier-text.tier-b { color: #34d399; }
+.hof-tier-text.tier-c { color: #60a5fa; }
+.hof-tier-text.tier-d { color: #ffffff; }
+
+/* UNIFIED TEAM NAME COLOR ACROSS BOTH TABLES (EXACT SAME COLOR & HOVER) */
+.hof-champ-name-link,
+.hof-team-link {
+  color: #f1f5f9;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-decoration: none;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.hof-champ-name-link:hover,
+.hof-team-link:hover {
+  color: #2dd4bf;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.hof-champ-empty {
+  color: #475569;
+  font-style: italic;
+  font-size: 0.74rem;
+}
+
+/* Left Table: Ordinal (Lần thứ) */
+.hof-ordinal-text {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #2dd4bf;
+  white-space: nowrap;
+}
+
+.hof-ordinal-empty {
+  color: #475569;
+  font-size: 0.78rem;
+}
+
+/* Right Table: Championship Count Text (Frameless) */
+.hof-win-count-text {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #fbbf24;
+  white-space: nowrap;
+}
+
+/* Custom Minimal Scrollbar */
+.hof-table-wrapper::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.hof-table-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hof-table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* ============================================================================
+   PAGINATION (15 ROWS PER PAGE)
+   ============================================================================ */
+.hof-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.72rem;
+  color: #64748b;
+  user-select: none;
+}
+
+.hof-pagination-info {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.hof-pagination-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.hof-page-btn {
+  background: rgba(15, 18, 26, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 0.35rem;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.hof-page-btn:hover:not(:disabled) {
+  background: rgba(45, 212, 191, 0.15);
+  border-color: rgba(45, 212, 191, 0.35);
+  color: #2dd4bf;
+}
+
+.hof-page-btn.active {
+  background: rgba(45, 212, 191, 0.2);
+  border-color: #2dd4bf;
+  color: #2dd4bf;
+}
+
+.hof-page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: transparent;
+  background: transparent;
+}
+
+.hof-page-ellipsis {
+  color: #64748b;
+  font-size: 0.7rem;
+  padding: 0 0.15rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Responsive Rules */
+@media (max-width: 1024px) {
+  .hof-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
