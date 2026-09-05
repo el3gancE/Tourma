@@ -181,7 +181,7 @@
                                     </a>
                                 </td>
                                 <td style="text-align: center; font-weight: 700; color: var(--rolling-text-muted);">
-                                    <%= tourneyCount %>
+                                    <%= (st.getTotalRollingPoints() > 0) ? 1 : 0 %>
                                 </td>
                                 <td style="text-align: right; font-weight: 800; font-size: 1.05rem; color: #fbbf24;">
                                     <%= st.getTotalRollingPoints() %> pts

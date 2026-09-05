@@ -160,23 +160,21 @@ public class RollingWindowPointService {
                 if (dtoMap.containsKey(teamKey)) {
                     RollingStandingDTO dto = dtoMap.get(teamKey);
 
+                    // Every participated tournament in the active window counts as +1 played tournament!
+                    if (isActiveWindow) {
+                        dto.setActiveTourneysCount(dto.getActiveTourneysCount() + 1);
+                    }
+
                     Integer matchPos = matchPlacements.get(team.getId());
                     if (matchPos == null && team.getRawName() != null) {
                         matchPos = matchPlacements.get(team.getRawName().trim().toLowerCase());
                     }
 
-                    if (matchPos == null || matchPos <= 0) {
-                        continue;
-                    }
-                    int pos = matchPos;
-
-                    int pts = resolvePointsForPosition(pos, posPtsMap);
+                    int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
+                    int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
 
                     if (isActiveWindow) {
                         dto.setTotalActivePoints(dto.getTotalActivePoints() + pts);
-                        if (pts > 0) {
-                            dto.setActiveTourneysCount(dto.getActiveTourneysCount() + 1);
-                        }
                     } else {
                         // Point Expiry / Khấu trừ điểm do vượt cửa sổ trượt W
                         dto.setExpiredPoints(dto.getExpiredPoints() + pts);

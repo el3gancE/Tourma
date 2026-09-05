@@ -1302,7 +1302,7 @@
         }
       }
 
-      if (playedThisTourney || ptsEarned > 0 || posKeyEarned !== null || targetStage1Round || targetStage2Round) {
+      if (playedThisTourney || ptsEarned > 0 || isExplicitChamp || posKeyEarned !== null || targetStage1Round || targetStage2Round) {
         targetPlayedTourneys++;
         targetWins += tourneyWinsThisTeam;
         targetLosses += tourneyLossesThisTeam;

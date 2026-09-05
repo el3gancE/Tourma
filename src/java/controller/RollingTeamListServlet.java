@@ -58,38 +58,13 @@ public class RollingTeamListServlet extends HttpServlet {
             seriesId = series.getId();
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
 
-            List<Tournament> tournaments = seriesDAO.getTournamentsBySeriesId(seriesId);
-            ParticipantDAO participantDAO = new ParticipantDAO();
-
-            if (partnerList != null && tournaments != null) {
-                Map<String, Set<String>> tourneyTeamsMap = new HashMap<>();
-                for (Tournament t : tournaments) {
-                    List<Team> teams = participantDAO.getTeamsByTournamentId(t.getId());
-                    Set<String> set = new HashSet<>();
-                    if (teams != null) {
-                        for (Team tm : teams) {
-                            if (tm.getName() != null && !tm.getName().trim().isEmpty()) {
-                                set.add(tm.getName().trim().toLowerCase());
-                            }
-                            if (tm.getRawName() != null && !tm.getRawName().trim().isEmpty()) {
-                                set.add(tm.getRawName().trim().toLowerCase());
-                            }
-                        }
+            service.RollingWindowPointService serviceEngine = service.RollingWindowPointService.getInstance();
+            List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(seriesId);
+            if (standingsDTOList != null) {
+                for (service.RollingWindowPointService.RollingStandingDTO dto : standingsDTOList) {
+                    if (dto.getPartnerParticipantId() != null) {
+                        tourneysCountMap.put(dto.getPartnerParticipantId(), dto.getActiveTourneysCount());
                     }
-                    tourneyTeamsMap.put(t.getId(), set);
-                }
-
-                for (PartnerParticipant p : partnerList) {
-                    int count = 0;
-                    if (p.getName() != null) {
-                        String pName = p.getName().trim().toLowerCase();
-                        for (Map.Entry<String, Set<String>> entry : tourneyTeamsMap.entrySet()) {
-                            if (entry.getValue().contains(pName)) {
-                                count++;
-                            }
-                        }
-                    }
-                    tourneysCountMap.put(p.getId(), count);
                 }
             }
         }
