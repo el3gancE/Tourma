@@ -184,25 +184,35 @@
     return 0;
   }
 
+  var storageDataCache = {};
   function getStorageData(prefixList, id) {
-    if (!prefixList || prefixList.length === 0) return null;
-    if (id) {
-      for (var i = 0; i < prefixList.length; i++) {
-        var key = prefixList[i] + id;
-        var val = localStorage.getItem(key);
-        if (val) return val;
+    if (!prefixList || prefixList.length === 0 || !id) return null;
+    var cacheKey = prefixList.join('|') + '__' + id;
+    if (storageDataCache[cacheKey] !== undefined) {
+      return storageDataCache[cacheKey];
+    }
+    for (var i = 0; i < prefixList.length; i++) {
+      var key = prefixList[i] + id;
+      var val = localStorage.getItem(key);
+      if (val) {
+        storageDataCache[cacheKey] = val;
+        return val;
       }
-      var allKeys = Object.keys(localStorage);
-      for (var j = 0; j < allKeys.length; j++) {
-        var k = allKeys[j];
-        for (var p = 0; p < prefixList.length; p++) {
-          if (k.indexOf(prefixList[p]) === 0 && (k.indexOf(id) !== -1 || k.slice(-id.length) === id)) {
-            var v = localStorage.getItem(k);
-            if (v) return v;
+    }
+    var allKeys = Object.keys(localStorage);
+    for (var j = 0; j < allKeys.length; j++) {
+      var k = allKeys[j];
+      for (var p = 0; p < prefixList.length; p++) {
+        if (k.indexOf(prefixList[p]) === 0 && (k.indexOf(id) !== -1 || k.slice(-id.length) === id)) {
+          var v = localStorage.getItem(k);
+          if (v) {
+            storageDataCache[cacheKey] = v;
+            return v;
           }
         }
       }
     }
+    storageDataCache[cacheKey] = null;
     return null;
   }
 
@@ -220,8 +230,17 @@
     });
   };
 
+  var parsedTournamentResultsCache = {};
+  var teamKeyLookupCache = {};
+
   // Parse points and participation for a single tournament identically to team-profile.js
   function parseTournamentResults(t, teamDataMap) {
+    if (!t) return { pointsMap: {}, participatedMap: {} };
+    var tCacheKey = t.id || t.name;
+    if (tCacheKey && parsedTournamentResultsCache[tCacheKey]) {
+      return parsedTournamentResultsCache[tCacheKey];
+    }
+
     var localPtsCfg = {};
     try {
       var localPtsRaw = getStorageData(['tourma_points_config_'], t.id);
@@ -236,15 +255,23 @@
 
     function findTeamKey(name) {
       if (!name) return null;
-      var key = name.toLowerCase().trim();
-      if (teamDataMap[key]) return key;
+      var raw = String(name).trim();
+      if (teamKeyLookupCache[raw] !== undefined) return teamKeyLookupCache[raw];
+      var key = raw.toLowerCase();
+      if (teamDataMap[key]) {
+        teamKeyLookupCache[raw] = key;
+        return key;
+      }
       var foundKey = null;
-      Object.keys(teamDataMap).forEach(function (k) {
-        if (foundKey) return;
-        if (isTeamSelf(name, k)) {
+      var mapKeys = Object.keys(teamDataMap);
+      for (var kIdx = 0; kIdx < mapKeys.length; kIdx++) {
+        var k = mapKeys[kIdx];
+        if (isTeamSelf(raw, k)) {
           foundKey = k;
+          break;
         }
-      });
+      }
+      teamKeyLookupCache[raw] = foundKey;
       return foundKey;
     }
 
@@ -1053,7 +1080,11 @@
       } catch (e) {}
     }
 
-    return { pointsMap: teamPointsAwarded, participatedMap: teamParticipated };
+    var resObj = { pointsMap: teamPointsAwarded, participatedMap: teamParticipated };
+    if (tCacheKey) {
+      parsedTournamentResultsCache[tCacheKey] = resObj;
+    }
+    return resObj;
   }
 
   // =========================================================================
@@ -1304,6 +1335,10 @@
   };
 
   window.syncLatestStandings = function () {
+    storageDataCache = {};
+    parsedTournamentResultsCache = {};
+    teamKeyLookupCache = {};
+
     var btn = document.getElementById('btnSyncLatest');
     var icon = document.getElementById('syncLatestIcon');
 
@@ -1329,14 +1364,12 @@
   };
 
   // Automatically compute and sync on page load so standings are never 0 and always ranked accurately
-  document.addEventListener('DOMContentLoaded', function () {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      computeStandingsForMilestone('LATEST');
+    });
+  } else {
     computeStandingsForMilestone('LATEST');
-  });
-  setTimeout(function () {
-    computeStandingsForMilestone('LATEST');
-  }, 30);
-  setTimeout(function () {
-    computeStandingsForMilestone('LATEST');
-  }, 150);
+  }
 
 })();

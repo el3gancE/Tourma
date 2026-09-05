@@ -136,6 +136,8 @@ public class RollingWindowPointService {
         int droppedIndex = totalCount - windowSize - 1;
 
         ParticipantDAO pDao = new ParticipantDAO();
+        Map<String, Map<String, Integer>> placementsCache = new HashMap<>();
+        Map<String, List<Team>> teamsCache = new HashMap<>();
 
         // Optional: Calculate previous milestone rankings if totalCount >= 2
         Map<String, Integer> prevRankMap = new HashMap<>();
@@ -154,8 +156,8 @@ public class RollingWindowPointService {
                     pCfgRaw = "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
                 }
                 Map<String, Integer> posPtsMap = parsePointsConfigJson(pCfgRaw);
-                Map<String, Integer> matchPlacements = pDao.getTournamentPlacements(pt.getId());
-                List<Team> tourneyTeams = pDao.getTeamsByTournamentId(pt.getId());
+                Map<String, Integer> matchPlacements = placementsCache.computeIfAbsent(pt.getId(), id -> pDao.getTournamentPlacements(id));
+                List<Team> tourneyTeams = teamsCache.computeIfAbsent(pt.getId(), id -> pDao.getTeamsByTournamentId(id));
                 if (tourneyTeams != null) {
                     for (Team tm : tourneyTeams) {
                         if (tm.getRawName() == null) continue;
@@ -195,9 +197,8 @@ public class RollingWindowPointService {
             Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
 
             // Retrieve match-based final placements for this tournament
-            Map<String, Integer> matchPlacements = pDao.getTournamentPlacements(t.getId());
-
-            List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
+            Map<String, Integer> matchPlacements = placementsCache.computeIfAbsent(t.getId(), id -> pDao.getTournamentPlacements(id));
+            List<Team> tourneyTeams = teamsCache.computeIfAbsent(t.getId(), id -> pDao.getTeamsByTournamentId(id));
             if (tourneyTeams == null || tourneyTeams.isEmpty()) continue;
 
             for (int idx = 0; idx < tourneyTeams.size(); idx++) {
