@@ -16,6 +16,15 @@
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
 
+    String dbStage2Teams = null;
+    String dbMultiStageConfig = null;
+    if (request.getAttribute("dbStage2Teams") != null) {
+        dbStage2Teams = (String) request.getAttribute("dbStage2Teams");
+    }
+    if (request.getAttribute("dbMultiStageConfig") != null) {
+        dbMultiStageConfig = (String) request.getAttribute("dbMultiStageConfig");
+    }
+
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
@@ -39,14 +48,12 @@
                 } else {
                     cutTarget = 0;
                 }
-            }
-            String dbStage2Teams = (t != null) ? t.getStage2Teams() : null;
-            String dbMultiStageConfig = (t != null) ? t.getMultiStageConfig() : null;
-            if (request.getAttribute("dbStage2Teams") != null) {
-                dbStage2Teams = (String) request.getAttribute("dbStage2Teams");
-            }
-            if (request.getAttribute("dbMultiStageConfig") != null) {
-                dbMultiStageConfig = (String) request.getAttribute("dbMultiStageConfig");
+                if (dbStage2Teams == null) {
+                    dbStage2Teams = t.getStage2Teams();
+                }
+                if (dbMultiStageConfig == null) {
+                    dbMultiStageConfig = t.getMultiStageConfig();
+                }
             }
             if (plist != null && !plist.isEmpty()) {
                 int takeCount = plist.size();

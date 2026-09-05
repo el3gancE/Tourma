@@ -20,6 +20,15 @@
     String seriesIdVal = request.getParameter("seriesId");
     if (seriesIdVal == null) seriesIdVal = "";
 
+    String dbStage2Teams = null;
+    String dbMultiStageConfig = null;
+    if (request.getAttribute("dbStage2Teams") != null) {
+        dbStage2Teams = (String) request.getAttribute("dbStage2Teams");
+    }
+    if (request.getAttribute("dbMultiStageConfig") != null) {
+        dbMultiStageConfig = (String) request.getAttribute("dbMultiStageConfig");
+    }
+
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
@@ -37,14 +46,12 @@
                 if ("MULTI_STAGE".equals(tournamentType) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
                 }
-            }
-            String dbStage2Teams = (t != null) ? t.getStage2Teams() : null;
-            String dbMultiStageConfig = (t != null) ? t.getMultiStageConfig() : null;
-            if (request.getAttribute("dbStage2Teams") != null) {
-                dbStage2Teams = (String) request.getAttribute("dbStage2Teams");
-            }
-            if (request.getAttribute("dbMultiStageConfig") != null) {
-                dbMultiStageConfig = (String) request.getAttribute("dbMultiStageConfig");
+                if (dbStage2Teams == null) {
+                    dbStage2Teams = t.getStage2Teams();
+                }
+                if (dbMultiStageConfig == null) {
+                    dbMultiStageConfig = t.getMultiStageConfig();
+                }
             }
             ParticipantDAO pDao = new ParticipantDAO();
             List<Team> plist = pDao.getTeamsByTournamentId(tourneyId);
@@ -322,22 +329,21 @@
                     cutTarget = 0;
                 } else {
                     // Multi-Stage Stage 1: read cutTarget from DB or localStorage
-                    var dbMultiCfg = <%= (dbMultiStageConfig != null && !dbMultiStageConfig.trim().isEmpty() && !dbMultiStageConfig.trim().equals("{}")) ? dbMultiStageConfig : "null" %>;
-                    var multiCfg = dbMultiCfg;
-                    if (!multiCfg) {
-                        try {
+                    try {
+                        var dbMultiCfg = <%= (dbMultiStageConfig != null && !dbMultiStageConfig.trim().isEmpty() && !dbMultiStageConfig.trim().equals("{}")) ? dbMultiStageConfig : "null" %>;
+                        var multiCfg = dbMultiCfg;
+                        if (!multiCfg) {
                             multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
-                        } catch (e) {}
-                    }
-                    if (multiCfg && multiCfg.stage1Config) {
-                        var cfgAdv = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
-                        if (cfgAdv > 1) {
-                            cutTarget = cfgAdv;
-                            // Sync to the simple keys too
-                            localStorage.setItem('tourma_advance_count_' + tourneyId, cfgAdv);
-                            localStorage.setItem('tourma_cut_target_' + tourneyId, cfgAdv);
                         }
-                    }
+                        if (multiCfg && multiCfg.stage1Config) {
+                            var cfgAdv = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
+                            if (cfgAdv > 1) {
+                                cutTarget = cfgAdv;
+                                // Sync to the simple keys too
+                                localStorage.setItem('tourma_advance_count_' + tourneyId, cfgAdv);
+                                localStorage.setItem('tourma_cut_target_' + tourneyId, cfgAdv);
+                            }
+                        }
                     } catch (e) { }
                     // Fallback: try tourma_advance_count_ key
                     if (!cutTarget || cutTarget <= 1) {

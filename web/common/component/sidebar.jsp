@@ -349,7 +349,6 @@
                     if (menuGS) menuGS.style.display = '';
                 }
             }
-        }
 
         var localFmt = localStorage.getItem('tourma_format_' + tid);
         if (!isMulti && localFmt && sSingle) {
