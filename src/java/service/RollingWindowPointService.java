@@ -726,12 +726,16 @@ public class RollingWindowPointService {
             return posPtsMap.get("17-32");
         } else if (pos >= 33 && pos <= 64 && posPtsMap.containsKey("33-64")) {
             return posPtsMap.get("33-64");
-        } else if (pos >= 65 && pos <= 128) {
-            if (posPtsMap.containsKey("65-128")) return posPtsMap.get("65-128");
+        } else if (pos >= 65 && pos <= 96) {
             if (posPtsMap.containsKey("s1_lb_r2")) return posPtsMap.get("s1_lb_r2");
             if (posPtsMap.containsKey("s1_lb_cut")) return posPtsMap.get("s1_lb_cut");
+            if (posPtsMap.containsKey("65-128")) return posPtsMap.get("65-128");
             if (posPtsMap.containsKey("stage1_eliminated")) return posPtsMap.get("stage1_eliminated");
             if (posPtsMap.containsKey("s1_lb_r1")) return posPtsMap.get("s1_lb_r1");
+        } else if (pos >= 97) {
+            if (posPtsMap.containsKey("s1_lb_r1")) return posPtsMap.get("s1_lb_r1");
+            if (posPtsMap.containsKey("65-128")) return posPtsMap.get("65-128");
+            if (posPtsMap.containsKey("stage1_eliminated")) return posPtsMap.get("stage1_eliminated");
         } else if (pos >= 9 && pos <= 11 && posPtsMap.containsKey("swiss_2-3")) {
             return posPtsMap.get("swiss_2-3");
         } else if (pos >= 12 && pos <= 14 && posPtsMap.containsKey("swiss_1-3")) {

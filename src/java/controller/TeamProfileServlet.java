@@ -335,21 +335,12 @@ public class TeamProfileServlet extends HttpServlet {
                                     achievement = "Round of 32";
                                 } else if (tourneyRank <= 64) {
                                     achievement = "Round of 64";
-                                } else if (tourneyRank <= 128) {
+                                } else if (tourneyRank <= 96) {
                                     achievement = isMulti ? "Loser's Qualification" : "Round of 128";
+                                } else if (tourneyRank <= 128) {
+                                    achievement = isMulti ? "Loser's Round 1" : "Round of 128";
                                 } else {
-                                    if (tLosses > 0 && tWins >= 3) {
-                                        achievement = "Á Quân";
-                                        tourneyRank = 2;
-                                    } else if (tWins >= 2) {
-                                        achievement = "Bán Kết";
-                                        tourneyRank = 4;
-                                    } else if (tWins >= 1) {
-                                        achievement = "Tứ Kết";
-                                        tourneyRank = 8;
-                                    } else {
-                                        achievement = "Vòng Bảng";
-                                    }
+                                    achievement = isMulti ? "Loser's Round 1" : "Vòng Bảng";
                                 }
 
                                 String fmtLabel = getFormatShortCode(s1Fmt);

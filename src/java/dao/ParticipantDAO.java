@@ -263,6 +263,19 @@ public class ParticipantDAO {
                     }
                 }
 
+                // Find max LB round in Stage 1 if Stage 1 has LB matches
+                int maxLbRoundStage1 = 0;
+                for (Map<String, Object> r : rows) {
+                    int stgOrder = (int) r.get("stage_order");
+                    if (stgOrder < highestStageOrder) {
+                        String bType = (String) r.get("bracket_type");
+                        if ("LOSER_BRACKET".equalsIgnoreCase(bType) || "LB".equalsIgnoreCase(bType)) {
+                            int rNum = (int) r.get("round_number");
+                            if (rNum > maxLbRoundStage1) maxLbRoundStage1 = rNum;
+                        }
+                    }
+                }
+
                 // If Multi-Stage (highestStageOrder > 1), also process Stage 1 eliminated teams
                 if (highestStageOrder > 1) {
                     for (Map<String, Object> r : rows) {
@@ -294,18 +307,34 @@ public class ParticipantDAO {
                             String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
                             String loserName = winner.equalsIgnoreCase(t1) ? t2Name : t1Name;
 
-                            if (loser != null || loserName != null) {
-                                String lKey = (loserName != null) ? loserName.trim().toLowerCase() : null;
-                                if ((lKey != null && !placementMap.containsKey(lKey)) || (loser != null && !placementMap.containsKey(loser))) {
-                                    int pos = 17;
-                                    if ("LOSER_BRACKET".equalsIgnoreCase(bType) || "LB".equalsIgnoreCase(bType)) {
-                                        if (rNum >= 4) pos = 17;
-                                        else if (rNum == 3) pos = 33;
-                                        else if (rNum == 2) pos = 65;
-                                        else pos = 65;
+                            // If this was a DOUBLE_ELIMINATION stage with LB matches:
+                            if (maxLbRoundStage1 > 0) {
+                                // Loser of WINNER_BRACKET drops to LB, NOT eliminated!
+                                if (!"LOSER_BRACKET".equalsIgnoreCase(bType) && !"LB".equalsIgnoreCase(bType)) {
+                                    continue;
+                                }
+                                // Only losers of LOSER_BRACKET are eliminated in Stage 1 DE:
+                                if (loser != null || loserName != null) {
+                                    String lKey = (loserName != null) ? loserName.trim().toLowerCase() : null;
+                                    // If rNum == maxLbRoundStage1 -> Loser's Qualification (pos 65)
+                                    // If rNum == maxLbRoundStage1 - 1 -> LB Round 1 (pos 97)
+                                    // If rNum <= maxLbRoundStage1 - 2 -> LB earlier rounds (pos 129)
+                                    int pos = 65;
+                                    if (rNum == maxLbRoundStage1) {
+                                        pos = 65;
+                                    } else if (rNum == maxLbRoundStage1 - 1) {
+                                        pos = 97;
                                     } else {
-                                        pos = 33;
+                                        pos = 129;
                                     }
+                                    if (loser != null) placementMap.putIfAbsent(loser, pos);
+                                    if (lKey != null) placementMap.putIfAbsent(lKey, pos);
+                                }
+                            } else {
+                                // Stage 1 SE or other format
+                                if (loser != null || loserName != null) {
+                                    String lKey = (loserName != null) ? loserName.trim().toLowerCase() : null;
+                                    int pos = 65;
                                     if (loser != null) placementMap.putIfAbsent(loser, pos);
                                     if (lKey != null) placementMap.putIfAbsent(lKey, pos);
                                 }

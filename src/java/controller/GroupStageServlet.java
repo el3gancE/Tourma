@@ -131,6 +131,9 @@ public class GroupStageServlet extends HttpServlet {
 
                 if (tournamentId != null && matchesJson != null && !matchesJson.trim().isEmpty()) {
                     boolean ok = groupStageDAO.syncGroupMatches(tournamentId, stage, matchesJson);
+                    if (ok) {
+                        tryRecalculateSeriesStandings(tournamentId);
+                    }
                     out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đồng bộ Group Stage thành công!" : "Lỗi lưu Group Stage vào DB!") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc dữ liệu matchesJson!\"}");
@@ -141,6 +144,9 @@ public class GroupStageServlet extends HttpServlet {
             if ("reset".equalsIgnoreCase(action)) {
                 if (tournamentId != null && !tournamentId.trim().isEmpty()) {
                     boolean ok = groupStageDAO.resetGroupMatches(tournamentId, stage);
+                    if (ok) {
+                        tryRecalculateSeriesStandings(tournamentId);
+                    }
                     out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã reset Group Stage trong CSDL" : "Lỗi reset") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId!\"}");
@@ -162,6 +168,7 @@ public class GroupStageServlet extends HttpServlet {
 
                 boolean success = groupStageDAO.updateGroupMatchScore(tournamentId, stage, matchId, s1, s2, winner, team1Name, team2Name);
                 if (success) {
+                    tryRecalculateSeriesStandings(tournamentId);
                     out.print("{\"status\":\"success\",\"message\":\"Cập nhật tỷ số Group Stage thành công!\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Không thể lưu tỷ số Group Stage vào CSDL!\"}");
@@ -172,5 +179,16 @@ public class GroupStageServlet extends HttpServlet {
         } catch (Exception e) {
             out.print("{\"status\":\"error\",\"message\":\"Lỗi hệ thống: " + e.getMessage() + "\"}");
         }
+    }
+
+    private void tryRecalculateSeriesStandings(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
+        try {
+            dao.TournamentDAO tDao = new dao.TournamentDAO();
+            model.Tournament t = tDao.getTournamentById(tournamentId.trim());
+            if (t != null && t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
+                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(t.getSeriesId().trim());
+            }
+        } catch (Exception ignore) {}
     }
 }

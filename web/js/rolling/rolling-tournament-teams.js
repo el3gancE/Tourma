@@ -235,6 +235,7 @@
       var kStr = String(positionKey).startsWith("s1_lb_r") ? String(positionKey) : String(altKey);
       var rNum = parseInt(kStr.replace("s1_lb_r", ""), 10);
       if (ptsCfg["s1_lb_r" + rNum] !== undefined) return parseInt(ptsCfg["s1_lb_r" + rNum], 10) || 0;
+      if (rNum === 1) return 0;
       if (ptsCfg["s1_lb_cut"] !== undefined) return parseInt(ptsCfg["s1_lb_cut"], 10) || 0;
       if (ptsCfg["stage1_eliminated"] !== undefined) return parseInt(ptsCfg["stage1_eliminated"], 10) || 0;
     }
@@ -276,12 +277,14 @@
         if (ptsCfg["17-32"] !== undefined) return parseInt(ptsCfg["17-32"], 10) || 0;
       } else if (pMin >= 33 && pMin <= 64) {
         if (ptsCfg["33-64"] !== undefined) return parseInt(ptsCfg["33-64"], 10) || 0;
-      } else if (pMin >= 65 && pMin <= 128) {
-        if (ptsCfg["65-128"] !== undefined) return parseInt(ptsCfg["65-128"], 10) || 0;
+      } else if (pMin >= 65 && pMin <= 96) {
+        if (ptsCfg["65-96"] !== undefined) return parseInt(ptsCfg["65-96"], 10) || 0;
         if (ptsCfg["s1_lb_r2"] !== undefined) return parseInt(ptsCfg["s1_lb_r2"], 10) || 0;
         if (ptsCfg["s1_lb_cut"] !== undefined) return parseInt(ptsCfg["s1_lb_cut"], 10) || 0;
-        if (ptsCfg["stage1_eliminated"] !== undefined) return parseInt(ptsCfg["stage1_eliminated"], 10) || 0;
+        if (ptsCfg["65-128"] !== undefined) return parseInt(ptsCfg["65-128"], 10) || 0;
+      } else if (pMin >= 97) {
         if (ptsCfg["s1_lb_r1"] !== undefined) return parseInt(ptsCfg["s1_lb_r1"], 10) || 0;
+        if (ptsCfg["65-128"] !== undefined) return parseInt(ptsCfg["65-128"], 10) || 0;
       }
     }
     return 0;
