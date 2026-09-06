@@ -306,7 +306,12 @@ public class TeamProfileServlet extends HttpServlet {
                                     mPos = matchPlacements.get(teamName.trim().toLowerCase());
                                 }
 
-                                String achievement = "Vòng Bảng";
+                                // Format display name (abbreviated: SE, DE, SW, RR, GS, or S1 ➔ S2)
+                                boolean isMulti = "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType());
+                                String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : t.getFormat();
+                                String s2Fmt = (stgFormats != null && stgFormats.size() > 1) ? stgFormats.get(1) : "SINGLE_ELIMINATION";
+
+                                String achievement = "Round of 16";
                                 int tourneyRank = (mPos != null && mPos > 0) ? mPos : 16;
                                 boolean isChamp = false;
 
@@ -324,6 +329,14 @@ public class TeamProfileServlet extends HttpServlet {
                                     achievement = "Bán Kết";
                                 } else if (tourneyRank <= 8) {
                                     achievement = "Tứ Kết";
+                                } else if (tourneyRank <= 16) {
+                                    achievement = "Round of 16";
+                                } else if (tourneyRank <= 32) {
+                                    achievement = "Round of 32";
+                                } else if (tourneyRank <= 64) {
+                                    achievement = "Round of 64";
+                                } else if (tourneyRank <= 128) {
+                                    achievement = isMulti ? "Loser's Qualification" : "Round of 128";
                                 } else {
                                     if (tLosses > 0 && tWins >= 3) {
                                         achievement = "Á Quân";
@@ -338,11 +351,6 @@ public class TeamProfileServlet extends HttpServlet {
                                         achievement = "Vòng Bảng";
                                     }
                                 }
-
-                                // Format display name (abbreviated: SE, DE, SW, RR, GS, or S1 ➔ S2)
-                                boolean isMulti = "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType());
-                                String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : t.getFormat();
-                                String s2Fmt = (stgFormats != null && stgFormats.size() > 1) ? stgFormats.get(1) : "SINGLE_ELIMINATION";
 
                                 String fmtLabel = getFormatShortCode(s1Fmt);
                                 if (isMulti) {

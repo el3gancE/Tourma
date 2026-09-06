@@ -166,6 +166,7 @@
   function resolvePointsFromConfig(ptsCfg, positionKey, altKey) {
     if (!ptsCfg || typeof ptsCfg !== 'object') return 0;
 
+    // 1. Direct exact key match
     if (ptsCfg[positionKey] !== undefined) {
       return parseInt(ptsCfg[positionKey], 10) || 0;
     }
@@ -176,9 +177,32 @@
       return parseInt(ptsCfg[String(positionKey)], 10) || 0;
     }
 
+    // 2. Stage 1 Loser Bracket / Qualification matching
+    if (positionKey === "s1_lb_cut" || altKey === "s1_lb_cut" || positionKey === "Loser's Qualification" || altKey === "Loser's Qualification") {
+      if (ptsCfg["s1_lb_cut"] !== undefined) return parseInt(ptsCfg["s1_lb_cut"], 10) || 0;
+      for (var r = 10; r >= 1; r--) {
+        if (ptsCfg["s1_lb_r" + r] !== undefined) {
+          return parseInt(ptsCfg["s1_lb_r" + r], 10) || 0;
+        }
+      }
+      if (ptsCfg["stage1_eliminated"] !== undefined) return parseInt(ptsCfg["stage1_eliminated"], 10) || 0;
+    }
+
+    if (String(positionKey).startsWith("s1_lb_r") || (altKey && String(altKey).startsWith("s1_lb_r"))) {
+      var kStr = String(positionKey).startsWith("s1_lb_r") ? String(positionKey) : String(altKey);
+      var rNum = parseInt(kStr.replace("s1_lb_r", ""), 10);
+      if (ptsCfg["s1_lb_r" + rNum] !== undefined) return parseInt(ptsCfg["s1_lb_r" + rNum], 10) || 0;
+      if (ptsCfg["s1_lb_cut"] !== undefined) return parseInt(ptsCfg["s1_lb_cut"], 10) || 0;
+      if (ptsCfg["stage1_eliminated"] !== undefined) return parseInt(ptsCfg["stage1_eliminated"], 10) || 0;
+    }
+
     if (positionKey === "stage1_eliminated" || altKey === "stage1_eliminated") {
       if (ptsCfg["stage1_eliminated"] !== undefined) {
         return parseInt(ptsCfg["stage1_eliminated"], 10) || 0;
+      }
+      if (ptsCfg["s1_lb_cut"] !== undefined) return parseInt(ptsCfg["s1_lb_cut"], 10) || 0;
+      for (var r = 10; r >= 1; r--) {
+        if (ptsCfg["s1_lb_r" + r] !== undefined) return parseInt(ptsCfg["s1_lb_r" + r], 10) || 0;
       }
     }
 
@@ -213,6 +237,8 @@
         if (ptsCfg["33-64"] !== undefined) return parseInt(ptsCfg["33-64"], 10) || 0;
       } else if (pMin >= 65 && pMin <= 128) {
         if (ptsCfg["65-128"] !== undefined) return parseInt(ptsCfg["65-128"], 10) || 0;
+        if (ptsCfg["s1_lb_r2"] !== undefined) return parseInt(ptsCfg["s1_lb_r2"], 10) || 0;
+        if (ptsCfg["s1_lb_cut"] !== undefined) return parseInt(ptsCfg["s1_lb_cut"], 10) || 0;
       }
     }
 
