@@ -274,14 +274,14 @@
         <!-- Score Edit Popup Component -->
         <jsp:include page="/common/component/popup.jsp" />
 
-        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
-        <script src="${pageContext.request.contextPath}/js/bracket-card.js"></script>
-        <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
-        <script src="${pageContext.request.contextPath}/js/bracket-viewport.js"></script>
-        <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
-        <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
-        <script src="${pageContext.request.contextPath}/js/single-elimination.js"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/random-service.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-card.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/match-card.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-viewport.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/empty-team-alert.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/single-elimination.js?v=<%= System.currentTimeMillis() %>"></script>
 
         <script>
             window.addEventListener('DOMContentLoaded', function () {

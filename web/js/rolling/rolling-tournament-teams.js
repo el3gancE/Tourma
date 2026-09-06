@@ -866,6 +866,9 @@
 
   window.proceedToNextStep = function (e) {
     if (e && e.preventDefault) e.preventDefault();
+    if (typeof window.saveHideSeedConfig === 'function') {
+      window.saveHideSeedConfig();
+    }
     var rows = Array.from(document.querySelectorAll('#subtourneyTeamsTable tbody tr.team-table-row'));
     var teamNames = [];
     rows.forEach(function (r) {

@@ -51,28 +51,66 @@
             // Only matches with 2 real confirmed teams and NOT BYE are clickable
             var isPlayable = !isT1Placeholder && !isT2Placeholder && !hasBye;
 
-            var getDisplaySeed = function (rawSeed, matchData) {
-                if (rawSeed === undefined || rawSeed === null || rawSeed === '') return '';
-                var sNum = parseInt(String(rawSeed).replace('#', '').trim(), 10);
-                if (isNaN(sNum)) return '';
-                var cfgRaw = null;
-                try {
-                    var tid = (matchData && (matchData.tournamentId || matchData.tourneyId)) ||
-                              (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
-                              (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
-                              (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
-                              (window.TourmaSwissStage && window.TourmaSwissStage.tournamentId) ||
-                              (window.TourmaGroupStage && window.TourmaGroupStage.tournamentId) ||
-                              (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId) ||
-                              window.TourmaContextPathTourneyId;
-                    if (!tid) {
+            var getDisplaySeed = function (rawSeed, matchData, teamName) {
+                var sNum = NaN;
+                if (rawSeed !== undefined && rawSeed !== null && rawSeed !== '') {
+                    sNum = parseInt(String(rawSeed).replace('#', '').trim(), 10);
+                }
+
+                var tid = (matchData && (matchData.tournamentId || matchData.tourneyId)) ||
+                          (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
+                          (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
+                          (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
+                          (window.TourmaSwissStage && window.TourmaSwissStage.tournamentId) ||
+                          (window.TourmaGroupStage && window.TourmaGroupStage.tournamentId) ||
+                          (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId) ||
+                          window.TourmaContextPathTourneyId;
+                if (!tid) {
+                    try {
                         var params = new URLSearchParams(window.location.search);
                         tid = params.get('id');
-                    }
-                    if (tid) {
+                    } catch (e) {}
+                }
+
+                // If seed is missing, try looking it up by teamName from memory or localStorage
+                if (isNaN(sNum) && teamName && teamName !== 'BYE' && teamName !== 'TBD' && !teamName.startsWith('W #') && !teamName.startsWith('L #')) {
+                    try {
+                        var teams = (window.SingleEliminationEngine && window.SingleEliminationEngine.teamsList) ||
+                                    (window.TourmaDoubleElimination && window.TourmaDoubleElimination.teamsList) ||
+                                    (window.TourmaRoundRobin && window.TourmaRoundRobin.teamsList) ||
+                                    (window.TourmaSwissStage && window.TourmaSwissStage.teamsList) ||
+                                    (window.TourmaGroupStage && window.TourmaGroupStage.teamsList);
+                        if ((!teams || !Array.isArray(teams) || teams.length === 0) && tid) {
+                            teams = JSON.parse(localStorage.getItem('tourma_teams_' + tid));
+                        }
+                        if (teams && Array.isArray(teams)) {
+                            var cleanName = String(teamName).trim().toLowerCase();
+                            for (var ti = 0; ti < teams.length; ti++) {
+                                var tm = teams[ti];
+                                var tn = (typeof tm === 'object' && tm) ? (tm.name || tm.rawName) : tm;
+                                if (tn && String(tn).trim().toLowerCase() === cleanName) {
+                                    var ts = (typeof tm === 'object' && tm && tm.seed !== undefined && tm.seed !== null && tm.seed !== '') ? tm.seed : (ti + 1);
+                                    sNum = parseInt(String(ts).replace('#', '').trim(), 10);
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                if (isNaN(sNum)) return '';
+
+                var cfgRaw = null;
+                if (tid) {
+                    try {
                         cfgRaw = localStorage.getItem('tourma_hide_seed_config_' + tid);
-                    }
-                } catch (e) {}
+                    } catch (e) {}
+                }
+                if (!cfgRaw) {
+                    try {
+                        cfgRaw = localStorage.getItem('tourma_hide_seed_config_demo');
+                    } catch (e) {}
+                }
 
                 if (cfgRaw) {
                     try {
@@ -95,9 +133,8 @@
                 return String(sNum);
             };
 
-            var hideSeeds = (data.hideSeeds === true);
-            var seed1 = (isT1Bye || isT1Placeholder || hideSeeds) ? '' : getDisplaySeed(t1.seed, data);
-            var seed2 = (isT2Bye || isT2Placeholder || hideSeeds) ? '' : getDisplaySeed(t2.seed, data);
+            var seed1 = (isT1Bye || isT1Placeholder) ? '' : getDisplaySeed(t1.seed, data, t1Name);
+            var seed2 = (isT2Bye || isT2Placeholder) ? '' : getDisplaySeed(t2.seed, data, t2Name);
 
             var t1ScoreDisp = (isDone && !hasBye && t1.score !== undefined && t1.score !== null && t1.score !== '') ? t1.score : '';
             var t2ScoreDisp = (isDone && !hasBye && t2.score !== undefined && t2.score !== null && t2.score !== '') ? t2.score : '';
