@@ -212,36 +212,11 @@
             }
 
             var hasDbMatches = (dbMatches && Array.isArray(dbMatches) && dbMatches.length > 0);
-            console.log('[SE restore] key=' + bKey + ' | hasDbMatches=' + hasDbMatches + ' (count=' + (hasDbMatches ? dbMatches.length : 0) + ') | hasSaved=' + savedValid + ' | mapSize=' + (savedBracket && savedBracket.matchesMap ? Object.keys(savedBracket.matchesMap).length : 0));
+            console.log('[SE restore] key=' + bKey + ' | hasSaved=' + savedValid + ' | hasDbMatches=' + hasDbMatches + ' (count=' + (hasDbMatches ? dbMatches.length : 0) + ')');
 
-            if (hasDbMatches) {
-                // 1. RESTORE DIRECTLY FROM DATABASE
-                console.log('[SE restore] Restoring directly from DATABASE matches!');
-                this.buildMapFromList(dbMatches);
-
-                // If localStorage had any completed scores or user inputs that DB missed, merge them
-                if (savedValid && savedBracket && savedBracket.matchesMap) {
-                    var sKeys = Object.keys(savedBracket.matchesMap);
-                    var hadMerged = false;
-                    for (var sIdx = 0; sIdx < sKeys.length; sIdx++) {
-                        var sMat = savedBracket.matchesMap[sKeys[sIdx]];
-                        var curMat = this.matchesMap[sKeys[sIdx]];
-                        if (sMat && curMat) {
-                            if (!curMat.winnerId && sMat.winnerId) {
-                                if (curMat.team1 && sMat.team1 && sMat.team1.score !== undefined) curMat.team1.score = sMat.team1.score;
-                                if (curMat.team2 && sMat.team2 && sMat.team2.score !== undefined) curMat.team2.score = sMat.team2.score;
-                                curMat.winnerId = sMat.winnerId;
-                                curMat.status = sMat.status || 'COMPLETED';
-                                hadMerged = true;
-                            }
-                        }
-                    }
-                    if (hadMerged) {
-                        this.persistMatches();
-                    }
-                }
-            } else if (savedValid && savedBracket) {
-                // DIRECT RESTORE
+            if (savedValid && savedBracket && savedBracket.matchesMap && Object.keys(savedBracket.matchesMap).length > 0) {
+                // 1. RESTORE DIRECTLY FROM CLIENT LOCALSTORAGE (Authoritative User Input) & SYNC TO DB
+                console.log('[SE restore] Restoring from localStorage user input and syncing to DB!');
                 this.matchesMap = savedBracket.matchesMap || {};
                 this.roundsList = savedBracket.roundsList || [];
                 this.bracketData = savedBracket;
@@ -254,10 +229,14 @@
                     this.teamsList = savedBracket.teamsList;
                 }
 
-                // Immediately sync to DB so DB now has this tournament's matches permanently!
+                // Immediately persist and sync user's actual bracket to SQL Server!
                 this.syncBracketToDB(true);
+            } else if (hasDbMatches) {
+                // 2. RESTORE DIRECTLY FROM DATABASE (When localStorage has no saved state)
+                console.log('[SE restore] Restoring directly from DATABASE matches!');
+                this.buildMapFromList(dbMatches);
             } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
-                // GENERATE FRESH BRACKET directly from current teamsList sequence
+                // 3. GENERATE FRESH BRACKET
                 var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
                 this.bracketData = generated;
                 this.roundsList = generated.roundsList || [];
@@ -1102,11 +1081,12 @@
                 } catch (e) {}
 
                 // Reset matches in database
+                var contextPath = window.TourmaContextPath || '';
                 var resetParams = new URLSearchParams();
                 resetParams.append('action', 'reset');
                 resetParams.append('tournamentId', this.tournamentId);
                 resetParams.append('stage', this.currentStage || 1);
-                fetch('single-elimination', {
+                fetch(contextPath + '/single-elimination', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
                     body: resetParams.toString()
@@ -1216,13 +1196,14 @@
                     });
                 }
 
+                var contextPath = window.TourmaContextPath || '';
                 var params = new URLSearchParams();
                 params.append('action', 'batchSync');
                 params.append('tournamentId', self.tournamentId);
                 params.append('stage', self.currentStage || 1);
                 params.append('matchesData', JSON.stringify(matchesArray));
 
-                fetch('single-elimination', {
+                fetch(contextPath + '/single-elimination', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
@@ -1523,15 +1504,24 @@
             var rKeys = Object.keys(roundGroup).map(Number).sort(function (a, b) { return a - b; });
             this.roundsList = [];
 
+            var self = this;
             for (var j = 0; j < rKeys.length; j++) {
                 var rNum = rKeys[j];
+                var matchesInRound = roundGroup[rNum] || [];
+                // Sort matches by matchNumber or numeric ID so round cards are strictly ordered
+                matchesInRound.sort(function (a, b) {
+                    var aNum = Number(a.matchNumber !== undefined ? a.matchNumber : (a.matchId || a.id));
+                    var bNum = Number(b.matchNumber !== undefined ? b.matchNumber : (b.matchId || b.id));
+                    return (aNum || 0) - (bNum || 0);
+                });
+
                 var title = (window.TourmaBracketAlgorithm) ?
-                    window.TourmaBracketAlgorithm.getRoundTitle(rNum, rKeys.length) : ('Round ' + rNum);
+                    window.TourmaBracketAlgorithm.getRoundTitle(rNum, rKeys.length, (self.cutTarget && self.cutTarget > 1)) : ('Round ' + rNum);
 
                 this.roundsList.push({
                     roundNumber: rNum,
                     title: title,
-                    matches: roundGroup[rNum]
+                    matches: matchesInRound
                 });
             }
         },

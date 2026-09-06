@@ -262,7 +262,13 @@
             var cardMap = {};
             for (var c = 0; c < cards.length; c++) {
                 var mId = cards[c].getAttribute('data-match-id') || (cards[c].dataset ? cards[c].dataset.matchId : null);
-                if (mId) cardMap[String(mId)] = cards[c];
+                if (mId) {
+                    var sMid = String(mId).trim();
+                    cardMap[sMid] = cards[c];
+                    var idx = sMid.lastIndexOf('_M');
+                    var numOnly = (idx !== -1) ? sMid.substring(idx + 2) : sMid.replace(/[^0-9]/g, '');
+                    if (numOnly && !cardMap[numOnly]) cardMap[numOnly] = cards[c];
+                }
             }
 
             // Group source matches by nextMatchId
@@ -270,8 +276,9 @@
             var keys = Object.keys(matchesMap);
             for (var i = 0; i < keys.length; i++) {
                 var m = matchesMap[keys[i]];
-                if (!m || !m.nextMatchId) continue;
-                var targetId = String(m.nextMatchId);
+                var nId = m ? (m.nextMatchId || m.next_match_id) : null;
+                if (!m || !nId) continue;
+                var targetId = String(nId).trim();
                 if (!targetGroups[targetId]) targetGroups[targetId] = [];
                 targetGroups[targetId].push(m);
             }
@@ -280,7 +287,9 @@
             for (var t = 0; t < targetIds.length; t++) {
                 var targetId = targetIds[t];
                 var sources = targetGroups[targetId];
-                var targetCard = cardMap[targetId];
+                var tIdx = targetId.lastIndexOf('_M');
+                var tNumOnly = (tIdx !== -1) ? targetId.substring(tIdx + 2) : targetId.replace(/[^0-9]/g, '');
+                var targetCard = cardMap[targetId] || (tNumOnly ? cardMap[tNumOnly] : null);
                 if (!targetCard) continue;
 
                 var tgtPos = this.getRelativePos(targetCard, canvasElem);
@@ -288,13 +297,18 @@
                 var yTargetCenter = tgtPos.top + (tgtPos.height / 2);
 
                 sources.sort(function (a, b) {
-                    return (a.nextMatchSlot || 1) - (b.nextMatchSlot || 1);
+                    return (a.nextMatchSlot || a.next_match_slot || 1) - (b.nextMatchSlot || b.next_match_slot || 1);
                 });
 
                 var validSources = [];
                 for (var s = 0; s < sources.length; s++) {
                     var srcMatch = sources[s];
-                    var srcCard = cardMap[String(srcMatch.matchId)];
+                    var sId = (srcMatch.matchId !== undefined && srcMatch.matchId !== null) ? String(srcMatch.matchId).trim()
+                              : ((srcMatch.id !== undefined && srcMatch.id !== null) ? String(srcMatch.id).trim()
+                              : ((srcMatch.matchNumber !== undefined && srcMatch.matchNumber !== null) ? String(srcMatch.matchNumber).trim() : ''));
+                    var sIdx = sId.lastIndexOf('_M');
+                    var sNumOnly = (sIdx !== -1) ? sId.substring(sIdx + 2) : sId.replace(/[^0-9]/g, '');
+                    var srcCard = cardMap[sId] || (sNumOnly ? cardMap[sNumOnly] : null);
                     if (srcCard && !srcCard.classList.contains('bye-empty-slot')) {
                         var srcPos = this.getRelativePos(srcCard, canvasElem);
                         validSources.push({

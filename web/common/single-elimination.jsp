@@ -284,6 +284,7 @@
         <script src="${pageContext.request.contextPath}/js/single-elimination.js?v=<%= System.currentTimeMillis() %>"></script>
 
         <script>
+            window.TourmaContextPath = '${pageContext.request.contextPath}';
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 window.TourmaContextPathTourneyId = tourneyId;
@@ -362,6 +363,7 @@
                     '| tourma_multi_config_=', localStorage.getItem('tourma_multi_config_' + tourneyId),
                     '| tourma_advance_count_=', localStorage.getItem('tourma_advance_count_' + tourneyId));
                 var dbMatches = <%= dbMatchesJson %>;
+                window.TourmaContextDbMatches = dbMatches;
                 window.SingleEliminationEngine.init(tourneyId, dbMatches, preloadedTeams, cutTarget, currentStage);
                 console.log('[JSP init] final cutTarget passed to engine=', cutTarget, '| dbMatches loaded=', (dbMatches ? dbMatches.length : 0));
             });

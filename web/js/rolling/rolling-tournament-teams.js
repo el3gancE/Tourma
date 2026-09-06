@@ -310,8 +310,90 @@
     var items = Array.from(modalList.querySelectorAll('.partner-checkbox-item'));
     if (items.length === 0) return;
 
-    // Initialize team data map from modal items
-    var teamDataMap = {};
+    // Check if server already provided official standings (authoritative source of truth)
+    var serverStandings = window.seriesStandingsRankMap;
+    var hasServerStandings = serverStandings && Object.keys(serverStandings).length > 0;
+
+    if (hasServerStandings) {
+      var teamDataMap = {};
+      items.forEach(function (item) {
+        var rawName = item.getAttribute('data-team-name') || '';
+        if (!rawName) {
+          var nameSpan = item.querySelector('div > span:not(.rank-badge)');
+          if (nameSpan) {
+            rawName = nameSpan.textContent.replace('(Đã thêm)', '').trim();
+          }
+        }
+        var teamKey = rawName.trim().toLowerCase();
+
+        var serverData = serverStandings[teamKey];
+        if (!serverData) {
+          var keys = Object.keys(serverStandings);
+          for (var i = 0; i < keys.length; i++) {
+            if (isTeamSelf(rawName, keys[i])) {
+              serverData = serverStandings[keys[i]];
+              break;
+            }
+          }
+        }
+
+        var pts = serverData ? serverData.points : (parseInt(item.getAttribute('data-points'), 10) || 0);
+        var rank = serverData ? serverData.rank : (parseInt(item.getAttribute('data-rank'), 10) || 9999);
+
+        teamDataMap[teamKey] = {
+          name: rawName,
+          totalPts: pts,
+          rank: rank,
+          item: item
+        };
+      });
+
+      var teamDataArray = Object.keys(teamDataMap).map(function (k) { return teamDataMap[k]; });
+      teamDataArray.sort(function (a, b) {
+        if (a.rank !== b.rank) return a.rank - b.rank;
+        if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+        return a.name.localeCompare(b.name);
+      });
+
+      teamDataArray.forEach(function (data, rankIdx) {
+        var item = data.item;
+        var rank = data.rank;
+        var teamKey = data.name.trim().toLowerCase();
+
+        window.seriesStandingsRankMap[teamKey] = { rank: rank, points: data.totalPts };
+
+        // Update data attributes
+        item.setAttribute('data-index', rankIdx);
+        item.setAttribute('data-rank', rank);
+        item.setAttribute('data-points', data.totalPts);
+
+        var cb = item.querySelector('.partner-cb-input');
+        if (cb) cb.setAttribute('data-index', rankIdx);
+
+        // Update rank badge in modal item
+        var badge = item.querySelector('.rank-badge');
+        if (badge) {
+          badge.className = 'rank-badge rank-' + rank;
+          badge.textContent = '#' + rank;
+          badge.style.color = (rank === 1) ? '#fbbf24' : (rank === 2 ? '#e2e8f0' : (rank === 3 ? '#f97316' : '#cbd5e1'));
+          badge.style.borderColor = (rank === 1) ? 'rgba(251,191,36,0.3)' : (rank === 2 ? 'rgba(226,232,240,0.2)' : (rank === 3 ? 'rgba(249,115,22,0.3)' : 'rgba(255,255,255,0.1)'));
+        }
+
+        // Update points display in modal item
+        var ptsDiv = item.querySelector('div:last-child');
+        if (ptsDiv) {
+          ptsDiv.textContent = data.totalPts + ' pts';
+        }
+
+        // Physically append to modal container in new sorted order
+        modalList.appendChild(item);
+      });
+
+      return;
+    }
+
+    // Fallback: Client-side calculation if offline / no server standings provided
+    var fallbackTeamDataMap = {};
     items.forEach(function (item) {
       var rawName = item.getAttribute('data-team-name') || '';
       var teamKey = rawName.trim().toLowerCase();
@@ -323,12 +405,7 @@
       var pts = parseInt(item.getAttribute('data-points'), 10) || 0;
       var rank = parseInt(item.getAttribute('data-rank'), 10) || 999;
 
-      if (window.seriesStandingsRankMap && window.seriesStandingsRankMap[teamKey]) {
-        pts = window.seriesStandingsRankMap[teamKey].points || pts;
-        rank = window.seriesStandingsRankMap[teamKey].rank || rank;
-      }
-
-      teamDataMap[teamKey] = {
+      fallbackTeamDataMap[teamKey] = {
         name: rawName,
         totalPts: pts,
         lastPts: 0,
@@ -341,7 +418,7 @@
     });
 
     var subTourneys = window.seriesSubTournaments || [];
-    var phaseSize = window.seriesPhaseSize || 3;
+    var phaseSize = window.seriesPhaseSize || 26;
     var totalTourneys = subTourneys.length;
     var activeStartIndex = Math.max(0, totalTourneys - phaseSize);
     var droppedIndex = totalTourneys - phaseSize - 1;
@@ -366,13 +443,13 @@
         function markTeamParticipated(name) {
           if (!name) return;
           var key = name.toLowerCase().trim();
-          var targetEntry = teamDataMap[key];
+          var targetEntry = fallbackTeamDataMap[key];
           if (!targetEntry) {
-            var mapKeys = Object.keys(teamDataMap);
+            var mapKeys = Object.keys(fallbackTeamDataMap);
             for (var mIdx = 0; mIdx < mapKeys.length; mIdx++) {
               var k = mapKeys[mIdx];
               if (isTeamSelf(name, k)) {
-                targetEntry = teamDataMap[k];
+                targetEntry = fallbackTeamDataMap[k];
                 key = k;
                 break;
               }
@@ -410,13 +487,13 @@
           if (!name) return;
           markTeamParticipated(name);
           var key = name.toLowerCase().trim();
-          var targetEntry = teamDataMap[key];
+          var targetEntry = fallbackTeamDataMap[key];
           if (!targetEntry) {
-            var mapKeys = Object.keys(teamDataMap);
+            var mapKeys = Object.keys(fallbackTeamDataMap);
             for (var mIdx = 0; mIdx < mapKeys.length; mIdx++) {
               var k = mapKeys[mIdx];
               if (isTeamSelf(name, k)) {
-                targetEntry = teamDataMap[k];
+                targetEntry = fallbackTeamDataMap[k];
                 key = k;
                 break;
               }
@@ -621,7 +698,7 @@
     }
 
     // Sort partner team array by total points descending
-    var teamDataArray = Object.keys(teamDataMap).map(function (k) { return teamDataMap[k]; });
+    var teamDataArray = Object.keys(fallbackTeamDataMap).map(function (k) { return fallbackTeamDataMap[k]; });
     teamDataArray.sort(function (a, b) {
       if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
       return b.lastPts - a.lastPts;
@@ -687,8 +764,24 @@
       var spanB = rowB.querySelector('td:nth-child(2) span');
       if (spanB) nameB = spanB.textContent.trim().toLowerCase();
 
-      var rankA = (rankMap[nameA] && rankMap[nameA].rank) ? rankMap[nameA].rank : 99999;
-      var rankB = (rankMap[nameB] && rankMap[nameB].rank) ? rankMap[nameB].rank : 99999;
+      var dataA = rankMap[nameA];
+      if (!dataA) {
+        var keysA = Object.keys(rankMap);
+        for (var i = 0; i < keysA.length; i++) {
+          if (isTeamSelf(nameA, keysA[i])) { dataA = rankMap[keysA[i]]; break; }
+        }
+      }
+
+      var dataB = rankMap[nameB];
+      if (!dataB) {
+        var keysB = Object.keys(rankMap);
+        for (var j = 0; j < keysB.length; j++) {
+          if (isTeamSelf(nameB, keysB[j])) { dataB = rankMap[keysB[j]]; break; }
+        }
+      }
+
+      var rankA = (dataA && dataA.rank) ? dataA.rank : 99999;
+      var rankB = (dataB && dataB.rank) ? dataB.rank : 99999;
 
       if (rankA !== rankB) return rankA - rankB;
       return nameA.localeCompare(nameB);

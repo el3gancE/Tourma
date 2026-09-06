@@ -393,6 +393,9 @@
                     cutTarget = 0; // Stage 2 plays to Grand Final champion!
                 }
 
+                var dbMatches = <%= dbMatchesJson %>;
+                window.TourmaContextDbMatches = dbMatches;
+
                 window.TourmaDoubleElimination.init({
                     tournamentId: tourneyId,
                     tournamentName: tourneyName,
@@ -400,7 +403,7 @@
                     cutTarget: cutTarget,
                     tournamentType: tournamentType,
                     stage: currentStage,
-                    dbMatches: <%= dbMatchesJson %>
+                    dbMatches: dbMatches
                 });
             });
         </script>

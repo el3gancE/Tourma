@@ -25,6 +25,7 @@
     List<PartnerParticipant> orderedPartners = new ArrayList<>();
     Map<String, Integer> partnerRankMap = new HashMap<>();
     Map<String, Integer> partnerPointsMap = new HashMap<>();
+    java.util.Set<String> addedPartnerIds = new java.util.HashSet<>();
 
     if (standingsDTOList != null && !standingsDTOList.isEmpty()) {
         for (RollingStandingDTO dto : standingsDTOList) {
@@ -37,9 +38,13 @@
                 partnerPointsMap.put(key, pts);
                 if (partnerList != null) {
                     for (PartnerParticipant p : partnerList) {
-                        if (p.getName() != null && p.getName().trim().equalsIgnoreCase(tName.trim()) && !orderedPartners.contains(p)) {
-                            orderedPartners.add(p);
-                            break;
+                        if (p.getId() != null && !addedPartnerIds.contains(p.getId())) {
+                            if ((dto.getPartnerParticipantId() != null && dto.getPartnerParticipantId().equals(p.getId()))
+                                    || (p.getName() != null && p.getName().trim().equalsIgnoreCase(tName.trim()))) {
+                                orderedPartners.add(p);
+                                addedPartnerIds.add(p.getId());
+                                break;
+                            }
                         }
                     }
                 }
@@ -54,9 +59,12 @@
                 partnerPointsMap.put(key, st.getTotalRollingPoints());
                 if (partnerList != null) {
                     for (PartnerParticipant p : partnerList) {
-                        if (p.getName() != null && p.getName().trim().equalsIgnoreCase(st.getNormalizedTeamName().trim()) && !orderedPartners.contains(p)) {
-                            orderedPartners.add(p);
-                            break;
+                        if (p.getId() != null && !addedPartnerIds.contains(p.getId())) {
+                            if (p.getName() != null && p.getName().trim().equalsIgnoreCase(st.getNormalizedTeamName().trim())) {
+                                orderedPartners.add(p);
+                                addedPartnerIds.add(p.getId());
+                                break;
+                            }
                         }
                     }
                 }
@@ -66,8 +74,9 @@
 
     if (partnerList != null) {
         for (PartnerParticipant p : partnerList) {
-            if (!orderedPartners.contains(p)) {
+            if (p.getId() != null && !addedPartnerIds.contains(p.getId())) {
                 orderedPartners.add(p);
+                addedPartnerIds.add(p.getId());
                 String key = (p.getName() != null) ? p.getName().trim().toLowerCase() : "";
                 if (!partnerRankMap.containsKey(key)) {
                     partnerRankMap.put(key, orderedPartners.size());

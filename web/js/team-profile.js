@@ -279,10 +279,25 @@
   function calculateAndSyncTeamProfile() {
     var targetTeamName = (window.profileTeamName || '').trim();
     if (!targetTeamName) return;
+
+    if (window.hasServerProfile) {
+      if (typeof TeamBadgeEngine !== 'undefined' && TeamBadgeEngine.renderBadges) {
+        var subTourneys = window.seriesSubTournaments || [];
+        var champBadges = Array.from(document.querySelectorAll('#profChampionBadges .champion-badge-pill')).map(function(el) {
+          return { name: el.textContent.trim() };
+        });
+        TeamBadgeEngine.renderBadges('teamBadgesContainer', targetTeamName, {
+          subTournaments: subTourneys,
+          championTourneys: champBadges
+        });
+      }
+      return;
+    }
+
     var targetKey = targetTeamName.toLowerCase();
 
     var subTourneys = window.seriesSubTournaments || [];
-    var phaseSize = window.seriesPhaseSize || 3;
+    var phaseSize = window.seriesPhaseSize || 26;
     var totalTourneys = subTourneys.length;
     var activeStartIndex = Math.max(0, totalTourneys - phaseSize);
     var droppedIndex = totalTourneys - phaseSize - 1;

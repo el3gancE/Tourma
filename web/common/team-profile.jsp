@@ -287,7 +287,8 @@
             window.appContextPath = "${pageContext.request.contextPath}";
             window.seriesIdVal = "<%= seriesIdVal %>";
             window.profileTeamName = "<%= teamName.replace("\\", "\\\\").replace("\"", "\\\"") %>";
-            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
+            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 26 %>;
+            window.hasServerProfile = true;
             window.seriesPartners = [
                 <% 
                 List<PartnerParticipant> partnersList = (List<PartnerParticipant>) request.getAttribute("partnersList");
