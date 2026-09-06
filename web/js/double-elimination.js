@@ -1109,6 +1109,7 @@
                     window.TourmaDoubleElimAlgorithm.renumberDoubleEliminationContiguously(this.bracketData);
                 }
                 this.persistLocal();
+                this.syncBracketToDB(true);
                 this.renderUpperBracket();
                 this.renderLowerBracket();
                 this.renderListView();
@@ -1167,6 +1168,7 @@
                     window.TourmaDoubleElimAlgorithm.renumberDoubleEliminationContiguously(this.bracketData);
                 }
                 this.persistLocal();
+                this.syncBracketToDB(true);
                 this.renderUpperBracket();
                 this.renderLowerBracket();
                 this.renderListView();
@@ -1736,22 +1738,32 @@
         /**
          * Persist Match Update to Database via AJAX
          */
-        persistAjax: function (matchObj) {
-            if (!matchObj || !this.tournamentId) return;
+        saveMatchAJAX: function (matchId, t1Score, t2Score, winner) {
+            if (!this.tournamentId) return;
+            var targetMatch = this.matchesMap ? this.matchesMap[matchId] : null;
+            var t1Name = (targetMatch && targetMatch.team1) ? (targetMatch.team1.name || targetMatch.team1.rawName || '') : '';
+            var t2Name = (targetMatch && targetMatch.team2) ? (targetMatch.team2.name || targetMatch.team2.rawName || '') : '';
+
             var contextPath = window.TourmaContextPath || '';
             var url = contextPath + '/double-elimination';
 
-            var t1Name = (matchObj.team1) ? (matchObj.team1.name || matchObj.team1.rawName || '') : '';
-            var t2Name = (matchObj.team2) ? (matchObj.team2.name || matchObj.team2.rawName || '') : '';
+            var winnerVal = winner || '';
+            if (targetMatch && targetMatch.winnerId) {
+                winnerVal = targetMatch.winnerId;
+            } else if (winner === t1Name) {
+                winnerVal = 'team1';
+            } else if (winner === t2Name) {
+                winnerVal = 'team2';
+            }
 
             var params = new URLSearchParams();
             params.append('action', 'updateScore');
             params.append('tournamentId', this.tournamentId);
             params.append('stage', this.currentStage || 1);
-            params.append('matchId', matchObj.matchId);
-            params.append('team1Score', (matchObj.team1 && matchObj.team1.score !== undefined && matchObj.team1.score !== '') ? matchObj.team1.score : '0');
-            params.append('team2Score', (matchObj.team2 && matchObj.team2.score !== undefined && matchObj.team2.score !== '') ? matchObj.team2.score : '0');
-            params.append('winner', matchObj.winnerId || '');
+            params.append('matchId', matchId);
+            params.append('team1Score', (t1Score !== undefined && t1Score !== null && t1Score !== '') ? t1Score : '0');
+            params.append('team2Score', (t2Score !== undefined && t2Score !== null && t2Score !== '') ? t2Score : '0');
+            params.append('winner', winnerVal);
             params.append('team1Name', t1Name);
             params.append('team2Name', t2Name);
 
@@ -1763,8 +1775,21 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                 body: params.toString()
             }).then(function (res) { return res.json(); })
-              .then(function (data) { console.log('[DE AJAX update]', data); })
-              .catch(function () {});
+              .then(function (data) { console.log('[DE AJAX update score]', data); })
+              .catch(function (err) { console.warn('[DE AJAX update error]', err); });
+        },
+
+        saveMatchResultAJAX: function (matchId, t1Score, t2Score, winner) {
+            this.saveMatchAJAX(matchId, t1Score, t2Score, winner);
+        },
+
+        persistAjax: function (matchObj) {
+            if (!matchObj) return;
+            var mId = matchObj.matchId || matchObj.id;
+            var s1 = (matchObj.team1 && matchObj.team1.score !== undefined) ? matchObj.team1.score : '0';
+            var s2 = (matchObj.team2 && matchObj.team2.score !== undefined) ? matchObj.team2.score : '0';
+            var w = matchObj.winnerId || '';
+            this.saveMatchAJAX(mId, s1, s2, w);
         },
 
         /**
@@ -1811,5 +1836,7 @@
               .catch(function (err) { console.warn('[DE DB batchSync error]', err); });
         }
     };
+
+    window.DoubleEliminationEngine = window.TourmaDoubleElimination;
 
 })();
