@@ -45,8 +45,21 @@
     var cTarget = t.replace(/[^a-z0-9]/g, '');
     var c = n.replace(/[^a-z0-9]/g, '');
     if (c && cTarget && c === cTarget) return true;
-    if (c.length >= 4 && cTarget.length >= 4 && (c.indexOf(cTarget) !== -1 || cTarget.indexOf(c) !== -1)) {
-      return true;
+
+    // Strict number check: if either or both have digits, digits MUST match exactly
+    var d1 = n.replace(/[^0-9]/g, '');
+    var d2 = t.replace(/[^0-9]/g, '');
+    if (d1 !== d2) {
+      if (d1 !== '' || d2 !== '') return false;
+    }
+
+    // Substring match only for long strings with close length difference
+    if (c.length >= 6 && cTarget.length >= 6) {
+      if (Math.abs(c.length - cTarget.length) <= 3) {
+        if (c.indexOf(cTarget) !== -1 || cTarget.indexOf(c) !== -1) {
+          return true;
+        }
+      }
     }
     return false;
   }
@@ -192,24 +205,16 @@
       return storageDataCache[cacheKey];
     }
     for (var i = 0; i < prefixList.length; i++) {
-      var key = prefixList[i] + id;
-      var val = localStorage.getItem(key);
+      var p = prefixList[i];
+      var val = localStorage.getItem(p + id);
       if (val) {
         storageDataCache[cacheKey] = val;
         return val;
       }
-    }
-    var allKeys = Object.keys(localStorage);
-    for (var j = 0; j < allKeys.length; j++) {
-      var k = allKeys[j];
-      for (var p = 0; p < prefixList.length; p++) {
-        if (k.indexOf(prefixList[p]) === 0 && (k.indexOf(id) !== -1 || k.slice(-id.length) === id)) {
-          var v = localStorage.getItem(k);
-          if (v) {
-            storageDataCache[cacheKey] = v;
-            return v;
-          }
-        }
+      val = localStorage.getItem(p + 'tournament_' + id);
+      if (val) {
+        storageDataCache[cacheKey] = val;
+        return val;
       }
     }
     storageDataCache[cacheKey] = null;
@@ -249,7 +254,8 @@
       }
     } catch (e) {}
 
-    var ptsCfg = Object.assign({}, t.pointsConfig || {}, localPtsCfg || {});
+    // Priority: DB pointsConfig first, fallback to localPtsCfg
+    var ptsCfg = Object.assign({}, localPtsCfg || {}, t.pointsConfig || {});
     var teamPointsAwarded = {}; // teamKey -> max points
     var teamParticipated = {};  // teamKey -> true
 
@@ -1091,6 +1097,10 @@
   // MAIN STANDINGS RECALCULATION BY MILESTONE
   // =========================================================================
   function computeStandingsForMilestone(milestoneVal) {
+    storageDataCache = {};
+    parsedTournamentResultsCache = {};
+    teamKeyLookupCache = {};
+
     var standingsTable = document.getElementById('rollingStandingsTable');
     if (!standingsTable) return;
 
@@ -1325,51 +1335,66 @@
     });
 
     tbody.appendChild(frag);
+
+    // Automatically persist merged client standings (localStorage + DB) to server DB
+    if (milestoneValue === 'LATEST' && seriesId && teamDataArray.length > 0) {
+      try {
+        var payloadStandings = teamDataArray.map(function(d, idx) {
+          return {
+            name: d.name,
+            totalPts: d.totalPts || 0,
+            activeTourneys: d.activeTourneys || 0,
+            rank: idx + 1
+          };
+        });
+        var postData = 'action=syncClientStandings&seriesId=' + encodeURIComponent(seriesId) + '&standingsJson=' + encodeURIComponent(JSON.stringify(payloadStandings));
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', ctx + '/rolling/standings', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.send(postData);
+      } catch (e) {}
+    }
   }
 
   // =========================================================================
-  // PUBLIC EVENT HANDLERS
+  // PUBLIC EVENT HANDLERS & AUTO-UPDATE
   // =========================================================================
   window.onMilestoneChange = function (milestoneVal) {
     computeStandingsForMilestone(milestoneVal);
   };
 
   window.syncLatestStandings = function () {
-    storageDataCache = {};
-    parsedTournamentResultsCache = {};
-    teamKeyLookupCache = {};
-
-    var btn = document.getElementById('btnSyncLatest');
-    var icon = document.getElementById('syncLatestIcon');
-
-    if (icon) icon.classList.add('fa-spin');
-    if (btn) btn.disabled = true;
-
     var milestoneSelect = document.getElementById('milestoneSelect');
     if (milestoneSelect) milestoneSelect.value = 'LATEST';
-
-    setTimeout(function () {
-      computeStandingsForMilestone('LATEST');
-
-      if (icon) icon.classList.remove('fa-spin');
-      if (btn) {
-        btn.disabled = false;
-        var origHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check text-mint"></i> Đã cập nhật!';
-        setTimeout(function () {
-          btn.innerHTML = origHtml;
-        }, 1800);
-      }
-    }, 150);
+    computeStandingsForMilestone('LATEST');
   };
 
-  // Automatically compute and sync on page load so standings are never 0 and always ranked accurately
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-      computeStandingsForMilestone('LATEST');
-    });
-  } else {
-    computeStandingsForMilestone('LATEST');
+  window.refreshRollingStandings = function () {
+    var milestoneSelect = document.getElementById('milestoneSelect');
+    var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
+    computeStandingsForMilestone(curVal);
+  };
+
+  // Automatically compute and sync on page load and lifecycle events so standings are always 100% up-to-date
+  function triggerAutoUpdate() {
+    var milestoneSelect = document.getElementById('milestoneSelect');
+    var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
+    computeStandingsForMilestone(curVal);
   }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', triggerAutoUpdate);
+  } else {
+    triggerAutoUpdate();
+  }
+
+  window.addEventListener('pageshow', triggerAutoUpdate);
+  window.addEventListener('focus', triggerAutoUpdate);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      triggerAutoUpdate();
+    }
+  });
+  window.addEventListener('storage', triggerAutoUpdate);
 
 })();

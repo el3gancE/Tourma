@@ -109,23 +109,13 @@
   }
 
   function getStorageData(prefixList, id) {
-    if (!prefixList || prefixList.length === 0) return null;
-    if (id) {
-      for (var i = 0; i < prefixList.length; i++) {
-        var key = prefixList[i] + id;
-        var val = localStorage.getItem(key);
-        if (val) return val;
-      }
-      var allKeys = Object.keys(localStorage);
-      for (var j = 0; j < allKeys.length; j++) {
-        var k = allKeys[j];
-        for (var p = 0; p < prefixList.length; p++) {
-          if (k.indexOf(prefixList[p]) === 0 && (k.indexOf(id) !== -1 || k.slice(-id.length) === id)) {
-            var v = localStorage.getItem(k);
-            if (v) return v;
-          }
-        }
-      }
+    if (!prefixList || prefixList.length === 0 || !id) return null;
+    for (var i = 0; i < prefixList.length; i++) {
+      var p = prefixList[i];
+      var val = localStorage.getItem(p + id);
+      if (val) return val;
+      val = localStorage.getItem(p + 'tournament_' + id);
+      if (val) return val;
     }
     return null;
   }

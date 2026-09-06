@@ -135,11 +135,6 @@
                             </select>
                         </div>
 
-                        <!-- Nút Cập Nhật Mới Nhất -->
-                        <button type="button" class="btn btn-outline-mint" id="btnSyncLatest" onclick="syncLatestStandings()" title="Tính toán và đồng bộ dữ liệu mới nhất từ kết quả thi đấu" style="font-size: 0.78rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
-                            <i class="fa-solid fa-arrows-rotate" id="syncLatestIcon"></i> Cập nhật mới nhất
-                        </button>
-
                         <!-- Ô Tìm Kiếm Tên Đội -->
                         <div style="position: relative; display: flex; align-items: center;">
                             <input type="text" class="form-control" placeholder="Tìm kiếm tên đội..." onkeyup="filterRollingStandings(this.value)" style="max-width: 170px; font-size: 0.8rem; border-radius: 8px; padding: 0.35rem 0.65rem;">

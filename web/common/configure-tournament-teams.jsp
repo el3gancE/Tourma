@@ -24,31 +24,22 @@
     String tourneyFormat = request.getParameter("format");
     String advSeatsParam = request.getParameter("advancingSeatsCount");
     String tournamentTypeParam = request.getParameter("tournamentType");
+    String stage1FormatParam = request.getParameter("stage1Format");
+    String stage2FormatParam = request.getParameter("stage2Format");
     List<Team> existingTeams = null;
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
-        // Save tournament type (SINGLE_STAGE / MULTI_STAGE) to DB
-        if (tournamentTypeParam != null && !tournamentTypeParam.trim().isEmpty()) {
-            try {
-                dao.TournamentDAO tDaoType = new dao.TournamentDAO();
-                tDaoType.updateTournamentType(tournamentId, tournamentTypeParam.trim().toUpperCase());
-            } catch (Exception ignore) {}
-        }
-        if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
-            try {
-                dao.TournamentDAO tDao = new dao.TournamentDAO();
-                tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
-            } catch(Exception ignore) {}
-        }
-        // Save advancingSeatsCount to DB if provided (from Multi-Stage format config)
+        int advCount = 0;
         if (advSeatsParam != null && !advSeatsParam.trim().isEmpty()) {
-            try {
-                int advCount = Integer.parseInt(advSeatsParam.trim());
-                if (advCount > 0) {
-                    dao.TournamentDAO tDao2 = new dao.TournamentDAO();
-                    tDao2.updateAdvancingSeatsCount(tournamentId, advCount);
-                }
-            } catch (Exception ignore) {}
+            try { advCount = Integer.parseInt(advSeatsParam.trim()); } catch (Exception ignore) {}
         }
+        try {
+            dao.TournamentDAO tDao = new dao.TournamentDAO();
+            if (tournamentTypeParam != null && !tournamentTypeParam.trim().isEmpty()) {
+                tDao.updateTournamentFormatAndType(tournamentId, tourneyFormat, tournamentTypeParam, stage1FormatParam, stage2FormatParam, advCount);
+            } else if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
+                tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
+            }
+        } catch (Exception ignore) {}
         ParticipantDAO pDao = new ParticipantDAO();
         existingTeams = pDao.getTeamsByTournamentId(tournamentId);
         if (tourneyFormat == null || tourneyFormat.trim().isEmpty()) {

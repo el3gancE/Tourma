@@ -33,6 +33,7 @@
                 this.tournamentType = config.tournamentType || 'SINGLE_STAGE';
                 this._preloadedTeams = config.teamsList || [];
                 this.currentStage = (config.stage === 2 || config.stage === '2') ? 2 : 1;
+                this.dbMatches = config.dbMatches || [];
             }
 
             var stageParam = new URLSearchParams(window.location.search).get('stage');
@@ -240,7 +241,83 @@
                 }
             }
 
-            if (savedBracketValid && savedBracket) {
+            var hasDbMatches = (this.dbMatches && Array.isArray(this.dbMatches) && this.dbMatches.length > 0);
+
+            if (hasDbMatches && window.TourmaDoubleElimAlgorithm) {
+                // RESTORE DIRECTLY FROM DATABASE MATCHES
+                var cut = (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1) ? this.cutTarget : 0;
+                this.bracketData = window.TourmaDoubleElimAlgorithm.generateDoubleElimination(this.teamsList, cut);
+                this.matchesMap = this.bracketData ? this.bracketData.matchesMap : {};
+
+                // Re-link match references from rounds to matchesMap so object references remain 100% identical
+                var self = this;
+                var relinkMatch = function(m) {
+                    if (!m) return m;
+                    var mKey = (m.matchId !== undefined && m.matchId !== null) ? m.matchId : m.id;
+                    if (mKey === undefined || mKey === null) return m;
+                    if (!self.matchesMap[mKey]) {
+                        self.matchesMap[mKey] = m;
+                    }
+                    return self.matchesMap[mKey];
+                };
+
+                if (this.bracketData.upperRounds) {
+                    for (var ur = 0; ur < this.bracketData.upperRounds.length; ur++) {
+                        var uRound = this.bracketData.upperRounds[ur];
+                        if (uRound && uRound.matches) {
+                            for (var um = 0; um < uRound.matches.length; um++) {
+                                uRound.matches[um] = relinkMatch(uRound.matches[um]);
+                            }
+                        }
+                    }
+                }
+                if (this.bracketData.lowerRounds) {
+                    for (var lr = 0; lr < this.bracketData.lowerRounds.length; lr++) {
+                        var lRound = this.bracketData.lowerRounds[lr];
+                        if (lRound && lRound.matches) {
+                            for (var lm = 0; lm < lRound.matches.length; lm++) {
+                                lRound.matches[lm] = relinkMatch(lRound.matches[lm]);
+                            }
+                        }
+                    }
+                }
+                if (this.bracketData.grandFinalsRound && this.bracketData.grandFinalsRound.matches) {
+                    for (var gm = 0; gm < this.bracketData.grandFinalsRound.matches.length; gm++) {
+                        this.bracketData.grandFinalsRound.matches[gm] = relinkMatch(this.bracketData.grandFinalsRound.matches[gm]);
+                    }
+                }
+
+                // Apply saved DB matches
+                for (var d = 0; d < this.dbMatches.length; d++) {
+                    var dm = this.dbMatches[d];
+                    var mid = dm.matchId || dm.id;
+                    if (this.matchesMap[mid]) {
+                        var target = this.matchesMap[mid];
+                        if (dm.team1 && dm.team1.name) target.team1 = dm.team1;
+                        if (dm.team2 && dm.team2.name) target.team2 = dm.team2;
+                        target.winnerId = dm.winnerId || null;
+                        target.status = dm.status || 'SCHEDULED';
+                    }
+                }
+
+                // Merge uncommitted localStorage scores if any
+                if (savedBracketValid && savedBracket && savedBracket.matchesMap) {
+                    var sKeys = Object.keys(savedBracket.matchesMap);
+                    for (var sk = 0; sk < sKeys.length; sk++) {
+                        var sMat = savedBracket.matchesMap[sKeys[sk]];
+                        var cMat = this.matchesMap[sKeys[sk]];
+                        if (sMat && cMat && !cMat.winnerId && sMat.winnerId) {
+                            cMat.team1 = sMat.team1;
+                            cMat.team2 = sMat.team2;
+                            cMat.winnerId = sMat.winnerId;
+                            cMat.status = sMat.status;
+                        }
+                    }
+                }
+
+                window.TourmaDoubleElimAlgorithm.renumberDoubleEliminationContiguously(this.bracketData);
+                this.persistLocal();
+            } else if (savedBracketValid && savedBracket) {
                 this.bracketData = savedBracket;
                 this.matchesMap = savedBracket.matchesMap || {};
 
@@ -306,6 +383,9 @@
                         }
                     }
                 }
+
+                // Sync to DB to ensure DB has what localStorage had
+                this.syncBracketToDB(true);
             } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaDoubleElimAlgorithm) {
                 // Bracket mismatch or missing — regenerate from current teamsList
                 if (savedBracket) {
@@ -316,6 +396,7 @@
                 this.bracketData = window.TourmaDoubleElimAlgorithm.generateDoubleElimination(this.teamsList, cut);
                 this.matchesMap = this.bracketData ? this.bracketData.matchesMap : {};
                 this.persistLocal();
+                this.syncBracketToDB(false);
             } else {
                 this.bracketData = null;
                 this.matchesMap = {};
@@ -1028,6 +1109,7 @@
                     window.TourmaDoubleElimAlgorithm.renumberDoubleEliminationContiguously(this.bracketData);
                 }
                 this.persistLocal();
+                this.syncBracketToDB(true);
                 this.renderUpperBracket();
                 this.renderLowerBracket();
                 this.renderListView();
@@ -1086,6 +1168,7 @@
                     window.TourmaDoubleElimAlgorithm.renumberDoubleEliminationContiguously(this.bracketData);
                 }
                 this.persistLocal();
+                this.syncBracketToDB(true);
                 this.renderUpperBracket();
                 this.renderLowerBracket();
                 this.renderListView();
@@ -1362,12 +1445,25 @@
                 }
             } catch (e) {}
 
+            // Send DB reset request to backend
+            var contextPath = window.TourmaContextPath || '';
+            var rParams = new URLSearchParams();
+            rParams.append('action', 'reset');
+            rParams.append('tournamentId', this.tournamentId);
+            rParams.append('stage', this.currentStage || 1);
+            fetch(contextPath + '/double-elimination', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: rParams.toString()
+            }).catch(function() {});
+
             // Re-generate fresh initial bracket
             if (window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.generateDoubleElimination === 'function') {
                 var cut = (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1) ? this.cutTarget : 0;
                 this.bracketData = window.TourmaDoubleElimAlgorithm.generateDoubleElimination(this.teamsList, cut);
                 this.matchesMap = this.bracketData ? this.bracketData.matchesMap : {};
                 this.persistLocal();
+                this.syncBracketToDB(false);
                 this.renderAll();
             }
         },
@@ -1526,6 +1622,21 @@
 
                 localStorage.setItem('tourma_stage2_teams_' + this.tournamentId, JSON.stringify(finalStage2Teams));
 
+                // Sync Stage 2 Teams to DB
+                try {
+                    var cPath = window.contextPath || '';
+                    var targetUrl = (cPath ? cPath : '') + '/double-elimination';
+                    var pS2 = new URLSearchParams();
+                    pS2.append('action', 'saveStage2Teams');
+                    pS2.append('tournamentId', this.tournamentId);
+                    pS2.append('stage2Teams', JSON.stringify(finalStage2Teams));
+                    fetch(targetUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: pS2.toString()
+                    }).catch(function(err) {});
+                } catch (e) {}
+
                 var multiCfg = null;
                 try {
                     multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + this.tournamentId)) || {};
@@ -1558,6 +1669,21 @@
 
                 multiCfg.stage2MatchesCreated = true;
                 localStorage.setItem('tourma_multi_config_' + this.tournamentId, JSON.stringify(multiCfg));
+
+                // Sync multi-stage config to DB
+                try {
+                    var cPath = window.contextPath || '';
+                    var targetUrl = (cPath ? cPath : '') + '/double-elimination';
+                    var pCfg = new URLSearchParams();
+                    pCfg.append('action', 'saveMultiStageConfig');
+                    pCfg.append('tournamentId', this.tournamentId);
+                    pCfg.append('multiConfig', JSON.stringify(multiCfg));
+                    fetch(targetUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: pCfg.toString()
+                    }).catch(function(err) {});
+                } catch (e) {}
             }
 
             localStorage.setItem('tourma_stage1_completed_' + this.tournamentId, 'true');
@@ -1612,23 +1738,105 @@
         /**
          * Persist Match Update to Database via AJAX
          */
-        persistAjax: function (matchObj) {
-            if (!matchObj) return;
+        saveMatchAJAX: function (matchId, t1Score, t2Score, winner) {
+            if (!this.tournamentId) return;
+            var targetMatch = this.matchesMap ? this.matchesMap[matchId] : null;
+            var t1Name = (targetMatch && targetMatch.team1) ? (targetMatch.team1.name || targetMatch.team1.rawName || '') : '';
+            var t2Name = (targetMatch && targetMatch.team2) ? (targetMatch.team2.name || targetMatch.team2.rawName || '') : '';
+
             var contextPath = window.TourmaContextPath || '';
             var url = contextPath + '/double-elimination';
 
+            var winnerVal = winner || '';
+            if (targetMatch && targetMatch.winnerId) {
+                winnerVal = targetMatch.winnerId;
+            } else if (winner === t1Name) {
+                winnerVal = 'team1';
+            } else if (winner === t2Name) {
+                winnerVal = 'team2';
+            }
+
             var params = new URLSearchParams();
-            params.append('matchId', matchObj.matchId);
-            params.append('team1Score', matchObj.team1.score || '0');
-            params.append('team2Score', matchObj.team2.score || '0');
-            params.append('winner', matchObj.winnerId || 'team1');
+            params.append('action', 'updateScore');
+            params.append('tournamentId', this.tournamentId);
+            params.append('stage', this.currentStage || 1);
+            params.append('matchId', matchId);
+            params.append('team1Score', (t1Score !== undefined && t1Score !== null && t1Score !== '') ? t1Score : '0');
+            params.append('team2Score', (t2Score !== undefined && t2Score !== null && t2Score !== '') ? t2Score : '0');
+            params.append('winner', winnerVal);
+            params.append('team1Name', t1Name);
+            params.append('team2Name', t2Name);
+
+            // Trigger batchSync to ensure propagated winners downstream are committed
+            this.syncBracketToDB(true);
 
             fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                 body: params.toString()
-            }).catch(function () {});
+            }).then(function (res) { return res.json(); })
+              .then(function (data) { console.log('[DE AJAX update score]', data); })
+              .catch(function (err) { console.warn('[DE AJAX update error]', err); });
+        },
+
+        saveMatchResultAJAX: function (matchId, t1Score, t2Score, winner) {
+            this.saveMatchAJAX(matchId, t1Score, t2Score, winner);
+        },
+
+        persistAjax: function (matchObj) {
+            if (!matchObj) return;
+            var mId = matchObj.matchId || matchObj.id;
+            var s1 = (matchObj.team1 && matchObj.team1.score !== undefined) ? matchObj.team1.score : '0';
+            var s2 = (matchObj.team2 && matchObj.team2.score !== undefined) ? matchObj.team2.score : '0';
+            var w = matchObj.winnerId || '';
+            this.saveMatchAJAX(mId, s1, s2, w);
+        },
+
+        /**
+         * Batch Sync entire DE bracket to SQL Server matches table
+         */
+        syncBracketToDB: function (isUpdateOnly) {
+            if (!this.tournamentId || !this.matchesMap) return;
+            var list = [];
+            var keys = Object.keys(this.matchesMap);
+            for (var i = 0; i < keys.length; i++) {
+                var m = this.matchesMap[keys[i]];
+                if (!m) continue;
+                list.push({
+                    matchId: m.matchId || m.id,
+                    bracketType: m.bracketType || 'UPPER',
+                    roundNumber: m.roundNumber || 1,
+                    matchNumber: m.matchNumber || m.matchId || m.id,
+                    team1: m.team1 || {},
+                    team2: m.team2 || {},
+                    winnerId: m.winnerId || null,
+                    nextMatchId: m.nextMatchId || null,
+                    nextMatchSlot: m.nextMatchSlot || null,
+                    isBye: !!m.isBye,
+                    status: m.status || 'PENDING'
+                });
+            }
+            if (list.length === 0) return;
+
+            var contextPath = window.TourmaContextPath || '';
+            var url = contextPath + '/double-elimination';
+
+            var params = new URLSearchParams();
+            params.append('action', 'batchSync');
+            params.append('tournamentId', this.tournamentId);
+            params.append('stage', this.currentStage || 1);
+            params.append('matchesJson', JSON.stringify(list));
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: params.toString()
+            }).then(function (res) { return res.json(); })
+              .then(function (data) { console.log('[DE DB batchSync]', data); })
+              .catch(function (err) { console.warn('[DE DB batchSync error]', err); });
         }
     };
+
+    window.DoubleEliminationEngine = window.TourmaDoubleElimination;
 
 })();

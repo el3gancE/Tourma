@@ -15,6 +15,7 @@
     String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
     String tourneyName = "Giải Đấu Swiss";
     List<Team> dbTeamsList = null;
+    String dbMatchesJson = "[]";
 
     if (!safeTourneyId.isEmpty()) {
         try {
@@ -25,7 +26,18 @@
             }
             ParticipantDAO pDao = new ParticipantDAO();
             dbTeamsList = pDao.getTeamsByTournamentId(safeTourneyId);
+            dao.SwissSystemDAO sDao = new dao.SwissSystemDAO();
+            String jsonM = sDao.getMatchesJsonForFrontend(safeTourneyId, currentStage);
+            if (jsonM != null && !jsonM.trim().isEmpty() && !jsonM.trim().equals("[]")) {
+                dbMatchesJson = jsonM;
+            }
         } catch (Exception ignore) {}
+    }
+    if (request.getAttribute("dbMatchesJson") != null) {
+        String reqJson = (String) request.getAttribute("dbMatchesJson");
+        if (reqJson != null && !reqJson.trim().isEmpty() && !reqJson.trim().equals("[]")) {
+            dbMatchesJson = reqJson;
+        }
     }
 %>
 <!DOCTYPE html>
@@ -199,6 +211,8 @@
         <script>
             window.swissTournamentId = "${not empty tournament.id ? tournament.id : param.id}";
             window.swissContextPath = "${pageContext.request.contextPath}";
+            window.swissCurrentStage = <%= currentStage %>;
+            window.dbSwissMatches = <%= dbMatchesJson %>;
             window.serverTeams = [
                 <% if (dbTeamsList != null && !dbTeamsList.isEmpty()) { 
                     for (int i = 0; i < dbTeamsList.size(); i++) {

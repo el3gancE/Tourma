@@ -353,7 +353,7 @@
         </main>
 
         <script>
-            (function syncLocalFormatWithForm() {
+            function syncLocalFormatWithForm() {
                 var tid = "<%= tourneyId %>";
                 if (!tid) return;
 

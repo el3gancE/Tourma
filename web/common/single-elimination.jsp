@@ -2,6 +2,7 @@
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="dao.TournamentDAO"%>
 <%@page import="dao.ParticipantDAO"%>
+<%@page import="dao.SingleEliminationDAO"%>
 <%@page import="model.Tournament"%>
 <%@page import="model.Team"%>
 <%@page import="java.util.List"%>
@@ -9,6 +10,7 @@
     String tourneyId = request.getParameter("id");
     String tourneyName = "Giải Đấu Single Elimination";
     String teamsJson = "[]";
+    String dbMatchesJson = "[]";
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
     String stageParam = request.getParameter("stage");
@@ -17,6 +19,15 @@
 
     String seriesIdVal = request.getParameter("seriesId");
     if (seriesIdVal == null) seriesIdVal = "";
+
+    String dbStage2Teams = null;
+    String dbMultiStageConfig = null;
+    if (request.getAttribute("dbStage2Teams") != null) {
+        dbStage2Teams = (String) request.getAttribute("dbStage2Teams");
+    }
+    if (request.getAttribute("dbMultiStageConfig") != null) {
+        dbMultiStageConfig = (String) request.getAttribute("dbMultiStageConfig");
+    }
 
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
@@ -34,6 +45,12 @@
                 }
                 if ("MULTI_STAGE".equals(tournamentType) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
+                }
+                if (dbStage2Teams == null) {
+                    dbStage2Teams = t.getStage2Teams();
+                }
+                if (dbMultiStageConfig == null) {
+                    dbMultiStageConfig = t.getMultiStageConfig();
                 }
             }
             ParticipantDAO pDao = new ParticipantDAO();
@@ -54,6 +71,12 @@
                 }
                 sb.append("]");
                 teamsJson = sb.toString();
+            }
+
+            SingleEliminationDAO seDao = new SingleEliminationDAO();
+            String jsonM = seDao.getMatchesJsonForFrontend(tourneyId, currentStage);
+            if (jsonM != null && !jsonM.trim().isEmpty() && !jsonM.trim().equals("[]")) {
+                dbMatchesJson = jsonM;
             }
         } catch (Exception e) {}
     }
@@ -288,9 +311,11 @@
                         } catch (e) { }
                     }
 
-                    // Stage 2 SE: Load qualified teams from Stage 1 completion
-                    var s2TeamsRaw = null;
-                    try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch (e) { }
+                    // Stage 2 SE: Load qualified teams from DB first, then fallback to LocalStorage
+                    var s2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
+                    if (!s2TeamsRaw || s2TeamsRaw.length === 0) {
+                        try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch (e) { }
+                    }
                     if (s2TeamsRaw && s2TeamsRaw.length > 0) {
                         preloadedTeams = s2TeamsRaw;
                     } else if (advCount && advCount > 1 && preloadedTeams && preloadedTeams.length > advCount) {
@@ -303,9 +328,13 @@
                     try { localStorage.removeItem('tourma_cut_target_' + tourneyId); } catch (e) { }
                     cutTarget = 0;
                 } else {
-                    // Multi-Stage Stage 1: read cutTarget from tourma_multi_config_ localStorage (most reliable source)
+                    // Multi-Stage Stage 1: read cutTarget from DB or localStorage
                     try {
-                        var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
+                        var dbMultiCfg = <%= (dbMultiStageConfig != null && !dbMultiStageConfig.trim().isEmpty() && !dbMultiStageConfig.trim().equals("{}")) ? dbMultiStageConfig : "null" %>;
+                        var multiCfg = dbMultiCfg;
+                        if (!multiCfg) {
+                            multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
+                        }
                         if (multiCfg && multiCfg.stage1Config) {
                             var cfgAdv = multiCfg.stage1Config.advanceCount || multiCfg.stage1Config.totalAdvanceCount || 0;
                             if (cfgAdv > 1) {
@@ -332,8 +361,9 @@
                     '| cutTarget(DB)=', <%= cutTarget %>,
                     '| tourma_multi_config_=', localStorage.getItem('tourma_multi_config_' + tourneyId),
                     '| tourma_advance_count_=', localStorage.getItem('tourma_advance_count_' + tourneyId));
-                window.SingleEliminationEngine.init(tourneyId, null, preloadedTeams, cutTarget, currentStage);
-                console.log('[JSP init] final cutTarget passed to engine=', cutTarget);
+                var dbMatches = <%= dbMatchesJson %>;
+                window.SingleEliminationEngine.init(tourneyId, dbMatches, preloadedTeams, cutTarget, currentStage);
+                console.log('[JSP init] final cutTarget passed to engine=', cutTarget, '| dbMatches loaded=', (dbMatches ? dbMatches.length : 0));
             });
         </script>
     </body>

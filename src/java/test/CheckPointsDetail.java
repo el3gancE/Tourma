@@ -11,10 +11,17 @@ public class CheckPointsDetail {
     public static void main(String[] args) {
         RollingWindowPointService service = RollingWindowPointService.getInstance();
         SeriesDAO sDao = new SeriesDAO();
-        Series s = sDao.getSeriesById("S_0009a91e");
+        String seriesId = (args.length > 0) ? args[0] : "S_0009a91e";
+        Series s = sDao.getSeriesById(seriesId);
         if (s == null) {
-            System.out.println("Series not found");
-            return;
+            List<Series> all = sDao.getAllSeries();
+            if (all != null && !all.isEmpty()) {
+                s = all.get(0);
+                System.out.println("Using series: " + s.getName() + " (" + s.getId() + ")");
+            } else {
+                System.out.println("No series found in database");
+                return;
+            }
         }
         List<Map<String, Integer>> ptsList = service.getTourneyPointsPerTournament(s.getId());
         List<Tournament> tList = sDao.getTournamentsBySeriesId(s.getId());

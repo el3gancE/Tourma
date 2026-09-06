@@ -12,8 +12,18 @@
     String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
     String tourneyName = "Giải Đấu Double Elimination";
     String deTeamsJson = "[]";
+    String dbMatchesJson = "[]";
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
+
+    String dbStage2Teams = null;
+    String dbMultiStageConfig = null;
+    if (request.getAttribute("dbStage2Teams") != null) {
+        dbStage2Teams = (String) request.getAttribute("dbStage2Teams");
+    }
+    if (request.getAttribute("dbMultiStageConfig") != null) {
+        dbMultiStageConfig = (String) request.getAttribute("dbMultiStageConfig");
+    }
 
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
@@ -37,6 +47,12 @@
                     }
                 } else {
                     cutTarget = 0;
+                }
+                if (dbStage2Teams == null) {
+                    dbStage2Teams = t.getStage2Teams();
+                }
+                if (dbMultiStageConfig == null) {
+                    dbMultiStageConfig = t.getMultiStageConfig();
                 }
             }
             if (plist != null && !plist.isEmpty()) {
@@ -64,7 +80,19 @@
                 sb.append("]");
                 deTeamsJson = sb.toString();
             }
+
+            dao.DoubleEliminationDAO deDao = new dao.DoubleEliminationDAO();
+            String jsonM = deDao.getMatchesJsonForFrontend(tourneyId, currentStage);
+            if (jsonM != null && !jsonM.trim().isEmpty() && !jsonM.trim().equals("[]")) {
+                dbMatchesJson = jsonM;
+            }
         } catch (Exception e) {}
+    }
+    if (request.getAttribute("dbMatchesJson") != null) {
+        String reqJson = (String) request.getAttribute("dbMatchesJson");
+        if (reqJson != null && !reqJson.trim().isEmpty() && !reqJson.trim().equals("[]")) {
+            dbMatchesJson = reqJson;
+        }
     }
 %>
 <!DOCTYPE html>
@@ -339,9 +367,11 @@
                     }
                 }
 
-                // Check stage2Teams from localStorage
-                var stage2TeamsRaw = null;
-                try { stage2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                // Check stage2Teams from DB first, then fallback to localStorage
+                var stage2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
+                if (!stage2TeamsRaw || stage2TeamsRaw.length === 0) {
+                    try { stage2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                }
 
                 // Resolve team list
                 var finalTeams = [];
@@ -369,7 +399,8 @@
                     teamsList: finalTeams,
                     cutTarget: cutTarget,
                     tournamentType: tournamentType,
-                    stage: currentStage
+                    stage: currentStage,
+                    dbMatches: <%= dbMatchesJson %>
                 });
             });
         </script>
