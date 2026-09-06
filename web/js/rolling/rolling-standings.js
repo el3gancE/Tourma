@@ -1335,6 +1335,25 @@
     });
 
     tbody.appendChild(frag);
+
+    // Automatically persist merged client standings (localStorage + DB) to server DB
+    if (milestoneValue === 'LATEST' && seriesId && teamDataArray.length > 0) {
+      try {
+        var payloadStandings = teamDataArray.map(function(d, idx) {
+          return {
+            name: d.name,
+            totalPts: d.totalPts || 0,
+            activeTourneys: d.activeTourneys || 0,
+            rank: idx + 1
+          };
+        });
+        var postData = 'action=syncClientStandings&seriesId=' + encodeURIComponent(seriesId) + '&standingsJson=' + encodeURIComponent(JSON.stringify(payloadStandings));
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', ctx + '/rolling/standings', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.send(postData);
+      } catch (e) {}
+    }
   }
 
   // =========================================================================

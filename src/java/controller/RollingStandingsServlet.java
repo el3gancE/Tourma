@@ -54,6 +54,7 @@ public class RollingStandingsServlet extends HttpServlet {
             seriesId = series.getId();
             service.RollingWindowPointService serviceEngine = service.RollingWindowPointService.getInstance();
             standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(seriesId);
+            serviceEngine.recalculateAndPersistStandings(seriesId);
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
             standingsList = seriesDAO.getStandingsBySeriesId(seriesId);
         }
@@ -69,6 +70,19 @@ public class RollingStandingsServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        String action = request.getParameter("action");
+        if ("syncClientStandings".equalsIgnoreCase(action)) {
+            response.setContentType("application/json;charset=UTF-8");
+            String seriesId = request.getParameter("seriesId");
+            String standingsJson = request.getParameter("standingsJson");
+            boolean success = false;
+            if (seriesId != null && standingsJson != null) {
+                success = service.RollingWindowPointService.getInstance().saveClientStandings(seriesId, standingsJson);
+            }
+            response.getWriter().write("{\"success\":" + success + "}");
+            return;
+        }
         doGet(request, response);
     }
 }

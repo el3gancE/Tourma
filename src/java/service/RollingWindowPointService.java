@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import model.PartnerParticipant;
 import model.Series;
 import model.Team;
@@ -342,26 +343,197 @@ public class RollingWindowPointService {
         List<RollingStandingDTO> standings = calculateSeriesStandingsWithExpiry(seriesId);
         if (standings.isEmpty()) return false;
 
-        DBContext db = new DBContext();
-        String updateSql = "UPDATE series_standings SET total_rolling_points = ?, rank_overall = ?, updated_at = CURRENT_TIMESTAMP WHERE series_id = ? AND partner_participant_id = ?";
+        SeriesDAO seriesDAO = new SeriesDAO();
+        ParticipantDAO pDao = new ParticipantDAO();
+        List<Tournament> allTourneys = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
 
-        try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(updateSql)) {
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
-            for (RollingStandingDTO dto : standings) {
-                ps.setInt(1, dto.getTotalActivePoints());
-                ps.setInt(2, dto.getRank());
-                ps.setString(3, seriesId.trim());
-                ps.setString(4, dto.getPartnerParticipantId());
-                ps.addBatch();
+
+            // 1. Delete old standings & history for this series
+            try (PreparedStatement psDelS = conn.prepareStatement("DELETE FROM series_standings WHERE series_id = ?");
+                 PreparedStatement psDelH = conn.prepareStatement("DELETE FROM series_tournament_history WHERE series_id = ?")) {
+                psDelS.setString(1, seriesId.trim());
+                psDelS.executeUpdate();
+                psDelH.setString(1, seriesId.trim());
+                psDelH.executeUpdate();
             }
-            ps.executeBatch();
+
+            // 2. Insert fresh calculated series_standings
+            String sqlInsertStanding = "INSERT INTO series_standings (id, series_id, phase_number, normalized_team_name, " +
+                    "partner_participant_id, group_name, total_rolling_points, current_elo, matches_played, rank_overall, updated_at) " +
+                    "VALUES (?, ?, 1, ?, ?, 'General', ?, 1000.0, ?, ?, CURRENT_TIMESTAMP)";
+
+            try (PreparedStatement psS = conn.prepareStatement(sqlInsertStanding)) {
+                int r = 1;
+                for (RollingStandingDTO dto : standings) {
+                    String standingId = "ST_" + seriesId.trim() + "_" + (dto.getPartnerParticipantId() != null ? dto.getPartnerParticipantId() : ("T_" + r));
+                    psS.setString(1, standingId);
+                    psS.setString(2, seriesId.trim());
+                    psS.setString(3, dto.getTeamName());
+                    psS.setString(4, dto.getPartnerParticipantId());
+                    psS.setInt(5, dto.getTotalActivePoints());
+                    psS.setInt(6, dto.getActiveTourneysCount());
+                    psS.setInt(7, dto.getRank() > 0 ? dto.getRank() : r);
+                    psS.addBatch();
+                    r++;
+                }
+                psS.executeBatch();
+            }
+
+            // 3. Insert fresh series_tournament_history for each tournament in the series
+            if (allTourneys != null && !allTourneys.isEmpty()) {
+                String sqlInsertHistory = "INSERT INTO series_tournament_history (id, series_id, tournament_id, phase_number, " +
+                        "normalized_team_name, tournament_rank, points_earned, points_deducted, elo_change, completed_at) " +
+                        "VALUES (?, ?, ?, 1, ?, ?, ?, 0, 0.0, ?)";
+
+                try (PreparedStatement psH = conn.prepareStatement(sqlInsertHistory)) {
+                    for (Tournament t : allTourneys) {
+                        String tCfgRaw = t.getSeriesPointsConfig();
+                        if (tCfgRaw == null || tCfgRaw.trim().isEmpty() || !tCfgRaw.trim().startsWith("{")) {
+                            tCfgRaw = "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                        }
+                        Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
+                        Map<String, Integer> placements = pDao.getTournamentPlacements(t.getId());
+                        List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
+
+                        if (tourneyTeams != null) {
+                            for (Team tm : tourneyTeams) {
+                                if (tm.getRawName() == null) continue;
+                                Integer matchPos = placements.get(tm.getId());
+                                if (matchPos == null) {
+                                    matchPos = placements.get(tm.getRawName().trim().toLowerCase());
+                                }
+                                int pos = (matchPos != null && matchPos > 0) ? matchPos : tm.getOriginalSeed();
+                                int pts = resolvePointsForPosition(pos, posPtsMap);
+
+                                String histId = "H_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+                                psH.setString(1, histId);
+                                psH.setString(2, seriesId.trim());
+                                psH.setString(3, t.getId());
+                                psH.setString(4, tm.getNormalizedName() != null ? tm.getNormalizedName() : tm.getRawName());
+                                psH.setInt(5, pos);
+                                psH.setInt(6, pts);
+                                psH.setTimestamp(7, t.getCreatedAt() != null ? t.getCreatedAt() : new java.sql.Timestamp(System.currentTimeMillis()));
+                                psH.addBatch();
+                            }
+                        }
+                    }
+                    psH.executeBatch();
+                }
+            }
+
             conn.commit();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return false;
+    }
+
+    /**
+     * Persists client-calculated standings (which merge localStorage with DB data) into SQL Server
+     */
+    public boolean saveClientStandings(String seriesId, String standingsJson) {
+        if (seriesId == null || seriesId.trim().isEmpty() || standingsJson == null || standingsJson.trim().isEmpty()) {
+            return false;
+        }
+
+        SeriesDAO seriesDAO = new SeriesDAO();
+        List<PartnerParticipant> partners = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
+        Map<String, String> nameToPartnerIdMap = new HashMap<>();
+        if (partners != null) {
+            for (PartnerParticipant p : partners) {
+                if (p.getName() != null) {
+                    nameToPartnerIdMap.put(p.getName().trim().toLowerCase(), p.getId());
+                }
+            }
+        }
+
+        List<RollingStandingDTO> dtoList = new ArrayList<>();
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\{([^}]+)\\}");
+        java.util.regex.Matcher m = p.matcher(standingsJson);
+
+        int rankAuto = 1;
+        while (m.find()) {
+            String block = m.group(1);
+            String name = extractJsonString(block, "name");
+            if (name == null || name.trim().isEmpty()) {
+                name = extractJsonString(block, "teamName");
+            }
+            if (name == null || name.trim().isEmpty()) continue;
+
+            int totalPts = extractJsonInt(block, "totalPts", 0);
+            int activeTourneys = extractJsonInt(block, "activeTourneys", 0);
+            int rank = extractJsonInt(block, "rank", rankAuto);
+
+            RollingStandingDTO dto = new RollingStandingDTO();
+            dto.setTeamName(name.trim());
+            dto.setTotalActivePoints(totalPts);
+            dto.setActiveTourneysCount(activeTourneys);
+            dto.setRank(rank > 0 ? rank : rankAuto);
+            String partnerId = nameToPartnerIdMap.get(name.trim().toLowerCase());
+            dto.setPartnerParticipantId(partnerId != null ? partnerId : ("P_" + rankAuto));
+
+            dtoList.add(dto);
+            rankAuto++;
+        }
+
+        if (dtoList.isEmpty()) return false;
+
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement psDel = conn.prepareStatement("DELETE FROM series_standings WHERE series_id = ?")) {
+                psDel.setString(1, seriesId.trim());
+                psDel.executeUpdate();
+            }
+
+            String sqlInsert = "INSERT INTO series_standings (id, series_id, phase_number, normalized_team_name, " +
+                    "partner_participant_id, group_name, total_rolling_points, current_elo, matches_played, rank_overall, updated_at) " +
+                    "VALUES (?, ?, 1, ?, ?, 'General', ?, 1000.0, ?, ?, CURRENT_TIMESTAMP)";
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
+                int r = 1;
+                for (RollingStandingDTO dto : dtoList) {
+                    String stId = "ST_" + seriesId.trim() + "_" + dto.getPartnerParticipantId();
+                    ps.setString(1, stId);
+                    ps.setString(2, seriesId.trim());
+                    ps.setString(3, dto.getTeamName());
+                    ps.setString(4, dto.getPartnerParticipantId());
+                    ps.setInt(5, dto.getTotalActivePoints());
+                    ps.setInt(6, dto.getActiveTourneysCount());
+                    ps.setInt(7, dto.getRank() > 0 ? dto.getRank() : r);
+                    ps.addBatch();
+                    r++;
+                }
+                ps.executeBatch();
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private String extractJsonString(String block, String key) {
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\"" + java.util.regex.Pattern.quote(key) + "\"\\s*:\\s*\"([^\"]+)\"");
+        java.util.regex.Matcher m = p.matcher(block);
+        if (m.find()) return m.group(1);
+        return null;
+    }
+
+    private int extractJsonInt(String block, String key, int defaultVal) {
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\"" + java.util.regex.Pattern.quote(key) + "\"\\s*:\\s*(\\d+)");
+        java.util.regex.Matcher m = p.matcher(block);
+        if (m.find()) {
+            try { return Integer.parseInt(m.group(1)); } catch (Exception e) {}
+        }
+        return defaultVal;
     }
 
     /**
