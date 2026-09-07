@@ -210,7 +210,7 @@
                             for (ChampionTournamentDTO ct : championTourneys) { 
                                 String badgeUrl = (ct.getFinalStageUrl() != null && !ct.getFinalStageUrl().isEmpty()) ? ct.getFinalStageUrl() : "#";
                         %>
-                            <a href="<%= badgeUrl %>" class="champion-badge-pill" style="text-decoration: none; cursor: pointer;" title="Xem giai đoạn cuối giải <%= ct.getTournamentName() %>">
+                            <a href="<%= badgeUrl %>" class="champion-badge-pill" data-tournament-id="<%= ct.getTournamentId() %>" data-tier="<%= ct.getTierName() != null ? ct.getTierName() : "A" %>" style="text-decoration: none; cursor: pointer;" title="Xem giai đoạn cuối giải <%= ct.getTournamentName() %>">
                                 <i class="fa-solid fa-crown"></i> <%= ct.getTournamentName() %>
                             </a>
                         <% } 

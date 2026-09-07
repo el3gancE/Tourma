@@ -190,7 +190,13 @@ public class TeamProfileServlet extends HttpServlet {
             if (tourneys != null) {
                 DBContext db = new DBContext();
                 try (Connection conn = db.getConnection()) {
-                    String matchSql = "SELECT team1_id, team2_id, winner_id, winner_team_id, score1, score2, team1_score, team2_score, team1_name, team2_name FROM matches WHERE tournament_id = ?";
+                    // Only use columns that actually exist in the matches table schema
+                    String matchSql = "SELECT m.team1_id, m.team2_id, m.winner_id, m.score1, m.score2, "
+                        + "t1.raw_name AS team1_name, t2.raw_name AS team2_name "
+                        + "FROM matches m "
+                        + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
+                        + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
+                        + "WHERE m.tournament_id = ? AND m.is_bye = 0";
                     try (PreparedStatement matchPs = conn.prepareStatement(matchSql)) {
 
                         for (int tIdx = 0; tIdx < tourneys.size(); tIdx++) {
@@ -227,9 +233,8 @@ public class TeamProfileServlet extends HttpServlet {
                                 while (rs.next()) {
                                     String t1 = rs.getString("team1_id");
                                     String t2 = rs.getString("team2_id");
-                                    String t1Name = null, t2Name = null;
-                                    try { t1Name = rs.getString("team1_name"); } catch (Exception ignore) {}
-                                    try { t2Name = rs.getString("team2_name"); } catch (Exception ignore) {}
+                                    String t1Name = rs.getString("team1_name");
+                                    String t2Name = rs.getString("team2_name");
 
                                     boolean isT1 = false;
                                     boolean isT2 = false;
@@ -252,21 +257,11 @@ public class TeamProfileServlet extends HttpServlet {
                                     if (!isT1 && !isT2) continue;
                                     playedInTourney = true;
 
-                                    String wId = null;
-                                    try { wId = rs.getString("winner_id"); } catch (Exception ignore) {}
-                                    if (wId == null) {
-                                        try { wId = rs.getString("winner_team_id"); } catch (Exception ignore) {}
-                                    }
+                                    String wId = rs.getString("winner_id");
 
                                     int s1 = -1, s2 = -1;
                                     try { s1 = rs.getInt("score1"); if (rs.wasNull()) s1 = -1; } catch (Exception ignore) {}
-                                    if (s1 == -1) {
-                                        try { s1 = rs.getInt("team1_score"); if (rs.wasNull()) s1 = -1; } catch (Exception ignore) {}
-                                    }
                                     try { s2 = rs.getInt("score2"); if (rs.wasNull()) s2 = -1; } catch (Exception ignore) {}
-                                    if (s2 == -1) {
-                                        try { s2 = rs.getInt("team2_score"); if (rs.wasNull()) s2 = -1; } catch (Exception ignore) {}
-                                    }
 
                                     if (wId == null && s1 >= 0 && s2 >= 0 && s1 != s2) {
                                         wId = (s1 > s2) ? t1 : t2;
@@ -384,7 +379,9 @@ public class TeamProfileServlet extends HttpServlet {
                             }
                         }
                     }
-                } catch (Exception ignore) {}
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             // Calculate exact highest rank and the first milestone tournament where it was reached

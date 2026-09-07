@@ -192,27 +192,30 @@
   function getTierWinCounts(teamName, context) {
     var counts = { S: 0, A: 0, B: 0, C: 0, D: 0 };
     var subTourneys = context.subTournaments || window.seriesSubTournaments || [];
+    // Use a Set-like object keyed by tournament id to prevent any double-counting
     var processed = {};
 
-    // 1. Scan subTourneys
+    // 1. Scan subTourneys — the authoritative list; mark ALL visited ids regardless of win
     for (var i = 0; i < subTourneys.length; i++) {
       var t = subTourneys[i];
       if (!t || !t.id) continue;
+      // Always mark as processed so steps 2 & 3 won't re-count same tournament
+      processed[t.id] = true;
       if (isTeamChampOfTourney(t, teamName, context)) {
         var tier = (t.tierName || t.tier || 'A').toUpperCase().trim();
         if (counts.hasOwnProperty(tier)) {
           counts[tier]++;
-          processed[t.id] = true;
         }
       }
     }
 
-    // 2. Scan championTourneys
+    // 2. Scan championTourneys — only count tournaments NOT already seen in step 1
     var champList = context.championTourneys || [];
     for (var j = 0; j < champList.length; j++) {
       var ct = champList[j];
       if (!ct) continue;
       var ctId = ct.id || ct.tournamentId;
+      // Skip if this tournament was already processed in step 1
       if (ctId && processed[ctId]) continue;
 
       var cTier = (ct.tier || ct.tierName || 'A').toUpperCase().trim();
@@ -222,7 +225,7 @@
       }
     }
 
-    // 3. Scan tourneyPerformances
+    // 3. Scan tourneyPerformances — only count tournaments NOT already seen in steps 1 or 2
     var perfs = context.tourneyPerformances || [];
     for (var k = 0; k < perfs.length; k++) {
       var perf = perfs[k];

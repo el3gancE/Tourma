@@ -283,12 +283,22 @@
     if (window.hasServerProfile) {
       if (typeof TeamBadgeEngine !== 'undefined' && TeamBadgeEngine.renderBadges) {
         var subTourneys = window.seriesSubTournaments || [];
-        var champBadges = Array.from(document.querySelectorAll('#profChampionBadges .champion-badge-pill')).map(function(el) {
-          return { name: el.textContent.trim() };
+        // Read champion pill data attributes (set by JSP with proper tournament id + tier)
+        var champTourneysServer = Array.from(
+          document.querySelectorAll('#profChampionBadges .champion-badge-pill')
+        ).map(function(el) {
+          return {
+            id: el.getAttribute('data-tournament-id') || '',
+            tournamentId: el.getAttribute('data-tournament-id') || '',
+            name: el.textContent.trim().replace(/^\S+\s*/, ''),
+            tier: el.getAttribute('data-tier') || 'A',
+            tierName: el.getAttribute('data-tier') || 'A'
+          };
         });
         TeamBadgeEngine.renderBadges('teamBadgesContainer', targetTeamName, {
           subTournaments: subTourneys,
-          championTourneys: champBadges
+          championTourneys: champTourneysServer,
+          tourneyPerformances: []
         });
       }
       return;
