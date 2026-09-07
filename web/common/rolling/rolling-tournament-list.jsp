@@ -211,14 +211,9 @@
 
                         <div class="tourney-card-footer">
                             <div class="tourney-card-actions">
-                                <form action="${pageContext.request.contextPath}/rolling/tournament-list" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa giải con này?');">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="tournamentId" value="<%= t.getId() %>">
-                                    <input type="hidden" name="seriesId" value="<%= seriesIdVal %>">
-                                    <button type="submit" class="btn-delete-tourney" title="Xóa">
-                                        <i class="fa-solid fa-trash-can"></i> Xóa
-                                    </button>
-                                </form>
+                                <button type="button" class="btn-delete-tourney" title="Xóa" onclick="openDeleteTourneyModal('<%= t.getId() %>', '<%= (t.getName() != null) ? t.getName().replace("'", "\\'").replace("\"", "&quot;") : "" %>')">
+                                    <i class="fa-solid fa-trash-can"></i> Xóa
+                                </button>
                                 <a href="${pageContext.request.contextPath}/rolling/tournament-teams?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Quản lý đội">
                                     <i class="fa-solid fa-users-gear"></i> QL Đội
                                 </a>
@@ -245,9 +240,118 @@
                 </div>
             </div>
 
+            <!-- DELETE SUB-TOURNAMENT CONFIRMATION MODAL -->
+            <div id="deleteTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeDeleteTourneyModal();">
+                <div class="tourma-modal-card" style="border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
+                        <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>Xác Nhận Xóa Giải Con</span>
+                        </div>
+                        <button type="button" class="modal-close-btn" onclick="closeDeleteTourneyModal()" title="Đóng">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+                        <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
+                            <strong style="color: #f43f5e;">⚠️ Cảnh báo xóa vĩnh viễn:</strong><br>
+                            Hành động này sẽ <strong style="color: #ffffff;">xóa hoàn toàn giải đấu con này</strong> cùng toàn bộ danh sách đội tuyển, cấu hình thể thức, kết quả các trận đấu và tự động cập nhật lại bảng xếp hạng tích lũy Series.
+                        </div>
+                        <p style="color: #cbd5e1; font-size: 0.85rem; margin: 0 0 0.35rem 0;">
+                            Bạn có chắc chắn muốn xóa giải con: <strong id="deleteTourneyTargetName" style="color: #f43f5e;"></strong> (ID: <span id="deleteTourneyTargetId" class="text-muted"></span>)?
+                        </p>
+                    </div>
+
+                    <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.85rem 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2);">
+                        <button type="button" class="btn btn-secondary" onclick="closeDeleteTourneyModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
+                        <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="confirmDeleteTourney()">
+                            <i class="fa-solid fa-trash-can"></i> Xác Nhận Xóa
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </main>
 
         <script>
+            let pendingDeleteId = null;
+
+            function openDeleteTourneyModal(id, name) {
+                pendingDeleteId = id;
+                var targetIdEl = document.getElementById('deleteTourneyTargetId');
+                if (targetIdEl) targetIdEl.innerText = id;
+                var targetNameEl = document.getElementById('deleteTourneyTargetName');
+                if (targetNameEl) targetNameEl.innerText = name;
+                var modal = document.getElementById('deleteTourneyModalBackdrop');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+
+            function closeDeleteTourneyModal() {
+                pendingDeleteId = null;
+                var modal = document.getElementById('deleteTourneyModalBackdrop');
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            }
+
+            function confirmDeleteTourney() {
+                if (!pendingDeleteId) return;
+                var tid = pendingDeleteId;
+                var seriesId = "<%= (seriesIdVal != null) ? seriesIdVal : "" %>";
+
+                // 1. Clean localStorage for this sub-tournament
+                try {
+                    localStorage.removeItem("tourma_matches_" + tid);
+                    localStorage.removeItem("tourma_de_matches_" + tid);
+                    localStorage.removeItem("tourma_rr_matches_" + tid);
+                    localStorage.removeItem("tourma_group_matches_" + tid);
+                    localStorage.removeItem("tourma_bracket_" + tid);
+                    localStorage.removeItem("tourma_bracket_stage2_" + tid);
+                    localStorage.removeItem("tourma_teams_" + tid);
+                    localStorage.removeItem("tourma_format_" + tid);
+                    localStorage.removeItem("tourma_type_" + tid);
+                    localStorage.removeItem("tourma_champion_" + tid);
+                    localStorage.removeItem("tourma_final_champion_" + tid);
+                    localStorage.removeItem("tourma_final_locked_" + tid);
+                    localStorage.removeItem("tourma_group_assignments_" + tid);
+                    localStorage.removeItem("tourma_multi_config_" + tid);
+                    localStorage.removeItem("tourma_point_config_" + tid);
+                } catch(e) {}
+
+                // 2. Remove card from DOM instantly with smooth fade-out animation
+                var card = document.querySelector('.tourney-card[data-id="' + tid + '"]');
+                if (card) {
+                    card.style.transition = 'all 0.3s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.9)';
+                    setTimeout(function() {
+                        if (card.parentNode) card.parentNode.removeChild(card);
+                        var remaining = document.querySelectorAll('.tourney-card');
+                        if (remaining.length === 0) {
+                            window.location.reload();
+                        }
+                    }, 300);
+                }
+
+                closeDeleteTourneyModal();
+
+                // 3. Send async delete request to backend in background
+                fetch('${pageContext.request.contextPath}/delete-tournament?id=' + encodeURIComponent(tid) + '&seriesId=' + encodeURIComponent(seriesId), {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function() { console.log('Sub-tournament ' + tid + ' deleted on backend.'); })
+                .catch(function(err) { console.warn('Backend delete fetch note:', err); });
+            }
+
             function filterTournaments(query) {
                 var q = (query || '').toLowerCase().trim();
                 var cards = document.querySelectorAll('.tourney-card');

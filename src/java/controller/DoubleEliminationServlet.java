@@ -121,6 +121,7 @@ public class DoubleEliminationServlet extends HttpServlet {
                 if (tournamentId != null && matchesJson != null && !matchesJson.trim().isEmpty()) {
                     boolean ok = doubleEliminationDAO.syncBracketMatches(tournamentId, stage, matchesJson);
                     if (ok) {
+                        tryRecalculateSeriesStandings(tournamentId);
                         out.print("{\"status\":\"success\",\"message\":\"Đồng bộ Double Elimination vào CSDL thành công!\"}");
                     } else {
                         out.print("{\"status\":\"error\",\"message\":\"Không thể lưu cấu trúc Double Elimination vào CSDL!\"}");
@@ -134,6 +135,9 @@ public class DoubleEliminationServlet extends HttpServlet {
             if ("reset".equalsIgnoreCase(action)) {
                 if (tournamentId != null && !tournamentId.trim().isEmpty()) {
                     boolean ok = doubleEliminationDAO.resetBracketMatches(tournamentId, stage);
+                    if (ok) {
+                        tryRecalculateSeriesStandings(tournamentId);
+                    }
                     out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã đặt lại nhánh đấu trong CSDL" : "Lỗi reset") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId!\"}");
@@ -170,6 +174,7 @@ public class DoubleEliminationServlet extends HttpServlet {
                 }
 
                 if (success) {
+                    tryRecalculateSeriesStandings(tournamentId);
                     out.print("{\"status\":\"success\",\"message\":\"Cập nhật tỷ số Double Elimination thành công!\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Không thể lưu tỷ số vào CSDL!\"}");
@@ -180,5 +185,16 @@ public class DoubleEliminationServlet extends HttpServlet {
         } catch (Exception e) {
             out.print("{\"status\":\"error\",\"message\":\"Lỗi hệ thống: " + e.getMessage() + "\"}");
         }
+    }
+
+    private void tryRecalculateSeriesStandings(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
+        try {
+            dao.TournamentDAO tDao = new dao.TournamentDAO();
+            model.Tournament t = tDao.getTournamentById(tournamentId.trim());
+            if (t != null && t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
+                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(t.getSeriesId().trim());
+            }
+        } catch (Exception ignore) {}
     }
 }

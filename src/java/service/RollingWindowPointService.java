@@ -220,6 +220,9 @@ public class RollingWindowPointService {
                     if (matchPos == null && team.getRawName() != null) {
                         matchPos = matchPlacements.get(team.getRawName().trim().toLowerCase());
                     }
+                    if (matchPos == null && team.getNormalizedName() != null) {
+                        matchPos = matchPlacements.get(team.getNormalizedName().trim().toLowerCase());
+                    }
 
                     int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
                     int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
@@ -296,6 +299,9 @@ public class RollingWindowPointService {
                     Integer matchPos = matchPlacements.get(tm.getId());
                     if (matchPos == null) {
                         matchPos = matchPlacements.get(pk);
+                    }
+                    if (matchPos == null && tm.getNormalizedName() != null) {
+                        matchPos = matchPlacements.get(tm.getNormalizedName().trim().toLowerCase());
                     }
                     int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
                     int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
@@ -720,14 +726,26 @@ public class RollingWindowPointService {
             return posPtsMap.get("17-32");
         } else if (pos >= 33 && pos <= 64 && posPtsMap.containsKey("33-64")) {
             return posPtsMap.get("33-64");
-        } else if (pos >= 65 && pos <= 128 && posPtsMap.containsKey("65-128")) {
-            return posPtsMap.get("65-128");
+        } else if (pos >= 65 && pos <= 96) {
+            if (posPtsMap.containsKey("s1_lb_r2")) return posPtsMap.get("s1_lb_r2");
+            if (posPtsMap.containsKey("s1_lb_cut")) return posPtsMap.get("s1_lb_cut");
+            if (posPtsMap.containsKey("65-128")) return posPtsMap.get("65-128");
+            if (posPtsMap.containsKey("stage1_eliminated")) return posPtsMap.get("stage1_eliminated");
+            if (posPtsMap.containsKey("s1_lb_r1")) return posPtsMap.get("s1_lb_r1");
+        } else if (pos >= 97) {
+            if (posPtsMap.containsKey("s1_lb_r1")) return posPtsMap.get("s1_lb_r1");
+            if (posPtsMap.containsKey("65-128")) return posPtsMap.get("65-128");
+            if (posPtsMap.containsKey("stage1_eliminated")) return posPtsMap.get("stage1_eliminated");
         } else if (pos >= 9 && pos <= 11 && posPtsMap.containsKey("swiss_2-3")) {
             return posPtsMap.get("swiss_2-3");
         } else if (pos >= 12 && pos <= 14 && posPtsMap.containsKey("swiss_1-3")) {
             return posPtsMap.get("swiss_1-3");
         } else if (pos >= 15 && pos <= 16 && posPtsMap.containsKey("swiss_0-3")) {
             return posPtsMap.get("swiss_0-3");
+        } else if (posPtsMap.containsKey("s1_lb_r2")) {
+            return posPtsMap.get("s1_lb_r2");
+        } else if (posPtsMap.containsKey("s1_lb_cut")) {
+            return posPtsMap.get("s1_lb_cut");
         } else if (posPtsMap.containsKey("stage1_eliminated")) {
             return posPtsMap.get("stage1_eliminated");
         } else if (posPtsMap.containsKey("swiss_2-3") && pos >= 9) {

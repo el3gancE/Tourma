@@ -312,14 +312,14 @@
         <script src="${pageContext.request.contextPath}/js/bracket-viewport.js"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
-        <script src="${pageContext.request.contextPath}/js/bracket-card.js"></script>
-        <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
-        <script src="${pageContext.request.contextPath}/js/popup.js"></script>
-        <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
-        <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
-        <script src="${pageContext.request.contextPath}/js/double-elimination.js"></script>
+        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/random-service.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-card.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/match-card.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/popup.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/empty-team-alert.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/double-elimination.js?v=<%= System.currentTimeMillis() %>"></script>
 
         <!-- Page Bootstrap Execution -->
         <script>
@@ -393,6 +393,9 @@
                     cutTarget = 0; // Stage 2 plays to Grand Final champion!
                 }
 
+                var dbMatches = <%= dbMatchesJson %>;
+                window.TourmaContextDbMatches = dbMatches;
+
                 window.TourmaDoubleElimination.init({
                     tournamentId: tourneyId,
                     tournamentName: tourneyName,
@@ -400,7 +403,7 @@
                     cutTarget: cutTarget,
                     tournamentType: tournamentType,
                     stage: currentStage,
-                    dbMatches: <%= dbMatchesJson %>
+                    dbMatches: dbMatches
                 });
             });
         </script>

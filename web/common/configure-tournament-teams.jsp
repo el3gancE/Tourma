@@ -728,6 +728,9 @@
                         localStorage.setItem('tourma_teams_snapshot_' + tournamentId, JSON.stringify(currentTeamsList));
                     } catch (e) {}
                 }
+                if (typeof window.saveHideSeedConfig === 'function') {
+                    window.saveHideSeedConfig();
+                }
                 persistState();
                 bypassWarning = true;
                 var modal = document.getElementById('resetBracketModalBackdrop');

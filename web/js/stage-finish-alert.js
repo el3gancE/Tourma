@@ -25,7 +25,7 @@
             if (stageNum !== 2) return false;
             if (!tournamentId) return false;
 
-            // 1. Check if Stage 1 has been confirmed and locked
+            // 1. Check if Stage 1 has been confirmed and locked or if Stage 2 has matches
             var isLocked = false;
             try {
                 isLocked = (localStorage.getItem('tourma_stage1_locked_' + tournamentId) === 'true');
@@ -33,7 +33,24 @@
                 isLocked = false;
             }
 
-            // If Stage 1 is already confirmed and locked, Stage 2 is unlocked!
+            // Also check if Stage 2 already has saved matches or DB preloads
+            if (!isLocked) {
+                try {
+                    if (localStorage.getItem('tourma_matches_stage2_' + tournamentId) ||
+                        localStorage.getItem('tourma_bracket_stage2_' + tournamentId) ||
+                        localStorage.getItem('tourma_stage2_teams_' + tournamentId) ||
+                        localStorage.getItem('tourma_champion_' + tournamentId) ||
+                        localStorage.getItem('tourma_final_champion_' + tournamentId)) {
+                        isLocked = true;
+                    }
+                } catch (e) {}
+            }
+
+            if (!isLocked && window.TourmaContextDbMatches && Array.isArray(window.TourmaContextDbMatches) && window.TourmaContextDbMatches.length > 0) {
+                isLocked = true;
+            }
+
+            // If Stage 1 is already confirmed and locked or Stage 2 has active data, Stage 2 is unlocked!
             if (isLocked) {
                 var wrapper = document.getElementById('stageFinishAlertContainer');
                 if (wrapper) wrapper.style.display = 'none';

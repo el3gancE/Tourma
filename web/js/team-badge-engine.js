@@ -74,6 +74,7 @@
 
   var storageDataCache = {};
   function getStorageData(prefixList, id) {
+    if (typeof localStorage === 'undefined') return null;
     if (!prefixList || prefixList.length === 0 || !id) return null;
     var cacheKey = prefixList.join('|') + '__' + id;
     if (storageDataCache[cacheKey] !== undefined) {
@@ -81,16 +82,18 @@
     }
     for (var i = 0; i < prefixList.length; i++) {
       var p = prefixList[i];
-      var val = localStorage.getItem(p + id);
-      if (val) {
-        storageDataCache[cacheKey] = val;
-        return val;
-      }
-      val = localStorage.getItem(p + 'tournament_' + id);
-      if (val) {
-        storageDataCache[cacheKey] = val;
-        return val;
-      }
+      try {
+        var val = localStorage.getItem(p + id);
+        if (val) {
+          storageDataCache[cacheKey] = val;
+          return val;
+        }
+        val = localStorage.getItem(p + 'tournament_' + id);
+        if (val) {
+          storageDataCache[cacheKey] = val;
+          return val;
+        }
+      } catch (e) {}
     }
     storageDataCache[cacheKey] = null;
     return null;
@@ -127,8 +130,9 @@
       }
     }
 
-    // 3. Check localStorage champion override: tourma_champion_
-    var rawChamp = getStorageData(['tourma_champion_'], t.id);
+    // 3. Check localStorage champion override: tourma_champion_ / tourma_final_champion_
+    // This is the same reliable source the management page uses to display champions.
+    var rawChamp = getStorageData(['tourma_champion_', 'tourma_final_champion_'], t.id);
     if (rawChamp) {
       try {
         var cName = extractName(rawChamp) || (typeof rawChamp === 'string' ? rawChamp.trim() : null);
@@ -139,8 +143,20 @@
       } catch (e) {}
     }
 
-    // 4. Bracket matches (Single Elim / Double Elim)
-    if (t.id) {
+    // 3b. Check tournament object championName (from DB or engine)
+    if (t.championName) {
+      try {
+        var dbChamp = extractName(t.championName) || (typeof t.championName === 'string' ? t.championName.trim() : null);
+        if (dbChamp && isTeamSelf(dbChamp, teamName)) {
+          champOfTourneyCache[memoKey] = true;
+          return true;
+        }
+      } catch (e) {}
+    }
+
+    // 4. Bracket matches (Single Elim / Double Elim) — SKIP in server mode
+    // Raw bracket localStorage data is unreliable; only used in client-only mode
+    if (!context.serverMode && t.id) {
       var rawBracket = getStorageData(['tourma_bracket_', 'tourma_bracket_matches_', 'tourma_matches_'], t.id);
       if (rawBracket) {
         try {
@@ -180,7 +196,7 @@
           }
         } catch (e) {}
       }
-    }
+    } // end !serverMode (bracket data only)
 
     champOfTourneyCache[memoKey] = false;
     return false;
@@ -192,27 +208,30 @@
   function getTierWinCounts(teamName, context) {
     var counts = { S: 0, A: 0, B: 0, C: 0, D: 0 };
     var subTourneys = context.subTournaments || window.seriesSubTournaments || [];
+    // Use a Set-like object keyed by tournament id to prevent any double-counting
     var processed = {};
 
-    // 1. Scan subTourneys
+    // 1. Scan subTourneys — the authoritative list; mark ALL visited ids regardless of win
     for (var i = 0; i < subTourneys.length; i++) {
       var t = subTourneys[i];
       if (!t || !t.id) continue;
+      // Always mark as processed so steps 2 & 3 won't re-count same tournament
+      processed[t.id] = true;
       if (isTeamChampOfTourney(t, teamName, context)) {
         var tier = (t.tierName || t.tier || 'A').toUpperCase().trim();
         if (counts.hasOwnProperty(tier)) {
           counts[tier]++;
-          processed[t.id] = true;
         }
       }
     }
 
-    // 2. Scan championTourneys
+    // 2. Scan championTourneys — only count tournaments NOT already seen in step 1
     var champList = context.championTourneys || [];
     for (var j = 0; j < champList.length; j++) {
       var ct = champList[j];
       if (!ct) continue;
       var ctId = ct.id || ct.tournamentId;
+      // Skip if this tournament was already processed in step 1
       if (ctId && processed[ctId]) continue;
 
       var cTier = (ct.tier || ct.tierName || 'A').toUpperCase().trim();
@@ -222,7 +241,7 @@
       }
     }
 
-    // 3. Scan tourneyPerformances
+    // 3. Scan tourneyPerformances — only count tournaments NOT already seen in steps 1 or 2
     var perfs = context.tourneyPerformances || [];
     for (var k = 0; k < perfs.length; k++) {
       var perf = perfs[k];
@@ -482,6 +501,168 @@
     }
   });
 
+  /**
+   * Helper to find all champion streaks for a team across all sub-tournaments,
+   * returning the longest consecutive championship win streak.
+   */
+  function getLongestChampionStreak(teamName, context) {
+    if (!teamName || !context) return { length: 0, tourneys: [] };
+
+    var bestStreakTourneys = [];
+    var currentStreakTourneys = [];
+
+    // 1. Primary Source: tourneyPerformances (actual sequence of tournaments played by the team)
+    var perfs = (context.tourneyPerformances || []).slice();
+    if (perfs && perfs.length > 0) {
+      perfs.sort(function (a, b) {
+        var sA = (a.stt !== undefined && a.stt !== null) ? a.stt : 0;
+        var sB = (b.stt !== undefined && b.stt !== null) ? b.stt : 0;
+        return sA - sB;
+      });
+
+      for (var p = 0; p < perfs.length; p++) {
+        var perf = perfs[p];
+        var isChamp = (perf.achievement === "Vô Địch" || perf.achievement === "Champion") ||
+                      isTeamChampOfTourney({ id: perf.id || perf.tournamentId, name: perf.name }, teamName, context);
+        if (isChamp) {
+          currentStreakTourneys.push({
+            id: perf.id || perf.tournamentId || '',
+            name: perf.name || ('Giải #' + (p + 1)),
+            tier: (perf.tier || perf.tierName || 'A').toUpperCase()
+          });
+          if (currentStreakTourneys.length >= bestStreakTourneys.length) {
+            bestStreakTourneys = currentStreakTourneys.slice();
+          }
+        } else {
+          currentStreakTourneys = [];
+        }
+      }
+
+      if (bestStreakTourneys.length >= 2) {
+        return {
+          length: bestStreakTourneys.length,
+          tourneys: bestStreakTourneys
+        };
+      }
+    }
+
+    // 2. Secondary Source: Evaluate across subTournaments (ignoring unplayed/non-participated events)
+    var subTourneys = context.subTournaments || window.seriesSubTournaments || [];
+    if (!subTourneys || subTourneys.length === 0) {
+      return { length: bestStreakTourneys.length, tourneys: bestStreakTourneys };
+    }
+
+    // Sort tournaments by index to guarantee chronological order
+    var sortedSub = subTourneys.slice().sort(function (a, b) {
+      var idxA = (a.index !== undefined && a.index !== null) ? a.index : (a.tournamentIndexInSeries || 0);
+      var idxB = (b.index !== undefined && b.index !== null) ? b.index : (b.tournamentIndexInSeries || 0);
+      return idxA - idxB;
+    });
+
+    var subBestStreak = [];
+    var subCurStreak = [];
+
+    for (var i = 0; i < sortedSub.length; i++) {
+      var t = sortedSub[i];
+      var won = isTeamChampOfTourney(t, teamName, context);
+      if (won) {
+        subCurStreak.push({
+          id: t.id,
+          name: t.name || ('Giải #' + (t.index || (i + 1))),
+          tier: (t.tierName || t.tier || 'A').toUpperCase()
+        });
+        if (subCurStreak.length >= subBestStreak.length) {
+          subBestStreak = subCurStreak.slice();
+        }
+      } else {
+        // Only reset streak if the team actually played in this tournament and lost
+        var teamPlayed = false;
+        if (perfs && perfs.length > 0) {
+          teamPlayed = perfs.some(function (pf) {
+            return (pf.id === t.id || pf.tournamentId === t.id || (pf.name && pf.name === t.name));
+          });
+        }
+        if (teamPlayed) {
+          subCurStreak = [];
+        }
+      }
+    }
+
+    if (subBestStreak.length > bestStreakTourneys.length) {
+      bestStreakTourneys = subBestStreak;
+    }
+
+    return {
+      length: bestStreakTourneys.length,
+      tourneys: bestStreakTourneys
+    };
+  }
+
+  /**
+   * 8. BACK-2-BACK (Vô địch 2 giải liên tiếp)
+   */
+  registry.push({
+    id: 'BACK_TO_BACK',
+    name: 'Back-2-Back',
+    category: 'STREAK',
+    rarity: 'Đặc Biệt',
+    themeClass: 'tourma-badge-streak',
+    iconClass: 'fa-solid fa-fire',
+    description: 'Vô địch 2 giải đấu liên tiếp trong chuỗi giải.',
+    evaluate: function (teamName, context) {
+      var streak = getLongestChampionStreak(teamName, context);
+      if (streak.length >= 2) {
+        return {
+          id: 'BACK_TO_BACK',
+          name: 'Back-2-Back',
+          title: 'Back-2-Back',
+          themeClass: 'tourma-badge-streak',
+          iconClass: 'fa-solid fa-fire',
+          rarity: 'Đặc Biệt',
+          description: 'Đội đã đạt thành tích vô địch 2 giải đấu liên tiếp.',
+          meta: {
+            count: 2,
+            streakTourneys: streak.tourneys.slice(0, 2)
+          }
+        };
+      }
+      return null;
+    }
+  });
+
+  /**
+   * 9. WINNING STREAK (Vô địch 3+ giải liên tiếp -> "{n}x Winning Streak")
+   */
+  registry.push({
+    id: 'WINNING_STREAK',
+    name: 'Winning Streak',
+    category: 'STREAK',
+    rarity: 'Huyền Thoại',
+    themeClass: 'tourma-badge-streak-fire',
+    iconClass: 'fa-solid fa-fire-flame-curved',
+    description: 'Vô địch 3 giải đấu liên tiếp trở lên trong chuỗi giải.',
+    evaluate: function (teamName, context) {
+      var streak = getLongestChampionStreak(teamName, context);
+      if (streak.length >= 3) {
+        var badgeTitle = streak.length + 'x Winning Streak';
+        return {
+          id: 'WINNING_STREAK',
+          name: badgeTitle,
+          title: badgeTitle,
+          themeClass: 'tourma-badge-streak-fire',
+          iconClass: 'fa-solid fa-fire-flame-curved',
+          rarity: 'Huyền Thoại',
+          description: 'Thống trị tuyệt đối với chuỗi ' + streak.length + ' giải đấu vô địch liên tiếp!',
+          meta: {
+            count: streak.length,
+            streakTourneys: streak.tourneys
+          }
+        };
+      }
+      return null;
+    }
+  });
+
   // =========================================================================
   // BADGE ENGINE PUBLIC API
   // =========================================================================
@@ -516,6 +697,10 @@
 
       if (!container) return;
 
+      // Clear caches on each render to prevent cross-team contamination
+      champOfTourneyCache = {};
+      storageDataCache = {};
+
       var earned = this.evaluateTeamBadges(teamName, context);
 
       if (earned.length === 0) {
@@ -544,7 +729,17 @@
         ) : '';
 
         var footerText = '';
-        if (b.category === 'TIER_CHAMPION' && b.meta && b.meta.tier) {
+        if (b.meta && b.meta.streakTourneys && b.meta.streakTourneys.length > 0) {
+          var itemsHtml = b.meta.streakTourneys.map(function(t) {
+            var tName = t.name || t;
+            var tTier = t.tier ? (' (' + t.tier + ')') : '';
+            return '<span class="streak-tourney-item"><i class="fa-solid fa-trophy"></i> ' + tName + tTier + '</span>';
+          }).join('');
+          footerText = '<div class="tourma-badge-tooltip-footer streak-footer">' +
+            '<div class="streak-footer-title"><i class="fa-solid fa-fire"></i> Các giải đã vô địch:</div>' +
+            '<div class="streak-tourney-list">' + itemsHtml + '</div>' +
+          '</div>';
+        } else if (b.category === 'TIER_CHAMPION' && b.meta && b.meta.tier) {
           footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Danh hiệu vô địch Tier ' + b.meta.tier + ' (' + b.meta.count + ' cúp)</div>';
         } else if (tourneyName) {
           footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-trophy"></i> Vô địch ' + tourneyName + '</div>';

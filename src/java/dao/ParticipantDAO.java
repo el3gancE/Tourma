@@ -165,74 +165,180 @@ public class ParticipantDAO {
         Map<String, Integer> placementMap = new HashMap<>();
         if (tournamentId == null || tournamentId.trim().isEmpty()) return placementMap;
 
-        Map<String, String> idToNameMap = new HashMap<>();
-        List<Team> teams = getTeamsByTournamentId(tournamentId);
-        if (teams != null) {
-            for (Team t : teams) {
-                if (t.getId() != null && t.getRawName() != null) {
-                    idToNameMap.put(t.getId(), t.getRawName().trim().toLowerCase());
-                }
-            }
-        }
-
         DBContext db = new DBContext();
-        String sql = "SELECT * FROM matches WHERE tournament_id = ? ORDER BY round_number DESC";
+        String sql = "SELECT m.*, ts.stage_order, ts.format as stage_format, " +
+                     "t1.raw_name AS t1_name, t1.normalized_name AS t1_norm, " +
+                     "t2.raw_name AS t2_name, t2.normalized_name AS t2_norm, " +
+                     "w.raw_name AS winner_name, w.normalized_name AS winner_norm " +
+                     "FROM matches m " +
+                     "LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
+                     "LEFT JOIN teams t1 ON m.team1_id = t1.id " +
+                     "LEFT JOIN teams t2 ON m.team2_id = t2.id " +
+                     "LEFT JOIN teams w ON m.winner_id = w.id " +
+                     "WHERE m.tournament_id = ? " +
+                     "ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC";
 
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tournamentId);
+            ps.setString(1, tournamentId.trim());
             try (ResultSet rs = ps.executeQuery()) {
-                int maxRound = -1;
+                int maxRoundStage2 = -1;
+                int highestStageOrder = 1;
+
+                List<Map<String, Object>> rows = new ArrayList<>();
                 while (rs.next()) {
-                    int rNum = rs.getInt("round_number");
-                    String t1 = rs.getString("team1_id");
-                    String t2 = rs.getString("team2_id");
-                    
-                    String winner = null;
-                    try { winner = rs.getString("winner_id"); } catch (Exception ignore) {}
-                    if (winner == null) {
-                        try { winner = rs.getString("winner_team_id"); } catch (Exception ignore) {}
-                    }
+                    Map<String, Object> row = new HashMap<>();
+                    int stgOrder = rs.getInt("stage_order");
+                    if (rs.wasNull()) stgOrder = 1;
+                    if (stgOrder > highestStageOrder) highestStageOrder = stgOrder;
 
-                    int s1 = -1, s2 = -1;
-                    try { s1 = rs.getInt("score1"); if (rs.wasNull()) s1 = -1; } catch (Exception ignore) {}
-                    if (s1 == -1) {
-                        try { s1 = rs.getInt("team1_score"); if (rs.wasNull()) s1 = -1; } catch (Exception ignore) {}
-                    }
-                    try { s2 = rs.getInt("score2"); if (rs.wasNull()) s2 = -1; } catch (Exception ignore) {}
-                    if (s2 == -1) {
-                        try { s2 = rs.getInt("team2_score"); if (rs.wasNull()) s2 = -1; } catch (Exception ignore) {}
-                    }
+                    row.put("stage_order", stgOrder);
+                    row.put("stage_format", rs.getString("stage_format"));
+                    row.put("round_number", rs.getInt("round_number"));
+                    row.put("bracket_type", rs.getString("bracket_type"));
+                    row.put("team1_id", rs.getString("team1_id"));
+                    row.put("team2_id", rs.getString("team2_id"));
+                    row.put("t1_name", rs.getString("t1_name"));
+                    row.put("t2_name", rs.getString("t2_name"));
+                    row.put("winner_id", rs.getString("winner_id"));
+                    row.put("winner_name", rs.getString("winner_name"));
+                    row.put("score1", rs.getObject("score1"));
+                    row.put("score2", rs.getObject("score2"));
+                    rows.add(row);
+                }
 
-                    if (winner == null && s1 >= 0 && s2 >= 0 && s1 != s2) {
-                        winner = (s1 > s2) ? t1 : t2;
-                    }
+                // Process highest stage (Stage 2 in Multi-Stage, or Stage 1 in Single Stage)
+                for (Map<String, Object> r : rows) {
+                    int stgOrder = (int) r.get("stage_order");
+                    if (stgOrder == highestStageOrder) {
+                        int rNum = (int) r.get("round_number");
+                        if (maxRoundStage2 == -1) maxRoundStage2 = rNum;
 
-                    if (winner == null) {
-                        continue;
-                    }
+                        String t1 = (String) r.get("team1_id");
+                        String t2 = (String) r.get("team2_id");
+                        String t1Name = (String) r.get("t1_name");
+                        String t2Name = (String) r.get("t2_name");
+                        String winner = (String) r.get("winner_id");
+                        String winnerName = (String) r.get("winner_name");
 
-                    if (maxRound == -1) {
-                        maxRound = rNum;
-                    }
-
-                    int diff = maxRound - rNum;
-                    if (diff == 0) {
-                        if (!placementMap.containsKey(winner)) {
-                            placementMap.put(winner, 1);
-                            if (idToNameMap.containsKey(winner)) placementMap.put(idToNameMap.get(winner), 1);
+                        if (winner == null) {
+                            Object s1Obj = r.get("score1");
+                            Object s2Obj = r.get("score2");
+                            if (s1Obj != null && s2Obj != null) {
+                                int s1 = (Integer) s1Obj;
+                                int s2 = (Integer) s2Obj;
+                                if (s1 != s2) {
+                                    winner = (s1 > s2) ? t1 : t2;
+                                    winnerName = (s1 > s2) ? t1Name : t2Name;
+                                }
+                            }
                         }
-                        String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
-                        if (loser != null && !placementMap.containsKey(loser)) {
-                            placementMap.put(loser, 2);
-                            if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), 2);
-                        }
-                    } else if (diff >= 1) {
-                        String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
-                        if (loser != null && !placementMap.containsKey(loser)) {
+
+                        if (winner == null) continue;
+
+                        int diff = maxRoundStage2 - rNum;
+                        if (diff == 0) {
+                            // Champion = 1
+                            if (winner != null) placementMap.putIfAbsent(winner, 1);
+                            if (winnerName != null) {
+                                placementMap.putIfAbsent(winnerName.trim().toLowerCase(), 1);
+                            }
+
+                            // Runner-up = 2
+                            String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
+                            String loserName = winner.equalsIgnoreCase(t1) ? t2Name : t1Name;
+                            if (loser != null) placementMap.putIfAbsent(loser, 2);
+                            if (loserName != null) {
+                                placementMap.putIfAbsent(loserName.trim().toLowerCase(), 2);
+                            }
+                        } else if (diff >= 1) {
+                            String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
+                            String loserName = winner.equalsIgnoreCase(t1) ? t2Name : t1Name;
                             int pos = (int) Math.pow(2, diff) + 1;
-                            placementMap.put(loser, pos);
-                            if (idToNameMap.containsKey(loser)) placementMap.put(idToNameMap.get(loser), pos);
+                            if (loser != null) placementMap.putIfAbsent(loser, pos);
+                            if (loserName != null) {
+                                placementMap.putIfAbsent(loserName.trim().toLowerCase(), pos);
+                            }
+                        }
+                    }
+                }
+
+                // Find max LB round in Stage 1 if Stage 1 has LB matches
+                int maxLbRoundStage1 = 0;
+                for (Map<String, Object> r : rows) {
+                    int stgOrder = (int) r.get("stage_order");
+                    if (stgOrder < highestStageOrder) {
+                        String bType = (String) r.get("bracket_type");
+                        if ("LOSER_BRACKET".equalsIgnoreCase(bType) || "LB".equalsIgnoreCase(bType)) {
+                            int rNum = (int) r.get("round_number");
+                            if (rNum > maxLbRoundStage1) maxLbRoundStage1 = rNum;
+                        }
+                    }
+                }
+
+                // If Multi-Stage (highestStageOrder > 1), also process Stage 1 eliminated teams
+                if (highestStageOrder > 1) {
+                    for (Map<String, Object> r : rows) {
+                        int stgOrder = (int) r.get("stage_order");
+                        if (stgOrder < highestStageOrder) {
+                            int rNum = (int) r.get("round_number");
+                            String bType = (String) r.get("bracket_type");
+                            String t1 = (String) r.get("team1_id");
+                            String t2 = (String) r.get("team2_id");
+                            String t1Name = (String) r.get("t1_name");
+                            String t2Name = (String) r.get("t2_name");
+                            String winner = (String) r.get("winner_id");
+                            String winnerName = (String) r.get("winner_name");
+
+                            if (winner == null) {
+                                Object s1Obj = r.get("score1");
+                                Object s2Obj = r.get("score2");
+                                if (s1Obj != null && s2Obj != null) {
+                                    int s1 = (Integer) s1Obj;
+                                    int s2 = (Integer) s2Obj;
+                                    if (s1 != s2) {
+                                        winner = (s1 > s2) ? t1 : t2;
+                                        winnerName = (s1 > s2) ? t1Name : t2Name;
+                                    }
+                                }
+                            }
+                            if (winner == null) continue;
+
+                            String loser = winner.equalsIgnoreCase(t1) ? t2 : t1;
+                            String loserName = winner.equalsIgnoreCase(t1) ? t2Name : t1Name;
+
+                            // If this was a DOUBLE_ELIMINATION stage with LB matches:
+                            if (maxLbRoundStage1 > 0) {
+                                // Loser of WINNER_BRACKET drops to LB, NOT eliminated!
+                                if (!"LOSER_BRACKET".equalsIgnoreCase(bType) && !"LB".equalsIgnoreCase(bType)) {
+                                    continue;
+                                }
+                                // Only losers of LOSER_BRACKET are eliminated in Stage 1 DE:
+                                if (loser != null || loserName != null) {
+                                    String lKey = (loserName != null) ? loserName.trim().toLowerCase() : null;
+                                    // If rNum == maxLbRoundStage1 -> Loser's Qualification (pos 65)
+                                    // If rNum == maxLbRoundStage1 - 1 -> LB Round 1 (pos 97)
+                                    // If rNum <= maxLbRoundStage1 - 2 -> LB earlier rounds (pos 129)
+                                    int pos = 65;
+                                    if (rNum == maxLbRoundStage1) {
+                                        pos = 65;
+                                    } else if (rNum == maxLbRoundStage1 - 1) {
+                                        pos = 97;
+                                    } else {
+                                        pos = 129;
+                                    }
+                                    if (loser != null) placementMap.putIfAbsent(loser, pos);
+                                    if (lKey != null) placementMap.putIfAbsent(lKey, pos);
+                                }
+                            } else {
+                                // Stage 1 SE or other format
+                                if (loser != null || loserName != null) {
+                                    String lKey = (loserName != null) ? loserName.trim().toLowerCase() : null;
+                                    int pos = 65;
+                                    if (loser != null) placementMap.putIfAbsent(loser, pos);
+                                    if (lKey != null) placementMap.putIfAbsent(lKey, pos);
+                                }
+                            }
                         }
                     }
                 }

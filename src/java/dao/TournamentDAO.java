@@ -329,39 +329,83 @@ public class TournamentDAO {
     }
 
     public boolean deleteTournament(String id) {
-        String sqlStages = "DELETE FROM tournament_stages WHERE tournament_id = ?";
+        if (id == null || id.trim().isEmpty()) return false;
+        String tid = id.trim();
+
+        String sqlUpdateTourneys = "UPDATE tournaments SET linked_qualifier_tournament_id = NULL WHERE linked_qualifier_tournament_id = ?";
+        String sqlHistory = "DELETE FROM series_tournament_history WHERE tournament_id = ?";
+        String sqlUpdateMatches = "UPDATE matches SET next_match_id = NULL WHERE tournament_id = ?";
         String sqlMatches = "DELETE FROM matches WHERE tournament_id = ?";
+        String sqlGroupTeams1 = "DELETE FROM group_teams WHERE group_id IN (SELECT g.id FROM groups g JOIN tournament_stages s ON g.stage_id = s.id WHERE s.tournament_id = ?)";
+        String sqlGroupTeams2 = "DELETE FROM group_teams WHERE team_id IN (SELECT id FROM teams WHERE tournament_id = ?)";
+        String sqlGroups = "DELETE FROM groups WHERE stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id = ?)";
+        String sqlUpdateTeams = "UPDATE teams SET current_stage_id = NULL WHERE tournament_id = ?";
         String sqlTeams = "DELETE FROM teams WHERE tournament_id = ?";
+        String sqlStages = "DELETE FROM tournament_stages WHERE tournament_id = ?";
         String sqlTourney = "DELETE FROM tournaments WHERE id = ?";
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                try (PreparedStatement ps = conn.prepareStatement(sqlStages)) {
-                    ps.setString(1, id);
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateTourneys)) {
+                    ps.setString(1, tid);
                     ps.executeUpdate();
-                } catch (Exception ignore) {
-                }
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlHistory)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateMatches)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
 
                 try (PreparedStatement ps = conn.prepareStatement(sqlMatches)) {
-                    ps.setString(1, id);
+                    ps.setString(1, tid);
                     ps.executeUpdate();
-                } catch (Exception ignore) {
-                }
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlGroupTeams1)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlGroupTeams2)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlGroups)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateTeams)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
 
                 try (PreparedStatement ps = conn.prepareStatement(sqlTeams)) {
-                    ps.setString(1, id);
+                    ps.setString(1, tid);
                     ps.executeUpdate();
-                } catch (Exception ignore) {
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlStages)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                int rows = 0;
+                try (PreparedStatement ps = conn.prepareStatement(sqlTourney)) {
+                    ps.setString(1, tid);
+                    rows = ps.executeUpdate();
                 }
 
-                try (PreparedStatement ps = conn.prepareStatement(sqlTourney)) {
-                    ps.setString(1, id);
-                    int rows = ps.executeUpdate();
-                    conn.commit();
-                    return rows > 0;
-                }
+                conn.commit();
+                return rows > 0;
             } catch (Exception ex) {
                 conn.rollback();
                 throw ex;

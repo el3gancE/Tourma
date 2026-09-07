@@ -112,8 +112,20 @@ public class RollingTournamentListServlet extends HttpServlet {
             tournamentDAO.deleteTournament(tournamentId.trim());
 
             if (seriesId != null && !seriesId.trim().isEmpty()) {
-                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
+                try {
+                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
+                } catch (Exception ignore) {}
             }
+
+            String accept = request.getHeader("Accept");
+            String xRequestedWith = request.getHeader("X-Requested-With");
+            if ((accept != null && accept.contains("application/json")) || "XMLHttpRequest".equalsIgnoreCase(xRequestedWith)) {
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().write("{\"success\":true,\"message\":\"Tournament deleted successfully\"}");
+                return;
+            }
+
             response.sendRedirect(request.getContextPath() + "/rolling/tournament-list?id=" + (seriesId != null ? seriesId : ""));
             return;
         }

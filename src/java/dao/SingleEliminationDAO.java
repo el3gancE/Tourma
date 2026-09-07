@@ -86,7 +86,7 @@ public class SingleEliminationDAO extends DBContext {
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
                 + "WHERE m.tournament_id = ? "
-                + "ORDER BY m.round_number ASC, m.id ASC";
+                + "ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC";
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -157,12 +157,12 @@ public class SingleEliminationDAO extends DBContext {
                 + "t2.raw_name AS t2_name, t2.original_seed AS t2_seed, "
                 + "tw.raw_name AS winner_name "
                 + "FROM matches m "
-                + "JOIN tournament_stages s ON m.stage_id = s.id "
+                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "WHERE m.tournament_id = ? AND s.stage_order = ? "
-                + "ORDER BY m.round_number ASC, m.id ASC";
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '_%') "
+                + "ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
         int count = 0;
@@ -171,6 +171,8 @@ public class SingleEliminationDAO extends DBContext {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tournamentId);
             ps.setInt(2, stageOrder);
+            ps.setInt(3, stageOrder);
+            ps.setInt(4, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
                 int matchSeq = 1;
                 while (rs.next()) {

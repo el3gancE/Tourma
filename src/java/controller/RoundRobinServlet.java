@@ -111,6 +111,9 @@ public class RoundRobinServlet extends HttpServlet {
 
                 if (tournamentId != null && matchesJson != null && !matchesJson.trim().isEmpty()) {
                     boolean ok = roundRobinDAO.syncRoundRobinMatches(tournamentId, stage, matchesJson);
+                    if (ok) {
+                        tryRecalculateSeriesStandings(tournamentId);
+                    }
                     out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đồng bộ Round Robin thành công!" : "Lỗi lưu Round Robin vào DB!") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc dữ liệu matchesJson!\"}");
@@ -121,6 +124,9 @@ public class RoundRobinServlet extends HttpServlet {
             if ("reset".equalsIgnoreCase(action)) {
                 if (tournamentId != null && !tournamentId.trim().isEmpty()) {
                     boolean ok = roundRobinDAO.resetRoundRobinMatches(tournamentId, stage);
+                    if (ok) {
+                        tryRecalculateSeriesStandings(tournamentId);
+                    }
                     out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã reset Round Robin trong CSDL" : "Lỗi reset") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId!\"}");
@@ -156,12 +162,27 @@ public class RoundRobinServlet extends HttpServlet {
                     success = roundRobinDAO.updateMatchScore(matchIdStr, score1Str, score2Str, winner);
                 }
 
+                if (success) {
+                    tryRecalculateSeriesStandings(tournamentId);
+                }
+
                 out.print("{\"success\": " + success + ", \"matchId\": \"" + matchIdStr + "\"}");
             } else {
-                out.print("{\"status\":\"error\",\"message\":\"Dữ liệu không hợp lệ!\"}");
+                out.print("{\"success\": false, \"message\": \"Dữ liệu không hợp lệ!\"}");
             }
         } catch (Exception e) {
-            out.print("{\"status\":\"error\",\"message\":\"Lỗi: " + e.getMessage() + "\"}");
+            out.print("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
         }
+    }
+
+    private void tryRecalculateSeriesStandings(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
+        try {
+            dao.TournamentDAO tDao = new dao.TournamentDAO();
+            model.Tournament t = tDao.getTournamentById(tournamentId.trim());
+            if (t != null && t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
+                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(t.getSeriesId().trim());
+            }
+        } catch (Exception ignore) {}
     }
 }

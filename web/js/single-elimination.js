@@ -212,36 +212,11 @@
             }
 
             var hasDbMatches = (dbMatches && Array.isArray(dbMatches) && dbMatches.length > 0);
-            console.log('[SE restore] key=' + bKey + ' | hasDbMatches=' + hasDbMatches + ' (count=' + (hasDbMatches ? dbMatches.length : 0) + ') | hasSaved=' + savedValid + ' | mapSize=' + (savedBracket && savedBracket.matchesMap ? Object.keys(savedBracket.matchesMap).length : 0));
+            console.log('[SE restore] key=' + bKey + ' | hasSaved=' + savedValid + ' | hasDbMatches=' + hasDbMatches + ' (count=' + (hasDbMatches ? dbMatches.length : 0) + ')');
 
-            if (hasDbMatches) {
-                // 1. RESTORE DIRECTLY FROM DATABASE
-                console.log('[SE restore] Restoring directly from DATABASE matches!');
-                this.buildMapFromList(dbMatches);
-
-                // If localStorage had any completed scores or user inputs that DB missed, merge them
-                if (savedValid && savedBracket && savedBracket.matchesMap) {
-                    var sKeys = Object.keys(savedBracket.matchesMap);
-                    var hadMerged = false;
-                    for (var sIdx = 0; sIdx < sKeys.length; sIdx++) {
-                        var sMat = savedBracket.matchesMap[sKeys[sIdx]];
-                        var curMat = this.matchesMap[sKeys[sIdx]];
-                        if (sMat && curMat) {
-                            if (!curMat.winnerId && sMat.winnerId) {
-                                if (curMat.team1 && sMat.team1 && sMat.team1.score !== undefined) curMat.team1.score = sMat.team1.score;
-                                if (curMat.team2 && sMat.team2 && sMat.team2.score !== undefined) curMat.team2.score = sMat.team2.score;
-                                curMat.winnerId = sMat.winnerId;
-                                curMat.status = sMat.status || 'COMPLETED';
-                                hadMerged = true;
-                            }
-                        }
-                    }
-                    if (hadMerged) {
-                        this.persistMatches();
-                    }
-                }
-            } else if (savedValid && savedBracket) {
-                // DIRECT RESTORE
+            if (savedValid && savedBracket && savedBracket.matchesMap && Object.keys(savedBracket.matchesMap).length > 0) {
+                // 1. RESTORE DIRECTLY FROM CLIENT LOCALSTORAGE (Authoritative User Input) & SYNC TO DB
+                console.log('[SE restore] Restoring from localStorage user input and syncing to DB!');
                 this.matchesMap = savedBracket.matchesMap || {};
                 this.roundsList = savedBracket.roundsList || [];
                 this.bracketData = savedBracket;
@@ -254,21 +229,39 @@
                     this.teamsList = savedBracket.teamsList;
                 }
 
-                // Immediately sync to DB so DB now has this tournament's matches permanently!
+                // Immediately persist and sync user's actual bracket to SQL Server!
                 this.syncBracketToDB(true);
+            } else if (hasDbMatches) {
+                // 2. RESTORE DIRECTLY FROM DATABASE (When localStorage has no saved state)
+                console.log('[SE restore] Restoring directly from DATABASE matches!');
+                this.buildMapFromList(dbMatches);
+            } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
+                // 3. GENERATE FRESH BRACKET
+                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
+                this.bracketData = generated;
+                this.roundsList = generated.roundsList || [];
+                this.matchesMap = generated.matchesMap || {};
+                this.persistMatches();
+            }
 
-                // Re-link roundsList match references to matchesMap objects (shared reference)
-                for (var r = 0; r < this.roundsList.length; r++) {
-                    for (var m = 0; m < this.roundsList[r].matches.length; m++) {
-                        var mRef = this.roundsList[r].matches[m];
-                        var mKeyRef = (mRef && (mRef.matchId !== undefined && mRef.matchId !== null ? mRef.matchId : mRef.id));
-                        if (mKeyRef && this.matchesMap[mKeyRef]) {
-                            this.roundsList[r].matches[m] = this.matchesMap[mKeyRef];
+            // =========================================================================
+            // UNIVERSAL SEED SYNC & ROUNDS RE-LINKING (Guarantees seeds are never lost)
+            // =========================================================================
+            if (this.matchesMap && Object.keys(this.matchesMap).length > 0) {
+                // 1. Re-link roundsList match references to matchesMap objects
+                if (this.roundsList && this.roundsList.length > 0) {
+                    for (var r = 0; r < this.roundsList.length; r++) {
+                        for (var m = 0; m < this.roundsList[r].matches.length; m++) {
+                            var mRef = this.roundsList[r].matches[m];
+                            var mKeyRef = (mRef && (mRef.matchId !== undefined && mRef.matchId !== null ? mRef.matchId : mRef.id));
+                            if (mKeyRef && this.matchesMap[mKeyRef]) {
+                                this.roundsList[r].matches[m] = this.matchesMap[mKeyRef];
+                            }
                         }
                     }
                 }
 
-                // Re-sync seeds from tourma_teams_ if available
+                // 2. Build seedLookup map from tourma_teams_ and this.teamsList
                 var allOriginalTeams = null;
                 try {
                     allOriginalTeams = JSON.parse(localStorage.getItem('tourma_teams_' + this.tournamentId));
@@ -278,60 +271,69 @@
                 if (allOriginalTeams && Array.isArray(allOriginalTeams)) {
                     for (var ot = 0; ot < allOriginalTeams.length; ot++) {
                         var oTeam = allOriginalTeams[ot];
-                        var oName = (typeof oTeam === 'object') ? (oTeam.name || oTeam.rawName) : oTeam;
-                        var oSeed = (typeof oTeam === 'object' && oTeam.seed !== undefined && oTeam.seed !== null && oTeam.seed !== '') ? oTeam.seed : '';
-                        if (oName && oSeed !== '') seedLookup[oName] = oSeed;
+                        var oName = (typeof oTeam === 'object' && oTeam) ? (oTeam.name || oTeam.rawName) : oTeam;
+                        var oSeed = (typeof oTeam === 'object' && oTeam && oTeam.seed !== undefined && oTeam.seed !== null && oTeam.seed !== '') ? oTeam.seed : (ot + 1);
+                        if (oName && oSeed !== '') {
+                            seedLookup[String(oName).trim().toLowerCase()] = oSeed;
+                        }
                     }
                 }
 
-                if (this.teamsList && this.teamsList.length > 0) {
+                if (this.teamsList && Array.isArray(this.teamsList) && this.teamsList.length > 0) {
                     for (var s = 0; s < this.teamsList.length; s++) {
                         var st = this.teamsList[s];
-                        var sName = (typeof st === 'object') ? (st.name || st.rawName) : st;
-                        var sSeed = (typeof st === 'object' && st.seed !== undefined && st.seed !== null && st.seed !== '') ? st.seed : '';
-                        if (sName && sSeed !== '' && seedLookup[sName] === undefined) seedLookup[sName] = sSeed;
-                    }
-                    var mKeys = Object.keys(this.matchesMap);
-                    for (var k = 0; k < mKeys.length; k++) {
-                        var mat = this.matchesMap[mKeys[k]];
-                        if (mat.team1 && mat.team1.name && seedLookup[mat.team1.name] !== undefined) {
-                            mat.team1.seed = seedLookup[mat.team1.name];
-                        } else if (mat.team1 && (!mat.team1.name || mat.team1.name.startsWith('W #') || mat.team1.name.startsWith('L #') || mat.team1.name === 'TBD' || mat.team1.name === 'BYE')) {
-                            mat.team1.seed = '';
-                        }
-                        if (mat.team2 && mat.team2.name && seedLookup[mat.team2.name] !== undefined) {
-                            mat.team2.seed = seedLookup[mat.team2.name];
-                        } else if (mat.team2 && (!mat.team2.name || mat.team2.name.startsWith('W #') || mat.team2.name.startsWith('L #') || mat.team2.name === 'TBD' || mat.team2.name === 'BYE')) {
-                            mat.team2.seed = '';
-                        }
-                    }
-
-                    // Auto-resolve any unlinked BYE winners to their next round slots
-                    for (var k = 0; k < mKeys.length; k++) {
-                        var mat = this.matchesMap[mKeys[k]];
-                        if (mat && mat.winnerId && mat.nextMatchId && this.matchesMap[mat.nextMatchId]) {
-                            var isT1 = (mat.winnerId === 'team1');
-                            var wTeam = isT1 ? mat.team1 : mat.team2;
-                            var nextM = this.matchesMap[mat.nextMatchId];
-                            if (wTeam && wTeam.name && wTeam.name !== 'BYE') {
-                                if (mat.nextMatchSlot === 1 && (!nextM.team1.name || nextM.team1.name.startsWith('W #') || nextM.team1.name === 'TBD')) {
-                                    nextM.team1.name = wTeam.name;
-                                    nextM.team1.seed = wTeam.seed;
-                                } else if (mat.nextMatchSlot === 2 && (!nextM.team2.name || nextM.team2.name.startsWith('W #') || nextM.team2.name === 'TBD')) {
-                                    nextM.team2.name = wTeam.name;
-                                    nextM.team2.seed = wTeam.seed;
-                                }
+                        var sName = (typeof st === 'object' && st) ? (st.name || st.rawName) : st;
+                        var sSeed = (typeof st === 'object' && st && st.seed !== undefined && st.seed !== null && st.seed !== '') ? st.seed : (s + 1);
+                        if (sName && sSeed !== '') {
+                            var kName = String(sName).trim().toLowerCase();
+                            if (seedLookup[kName] === undefined) {
+                                seedLookup[kName] = sSeed;
                             }
                         }
                     }
                 }
-            } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
-                // GENERATE FRESH BRACKET directly from current teamsList sequence
-                var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
-                this.bracketData = generated;
-                this.roundsList = generated.roundsList || [];
-                this.matchesMap = generated.matchesMap || {};
-                this.persistMatches();
+
+                // 3. Assign seeds to all matches in matchesMap
+                var mKeys = Object.keys(this.matchesMap);
+                for (var k = 0; k < mKeys.length; k++) {
+                    var mat = this.matchesMap[mKeys[k]];
+                    if (!mat) continue;
+                    if (mat.team1 && mat.team1.name) {
+                        var t1Key = String(mat.team1.name).trim().toLowerCase();
+                        if (seedLookup[t1Key] !== undefined) {
+                            mat.team1.seed = seedLookup[t1Key];
+                        } else if (!mat.team1.name || mat.team1.name.startsWith('W #') || mat.team1.name.startsWith('L #') || mat.team1.name === 'TBD' || mat.team1.name === 'BYE') {
+                            mat.team1.seed = '';
+                        }
+                    }
+                    if (mat.team2 && mat.team2.name) {
+                        var t2Key = String(mat.team2.name).trim().toLowerCase();
+                        if (seedLookup[t2Key] !== undefined) {
+                            mat.team2.seed = seedLookup[t2Key];
+                        } else if (!mat.team2.name || mat.team2.name.startsWith('W #') || mat.team2.name.startsWith('L #') || mat.team2.name === 'TBD' || mat.team2.name === 'BYE') {
+                            mat.team2.seed = '';
+                        }
+                    }
+                }
+
+                // 4. Auto-resolve any unlinked BYE winners to their next round slots
+                for (var k = 0; k < mKeys.length; k++) {
+                    var mat = this.matchesMap[mKeys[k]];
+                    if (mat && mat.winnerId && mat.nextMatchId && this.matchesMap[mat.nextMatchId]) {
+                        var isT1 = (mat.winnerId === 'team1');
+                        var wTeam = isT1 ? mat.team1 : mat.team2;
+                        var nextM = this.matchesMap[mat.nextMatchId];
+                        if (wTeam && wTeam.name && wTeam.name !== 'BYE') {
+                            if (mat.nextMatchSlot === 1 && (!nextM.team1.name || nextM.team1.name.startsWith('W #') || nextM.team1.name === 'TBD')) {
+                                nextM.team1.name = wTeam.name;
+                                nextM.team1.seed = wTeam.seed;
+                            } else if (mat.nextMatchSlot === 2 && (!nextM.team2.name || nextM.team2.name.startsWith('W #') || nextM.team2.name === 'TBD')) {
+                                nextM.team2.name = wTeam.name;
+                                nextM.team2.seed = wTeam.seed;
+                            }
+                        }
+                    }
+                }
             }
         },
 
@@ -1079,11 +1081,12 @@
                 } catch (e) {}
 
                 // Reset matches in database
+                var contextPath = window.TourmaContextPath || '';
                 var resetParams = new URLSearchParams();
                 resetParams.append('action', 'reset');
                 resetParams.append('tournamentId', this.tournamentId);
                 resetParams.append('stage', this.currentStage || 1);
-                fetch('single-elimination', {
+                fetch(contextPath + '/single-elimination', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
                     body: resetParams.toString()
@@ -1193,13 +1196,14 @@
                     });
                 }
 
+                var contextPath = window.TourmaContextPath || '';
                 var params = new URLSearchParams();
                 params.append('action', 'batchSync');
                 params.append('tournamentId', self.tournamentId);
                 params.append('stage', self.currentStage || 1);
                 params.append('matchesData', JSON.stringify(matchesArray));
 
-                fetch('single-elimination', {
+                fetch(contextPath + '/single-elimination', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
@@ -1500,15 +1504,24 @@
             var rKeys = Object.keys(roundGroup).map(Number).sort(function (a, b) { return a - b; });
             this.roundsList = [];
 
+            var self = this;
             for (var j = 0; j < rKeys.length; j++) {
                 var rNum = rKeys[j];
+                var matchesInRound = roundGroup[rNum] || [];
+                // Sort matches by matchNumber or numeric ID so round cards are strictly ordered
+                matchesInRound.sort(function (a, b) {
+                    var aNum = Number(a.matchNumber !== undefined ? a.matchNumber : (a.matchId || a.id));
+                    var bNum = Number(b.matchNumber !== undefined ? b.matchNumber : (b.matchId || b.id));
+                    return (aNum || 0) - (bNum || 0);
+                });
+
                 var title = (window.TourmaBracketAlgorithm) ?
-                    window.TourmaBracketAlgorithm.getRoundTitle(rNum, rKeys.length) : ('Round ' + rNum);
+                    window.TourmaBracketAlgorithm.getRoundTitle(rNum, rKeys.length, (self.cutTarget && self.cutTarget > 1)) : ('Round ' + rNum);
 
                 this.roundsList.push({
                     roundNumber: rNum,
                     title: title,
-                    matches: roundGroup[rNum]
+                    matches: matchesInRound
                 });
             }
         },

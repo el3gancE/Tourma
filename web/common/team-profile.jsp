@@ -210,7 +210,7 @@
                             for (ChampionTournamentDTO ct : championTourneys) { 
                                 String badgeUrl = (ct.getFinalStageUrl() != null && !ct.getFinalStageUrl().isEmpty()) ? ct.getFinalStageUrl() : "#";
                         %>
-                            <a href="<%= badgeUrl %>" class="champion-badge-pill" style="text-decoration: none; cursor: pointer;" title="Xem giai đoạn cuối giải <%= ct.getTournamentName() %>">
+                            <a href="<%= badgeUrl %>" class="champion-badge-pill" data-tournament-id="<%= ct.getTournamentId() %>" data-tier="<%= ct.getTierName() != null ? ct.getTierName() : "A" %>" style="text-decoration: none; cursor: pointer;" title="Xem giai đoạn cuối giải <%= ct.getTournamentName() %>">
                                 <i class="fa-solid fa-crown"></i> <%= ct.getTournamentName() %>
                             </a>
                         <% } 
@@ -287,7 +287,8 @@
             window.appContextPath = "${pageContext.request.contextPath}";
             window.seriesIdVal = "<%= seriesIdVal %>";
             window.profileTeamName = "<%= teamName.replace("\\", "\\\\").replace("\"", "\\\"") %>";
-            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
+            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 26 %>;
+            window.hasServerProfile = true;
             window.seriesPartners = [
                 <% 
                 List<PartnerParticipant> partnersList = (List<PartnerParticipant>) request.getAttribute("partnersList");
@@ -326,6 +327,7 @@
                         id: "<%= safeId %>",
                         name: "<%= safeName %>",
                         tierName: "<%= tier %>",
+                        championName: "<%= (t != null && t.getChampionName() != null) ? t.getChampionName().replace("\\", "\\\\").replace("\"", "\\\"") : "" %>",
                         index: <%= tIdx %>,
                         format: "<%= (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "" %>",
                         isMultiStage: <%= isMulti %>,
@@ -339,8 +341,49 @@
                 } 
                 %>
             ];
+            <%
+                List<java.util.Map<String, Integer>> serverTourneyPoints = (List<java.util.Map<String, Integer>>) request.getAttribute("serverTourneyPoints");
+                List<java.util.Map<String, Boolean>> serverTourneyParticipation = (List<java.util.Map<String, Boolean>>) request.getAttribute("serverTourneyParticipation");
+            %>
+            window.serverTourneyPoints = [
+                <% if (serverTourneyPoints != null) {
+                    for (int sIdx = 0; sIdx < serverTourneyPoints.size(); sIdx++) {
+                        java.util.Map<String, Integer> map = serverTourneyPoints.get(sIdx);
+                        StringBuilder sb = new StringBuilder("{");
+                        if (map != null) {
+                            int count = 0;
+                            for (java.util.Map.Entry<String, Integer> e : map.entrySet()) {
+                                if (count++ > 0) sb.append(",");
+                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":").append(e.getValue());
+                            }
+                        }
+                        sb.append("}");
+                %>
+                    <%= sb.toString() %><%= (sIdx < serverTourneyPoints.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
+            window.serverTourneyParticipation = [
+                <% if (serverTourneyParticipation != null) {
+                    for (int sIdx = 0; sIdx < serverTourneyParticipation.size(); sIdx++) {
+                        java.util.Map<String, Boolean> map = serverTourneyParticipation.get(sIdx);
+                        StringBuilder sb = new StringBuilder("{");
+                        if (map != null) {
+                            int count = 0;
+                            for (java.util.Map.Entry<String, Boolean> e : map.entrySet()) {
+                                if (count++ > 0) sb.append(",");
+                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":true");
+                            }
+                        }
+                        sb.append("}");
+                %>
+                    <%= sb.toString() %><%= (sIdx < serverTourneyParticipation.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
         </script>
-        <!-- Modular Team Badge Engine & Unified Profile Stats Script -->
+        <!-- Rolling Standings Engine, Modular Team Badge Engine & Unified Profile Stats Script -->
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/team-badge-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/team-profile.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>

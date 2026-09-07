@@ -104,7 +104,7 @@
             for (var t = 0; t < numTeams; t++) {
                 var item = teamsList[t];
                 var tName = (typeof item === 'object' && item) ? (item.name || item.rawName || '') : (item || '');
-                var tSeed = '';
+                var tSeed = (t + 1);
                 if (typeof item === 'object' && item && item.seed !== undefined && item.seed !== null && item.seed !== '') {
                     tSeed = item.seed;
                 }
@@ -168,8 +168,8 @@
                             var t2Obj = (p2Idx <= numTeams) ? currentTeamPool[p2Idx - 1] : { name: 'TBD', seed: '' };
                             t1Name = t1Obj.name;
                             t2Name = t2Obj.name;
-                            s1 = (t1Obj.seed !== undefined && t1Obj.seed !== null && t1Obj.seed !== '') ? t1Obj.seed : '';
-                            s2 = (t2Obj.seed !== undefined && t2Obj.seed !== null && t2Obj.seed !== '') ? t2Obj.seed : '';
+                            s1 = (t1Obj.seed !== undefined && t1Obj.seed !== null && t1Obj.seed !== '') ? t1Obj.seed : p1Idx;
+                            s2 = (t2Obj.seed !== undefined && t2Obj.seed !== null && t2Obj.seed !== '') ? t2Obj.seed : p2Idx;
                         }
 
                         var match = {
@@ -207,8 +207,8 @@
                                 matchNumber: mId,
                                 roundNumber: currentRoundNumber,
                                 status: isBye ? 'COMPLETED' : 'SCHEDULED',
-                                team1: { name: t1.name, seed: (t1.name === 'BYE' ? '' : (t1.seed !== undefined && t1.seed !== null ? t1.seed : '')), score: '' },
-                                team2: { name: t2.name, seed: (t2.name === 'BYE' ? '' : (t2.seed !== undefined && t2.seed !== null ? t2.seed : '')), score: '' },
+                                team1: { name: t1.name, seed: (t1.name === 'BYE' ? '' : (t1.seed !== undefined && t1.seed !== null && t1.seed !== '' ? t1.seed : s1)), score: '' },
+                                team2: { name: t2.name, seed: (t2.name === 'BYE' ? '' : (t2.seed !== undefined && t2.seed !== null && t2.seed !== '' ? t2.seed : s2)), score: '' },
                                 winnerId: isBye ? (t1.name === 'BYE' ? 'team2' : 'team1') : null,
                                 nextMatchId: null,
                                 nextMatchSlot: (i % 2 === 0) ? 1 : 2

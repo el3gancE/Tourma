@@ -102,6 +102,7 @@ public class SingleEliminationServlet extends HttpServlet {
                 if (tournamentId != null && matchesData != null) {
                     boolean ok = singleEliminationDAO.syncBracketMatches(tournamentId, stage, matchesData);
                     if (ok) {
+                        tryRecalculateSeriesStandings(tournamentId);
                         out.print("{\"status\":\"success\",\"message\":\"Đồng bộ kết quả nhánh đấu vào CSDL thành công!\"}");
                     } else {
                         out.print("{\"status\":\"error\",\"message\":\"Không thể đồng bộ nhánh đấu vào CSDL!\"}");
@@ -116,6 +117,9 @@ public class SingleEliminationServlet extends HttpServlet {
             if ("reset".equalsIgnoreCase(action)) {
                 if (tournamentId != null) {
                     boolean ok = singleEliminationDAO.resetBracketMatches(tournamentId, stage);
+                    if (ok) {
+                        tryRecalculateSeriesStandings(tournamentId);
+                    }
                     out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Reset CSDL thành công!" : "Lỗi reset CSDL!") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId!\"}");
@@ -144,6 +148,7 @@ public class SingleEliminationServlet extends HttpServlet {
                 }
 
                 if (success) {
+                    tryRecalculateSeriesStandings(tournamentId);
                     out.print("{\"status\":\"success\",\"message\":\"Cập nhật tỷ số trận đấu vào CSDL thành công!\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Không thể lưu tỷ số vào CSDL!\"}");
@@ -154,5 +159,16 @@ public class SingleEliminationServlet extends HttpServlet {
         } catch (Exception e) {
             out.print("{\"status\":\"error\",\"message\":\"Lỗi hệ thống: " + e.getMessage() + "\"}");
         }
+    }
+
+    private void tryRecalculateSeriesStandings(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
+        try {
+            dao.TournamentDAO tDao = new dao.TournamentDAO();
+            model.Tournament t = tDao.getTournamentById(tournamentId.trim());
+            if (t != null && t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
+                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(t.getSeriesId().trim());
+            }
+        } catch (Exception ignore) {}
     }
 }
