@@ -388,6 +388,9 @@
         </div>
 
         <script>
+            window.currentSubTourneyId = "<%= tourneyId %>";
+            window.seriesIdVal = "<%= seriesIdVal %>";
+            window.appContextPath = "${pageContext.request.contextPath}";
             window.seriesSubTournaments = [
                 <% if (tournamentsList != null) {
                     for (int i = 0; i < tournamentsList.size(); i++) {
@@ -398,14 +401,75 @@
                         String safeName = (t != null && t.getName() != null) ? t.getName().replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
                         String safeId = (t != null && t.getId() != null) ? t.getId() : "";
                         int tIdx = (t != null && t.getTournamentIndexInSeries() > 0) ? t.getTournamentIndexInSeries() : (i + 1);
+                        String tType = (t != null && t.getTournamentType() != null) ? t.getTournamentType() : "SINGLE_STAGE";
+                        boolean isMulti = (t != null && "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType()));
+                        String fmt = (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
+                        String tTier = (t != null && t.getTierName() != null) ? t.getTierName().toUpperCase() : "A";
                 %>
                     {
                         id: "<%= safeId %>",
                         name: "<%= safeName %>",
                         index: <%= tIdx %>,
-                        format: "<%= (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "" %>",
+                        format: "<%= fmt %>",
+                        tournamentType: "<%= tType %>",
+                        isMultiStage: <%= isMulti %>,
+                        tierName: "<%= tTier %>",
                         pointsConfig: <%= cfgJson %>
                     }<%= (i < tournamentsList.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
+            window.seriesPartners = [
+                <% if (partnerList != null) {
+                    for (int i = 0; i < partnerList.size(); i++) {
+                        PartnerParticipant p = partnerList.get(i);
+                        String pName = (p != null && p.getName() != null) ? p.getName().replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
+                        String pId = (p != null && p.getId() != null) ? p.getId() : "";
+                %>
+                    {
+                        id: "<%= pId %>",
+                        name: "<%= pName %>"
+                    }<%= (i < partnerList.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
+            <%
+                List<java.util.Map<String, Integer>> serverTourneyPoints = (series != null) ? service.RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId()) : null;
+                List<java.util.Map<String, Boolean>> serverTourneyParticipation = (series != null) ? service.RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId()) : null;
+            %>
+            window.serverTourneyPoints = [
+                <% if (serverTourneyPoints != null) {
+                    for (int sIdx = 0; sIdx < serverTourneyPoints.size(); sIdx++) {
+                        java.util.Map<String, Integer> map = serverTourneyPoints.get(sIdx);
+                        StringBuilder sb = new StringBuilder("{");
+                        if (map != null) {
+                            int count = 0;
+                            for (java.util.Map.Entry<String, Integer> e : map.entrySet()) {
+                                if (count++ > 0) sb.append(",");
+                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":").append(e.getValue());
+                            }
+                        }
+                        sb.append("}");
+                %>
+                    <%= sb.toString() %><%= (sIdx < serverTourneyPoints.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
+            window.serverTourneyParticipation = [
+                <% if (serverTourneyParticipation != null) {
+                    for (int sIdx = 0; sIdx < serverTourneyParticipation.size(); sIdx++) {
+                        java.util.Map<String, Boolean> map = serverTourneyParticipation.get(sIdx);
+                        StringBuilder sb = new StringBuilder("{");
+                        if (map != null) {
+                            int count = 0;
+                            for (java.util.Map.Entry<String, Boolean> e : map.entrySet()) {
+                                if (count++ > 0) sb.append(",");
+                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":true");
+                            }
+                        }
+                        sb.append("}");
+                %>
+                    <%= sb.toString() %><%= (sIdx < serverTourneyParticipation.size() - 1) ? "," : "" %>
                 <%  }
                 } %>
             ];
@@ -427,6 +491,7 @@
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>

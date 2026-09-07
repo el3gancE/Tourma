@@ -441,6 +441,11 @@ public class TeamProfileServlet extends HttpServlet {
         request.setAttribute("partnersList", partnersList);
         request.setAttribute("stageFormatsMap", (series != null && !teamName.isEmpty()) ? stageFormatsMap : new HashMap<>());
 
+        List<Map<String, Integer>> serverTourneyPoints = (series != null) ? RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId()) : new ArrayList<>();
+        List<Map<String, Boolean>> serverTourneyParticipation = (series != null) ? RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId()) : new ArrayList<>();
+        request.setAttribute("serverTourneyPoints", serverTourneyPoints);
+        request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
+
         request.getRequestDispatcher("/common/team-profile.jsp").forward(request, response);
     }
 

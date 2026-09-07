@@ -84,14 +84,23 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         List<model.SeriesStanding> standingsList = new ArrayList<>();
         List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = new ArrayList<>();
         List<Tournament> tournamentsList = new ArrayList<>();
+        List<java.util.Map<String, Integer>> serverTourneyPoints = null;
+        List<java.util.Map<String, Boolean>> serverTourneyParticipation = null;
         if (seriesId != null && !seriesId.trim().isEmpty()) {
-            try {
-                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
-            } catch (Exception ignore) {}
+            standingsList = seriesDAO.getStandingsBySeriesId(seriesId.trim());
+            if (standingsList == null || standingsList.isEmpty()) {
+                try {
+                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
+                    standingsList = seriesDAO.getStandingsBySeriesId(seriesId.trim());
+                } catch (Exception ignore) {}
+            }
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
             standingsDTOList = service.RollingWindowPointService.getInstance().calculateSeriesStandingsWithExpiry(seriesId.trim());
-            standingsList = seriesDAO.getStandingsBySeriesId(seriesId.trim());
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
+            try {
+                serverTourneyPoints = service.RollingWindowPointService.getInstance().getTourneyPointsPerTournament(seriesId.trim());
+                serverTourneyParticipation = service.RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(seriesId.trim());
+            } catch (Exception ignore) {}
         }
 
         request.setAttribute("tournament", tournament);
@@ -101,6 +110,8 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         request.setAttribute("standingsList", standingsList);
         request.setAttribute("standingsDTOList", standingsDTOList);
         request.setAttribute("tournamentsList", tournamentsList);
+        request.setAttribute("serverTourneyPoints", serverTourneyPoints);
+        request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
 
         request.getRequestDispatcher("/common/rolling/rolling-tournament-teams.jsp").forward(request, response);
     }

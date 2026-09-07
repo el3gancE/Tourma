@@ -1,11 +1,19 @@
 /**
- * TOURMA - ROLLING WINDOW SERIES STANDINGS SCRIPT (rolling-standings.js)
- * Synchronizes Server + LocalStorage sub-tournament bracket placements
- * Supports Milestone Dropdown (historical & latest standings), Manual Sync, and Rank Fluctuations
+ * TOURMA - SHARED ROLLING STANDINGS ENGINE (rolling-standings-engine.js)
+ * Standalone calculation engine for Series Standings across all tournament formats.
+ * Synchronizes Server + LocalStorage bracket placements (Swiss, Round Robin, Single/Double Elimination, Multi-Stage).
+ * Used by:
+ *  1. rolling-standings.js (Main BXH screen)
+ *  2. rolling-tournament-teams.js (Sub-tournament seeding and partner selection modal)
+ *  3. team-profile.js (Team profile standings sync)
  */
 
 (function () {
   'use strict';
+
+  var storageDataCache = {};
+  var parsedTournamentResultsCache = {};
+  var teamKeyLookupCache = {};
 
   function normalizeStr(str) {
     if (!str) return '';
@@ -132,6 +140,37 @@
     return { winner: winnerName, loser: loserName };
   }
 
+  function getFormatShortCode(fmt) {
+    if (!fmt) return 'SE';
+    var f = String(fmt).toUpperCase().trim();
+    if (f.indexOf('DOUBLE') !== -1 || f === 'DE') return 'DE';
+    if (f.indexOf('ROUND') !== -1 || f === 'RR') return 'RR';
+    if (f.indexOf('GROUP') !== -1 || f === 'GS') return 'GS';
+    if (f.indexOf('SWISS') !== -1 || f === 'SW') return 'SW';
+    return 'SE';
+  }
+
+  function getTournamentFinalStageUrl(t, seriesId) {
+    if (!t || !t.id) return '#';
+    var isMulti = t.isMultiStage || (t.tournamentType === 'MULTI_STAGE');
+    var s1 = t.stage1Format || t.format || 'SINGLE_ELIMINATION';
+    var s2 = t.stage2Format || 'SINGLE_ELIMINATION';
+    var finalFormat = isMulti ? s2 : s1;
+    var f = String(finalFormat).toUpperCase().trim();
+
+    var page = 'single-elimination.jsp';
+    if (f.indexOf('DOUBLE') !== -1 || f === 'DE') page = 'double-elimination.jsp';
+    else if (f.indexOf('ROUND') !== -1 || f === 'RR') page = 'round-robin.jsp';
+    else if (f.indexOf('GROUP') !== -1 || f === 'GS') page = 'group-stage.jsp';
+    else if (f.indexOf('SWISS') !== -1 || f === 'SW') page = 'swiss-stage.jsp';
+
+    var ctx = (typeof window.appContextPath !== 'undefined' && window.appContextPath) ? window.appContextPath : '';
+    var sId = seriesId || ((typeof window.seriesIdVal !== 'undefined' && window.seriesIdVal) ? window.seriesIdVal : '');
+    var seriesParam = sId ? ('&seriesId=' + encodeURIComponent(sId)) : '';
+    var stageParam = isMulti ? '&stage=2' : '';
+    return ctx + '/common/' + page + '?id=' + encodeURIComponent(t.id) + stageParam + seriesParam;
+  }
+
   function resolvePointsFromConfig(ptsCfg, positionKey, altKey) {
     if (!ptsCfg || typeof ptsCfg !== 'object') return 0;
 
@@ -150,9 +189,7 @@
     if (positionKey === "s1_lb_cut" || altKey === "s1_lb_cut" || positionKey === "Loser's Qualification" || altKey === "Loser's Qualification") {
       if (ptsCfg["s1_lb_cut"] !== undefined) return parseInt(ptsCfg["s1_lb_cut"], 10) || 0;
       for (var r = 10; r >= 1; r--) {
-        if (ptsCfg["s1_lb_r" + r] !== undefined) {
-          return parseInt(ptsCfg["s1_lb_r" + r], 10) || 0;
-        }
+        if (ptsCfg["s1_lb_r" + r] !== undefined) return parseInt(ptsCfg["s1_lb_r" + r], 10) || 0;
       }
       if (ptsCfg["stage1_eliminated"] !== undefined) return parseInt(ptsCfg["stage1_eliminated"], 10) || 0;
     }
@@ -226,7 +263,6 @@
     return 0;
   }
 
-  var storageDataCache = {};
   function getStorageData(prefixList, id) {
     if (!prefixList || prefixList.length === 0 || !id) return null;
     var cacheKey = prefixList.join('|') + '__' + id;
@@ -250,24 +286,7 @@
     return null;
   }
 
-  window.filterRollingStandings = function (query) {
-    var q = (query || '').toLowerCase().trim();
-    var rows = document.querySelectorAll('#rollingStandingsTable tbody tr');
-
-    rows.forEach(function (row) {
-      var txt = row.innerText.toLowerCase();
-      if (!q || txt.includes(q)) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
-  };
-
-  var parsedTournamentResultsCache = {};
-  var teamKeyLookupCache = {};
-
-  // Parse points and participation for a single tournament identically to team-profile.js
+  // Parse points and participation for a single tournament across all formats
   function parseTournamentResults(t, teamDataMap) {
     if (!t) return { pointsMap: {}, participatedMap: {} };
     var tCacheKey = t.id || t.name;
@@ -287,6 +306,9 @@
     var ptsCfg = Object.assign({}, localPtsCfg || {}, t.pointsConfig || {});
     var teamPointsAwarded = {}; // teamKey -> max points
     var teamParticipated = {};  // teamKey -> true
+    var teamPositionsAwarded = {}; // teamKey -> posKey
+    var teamAchievementsAwarded = {}; // teamKey -> achievement label
+    var teamMatchStats = {}; // teamKey -> { wins: 0, losses: 0 }
 
     function findTeamKey(name) {
       if (!name) return null;
@@ -317,15 +339,55 @@
       }
     }
 
-    function awardTeamPoints(name, positionKey, altKey) {
+    function recordMatchStats(m) {
+      if (!m) return;
+      var res = resolveWinnerAndLoser(m);
+      if (res.winner) {
+        var wKey = findTeamKey(res.winner);
+        if (wKey) {
+          if (!teamMatchStats[wKey]) teamMatchStats[wKey] = { wins: 0, losses: 0 };
+          teamMatchStats[wKey].wins++;
+        }
+      }
+      if (res.loser) {
+        var lKey = findTeamKey(res.loser);
+        if (lKey) {
+          if (!teamMatchStats[lKey]) teamMatchStats[lKey] = { wins: 0, losses: 0 };
+          teamMatchStats[lKey].losses++;
+        }
+      }
+    }
+
+    function resolveAchievementFromPos(posKey) {
+      if (!posKey) return "Round of 16";
+      var s = String(posKey).trim();
+      if (s === "1") return "Vô Địch";
+      if (s === "2") return "Á Quân";
+      if (s === "3-4" || s === "3" || s === "4") return "Bán Kết";
+      if (s === "5-8") return "Tứ Kết";
+      if (s === "s1_lb_cut" || s === "Loser's Qualification") return "Loser's Qualification";
+      if (s === "9-16") return "Round of 16";
+      if (s === "17-32") return "Round of 32";
+      if (s === "33-64") return "Round of 64";
+      if (s === "65-96") return "Loser's Qualification";
+      if (s === "65-128") return "Round of 128";
+      if (s === "s1_lb_r2") return "Loser's Qualification";
+      if (s === "s1_lb_r1") return "Loser's Round 1";
+      if (s === "stage1_eliminated") return "Vòng Bảng";
+      return "Round of 16";
+    }
+
+    function awardTeamPoints(name, positionKey, altKey, customAchievement) {
       var key = findTeamKey(name);
       if (!key) return;
       teamParticipated[key] = true;
 
       var pts = resolvePointsFromConfig(ptsCfg, positionKey, altKey);
       var prev = teamPointsAwarded[key] || 0;
-      if (pts > prev || teamPointsAwarded[key] === undefined) {
+      if (pts > prev || teamPointsAwarded[key] === undefined || positionKey === "1") {
         teamPointsAwarded[key] = pts;
+        teamPositionsAwarded[key] = positionKey;
+        teamAchievementsAwarded[key] = customAchievement || resolveAchievementFromPos(positionKey);
       }
     }
 
@@ -1104,213 +1166,477 @@
       }
     }
 
-    // Champion override
-    var rawChamp = getStorageData(['tourma_champion_'], t.id);
+    // 6. Direct Champion Overrides (from localStorage or DB or subTourney)
+    var champName = null;
+    var rawChamp = getStorageData(['tourma_champion_', 'tourma_final_champion_'], t.id);
     if (rawChamp) {
       try {
-        var cName = extractName(rawChamp) || (typeof rawChamp === 'string' ? rawChamp.trim() : null);
-        if (cName) {
-          awardTeamPoints(cName, "1");
-        }
+        champName = extractName(rawChamp) || (typeof rawChamp === 'string' ? rawChamp.trim() : null);
       } catch (e) {}
     }
+    if (!champName && t.championName) {
+      champName = extractName(t.championName) || t.championName.trim();
+    }
+    if (champName) {
+      awardTeamPoints(champName, "1", null, "Vô Địch");
+    }
 
-    var resObj = { pointsMap: teamPointsAwarded, participatedMap: teamParticipated };
+    // Resolve achievements for any participated team that has points
+    Object.keys(teamParticipated).forEach(function (k) {
+      if (!teamAchievementsAwarded[k]) {
+        var p = teamPointsAwarded[k] || 0;
+        if (p > 0) {
+          if (p === (ptsCfg["1"] || 0)) {
+            teamAchievementsAwarded[k] = "Vô Địch";
+            teamPositionsAwarded[k] = "1";
+          } else if (p === (ptsCfg["2"] || 0)) {
+            teamAchievementsAwarded[k] = "Á Quân";
+            teamPositionsAwarded[k] = "2";
+          } else if (p === (ptsCfg["3-4"] || 0) || p === (ptsCfg["3"] || 0) || p === (ptsCfg["4"] || 0)) {
+            teamAchievementsAwarded[k] = "Bán Kết";
+            teamPositionsAwarded[k] = "3-4";
+          } else if (p === (ptsCfg["5-8"] || 0)) {
+            teamAchievementsAwarded[k] = "Tứ Kết";
+            teamPositionsAwarded[k] = "5-8";
+          } else if (p === (ptsCfg["9-16"] || 0)) {
+            teamAchievementsAwarded[k] = "Round of 16";
+            teamPositionsAwarded[k] = "9-16";
+          } else if (p === (ptsCfg["17-32"] || 0)) {
+            teamAchievementsAwarded[k] = "Round of 32";
+            teamPositionsAwarded[k] = "17-32";
+          } else {
+            teamAchievementsAwarded[k] = "Round of 16";
+          }
+        } else {
+          teamAchievementsAwarded[k] = isMultiStage ? "Vòng Bảng" : "Round of 16";
+        }
+      }
+    });
+
+    var resObj = {
+      pointsMap: teamPointsAwarded,
+      participatedMap: teamParticipated,
+      positionsMap: teamPositionsAwarded,
+      achievementsMap: teamAchievementsAwarded,
+      matchStatsMap: teamMatchStats,
+      championName: champName
+    };
     if (tCacheKey) {
       parsedTournamentResultsCache[tCacheKey] = resObj;
     }
     return resObj;
   }
 
-  // =========================================================================
-  // MAIN STANDINGS RECALCULATION BY MILESTONE
-  // =========================================================================
-  function computeStandingsForMilestone(milestoneVal) {
-    var standingsTable = document.getElementById('rollingStandingsTable');
-    if (!standingsTable) return;
+  /**
+   * Main Calculation Method: Computes Complete Standings
+   * 
+   * options:
+   *   - subTourneys: array of tournament objects [{ id, name, index, format, tournamentType, isMultiStage, pointsConfig }, ...]
+   *   - partners: array of partner objects [{ id, name }, ...]
+   *   - phaseSize: integer (window size W, default 26 or 3)
+   *   - serverTourneyPoints: array of maps [{ teamName: pts }, ...]
+   *   - serverTourneyParticipation: array of maps [{ teamName: true }, ...]
+   *   - milestoneVal: 'LATEST' or integer milestone index
+   *   - excludeTourneyId: string ID of tournament to ignore from completed tournaments (e.g. current draft sub-tournament)
+   */
+  function calculateSeriesStandings(options) {
+    options = options || {};
+    storageDataCache = {};
+    parsedTournamentResultsCache = {};
+    teamKeyLookupCache = {};
 
-    var tbody = standingsTable.querySelector('tbody');
-    if (!tbody) return;
+    var teamDataMap = {};
 
-    var result = null;
-    if (window.TourmaRollingStandingsEngine && typeof window.TourmaRollingStandingsEngine.calculateSeriesStandings === 'function') {
-      result = window.TourmaRollingStandingsEngine.calculateSeriesStandings({
-        subTourneys: window.seriesSubTournaments,
-        partners: window.seriesPartners,
-        phaseSize: window.seriesPhaseSize,
-        serverTourneyPoints: window.serverTourneyPoints,
-        serverTourneyParticipation: window.serverTourneyParticipation,
-        milestoneVal: milestoneVal
+    // 1. Populate partners
+    var partners = options.partners || window.seriesPartners || [];
+    partners.forEach(function (p) {
+      if (p && p.name) {
+        var k = p.name.toLowerCase().trim();
+        teamDataMap[k] = {
+          id: p.id,
+          name: p.name.trim(),
+          totalPts: 0,
+          lastPts: 0,
+          droppedPts: 0,
+          activeTourneys: 0
+        };
+      }
+    });
+
+    var rawTourneys = options.subTourneys || window.seriesSubTournaments || [];
+    var excludeId = options.excludeTourneyId || null;
+
+    // Filter out excluded tournament if specified
+    var subTourneys = [];
+    rawTourneys.forEach(function (t) {
+      if (!excludeId || (t.id !== excludeId && String(t.id) !== String(excludeId))) {
+        subTourneys.push(t);
+      }
+    });
+
+    var totalTourneys = subTourneys.length;
+    var phaseSize = options.phaseSize || window.seriesPhaseSize || 26;
+
+    if (totalTourneys === 0) {
+      var emptyArray = Object.keys(teamDataMap).map(function (k) { return teamDataMap[k]; });
+      emptyArray.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      var emptyRankMap = {};
+      emptyArray.forEach(function (item, idx) {
+        item.rank = idx + 1;
+        emptyRankMap[item.name.toLowerCase().trim()] = { rank: item.rank, points: 0, lastPts: 0, activeTourneys: 0 };
+      });
+      return { teamDataArray: emptyArray, rankMap: emptyRankMap, targetIdx: -1 };
+    }
+
+    var serverTourneyPoints = options.serverTourneyPoints || window.serverTourneyPoints || [];
+    var serverTourneyParticipation = options.serverTourneyParticipation || window.serverTourneyParticipation || [];
+
+    // Parse results for all completed tournaments
+    var tourneyPointsArray = [];
+    var tourneyParticipatedArray = [];
+    var parsedResultsPerTourney = [];
+
+    for (var tIdx = 0; tIdx < totalTourneys; tIdx++) {
+      var t = subTourneys[tIdx];
+      var serverPts = (serverTourneyPoints && serverTourneyPoints[tIdx]) ? Object.assign({}, serverTourneyPoints[tIdx]) : {};
+      var serverPart = (serverTourneyParticipation && serverTourneyParticipation[tIdx]) ? Object.assign({}, serverTourneyParticipation[tIdx]) : {};
+
+      var localRes = parseTournamentResults(t, teamDataMap);
+      parsedResultsPerTourney[tIdx] = localRes;
+
+      // Merge local live results on top of server data
+      var mergedPts = Object.assign({}, serverPts);
+      if (localRes && localRes.pointsMap) {
+        Object.keys(localRes.pointsMap).forEach(function (k) {
+          if (localRes.pointsMap[k] > 0 || mergedPts[k] === undefined) {
+            mergedPts[k] = localRes.pointsMap[k];
+          }
+        });
+      }
+
+      var mergedPart = Object.assign({}, serverPart);
+      if (localRes && localRes.participatedMap) {
+        Object.keys(localRes.participatedMap).forEach(function (k) {
+          if (localRes.participatedMap[k]) {
+            mergedPart[k] = true;
+          }
+        });
+      }
+
+      tourneyPointsArray[tIdx] = mergedPts;
+      tourneyParticipatedArray[tIdx] = mergedPart;
+    }
+
+    // Determine target milestone index
+    // If 'LATEST' (or unset), find the last tournament that actually has match results, or totalTourneys - 1
+    var milestoneVal = options.milestoneVal;
+    var targetIdx = -1;
+    if (milestoneVal !== undefined && milestoneVal !== null && milestoneVal !== 'LATEST') {
+      targetIdx = parseInt(milestoneVal, 10);
+      if (isNaN(targetIdx) || targetIdx < 0) targetIdx = 0;
+      if (targetIdx >= totalTourneys) targetIdx = totalTourneys - 1;
+    } else {
+      // Find latest tournament with points/matches
+      for (var ti = totalTourneys - 1; ti >= 0; ti--) {
+        var ptsMapCheck = tourneyPointsArray[ti];
+        var hasPts = ptsMapCheck && Object.keys(ptsMapCheck).some(function (k) { return ptsMapCheck[k] > 0; });
+        if (hasPts) {
+          targetIdx = ti;
+          break;
+        }
+      }
+      if (targetIdx === -1) targetIdx = totalTourneys - 1;
+    }
+
+    // Calculate previous milestone rankings for rank changes
+    var prevRankMap = {};
+    if (targetIdx >= 1) {
+      var prevTargetIdx = targetIdx - 1;
+      var prevWindowStart = Math.max(0, prevTargetIdx - phaseSize + 1);
+      var prevWindowEnd = prevTargetIdx;
+      var prevScores = [];
+
+      Object.keys(teamDataMap).forEach(function (pk) {
+        var sumPts = 0;
+        for (var pIdx = prevWindowStart; pIdx <= prevWindowEnd; pIdx++) {
+          var pMap = tourneyPointsArray[pIdx] || {};
+          if (pMap[pk] !== undefined) {
+            sumPts += pMap[pk];
+          }
+        }
+        var prevLastPts = (tourneyPointsArray[prevTargetIdx] && tourneyPointsArray[prevTargetIdx][pk]) ? tourneyPointsArray[prevTargetIdx][pk] : 0;
+        prevScores.push({
+          key: pk,
+          name: teamDataMap[pk].name,
+          pts: sumPts,
+          lastPts: prevLastPts
+        });
+      });
+
+      prevScores.sort(function (a, b) {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
+        return a.name.localeCompare(b.name);
+      });
+
+      prevScores.forEach(function (st, prIdx) {
+        prevRankMap[st.key] = prIdx + 1;
       });
     }
 
-    if (!result || !result.teamDataArray) return;
+    // Calculate Current Milestone Standings
+    var currentWindowStart = Math.max(0, targetIdx - phaseSize + 1);
+    var currentWindowEnd = targetIdx;
+    var droppedIdx = targetIdx - phaseSize;
 
-    var teamDataArray = result.teamDataArray;
-    var targetIdx = result.targetIdx;
-    var subTourneys = window.seriesSubTournaments || [];
-    var phaseSize = window.seriesPhaseSize || 3;
-    var targetTourney = (targetIdx >= 0 && targetIdx < subTourneys.length) ? subTourneys[targetIdx] : null;
+    Object.keys(teamDataMap).forEach(function (k) {
+      var entry = teamDataMap[k];
+      var totalPts = 0;
+      var playedCount = 0;
 
-    // Update Header Title & Milestone Label
-    var tableTitle = document.getElementById('standingsTableTitle');
-    var thLastPts = document.getElementById('thLastPts');
-
-    if (tableTitle) {
-      if (milestoneVal === 'LATEST' || milestoneVal === undefined || milestoneVal === null) {
-        tableTitle.textContent = 'Bảng Xếp Hạng Chi Tiết (Cửa Sổ Trượt W = ' + phaseSize + ' Giải)';
-      } else if (targetTourney) {
-        tableTitle.textContent = 'Bảng Xếp Hạng Tính Đến: ' + targetTourney.name + ' (Giải #' + (targetIdx + 1) + ')';
-      }
-    }
-
-    if (thLastPts) {
-      if (milestoneVal === 'LATEST' || milestoneVal === undefined || milestoneVal === null) {
-        thLastPts.textContent = 'Điểm giải gần nhất';
-      } else {
-        thLastPts.textContent = 'Điểm giải #' + (targetIdx + 1);
-      }
-    }
-
-    // Render Table DOM cleanly with full exact rankings & fluctuations
-    tbody.innerHTML = '';
-    var ctx = (typeof window.appContextPath !== 'undefined' && window.appContextPath) ? window.appContextPath : '';
-    var seriesId = (typeof window.seriesIdVal !== 'undefined' && window.seriesIdVal) ? window.seriesIdVal : '';
-
-    var frag = document.createDocumentFragment();
-
-    teamDataArray.forEach(function (data, rankIdx) {
-      var rank = data.rank || (rankIdx + 1);
-      var rankChange = data.rankChange || 0;
-
-      var rankChangeHtml = '';
-      if (targetIdx >= 1) {
-        if (rankChange > 0) {
-          rankChangeHtml = '<span class="rank-change up" title="Tăng ' + rankChange + ' bậc"><i class="fa-solid fa-arrow-up"></i> ' + rankChange + '</span>';
-        } else if (rankChange < 0) {
-          rankChangeHtml = '<span class="rank-change down" title="Giảm ' + Math.abs(rankChange) + ' bậc"><i class="fa-solid fa-arrow-down"></i> ' + Math.abs(rankChange) + '</span>';
-        } else {
-          rankChangeHtml = '<span class="rank-change same" title="Không đổi bậc">-</span>';
+      for (var wIdx = currentWindowStart; wIdx <= currentWindowEnd; wIdx++) {
+        var ptsMap = tourneyPointsArray[wIdx] || {};
+        var partMap = tourneyParticipatedArray[wIdx] || {};
+        if (ptsMap[k] !== undefined) {
+          totalPts += ptsMap[k];
         }
-      } else {
-        rankChangeHtml = '<span class="rank-change same" title="Giải đầu tiên">-</span>';
+        if (partMap[k] || (ptsMap[k] !== undefined && ptsMap[k] > 0)) {
+          playedCount += 1;
+        }
       }
 
-      var isTop10 = (rank <= 10);
-      var row = document.createElement('tr');
-      row.setAttribute('data-team-name', data.name);
-      if (isTop10) {
-        row.classList.add('top-10');
-      }
+      var lastTourneyPts = (tourneyPointsArray[targetIdx] && tourneyPointsArray[targetIdx][k]) || 0;
+      var droppedTourneyPts = (droppedIdx >= 0 && tourneyPointsArray[droppedIdx] && tourneyPointsArray[droppedIdx][k]) || 0;
 
-      var lastPtsText = data.lastPts > 0 ? ('<span style="color: #2dd4bf; font-weight: 700;">+' + data.lastPts + ' pts</span>') : '<span style="color: #94a3b8;">0 pts</span>';
-
-      var netChange = data.lastPts - (data.droppedPts || 0);
-      var changeText = '0 pts';
-      var changeColor = '#94a3b8';
-      if (netChange > 0) {
-        changeText = '+' + netChange + ' pts';
-        changeColor = '#2dd4bf';
-      } else if (netChange < 0) {
-        changeText = netChange + ' pts';
-        changeColor = '#ef4444';
-      }
-
-      var rankColor = isTop10 ? '#2dd4bf' : '#ffffff';
-      var nameColor = isTop10 ? '#2dd4bf' : '#ffffff';
-      var nameHover = isTop10 ? '#5eead4' : '#2dd4bf';
-      var badgeClass = 'rank-badge' + (isTop10 ? ' top-10' : '') + ' rank-' + rank;
-
-      row.innerHTML = 
-        '<td style="font-weight: 800; color: ' + rankColor + ';">' +
-          '<div class="rank-wrap">' +
-            '<span class="' + badgeClass + '">' + rank + '</span>' +
-            rankChangeHtml +
-          '</div>' +
-        '</td>' +
-        '<td style="font-weight: 700; color: ' + nameColor + ';">' +
-          '<a href="' + ctx + '/team-profile?seriesId=' + encodeURIComponent(seriesId) + '&teamName=' + encodeURIComponent(data.name) + '" class="team-link" style="color: ' + nameColor + '; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color=\'' + nameHover + '\'" onmouseout="this.style.color=\'' + nameColor + '\'">' +
-            data.name +
-          '</a>' +
-        '</td>' +
-        '<td style="text-align: center; font-weight: 700; color: var(--rolling-text-muted);">' +
-          data.activeTourneys +
-        '</td>' +
-        '<td style="text-align: right; font-weight: 800; font-size: 1.05rem; color: #fbbf24;">' +
-          data.totalPts + ' pts' +
-        '</td>' +
-        '<td style="text-align: right; font-weight: 700;">' +
-          lastPtsText +
-        '</td>' +
-        '<td style="text-align: right; font-weight: 700; color: ' + changeColor + ';">' +
-          changeText +
-        '</td>';
-
-      frag.appendChild(row);
+      entry.totalPts = totalPts;
+      entry.activeTourneys = playedCount;
+      entry.lastPts = lastTourneyPts;
+      entry.droppedPts = droppedTourneyPts;
     });
 
-    tbody.appendChild(frag);
+    // Sort Teams: totalPts DESC -> lastPts DESC -> alphabetical ASC
+    var teamDataArray = Object.keys(teamDataMap).map(function (k) { return teamDataMap[k]; });
+    teamDataArray.sort(function (a, b) {
+      if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+      if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
+      return a.name.localeCompare(b.name);
+    });
 
-    // Automatically persist merged client standings (localStorage + DB) to server DB
-    var isLatest = (milestoneVal === 'LATEST' || milestoneVal === undefined || milestoneVal === null);
-    if (isLatest && seriesId && teamDataArray.length > 0) {
-      try {
-        var payloadStandings = teamDataArray.map(function(d, idx) {
-          return {
-            name: d.name,
-            totalPts: d.totalPts || 0,
-            activeTourneys: d.activeTourneys || 0,
-            rank: d.rank || (idx + 1)
-          };
+    var rankMap = {};
+    teamDataArray.forEach(function (data, rankIdx) {
+      var rank = rankIdx + 1;
+      var teamKey = data.name.toLowerCase().trim();
+      data.rank = rank;
+
+      var prevRank = (targetIdx >= 1 && prevRankMap[teamKey] !== undefined) ? prevRankMap[teamKey] : rank;
+      data.prevRank = prevRank;
+      data.rankChange = (targetIdx >= 1) ? (prevRank - rank) : 0;
+
+      rankMap[teamKey] = {
+        rank: rank,
+        points: data.totalPts,
+        lastPts: data.lastPts,
+        droppedPts: data.droppedPts,
+        activeTourneys: data.activeTourneys,
+        rankChange: data.rankChange,
+        name: data.name
+      };
+    });
+
+    // Compute Highest Milestone Rank achieved across all milestones
+    var teamHighestRank = {};
+    for (var mStep = 0; mStep < totalTourneys; mStep++) {
+      var mWinStart = Math.max(0, mStep - phaseSize + 1);
+      var mScores = [];
+      Object.keys(teamDataMap).forEach(function (pk) {
+        var sumP = 0;
+        for (var mi = mWinStart; mi <= mStep; mi++) {
+          if (tourneyPointsArray[mi] && tourneyPointsArray[mi][pk]) {
+            sumP += tourneyPointsArray[mi][pk];
+          }
+        }
+        mScores.push({
+          key: pk,
+          pts: sumP,
+          lastPts: (tourneyPointsArray[mStep] && tourneyPointsArray[mStep][pk]) || 0,
+          name: teamDataMap[pk].name
         });
-        var postData = 'action=syncClientStandings&seriesId=' + encodeURIComponent(seriesId) + '&standingsJson=' + encodeURIComponent(JSON.stringify(payloadStandings));
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', ctx + '/rolling/standings', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-        xhr.send(postData);
-      } catch (e) {}
+      });
+      mScores.sort(function (a, b) {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
+        return a.name.localeCompare(b.name);
+      });
+      mScores.forEach(function (ms, mRankIdx) {
+        var mRank = mRankIdx + 1;
+        if (ms.pts > 0) {
+          if (!teamHighestRank[ms.key] || mRank < teamHighestRank[ms.key].rank) {
+            var curT = subTourneys[mStep];
+            teamHighestRank[ms.key] = {
+              rank: mRank,
+              tourneyName: curT ? curT.name : "",
+              tourneyUrl: curT ? getTournamentFinalStageUrl(curT, options.seriesId) : "#"
+            };
+          }
+        }
+      });
     }
+
+    // Build Individual Team Profile Data across all sub-tournaments
+    var allTourneyPerformances = {};
+    var allChampionTourneys = {};
+    var teamProfileStats = {};
+
+    Object.keys(teamDataMap).forEach(function (k) {
+      allTourneyPerformances[k] = [];
+      allChampionTourneys[k] = [];
+      var wins = 0, losses = 0, playedCount = 0, totalAccumPts = 0;
+      var cCount = 0, ruCount = 0, sCount = 0, qCount = 0;
+
+      for (var tI = 0; tI < totalTourneys; tI++) {
+        var tObj = subTourneys[tI];
+        var res = parsedResultsPerTourney[tI] || {};
+        var pts = (res.pointsMap && res.pointsMap[k]) !== undefined ? res.pointsMap[k] : ((tourneyPointsArray[tI] && tourneyPointsArray[tI][k]) || 0);
+        var part = (res.participatedMap && res.participatedMap[k]) || (tourneyParticipatedArray[tI] && tourneyParticipatedArray[tI][k]) || (pts > 0);
+        var isMulti = tObj.isMultiStage || tObj.tournamentType === 'MULTI_STAGE';
+        var ach = (res.achievementsMap && res.achievementsMap[k]) || (isMulti ? "Vòng Bảng" : "Round of 16");
+        var mStats = (res.matchStatsMap && res.matchStatsMap[k]) || { wins: 0, losses: 0 };
+        var isChamp = (ach === "Vô Địch") || (res.championName && isTeamSelf(res.championName, k)) || (tObj.championName && isTeamSelf(tObj.championName, k));
+
+        if (isChamp) {
+          ach = "Vô Địch";
+        }
+
+        var hasMatchPlay = (mStats && (mStats.wins > 0 || mStats.losses > 0));
+        var hasExplicitAchievement = !!(res.achievementsMap && res.achievementsMap[k]);
+        var hasLocalPart = !!(res.participatedMap && res.participatedMap[k]);
+        var hasPoints = pts > 0;
+
+        if (isChamp || hasPoints || hasMatchPlay || hasExplicitAchievement || hasLocalPart) {
+          playedCount++;
+          wins += mStats.wins;
+          losses += mStats.losses;
+          totalAccumPts += pts;
+
+          var tourneyUrl = getTournamentFinalStageUrl(tObj, options.seriesId);
+          var tierStr = (tObj.tierName || tObj.tier || "A").toUpperCase();
+
+          if (isChamp) {
+            cCount++;
+            sCount++;
+            qCount++;
+            allChampionTourneys[k].push({
+              id: tObj.id,
+              tournamentId: tObj.id,
+              name: tObj.name,
+              tier: tierStr,
+              tierName: tierStr,
+              finalStageUrl: tourneyUrl
+            });
+          } else if (ach === "Á Quân") {
+            ruCount++;
+            sCount++;
+            qCount++;
+          } else if (ach === "Bán Kết") {
+            sCount++;
+            qCount++;
+          } else if (ach === "Tứ Kết") {
+            qCount++;
+          }
+
+          var s1F = tObj.stage1Format || tObj.format || 'SINGLE_ELIMINATION';
+          var s2F = tObj.stage2Format || 'SINGLE_ELIMINATION';
+          var fmtLbl = getFormatShortCode(s1F);
+          if (isMulti) fmtLbl = getFormatShortCode(s1F) + " ➔ " + getFormatShortCode(s2F);
+
+          allTourneyPerformances[k].push({
+            stt: playedCount,
+            id: tObj.id,
+            tournamentId: tObj.id,
+            name: tObj.name,
+            tier: tierStr,
+            tierName: tierStr,
+            format: fmtLbl,
+            achievement: ach,
+            pointsEarned: pts,
+            finalStageUrl: tourneyUrl
+          });
+        }
+      }
+
+      var curRank = rankMap[k] ? rankMap[k].rank : 0;
+      var curPts = rankMap[k] ? rankMap[k].points : 0;
+      var hData = teamHighestRank[k] || { rank: curRank, tourneyName: "", tourneyUrl: "#" };
+      if (hData.rank === 0 && curRank > 0 && curPts > 0) {
+        hData.rank = curRank;
+      }
+
+      if (totalAccumPts < curPts) totalAccumPts = curPts;
+
+      teamProfileStats[k] = {
+        partnerName: teamDataMap[k].name,
+        currentRank: curRank,
+        currentPoints: curPts,
+        highestRank: hData.rank,
+        highestRankTourneyName: hData.tourneyName,
+        highestRankTourneyUrl: hData.tourneyUrl,
+        totalAccumulatedPoints: totalAccumPts,
+        wins: wins,
+        losses: losses,
+        playedCount: playedCount,
+        champCount: cCount,
+        runnerUpCount: ruCount,
+        semiCount: sCount,
+        quarterCount: qCount,
+        championTourneys: allChampionTourneys[k],
+        performances: allTourneyPerformances[k]
+      };
+    });
+
+    return {
+      teamDataArray: teamDataArray,
+      rankMap: rankMap,
+      targetIdx: targetIdx,
+      currentWindowStart: currentWindowStart,
+      currentWindowEnd: currentWindowEnd,
+      totalTourneys: totalTourneys,
+      allTourneyPerformances: allTourneyPerformances,
+      allChampionTourneys: allChampionTourneys,
+      teamProfileStats: teamProfileStats
+    };
   }
 
-  // =========================================================================
-  // PUBLIC EVENT HANDLERS & AUTO-UPDATE
-  // =========================================================================
-  window.onMilestoneChange = function (milestoneVal) {
-    computeStandingsForMilestone(milestoneVal);
-  };
-
-  window.syncLatestStandings = function () {
-    var milestoneSelect = document.getElementById('milestoneSelect');
-    if (milestoneSelect) milestoneSelect.value = 'LATEST';
-    computeStandingsForMilestone('LATEST');
-  };
-
-  window.refreshRollingStandings = function () {
-    var milestoneSelect = document.getElementById('milestoneSelect');
-    var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
-    computeStandingsForMilestone(curVal);
-  };
-
-  // Automatically compute and sync on page load and lifecycle events so standings are always 100% up-to-date
-  function triggerAutoUpdate() {
-    var milestoneSelect = document.getElementById('milestoneSelect');
-    var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
-    computeStandingsForMilestone(curVal);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', triggerAutoUpdate);
-  } else {
-    triggerAutoUpdate();
-  }
-
-  window.addEventListener('pageshow', triggerAutoUpdate);
-  window.addEventListener('focus', triggerAutoUpdate);
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') {
-      triggerAutoUpdate();
+  function getTeamProfile(teamName, options) {
+    var standingsRes = calculateSeriesStandings(options);
+    if (!teamName || !standingsRes || !standingsRes.teamProfileStats) return null;
+    var targetK = teamName.toLowerCase().trim();
+    if (standingsRes.teamProfileStats[targetK]) {
+      return standingsRes.teamProfileStats[targetK];
     }
-  });
-  window.addEventListener('storage', triggerAutoUpdate);
+
+    // Fuzzy match
+    var keys = Object.keys(standingsRes.teamProfileStats);
+    for (var i = 0; i < keys.length; i++) {
+      if (isTeamSelf(keys[i], targetK)) {
+        return standingsRes.teamProfileStats[keys[i]];
+      }
+    }
+    return null;
+  }
+
+  // Export engine to global window
+  window.TourmaRollingStandingsEngine = {
+    normalizeStr: normalizeStr,
+    extractName: extractName,
+    isTeamSelf: isTeamSelf,
+    resolveWinnerAndLoser: resolveWinnerAndLoser,
+    resolvePointsFromConfig: resolvePointsFromConfig,
+    getFormatShortCode: getFormatShortCode,
+    getTournamentFinalStageUrl: getTournamentFinalStageUrl,
+    getStorageData: getStorageData,
+    parseTournamentResults: parseTournamentResults,
+    calculateSeriesStandings: calculateSeriesStandings,
+    getTeamProfile: getTeamProfile
+  };
 
 })();

@@ -169,6 +169,60 @@
   border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
+.rank-badge {
+  display: inline-block;
+  min-width: 18px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #94a3b8;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1;
+  text-align: center;
+}
+
+/* ============================================================================
+   TOP 10 FORMATTING: Rank number & text in mint green (#2dd4bf) (no frame)
+   ============================================================================ */
+.rank-badge.top-10,
+tr.top-10 .rank-badge,
+.team-list-table tbody tr.top-10 .rank-badge,
+.rolling-table tbody tr.top-10 .rank-badge {
+  color: #2dd4bf !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+tr.top-10 td:first-child,
+tr.top-10 td:first-child .rank-wrap,
+tr.top-10 td:first-child .rank-badge,
+tr.top-10 td:nth-child(2),
+tr.top-10 td:nth-child(2) a,
+tr.top-10 .team-link,
+.team-list-table tbody tr.top-10 td:first-child,
+.team-list-table tbody tr.top-10 td:first-child .rank-wrap,
+.team-list-table tbody tr.top-10 td:first-child .rank-badge,
+.team-list-table tbody tr.top-10 td:nth-child(2),
+.team-list-table tbody tr.top-10 td:nth-child(2) a,
+.team-list-table tbody tr.top-10 .team-link {
+  color: #2dd4bf !important;
+}
+
+tr.top-10 td:nth-child(2) a:hover,
+tr.top-10 .team-link:hover,
+.team-list-table tbody tr.top-10 td:nth-child(2) a:hover,
+.team-list-table tbody tr.top-10 .team-link:hover {
+  color: #5eead4 !important;
+  text-shadow: 0 0 8px rgba(45, 212, 191, 0.4);
+}
+
 /* ============================================================================
    RANK CHANGE (BIẾN ĐỘNG RANK) STYLES
    ============================================================================ */
@@ -190,7 +244,11 @@
 }
 
 .rank-change.up {
-  color: #2dd4bf; /* Mint green */
+  color: #22c55e !important; /* Vibrant Green for rank increase */
+}
+
+.rank-change.up i {
+  color: #22c55e !important;
 }
 
 .rank-change.down {

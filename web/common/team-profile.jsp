@@ -327,6 +327,7 @@
                         id: "<%= safeId %>",
                         name: "<%= safeName %>",
                         tierName: "<%= tier %>",
+                        championName: "<%= (t != null && t.getChampionName() != null) ? t.getChampionName().replace("\\", "\\\\").replace("\"", "\\\"") : "" %>",
                         index: <%= tIdx %>,
                         format: "<%= (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "" %>",
                         isMultiStage: <%= isMulti %>,
@@ -340,8 +341,49 @@
                 } 
                 %>
             ];
+            <%
+                List<java.util.Map<String, Integer>> serverTourneyPoints = (List<java.util.Map<String, Integer>>) request.getAttribute("serverTourneyPoints");
+                List<java.util.Map<String, Boolean>> serverTourneyParticipation = (List<java.util.Map<String, Boolean>>) request.getAttribute("serverTourneyParticipation");
+            %>
+            window.serverTourneyPoints = [
+                <% if (serverTourneyPoints != null) {
+                    for (int sIdx = 0; sIdx < serverTourneyPoints.size(); sIdx++) {
+                        java.util.Map<String, Integer> map = serverTourneyPoints.get(sIdx);
+                        StringBuilder sb = new StringBuilder("{");
+                        if (map != null) {
+                            int count = 0;
+                            for (java.util.Map.Entry<String, Integer> e : map.entrySet()) {
+                                if (count++ > 0) sb.append(",");
+                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":").append(e.getValue());
+                            }
+                        }
+                        sb.append("}");
+                %>
+                    <%= sb.toString() %><%= (sIdx < serverTourneyPoints.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
+            window.serverTourneyParticipation = [
+                <% if (serverTourneyParticipation != null) {
+                    for (int sIdx = 0; sIdx < serverTourneyParticipation.size(); sIdx++) {
+                        java.util.Map<String, Boolean> map = serverTourneyParticipation.get(sIdx);
+                        StringBuilder sb = new StringBuilder("{");
+                        if (map != null) {
+                            int count = 0;
+                            for (java.util.Map.Entry<String, Boolean> e : map.entrySet()) {
+                                if (count++ > 0) sb.append(",");
+                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":true");
+                            }
+                        }
+                        sb.append("}");
+                %>
+                    <%= sb.toString() %><%= (sIdx < serverTourneyParticipation.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
         </script>
-        <!-- Modular Team Badge Engine & Unified Profile Stats Script -->
+        <!-- Rolling Standings Engine, Modular Team Badge Engine & Unified Profile Stats Script -->
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/team-badge-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/team-profile.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>

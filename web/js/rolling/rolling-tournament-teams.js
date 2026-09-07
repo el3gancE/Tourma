@@ -310,59 +310,63 @@
     var items = Array.from(modalList.querySelectorAll('.partner-checkbox-item'));
     if (items.length === 0) return;
 
-    // Check if server already provided official standings (authoritative source of truth)
-    var serverStandings = window.seriesStandingsRankMap;
-    var hasServerStandings = serverStandings && Object.keys(serverStandings).length > 0;
+    var curTid = (typeof window.currentSubTourneyId !== 'undefined' && window.currentSubTourneyId) ? window.currentSubTourneyId : getTourneyId();
 
-    if (hasServerStandings) {
-      var teamDataMap = {};
+    // Extract partner list
+    var partners = window.seriesPartners || [];
+    if (!partners || partners.length === 0) {
+      partners = items.map(function(item) {
+        var rawName = item.getAttribute('data-team-name') || '';
+        if (!rawName) {
+          var nameSpan = item.querySelector('div > span:not(.rank-badge)');
+          if (nameSpan) rawName = nameSpan.textContent.replace('(Đã thêm)', '').trim();
+        }
+        return { name: rawName, id: item.getAttribute('data-team-id') || rawName };
+      });
+    }
+
+    var result = null;
+    if (window.TourmaRollingStandingsEngine && typeof window.TourmaRollingStandingsEngine.calculateSeriesStandings === 'function') {
+      result = window.TourmaRollingStandingsEngine.calculateSeriesStandings({
+        subTourneys: window.seriesSubTournaments,
+        partners: partners,
+        phaseSize: window.seriesPhaseSize,
+        serverTourneyPoints: window.serverTourneyPoints,
+        serverTourneyParticipation: window.serverTourneyParticipation,
+        excludeTourneyId: curTid
+      });
+    }
+
+    if (result && result.rankMap && result.teamDataArray) {
+      window.seriesStandingsRankMap = result.rankMap;
+
+      // Map items by team name
+      var itemMap = {};
       items.forEach(function (item) {
         var rawName = item.getAttribute('data-team-name') || '';
         if (!rawName) {
           var nameSpan = item.querySelector('div > span:not(.rank-badge)');
-          if (nameSpan) {
-            rawName = nameSpan.textContent.replace('(Đã thêm)', '').trim();
-          }
+          if (nameSpan) rawName = nameSpan.textContent.replace('(Đã thêm)', '').trim();
         }
-        var teamKey = rawName.trim().toLowerCase();
+        itemMap[rawName.trim().toLowerCase()] = item;
+      });
 
-        var serverData = serverStandings[teamKey];
-        if (!serverData) {
-          var keys = Object.keys(serverStandings);
-          for (var i = 0; i < keys.length; i++) {
-            if (isTeamSelf(rawName, keys[i])) {
-              serverData = serverStandings[keys[i]];
+      // Sort & update DOM elements in modal according to exact BXH teamDataArray
+      result.teamDataArray.forEach(function (data, rankIdx) {
+        var teamKey = data.name.trim().toLowerCase();
+        var item = itemMap[teamKey];
+        if (!item) {
+          var itemKeys = Object.keys(itemMap);
+          for (var i = 0; i < itemKeys.length; i++) {
+            if (isTeamSelf(data.name, itemKeys[i])) {
+              item = itemMap[itemKeys[i]];
               break;
             }
           }
         }
+        if (!item) return;
 
-        var pts = serverData ? serverData.points : (parseInt(item.getAttribute('data-points'), 10) || 0);
-        var rank = serverData ? serverData.rank : (parseInt(item.getAttribute('data-rank'), 10) || 9999);
-
-        teamDataMap[teamKey] = {
-          name: rawName,
-          totalPts: pts,
-          rank: rank,
-          item: item
-        };
-      });
-
-      var teamDataArray = Object.keys(teamDataMap).map(function (k) { return teamDataMap[k]; });
-      teamDataArray.sort(function (a, b) {
-        if (a.rank !== b.rank) return a.rank - b.rank;
-        if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-        return a.name.localeCompare(b.name);
-      });
-
-      teamDataArray.forEach(function (data, rankIdx) {
-        var item = data.item;
         var rank = data.rank;
-        var teamKey = data.name.trim().toLowerCase();
-
-        window.seriesStandingsRankMap[teamKey] = { rank: rank, points: data.totalPts };
-
-        // Update data attributes
         item.setAttribute('data-index', rankIdx);
         item.setAttribute('data-rank', rank);
         item.setAttribute('data-points', data.totalPts);
@@ -388,358 +392,7 @@
         // Physically append to modal container in new sorted order
         modalList.appendChild(item);
       });
-
-      return;
     }
-
-    // Fallback: Client-side calculation if offline / no server standings provided
-    var fallbackTeamDataMap = {};
-    items.forEach(function (item) {
-      var rawName = item.getAttribute('data-team-name') || '';
-      var teamKey = rawName.trim().toLowerCase();
-      if (!teamKey) {
-        var span = item.querySelector('span');
-        if (span) rawName = span.textContent.replace('(Đã thêm)', '').trim();
-        teamKey = rawName.toLowerCase();
-      }
-      var pts = parseInt(item.getAttribute('data-points'), 10) || 0;
-      var rank = parseInt(item.getAttribute('data-rank'), 10) || 999;
-
-      fallbackTeamDataMap[teamKey] = {
-        name: rawName,
-        totalPts: pts,
-        lastPts: 0,
-        expiredPts: 0,
-        droppedPts: 0,
-        activeTourneys: 0,
-        item: item,
-        hasLocalUpdates: false
-      };
-    });
-
-    var subTourneys = window.seriesSubTournaments || [];
-    var phaseSize = window.seriesPhaseSize || 26;
-    var totalTourneys = subTourneys.length;
-    var activeStartIndex = Math.max(0, totalTourneys - phaseSize);
-    var droppedIndex = totalTourneys - phaseSize - 1;
-
-    if (subTourneys.length > 0) {
-      subTourneys.forEach(function (t, tIdx) {
-        var isActiveWindow = (tIdx >= activeStartIndex);
-        var isLatestTourney = (tIdx === totalTourneys - 1);
-        var isDroppedTourney = (tIdx === droppedIndex);
-
-        var localPtsCfg = {};
-        try {
-          var localPtsRaw = getStorageData(['tourma_points_config_'], t.id);
-          if (localPtsRaw) localPtsCfg = JSON.parse(localPtsRaw) || {};
-        } catch (e) {}
-
-        // Priority: DB pointsConfig first, fallback to localPtsCfg
-        var ptsCfg = Object.assign({}, localPtsCfg || {}, t.pointsConfig || {});
-        var teamTourneyPoints = {};
-        var teamParticipatedInThisTourney = {};
-
-        function markTeamParticipated(name) {
-          if (!name) return;
-          var key = name.toLowerCase().trim();
-          var targetEntry = fallbackTeamDataMap[key];
-          if (!targetEntry) {
-            var mapKeys = Object.keys(fallbackTeamDataMap);
-            for (var mIdx = 0; mIdx < mapKeys.length; mIdx++) {
-              var k = mapKeys[mIdx];
-              if (isTeamSelf(name, k)) {
-                targetEntry = fallbackTeamDataMap[k];
-                key = k;
-                break;
-              }
-            }
-          }
-          if (!targetEntry) return;
-
-          if (!targetEntry.hasLocalUpdates) {
-            targetEntry.hasLocalUpdates = true;
-            targetEntry.totalPts = 0;
-            targetEntry.lastPts = 0;
-            targetEntry.activeTourneys = 0;
-          }
-
-          if (isActiveWindow && !teamParticipatedInThisTourney[key]) {
-            teamParticipatedInThisTourney[key] = true;
-            targetEntry.activeTourneys += 1;
-          }
-        }
-
-        try {
-          var rawTList = getStorageData(['tourma_teams_'], t.id);
-          if (rawTList) {
-            var tArr = JSON.parse(rawTList);
-            if (Array.isArray(tArr)) {
-              tArr.forEach(function (tm) {
-                var n = extractName(tm);
-                if (n) markTeamParticipated(n);
-              });
-            }
-          }
-        } catch (e) { }
-
-        function awardTeamPoints(name, positionKey, altKey) {
-          if (!name) return;
-          markTeamParticipated(name);
-          var key = name.toLowerCase().trim();
-          var targetEntry = fallbackTeamDataMap[key];
-          if (!targetEntry) {
-            var mapKeys = Object.keys(fallbackTeamDataMap);
-            for (var mIdx = 0; mIdx < mapKeys.length; mIdx++) {
-              var k = mapKeys[mIdx];
-              if (isTeamSelf(name, k)) {
-                targetEntry = fallbackTeamDataMap[k];
-                key = k;
-                break;
-              }
-            }
-          }
-          if (!targetEntry) return;
-
-          var pts = resolvePointsFromConfig(ptsCfg, positionKey, altKey);
-          if (pts <= 0) return;
-
-          var prevPts = teamTourneyPoints[key] || 0;
-          if (pts <= prevPts) return;
-
-          var diff = pts - prevPts;
-          teamTourneyPoints[key] = pts;
-
-          if (isActiveWindow) {
-            targetEntry.totalPts += diff;
-            if (isLatestTourney) targetEntry.lastPts = pts;
-          } else {
-            targetEntry.expiredPts += diff;
-          }
-
-          if (isDroppedTourney) targetEntry.droppedPts = pts;
-        }
-
-        // Parse matches for this sub-tournament
-        var rawMultiCfg = getStorageData(['tourma_multi_config_'], t.id);
-        var multiConfig = null;
-        if (rawMultiCfg) {
-          try { multiConfig = JSON.parse(rawMultiCfg); } catch (e) {}
-        }
-        var isMultiStage = !!(multiConfig && multiConfig.stage2Format) || (t.stageCount > 1) || (t.isMultiStage);
-        var s1Format = (multiConfig && multiConfig.stage1Format) ? multiConfig.stage1Format.toUpperCase() : (t.stage1Format || (t.format || 'SWISS_LITE'));
-        var s2Format = (multiConfig && multiConfig.stage2Format) ? multiConfig.stage2Format.toUpperCase() : (t.stage2Format || 'ROUND_ROBIN');
-
-        // Swiss Stage
-        if (s1Format.indexOf('SWISS') !== -1 || (!isMultiStage && (t.format || '').indexOf('SWISS') !== -1)) {
-          var rawSwiss = getStorageData(['tourma_swiss_matches_'], t.id);
-          if (rawSwiss) {
-            try {
-              var swissMatches = JSON.parse(rawSwiss);
-              var sTeamsList = [];
-              try { sTeamsList = JSON.parse(getStorageData(['tourma_teams_'], t.id)) || []; } catch (e) {}
-              var swissStats = {};
-              if (Array.isArray(sTeamsList)) {
-                sTeamsList.forEach(function (tm) {
-                  var tmName = extractName(tm);
-                  if (tmName) swissStats[tmName.toLowerCase().trim()] = { name: tmName, wins: 0, losses: 0, draws: 0, points: 0, scoresFor: 0, scoresAgainst: 0, diff: 0, buchholz: 0, opponents: [] };
-                });
-              }
-              if (swissMatches && typeof swissMatches === 'object') {
-                Object.keys(swissMatches).forEach(function (mk) {
-                  var m = swissMatches[mk];
-                  if (!m) return;
-                  var t1Name = extractName(m.team1) || (m.team1Name ? extractName(m.team1Name) : null);
-                  var t2Name = extractName(m.team2) || (m.team2Name ? extractName(m.team2Name) : null);
-                  if (!t1Name) return;
-                  var k1 = t1Name.toLowerCase().trim();
-                  if (!swissStats[k1]) swissStats[k1] = { name: t1Name, wins: 0, losses: 0, draws: 0, points: 0, scoresFor: 0, scoresAgainst: 0, diff: 0, buchholz: 0, opponents: [] };
-                  if (t2Name) {
-                    var k2 = t2Name.toLowerCase().trim();
-                    if (!swissStats[k2]) swissStats[k2] = { name: t2Name, wins: 0, losses: 0, draws: 0, points: 0, scoresFor: 0, scoresAgainst: 0, diff: 0, buchholz: 0, opponents: [] };
-                    swissStats[k1].opponents.push(k2);
-                    swissStats[k2].opponents.push(k1);
-                    var s1 = parseInt(m.team1Score !== undefined ? m.team1Score : m.score1, 10);
-                    var s2 = parseInt(m.team2Score !== undefined ? m.team2Score : m.score2, 10);
-                    if (!isNaN(s1) && !isNaN(s2) && (m.status === 'COMPLETED' || m.status === 'DONE' || s1 > 0 || s2 > 0)) {
-                      swissStats[k1].scoresFor += s1; swissStats[k1].scoresAgainst += s2;
-                      swissStats[k2].scoresFor += s2; swissStats[k2].scoresAgainst += s1;
-                      if (s1 > s2) { swissStats[k1].wins += 1; swissStats[k1].points += 3; swissStats[k2].losses += 1; }
-                      else if (s2 > s1) { swissStats[k2].wins += 1; swissStats[k2].points += 3; swissStats[k1].losses += 1; }
-                      else { swissStats[k1].draws += 1; swissStats[k2].draws += 1; swissStats[k1].points += 1; swissStats[k2].points += 1; }
-                    }
-                  } else {
-                    swissStats[k1].wins += 1; swissStats[k1].points += 3;
-                  }
-                });
-              }
-              Object.keys(swissStats).forEach(function (k) {
-                var st = swissStats[k];
-                st.diff = st.scoresFor - st.scoresAgainst;
-                var bSum = 0;
-                st.opponents.forEach(function (oppK) { if (swissStats[oppK]) bSum += swissStats[oppK].points; });
-                st.buchholz = bSum;
-              });
-              var swissList = Object.keys(swissStats).map(function (k) { return swissStats[k]; });
-              swissList.sort(function (a, b) {
-                if (a.wins !== b.wins) return b.wins - a.wins;
-                if (a.losses !== b.losses) return a.losses - b.losses;
-                if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
-                if (b.diff !== a.diff) return b.diff - a.diff;
-                return b.scoresFor - a.scoresFor;
-              });
-              if (!isMultiStage) {
-                swissList.forEach(function (st, idx) { awardTeamPoints(st.name, String(idx + 1)); });
-              } else {
-                swissList.forEach(function (st) {
-                  if (st.losses >= 3 || st.wins < 3) {
-                    var recKey = "swiss_" + st.wins + "-" + st.losses;
-                    var altRec = (st.wins === 2) ? "swiss_2-3" : ((st.wins === 1) ? "swiss_1-3" : "swiss_0-3");
-                    awardTeamPoints(st.name, recKey, altRec);
-                  }
-                });
-              }
-            } catch (e) {}
-          }
-        }
-
-        // Single Elimination / Bracket Matches
-        if (s1Format === 'SINGLE_ELIMINATION' || (!isMultiStage && t.format === 'SINGLE_ELIMINATION')) {
-          var rawBracket = getStorageData(['tourma_bracket_matches_', 'tourma_matches_', 'tourma_bracket_'], t.id);
-          if (rawBracket) {
-            try {
-              var bracketData = JSON.parse(rawBracket);
-              var matchesMap = bracketData.matchesMap || bracketData;
-              if (matchesMap && typeof matchesMap === 'object') {
-                var totalTeams = 16;
-                try {
-                  var sTeams = JSON.parse(getStorageData(['tourma_teams_'], t.id));
-                  if (Array.isArray(sTeams) && sTeams.length > 0) totalTeams = sTeams.length;
-                } catch (e) {}
-                var totalFullRounds = Math.round(Math.log2(totalTeams));
-                Object.keys(matchesMap).forEach(function (mk) {
-                  var m = matchesMap[mk];
-                  if (m && m.winnerId) {
-                    var rNum = m.roundNumber || 1;
-                    var teamsInRound = totalTeams / Math.pow(2, rNum - 1);
-                    var startPos = Math.floor(teamsInRound / 2) + 1;
-                    var endPos = teamsInRound;
-                    var posKey = (startPos === endPos) ? String(startPos) : (startPos + "-" + endPos);
-                    var mRes = resolveWinnerAndLoser(m);
-                    if (mRes.loser) awardTeamPoints(mRes.loser, posKey, "stage1_eliminated");
-                    if (mRes.winner && !isMultiStage && rNum === totalFullRounds) awardTeamPoints(mRes.winner, "1");
-                    if (mRes.loser && !isMultiStage && rNum === totalFullRounds) awardTeamPoints(mRes.loser, "2");
-                  }
-                });
-              }
-            } catch (e) {}
-          }
-        }
-
-        // Round Robin Matches
-        if (s1Format === 'ROUND_ROBIN' || (!isMultiStage && t.format === 'ROUND_ROBIN')) {
-          var rawRR = getStorageData(['tourma_rr_matches_'], t.id);
-          if (rawRR) {
-            try {
-              var rrData = JSON.parse(rawRR);
-              var rrMatchesMap = rrData.matchesMap || rrData;
-              var teamsList = rrData.teamsList || [];
-              if (!teamsList || teamsList.length === 0) {
-                try { teamsList = JSON.parse(getStorageData(['tourma_teams_'], t.id)) || []; } catch (e) {}
-              }
-              if (teamsList.length > 0 && window.TourmaRoundRobinAlgorithm) {
-                var standings = window.TourmaRoundRobinAlgorithm.calculateStandings(teamsList, rrMatchesMap, (multiConfig && multiConfig.stage1Config) || rrData.config || {});
-                if (standings && standings.length > 0) {
-                  standings.forEach(function (row, idx) {
-                    var name = extractName(row) || (row.team ? extractName(row.team) : null);
-                    if (name) awardTeamPoints(name, String(idx + 1));
-                  });
-                }
-              }
-            } catch (e) {}
-          }
-        }
-
-        // Multi-Stage Stage 2 Single Elimination
-        if (isMultiStage && s2Format === 'SINGLE_ELIMINATION') {
-          var rawBracketS2 = getStorageData(['tourma_bracket_stage2_', 'tourma_matches_stage2_'], t.id);
-          if (rawBracketS2) {
-            try {
-              var bracketDataS2 = JSON.parse(rawBracketS2);
-              var matchesMapS2 = bracketDataS2.matchesMap || bracketDataS2;
-              if (matchesMapS2 && typeof matchesMapS2 === 'object') {
-                var s2TeamsCount = 4;
-                try {
-                  var st2 = JSON.parse(getStorageData(['tourma_stage2_teams_'], t.id));
-                  if (Array.isArray(st2) && st2.length > 0) s2TeamsCount = st2.length;
-                } catch (e) {}
-                var totalS2FullRounds = Math.round(Math.log2(s2TeamsCount));
-                Object.keys(matchesMapS2).forEach(function (mk) {
-                  var m = matchesMapS2[mk];
-                  if (m && m.winnerId) {
-                    var rNumS2 = m.roundNumber || 1;
-                    var tInR = s2TeamsCount / Math.pow(2, rNumS2 - 1);
-                    var sPos = Math.floor(tInR / 2) + 1;
-                    var posKeyS2 = (sPos === tInR) ? String(sPos) : (sPos + "-" + tInR);
-                    var resS2 = resolveWinnerAndLoser(m);
-                    if (rNumS2 === totalS2FullRounds) {
-                      if (resS2.winner) awardTeamPoints(resS2.winner, "1");
-                      if (resS2.loser) awardTeamPoints(resS2.loser, "2");
-                    } else {
-                      if (resS2.loser) awardTeamPoints(resS2.loser, posKeyS2);
-                    }
-                  }
-                });
-              }
-            } catch (e) {}
-          }
-        }
-      });
-    }
-
-    // Sort partner team array by total points descending
-    var teamDataArray = Object.keys(fallbackTeamDataMap).map(function (k) { return fallbackTeamDataMap[k]; });
-    teamDataArray.sort(function (a, b) {
-      if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-      return b.lastPts - a.lastPts;
-    });
-
-    // Update window.seriesStandingsRankMap & Re-order DOM elements in modal
-    window.seriesStandingsRankMap = window.seriesStandingsRankMap || {};
-
-    teamDataArray.forEach(function (data, rankIdx) {
-      var item = data.item;
-      var rank = rankIdx + 1;
-      var teamKey = data.name.trim().toLowerCase();
-
-      window.seriesStandingsRankMap[teamKey] = { rank: rank, points: data.totalPts };
-
-      // Update data attributes
-      item.setAttribute('data-index', rankIdx);
-      item.setAttribute('data-rank', rank);
-      item.setAttribute('data-points', data.totalPts);
-
-      var cb = item.querySelector('.partner-cb-input');
-      if (cb) cb.setAttribute('data-index', rankIdx);
-
-      // Update rank badge in modal item
-      var badge = item.querySelector('.rank-badge');
-      if (badge) {
-        badge.className = 'rank-badge rank-' + rank;
-        badge.textContent = '#' + rank;
-        badge.style.color = (rank === 1) ? '#fbbf24' : (rank === 2 ? '#e2e8f0' : (rank === 3 ? '#f97316' : '#cbd5e1'));
-        badge.style.borderColor = (rank === 1) ? 'rgba(251,191,36,0.3)' : (rank === 2 ? 'rgba(226,232,240,0.2)' : (rank === 3 ? 'rgba(249,115,22,0.3)' : 'rgba(255,255,255,0.1)'));
-      }
-
-      // Update points display in modal item
-      var ptsDiv = item.querySelector('div:last-child');
-      if (ptsDiv) {
-        ptsDiv.textContent = data.totalPts + ' pts';
-      }
-
-      // Physically append to modal container in new sorted order
-      modalList.appendChild(item);
-    });
   };
 
   /**

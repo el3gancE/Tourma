@@ -64,9 +64,9 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         
         <!-- Design System CSS, Shared Team List CSS & Dedicated Rolling Standings CSS -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css?v=<%= System.currentTimeMillis() %>">
     </head>
     <body>
         <!-- Shared Navigation Header Component -->
@@ -177,11 +177,15 @@
                                     changeText = netChange + " pts";
                                     changeColor = "#ef4444";
                                 }
+                                boolean isTop10 = (rank <= 10);
+                                String rankColor = isTop10 ? "#2dd4bf" : "#ffffff";
+                                String nameColor = isTop10 ? "#2dd4bf" : "#ffffff";
+                                String nameHover = isTop10 ? "#5eead4" : "#2dd4bf";
                         %>
-                            <tr>
-                                <td style="font-weight: 800; color: #ffffff;">
+                            <tr class="<%= isTop10 ? "top-10" : "" %>">
+                                <td style="font-weight: 800; color: <%= rankColor %>;">
                                     <div class="rank-wrap">
-                                        <span class="rank-badge rank-<%= rank %>">#<%= rank %></span>
+                                        <span class="rank-badge <%= isTop10 ? "top-10" : "" %> rank-<%= rank %>"><%= rank %></span>
                                         <% if (tourneyCount >= 2) { %>
                                             <% if (rankChange > 0) { %>
                                                 <span class="rank-change up" title="Tăng <%= rankChange %> bậc"><i class="fa-solid fa-arrow-up"></i> <%= rankChange %></span>
@@ -195,8 +199,8 @@
                                         <% } %>
                                     </div>
                                 </td>
-                                <td style="font-weight: 700; color: #ffffff;">
-                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&teamName=<%= java.net.URLEncoder.encode(dto.getTeamName(), "UTF-8") %>" style="color: #ffffff; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color='#2dd4bf'" onmouseout="this.style.color='#ffffff'">
+                                <td style="font-weight: 700; color: <%= nameColor %>;">
+                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&teamName=<%= java.net.URLEncoder.encode(dto.getTeamName(), "UTF-8") %>" class="team-link" style="color: <%= nameColor %>; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color='<%= nameHover %>'" onmouseout="this.style.color='<%= nameColor %>'">
                                         <%= dto.getTeamName() %>
                                     </a>
                                 </td>
@@ -218,16 +222,20 @@
                             for (int i = 0; i < standingsList.size(); i++) {
                                 SeriesStanding st = standingsList.get(i);
                                 int rank = i + 1;
+                                boolean isTop10 = (rank <= 10);
+                                String rankColor = isTop10 ? "#2dd4bf" : "#ffffff";
+                                String nameColor = isTop10 ? "#2dd4bf" : "#ffffff";
+                                String nameHover = isTop10 ? "#5eead4" : "#2dd4bf";
                         %>
-                            <tr>
-                                <td style="font-weight: 800; color: #ffffff;">
+                            <tr class="<%= isTop10 ? "top-10" : "" %>">
+                                <td style="font-weight: 800; color: <%= rankColor %>;">
                                     <div class="rank-wrap">
-                                        <span class="rank-badge rank-<%= rank %>">#<%= rank %></span>
+                                        <span class="rank-badge <%= isTop10 ? "top-10" : "" %> rank-<%= rank %>"><%= rank %></span>
                                         <span class="rank-change same" title="Chưa có biến động">-</span>
                                     </div>
                                 </td>
-                                <td style="font-weight: 700; color: #ffffff;">
-                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&teamName=<%= java.net.URLEncoder.encode(st.getNormalizedTeamName(), "UTF-8") %>" style="color: #ffffff; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color='#2dd4bf'" onmouseout="this.style.color='#ffffff'">
+                                <td style="font-weight: 700; color: <%= nameColor %>;">
+                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&teamName=<%= java.net.URLEncoder.encode(st.getNormalizedTeamName(), "UTF-8") %>" class="team-link" style="color: <%= nameColor %>; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color='<%= nameHover %>'" onmouseout="this.style.color='<%= nameColor %>'">
                                         <%= st.getNormalizedTeamName() %>
                                     </a>
                                 </td>
@@ -348,6 +356,7 @@
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>

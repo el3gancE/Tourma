@@ -515,3 +515,141 @@
   align-items: center;
   gap: 0.3rem;
 }
+
+/* ============================================================================
+   4. STREAK BADGES (Back-2-Back & Nx Winning Streak)
+   ============================================================================ */
+
+/* Back-2-Back Badge (Cam Lửa Ấm) */
+.tourma-badge-streak {
+  background: rgba(249, 115, 22, 0.2);
+  border: 1.25px solid #f97316;
+  color: #fdba74;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+}
+
+.tourma-badge-streak .badge-icon {
+  color: #ff8c00;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.tourma-badge-streak .tourma-badge-name {
+  color: #fdba74;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+
+.tourma-badge-streak:hover {
+  border-color: #ffaa00;
+  background: rgba(249, 115, 22, 0.35);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.7), inset 0 0 8px rgba(253, 186, 116, 0.3);
+}
+
+/* Tooltip Theme for Back-2-Back */
+.tourma-badge-streak .tourma-badge-tooltip {
+  border-color: rgba(249, 115, 22, 0.6);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 15px rgba(249, 115, 22, 0.3);
+}
+.tourma-badge-streak .tourma-badge-tooltip-title { color: #fdba74; }
+.tourma-badge-streak .tourma-badge-tooltip-rarity {
+  background: rgba(249, 115, 22, 0.25);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.5);
+}
+
+/* Nx Winning Streak Badge (Đỏ Lửa Rực Rỡ - Động) */
+.tourma-badge-streak-fire {
+  background: rgba(239, 68, 68, 0.22);
+  border: 1.25px solid #ef4444;
+  color: #fca5a5;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.45), inset 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+.tourma-badge-streak-fire .badge-icon {
+  color: #ff4500;
+  font-size: 0.84rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px #ff4500);
+  animation: streakFirePulse 1.8s infinite ease-in-out;
+}
+
+@keyframes streakFirePulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px #ff4500); }
+  50% { transform: scale(1.15); filter: drop-shadow(0 0 8px #ffaa00); }
+}
+
+.tourma-badge-streak-fire .tourma-badge-name {
+  color: #fca5a5;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+  background: linear-gradient(90deg, #ff6b6b 0%, #ffa07a 50%, #ff4500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.tourma-badge-streak-fire:hover {
+  border-color: #ff6b6b;
+  background: rgba(239, 68, 68, 0.38);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), inset 0 0 12px rgba(254, 202, 202, 0.4);
+}
+
+/* Tooltip Theme for Nx Winning Streak */
+.tourma-badge-streak-fire .tourma-badge-tooltip {
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 18px rgba(239, 68, 68, 0.4);
+}
+.tourma-badge-streak-fire .tourma-badge-tooltip-title { color: #fca5a5; }
+.tourma-badge-streak-fire .tourma-badge-tooltip-rarity {
+  background: rgba(239, 68, 68, 0.28);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+}
+
+/* Streak Tooltip Footer (Multi-tournament List) */
+.tourma-badge-tooltip-footer.streak-footer {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding-top: 0.3rem;
+  margin-top: 0.3rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  color: #fdba74;
+}
+
+.streak-footer-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #ffaa00;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.streak-tourney-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.35rem;
+  margin-top: 0.15rem;
+  width: 100%;
+}
+
+.streak-tourney-item {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  color: #f1f5f9;
+  font-size: 0.65rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.streak-tourney-item i {
+  color: #fbbf24;
+  font-size: 0.6rem;
+}
