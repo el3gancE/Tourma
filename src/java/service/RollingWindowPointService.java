@@ -33,6 +33,48 @@ public class RollingWindowPointService {
         return instance;
     }
 
+    // Global in-memory caches to make standings and profile navigation instantaneous (<50ms)
+    private static final java.util.Map<String, java.util.Map<String, Integer>> GLOBAL_PLACEMENTS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, List<Team>> GLOBAL_TEAMS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static class CacheEntry<T> {
+        final T data;
+        final long timestamp;
+        CacheEntry(T data) {
+            this.data = data;
+            this.timestamp = System.currentTimeMillis();
+        }
+        boolean isExpired(long ttlMs) {
+            return (System.currentTimeMillis() - timestamp) > ttlMs;
+        }
+    }
+
+    private static final java.util.Map<String, CacheEntry<List<RollingStandingDTO>>> STANDINGS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, CacheEntry<List<Map<String, Integer>>>> TOURNEY_POINTS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, CacheEntry<List<Map<String, Boolean>>>> TOURNEY_PART_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, CacheEntry<HighestRankDTO>> HIGHEST_RANK_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static void clearAllCaches() {
+        GLOBAL_PLACEMENTS_CACHE.clear();
+        GLOBAL_TEAMS_CACHE.clear();
+        STANDINGS_CACHE.clear();
+        TOURNEY_POINTS_CACHE.clear();
+        TOURNEY_PART_CACHE.clear();
+        HIGHEST_RANK_CACHE.clear();
+        dao.TournamentDAO.clearTournamentCaches();
+        dao.SeriesDAO.clearSeriesCaches();
+    }
+
+    public Map<String, Integer> getCachedTournamentPlacements(String tourneyId) {
+        if (tourneyId == null || tourneyId.trim().isEmpty()) return new HashMap<>();
+        return GLOBAL_PLACEMENTS_CACHE.computeIfAbsent(tourneyId.trim(), id -> new ParticipantDAO().getTournamentPlacements(id));
+    }
+
+    public List<Team> getCachedTeamsByTournamentId(String tourneyId) {
+        if (tourneyId == null || tourneyId.trim().isEmpty()) return new ArrayList<>();
+        return GLOBAL_TEAMS_CACHE.computeIfAbsent(tourneyId.trim(), id -> new ParticipantDAO().getTeamsByTournamentId(id));
+    }
+
     /**
      * DTO for representing comprehensive standing data with expiry details
      */
@@ -92,6 +134,12 @@ public class RollingWindowPointService {
     public List<RollingStandingDTO> calculateSeriesStandingsWithExpiry(String seriesId) {
         List<RollingStandingDTO> resultList = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return resultList;
+
+        String sKey = seriesId.trim();
+        CacheEntry<List<RollingStandingDTO>> cached = STANDINGS_CACHE.get(sKey);
+        if (cached != null && !cached.isExpired(60000L)) {
+            return cached.data;
+        }
 
         SeriesDAO seriesDAO = new SeriesDAO();
         Series series = seriesDAO.getSeriesById(seriesId.trim());
@@ -157,8 +205,8 @@ public class RollingWindowPointService {
                     pCfgRaw = buildFallbackConfig(pt);
                 }
                 Map<String, Integer> posPtsMap = parsePointsConfigJson(pCfgRaw);
-                Map<String, Integer> matchPlacements = placementsCache.computeIfAbsent(pt.getId(), id -> pDao.getTournamentPlacements(id));
-                List<Team> tourneyTeams = teamsCache.computeIfAbsent(pt.getId(), id -> pDao.getTeamsByTournamentId(id));
+                Map<String, Integer> matchPlacements = getCachedTournamentPlacements(pt.getId());
+                List<Team> tourneyTeams = getCachedTeamsByTournamentId(pt.getId());
                 if (tourneyTeams != null) {
                     for (Team tm : tourneyTeams) {
                         if (tm.getRawName() == null) continue;
@@ -201,8 +249,8 @@ public class RollingWindowPointService {
             Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
 
             // Retrieve match-based final placements for this tournament
-            Map<String, Integer> matchPlacements = placementsCache.computeIfAbsent(t.getId(), id -> pDao.getTournamentPlacements(id));
-            List<Team> tourneyTeams = teamsCache.computeIfAbsent(t.getId(), id -> pDao.getTeamsByTournamentId(id));
+            Map<String, Integer> matchPlacements = getCachedTournamentPlacements(t.getId());
+            List<Team> tourneyTeams = getCachedTeamsByTournamentId(t.getId());
             if (tourneyTeams == null || tourneyTeams.isEmpty()) continue;
 
             for (int idx = 0; idx < tourneyTeams.size(); idx++) {
@@ -269,6 +317,7 @@ public class RollingWindowPointService {
             }
         }
 
+        STANDINGS_CACHE.put(sKey, new CacheEntry<>(resultList));
         return resultList;
     }
 
@@ -281,11 +330,16 @@ public class RollingWindowPointService {
         List<Map<String, Integer>> result = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return result;
 
+        String sKey = seriesId.trim();
+        CacheEntry<List<Map<String, Integer>>> cached = TOURNEY_POINTS_CACHE.get(sKey);
+        if (cached != null && !cached.isExpired(60000L)) {
+            return cached.data;
+        }
+
         SeriesDAO seriesDAO = new SeriesDAO();
         List<Tournament> allTourneys = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
         if (allTourneys == null || allTourneys.isEmpty()) return result;
 
-        ParticipantDAO pDao = new ParticipantDAO();
         for (Tournament t : allTourneys) {
             Map<String, Integer> ptsMap = new HashMap<>();
             String tCfgRaw = t.getSeriesPointsConfig();
@@ -293,8 +347,8 @@ public class RollingWindowPointService {
                 tCfgRaw = buildFallbackConfig(t);
             }
             Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
-            Map<String, Integer> matchPlacements = pDao.getTournamentPlacements(t.getId());
-            List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
+            Map<String, Integer> matchPlacements = getCachedTournamentPlacements(t.getId());
+            List<Team> tourneyTeams = getCachedTeamsByTournamentId(t.getId());
             if (tourneyTeams != null) {
                 for (Team tm : tourneyTeams) {
                     if (tm.getRawName() == null) continue;
@@ -313,6 +367,7 @@ public class RollingWindowPointService {
             }
             result.add(ptsMap);
         }
+        TOURNEY_POINTS_CACHE.put(sKey, new CacheEntry<>(result));
         return result;
     }
 
@@ -323,14 +378,19 @@ public class RollingWindowPointService {
         List<Map<String, Boolean>> result = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return result;
 
+        String sKey = seriesId.trim();
+        CacheEntry<List<Map<String, Boolean>>> cached = TOURNEY_PART_CACHE.get(sKey);
+        if (cached != null && !cached.isExpired(60000L)) {
+            return cached.data;
+        }
+
         SeriesDAO seriesDAO = new SeriesDAO();
         List<Tournament> allTourneys = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
         if (allTourneys == null || allTourneys.isEmpty()) return result;
 
-        ParticipantDAO pDao = new ParticipantDAO();
         for (Tournament t : allTourneys) {
             Map<String, Boolean> partMap = new HashMap<>();
-            List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
+            List<Team> tourneyTeams = getCachedTeamsByTournamentId(t.getId());
             if (tourneyTeams != null) {
                 for (Team tm : tourneyTeams) {
                     if (tm.getRawName() != null) {
@@ -340,6 +400,7 @@ public class RollingWindowPointService {
             }
             result.add(partMap);
         }
+        TOURNEY_PART_CACHE.put(sKey, new CacheEntry<>(result));
         return result;
     }
 
@@ -437,6 +498,7 @@ public class RollingWindowPointService {
             }
 
             conn.commit();
+            clearAllCaches();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -525,6 +587,7 @@ public class RollingWindowPointService {
             }
 
             conn.commit();
+            clearAllCaches();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -583,6 +646,12 @@ public class RollingWindowPointService {
             return new HighestRankDTO(0, "", "");
         }
 
+        String cacheKey = seriesId.trim() + "___" + teamName.trim().toLowerCase();
+        CacheEntry<HighestRankDTO> cached = HIGHEST_RANK_CACHE.get(cacheKey);
+        if (cached != null && !cached.isExpired(60000L)) {
+            return cached.data;
+        }
+
         SeriesDAO seriesDAO = new SeriesDAO();
         Series series = seriesDAO.getSeriesById(seriesId.trim());
         if (series == null) return new HighestRankDTO(0, "", "");
@@ -607,42 +676,9 @@ public class RollingWindowPointService {
             return new HighestRankDTO(0, "", "");
         }
 
-        ParticipantDAO pDao = new ParticipantDAO();
+        List<Map<String, Integer>> tourneyPointsList = getTourneyPointsPerTournament(seriesId.trim());
+
         int totalTourneys = allTourneys.size();
-        List<Map<String, Integer>> tourneyPointsList = new ArrayList<>();
-
-        for (int tIdx = 0; tIdx < totalTourneys; tIdx++) {
-            Tournament t = allTourneys.get(tIdx);
-            String tCfgRaw = t.getSeriesPointsConfig();
-            if (tCfgRaw == null || tCfgRaw.trim().isEmpty() || !tCfgRaw.trim().startsWith("{")) {
-                tCfgRaw = buildFallbackConfig(t);
-            }
-            Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
-            Map<String, Integer> matchPlacements = pDao.getTournamentPlacements(t.getId());
-            List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
-
-            Map<String, Integer> ptsForTourney = new HashMap<>();
-            if (tourneyTeams != null) {
-                for (Team team : tourneyTeams) {
-                    if (team.getRawName() == null) continue;
-                    String k = team.getRawName().trim().toLowerCase();
-                    Integer matchPos = matchPlacements.get(team.getId());
-                    if (matchPos == null) {
-                        matchPos = matchPlacements.get(k);
-                    }
-                    if (matchPos == null && team.getNormalizedName() != null) {
-                        matchPos = matchPlacements.get(team.getNormalizedName().trim().toLowerCase());
-                    }
-                    int pos = (matchPos != null && matchPos > 0) ? matchPos : (team.getOriginalSeed() > 0 ? team.getOriginalSeed() : 0);
-                    if (pos > 0) {
-                        int pts = resolvePointsForPosition(pos, posPtsMap);
-                        ptsForTourney.put(k, pts);
-                    }
-                }
-            }
-            tourneyPointsList.add(ptsForTourney);
-        }
-
         int highestRank = 999;
         String firstTourneyId = "";
         String firstTourneyName = "";

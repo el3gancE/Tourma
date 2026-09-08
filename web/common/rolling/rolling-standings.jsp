@@ -33,7 +33,10 @@
         tournamentsList = seriesDAO.getTournamentsBySeriesId(series.getId());
     }
 
-    List<PartnerParticipant> partnerList = (series != null) ? seriesDAO.getPartnerParticipantsBySeriesId(series.getId()) : null;
+    List<PartnerParticipant> partnerList = (List<PartnerParticipant>) request.getAttribute("partnerList");
+    if (partnerList == null && series != null) {
+        partnerList = seriesDAO.getPartnerParticipantsBySeriesId(series.getId());
+    }
 
     List<SeriesStanding> standingsList = (List<SeriesStanding>) request.getAttribute("standingsList");
     List<RollingStandingDTO> standingsDTOList = (List<RollingStandingDTO>) request.getAttribute("standingsDTOList");
@@ -318,8 +321,14 @@
                 } %>
             ];
             <%
-                List<java.util.Map<String, Integer>> serverTourneyPoints = (series != null) ? RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId()) : null;
-                List<java.util.Map<String, Boolean>> serverTourneyParticipation = (series != null) ? RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId()) : null;
+                List<java.util.Map<String, Integer>> serverTourneyPoints = (List<java.util.Map<String, Integer>>) request.getAttribute("serverTourneyPoints");
+                if (serverTourneyPoints == null && series != null) {
+                    serverTourneyPoints = RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId());
+                }
+                List<java.util.Map<String, Boolean>> serverTourneyParticipation = (List<java.util.Map<String, Boolean>>) request.getAttribute("serverTourneyParticipation");
+                if (serverTourneyParticipation == null && series != null) {
+                    serverTourneyParticipation = RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId());
+                }
             %>
             window.serverTourneyPoints = [
                 <% if (serverTourneyPoints != null) {

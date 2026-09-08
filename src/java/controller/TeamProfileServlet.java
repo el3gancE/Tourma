@@ -190,107 +190,124 @@ public class TeamProfileServlet extends HttpServlet {
             if (tourneys != null) {
                 DBContext db = new DBContext();
                 try (Connection conn = db.getConnection()) {
-                    // Only use columns that actually exist in the matches table schema
-                    String matchSql = "SELECT m.team1_id, m.team2_id, m.winner_id, m.score1, m.score2, "
+                    // Pre-fetch all matches for this specific team across the series in 1 single fast query
+                    Map<String, List<Map<String, Object>>> teamMatchesByTourney = new HashMap<>();
+                    String teamMatchSql = "SELECT m.tournament_id, m.team1_id, m.team2_id, m.winner_id, m.score1, m.score2, "
                         + "t1.raw_name AS team1_name, t2.raw_name AS team2_name "
                         + "FROM matches m "
                         + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                         + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                        + "WHERE m.tournament_id = ? AND m.is_bye = 0";
-                    try (PreparedStatement matchPs = conn.prepareStatement(matchSql)) {
+                        + "WHERE (t1.raw_name = ? OR t2.raw_name = ?) AND m.is_bye = 0";
+                    try (PreparedStatement psTeamM = conn.prepareStatement(teamMatchSql)) {
+                        psTeamM.setString(1, teamName);
+                        psTeamM.setString(2, teamName);
+                        try (ResultSet rs = psTeamM.executeQuery()) {
+                            while (rs.next()) {
+                                String tid = rs.getString("tournament_id");
+                                Map<String, Object> mData = new HashMap<>();
+                                mData.put("team1_id", rs.getString("team1_id"));
+                                mData.put("team2_id", rs.getString("team2_id"));
+                                mData.put("winner_id", rs.getString("winner_id"));
+                                mData.put("score1", rs.getObject("score1"));
+                                mData.put("score2", rs.getObject("score2"));
+                                mData.put("team1_name", rs.getString("team1_name"));
+                                mData.put("team2_name", rs.getString("team2_name"));
+                                teamMatchesByTourney.computeIfAbsent(tid, k -> new ArrayList<>()).add(mData);
+                            }
+                        }
+                    }
 
-                        for (int tIdx = 0; tIdx < tourneys.size(); tIdx++) {
-                            Tournament t = tourneys.get(tIdx);
-                            List<String> stgFormats = tournamentDAO.getStageFormats(t.getId());
-                            stageFormatsMap.put(t.getId(), stgFormats);
+                    RollingWindowPointService rwps = RollingWindowPointService.getInstance();
+                    for (int tIdx = 0; tIdx < tourneys.size(); tIdx++) {
+                        Tournament t = tourneys.get(tIdx);
+                        List<String> stgFormats = tournamentDAO.getStageFormats(t.getId());
+                        stageFormatsMap.put(t.getId(), stgFormats);
 
-                            List<Team> teams = participantDAO.getTeamsByTournamentId(t.getId());
-                            Team teamInTourney = null;
-                            if (teams != null) {
-                                for (Team tm : teams) {
-                                    if (partner != null && partner.getId() != null && partner.getId().equalsIgnoreCase(tm.getPartnerParticipantId())) {
-                                        teamInTourney = tm;
-                                        break;
+                        List<Team> teams = rwps.getCachedTeamsByTournamentId(t.getId());
+                        Team teamInTourney = null;
+                        if (teams != null) {
+                            for (Team tm : teams) {
+                                if (partner != null && partner.getId() != null && partner.getId().equalsIgnoreCase(tm.getPartnerParticipantId())) {
+                                    teamInTourney = tm;
+                                    break;
+                                }
+                                if (tm.getName() != null && tm.getName().trim().equalsIgnoreCase(teamName)) {
+                                    teamInTourney = tm;
+                                    break;
+                                }
+                                if (tm.getRawName() != null && tm.getRawName().trim().equalsIgnoreCase(teamName)) {
+                                    teamInTourney = tm;
+                                    break;
+                                }
+                            }
+                        }
+
+                        int tWins = 0;
+                        int tLosses = 0;
+                        boolean playedInTourney = (teamInTourney != null);
+
+                        List<Map<String, Object>> tMatches = teamMatchesByTourney.get(t.getId());
+                        if (tMatches != null && !tMatches.isEmpty()) {
+                            for (Map<String, Object> m : tMatches) {
+                                String t1 = (String) m.get("team1_id");
+                                String t2 = (String) m.get("team2_id");
+                                String t1Name = (String) m.get("team1_name");
+                                String t2Name = (String) m.get("team2_name");
+
+                                boolean isT1 = false;
+                                boolean isT2 = false;
+
+                                if (teamInTourney != null) {
+                                    if (teamInTourney.getId() != null) {
+                                        if (teamInTourney.getId().equalsIgnoreCase(t1)) isT1 = true;
+                                        if (teamInTourney.getId().equalsIgnoreCase(t2)) isT2 = true;
                                     }
-                                    if (tm.getName() != null && tm.getName().trim().equalsIgnoreCase(teamName)) {
-                                        teamInTourney = tm;
-                                        break;
+                                    if (teamInTourney.getRawName() != null) {
+                                        if (teamInTourney.getRawName().equalsIgnoreCase(t1Name) || teamInTourney.getRawName().equalsIgnoreCase(t1)) isT1 = true;
+                                        if (teamInTourney.getRawName().equalsIgnoreCase(t2Name) || teamInTourney.getRawName().equalsIgnoreCase(t2)) isT2 = true;
                                     }
-                                    if (tm.getRawName() != null && tm.getRawName().trim().equalsIgnoreCase(teamName)) {
-                                        teamInTourney = tm;
-                                        break;
+                                }
+                                if (!isT1 && !isT2 && !teamName.isEmpty()) {
+                                    if (teamName.equalsIgnoreCase(t1Name) || teamName.equalsIgnoreCase(t1)) isT1 = true;
+                                    if (teamName.equalsIgnoreCase(t2Name) || teamName.equalsIgnoreCase(t2)) isT2 = true;
+                                }
+
+                                if (!isT1 && !isT2) continue;
+                                playedInTourney = true;
+
+                                String wId = (String) m.get("winner_id");
+                                int s1 = -1, s2 = -1;
+                                try { Object o1 = m.get("score1"); if (o1 != null) s1 = (Integer) o1; } catch (Exception ignore) {}
+                                try { Object o2 = m.get("score2"); if (o2 != null) s2 = (Integer) o2; } catch (Exception ignore) {}
+
+                                if (wId == null && s1 >= 0 && s2 >= 0 && s1 != s2) {
+                                    wId = (s1 > s2) ? t1 : t2;
+                                    if (wId == null && t1Name != null && t2Name != null) {
+                                        wId = (s1 > s2) ? t1Name : t2Name;
+                                    }
+                                }
+
+                                if (wId != null) {
+                                    boolean won = false;
+                                    if (isT1 && (wId.equalsIgnoreCase(t1) || (t1Name != null && wId.equalsIgnoreCase(t1Name)) || (teamInTourney != null && wId.equalsIgnoreCase(teamInTourney.getId())) || wId.equalsIgnoreCase(teamName))) {
+                                        won = true;
+                                    } else if (isT2 && (wId.equalsIgnoreCase(t2) || (t2Name != null && wId.equalsIgnoreCase(t2Name)) || (teamInTourney != null && wId.equalsIgnoreCase(teamInTourney.getId())) || wId.equalsIgnoreCase(teamName))) {
+                                        won = true;
+                                    }
+                                    if (won) {
+                                        tWins++;
+                                    } else {
+                                        tLosses++;
                                     }
                                 }
                             }
+                        }
 
-                            // Query matches in this tournament using pre-compiled statement
-                            int tWins = 0;
-                            int tLosses = 0;
-                            boolean playedInTourney = (teamInTourney != null);
+                        if (playedInTourney) {
+                            totalTourneysPlayed++;
 
-                            matchPs.setString(1, t.getId());
-                            try (ResultSet rs = matchPs.executeQuery()) {
-                                while (rs.next()) {
-                                    String t1 = rs.getString("team1_id");
-                                    String t2 = rs.getString("team2_id");
-                                    String t1Name = rs.getString("team1_name");
-                                    String t2Name = rs.getString("team2_name");
-
-                                    boolean isT1 = false;
-                                    boolean isT2 = false;
-
-                                    if (teamInTourney != null) {
-                                        if (teamInTourney.getId() != null) {
-                                            if (teamInTourney.getId().equalsIgnoreCase(t1)) isT1 = true;
-                                            if (teamInTourney.getId().equalsIgnoreCase(t2)) isT2 = true;
-                                        }
-                                        if (teamInTourney.getRawName() != null) {
-                                            if (teamInTourney.getRawName().equalsIgnoreCase(t1Name) || teamInTourney.getRawName().equalsIgnoreCase(t1)) isT1 = true;
-                                            if (teamInTourney.getRawName().equalsIgnoreCase(t2Name) || teamInTourney.getRawName().equalsIgnoreCase(t2)) isT2 = true;
-                                        }
-                                    }
-                                    if (!isT1 && !isT2 && !teamName.isEmpty()) {
-                                        if (teamName.equalsIgnoreCase(t1Name) || teamName.equalsIgnoreCase(t1)) isT1 = true;
-                                        if (teamName.equalsIgnoreCase(t2Name) || teamName.equalsIgnoreCase(t2)) isT2 = true;
-                                    }
-
-                                    if (!isT1 && !isT2) continue;
-                                    playedInTourney = true;
-
-                                    String wId = rs.getString("winner_id");
-
-                                    int s1 = -1, s2 = -1;
-                                    try { s1 = rs.getInt("score1"); if (rs.wasNull()) s1 = -1; } catch (Exception ignore) {}
-                                    try { s2 = rs.getInt("score2"); if (rs.wasNull()) s2 = -1; } catch (Exception ignore) {}
-
-                                    if (wId == null && s1 >= 0 && s2 >= 0 && s1 != s2) {
-                                        wId = (s1 > s2) ? t1 : t2;
-                                        if (wId == null && t1Name != null && t2Name != null) {
-                                            wId = (s1 > s2) ? t1Name : t2Name;
-                                        }
-                                    }
-
-                                    if (wId != null) {
-                                        boolean won = false;
-                                        if (isT1 && (wId.equalsIgnoreCase(t1) || (t1Name != null && wId.equalsIgnoreCase(t1Name)) || (teamInTourney != null && wId.equalsIgnoreCase(teamInTourney.getId())) || wId.equalsIgnoreCase(teamName))) {
-                                            won = true;
-                                        } else if (isT2 && (wId.equalsIgnoreCase(t2) || (t2Name != null && wId.equalsIgnoreCase(t2Name)) || (teamInTourney != null && wId.equalsIgnoreCase(teamInTourney.getId())) || wId.equalsIgnoreCase(teamName))) {
-                                            won = true;
-                                        }
-                                        if (won) {
-                                            tWins++;
-                                        } else {
-                                            tLosses++;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (playedInTourney) {
-                                totalTourneysPlayed++;
-
-                                // Determine achievement & rank using exact bracket placement
-                                Map<String, Integer> matchPlacements = participantDAO.getTournamentPlacements(t.getId());
+                            // Determine achievement & rank using cached bracket placement
+                            Map<String, Integer> matchPlacements = rwps.getCachedTournamentPlacements(t.getId());
                                 Integer mPos = (teamInTourney != null) ? matchPlacements.get(teamInTourney.getId()) : null;
                                 if (mPos == null && teamInTourney != null && teamInTourney.getRawName() != null) {
                                     mPos = matchPlacements.get(teamInTourney.getRawName().trim().toLowerCase());
@@ -388,7 +405,6 @@ public class TeamProfileServlet extends HttpServlet {
                                 performanceList.add(perf);
                             }
                         }
-                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

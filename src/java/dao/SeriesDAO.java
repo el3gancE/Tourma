@@ -15,6 +15,16 @@ import model.Tournament;
  */
 public class SeriesDAO {
 
+    private static final java.util.Map<String, Series> SERIES_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, List<Tournament>> SERIES_TOURNAMENTS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, List<model.PartnerParticipant>> SERIES_PARTNERS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static void clearSeriesCaches() {
+        SERIES_CACHE.clear();
+        SERIES_TOURNAMENTS_CACHE.clear();
+        SERIES_PARTNERS_CACHE.clear();
+    }
+
     public List<Series> getAllSeries() {
         List<Series> list = new ArrayList<>();
         String sql = "SELECT * FROM series ORDER BY created_at DESC";
@@ -44,16 +54,21 @@ public class SeriesDAO {
     }
 
     public Series getSeriesById(String id) {
+        if (id == null || id.trim().isEmpty()) return null;
+        String sid = id.trim();
+        Series cached = SERIES_CACHE.get(sid);
+        if (cached != null) return cached;
+
         String sql = "SELECT * FROM series WHERE id = ?";
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, id);
+            ps.setString(1, sid);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return new Series(
+                    Series s = new Series(
                             rs.getString("id"),
                             rs.getString("name"),
                             rs.getString("ranking_model"),
@@ -63,6 +78,8 @@ public class SeriesDAO {
                             rs.getDouble("initial_elo"),
                             rs.getString("status"),
                             rs.getTimestamp("created_at"));
+                    SERIES_CACHE.put(sid, s);
+                    return s;
                 }
             }
         } catch (Exception e) {
@@ -128,11 +145,15 @@ public class SeriesDAO {
     public List<model.PartnerParticipant> getPartnerParticipantsBySeriesId(String seriesId) {
         List<model.PartnerParticipant> list = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return list;
+        String sid = seriesId.trim();
+        List<model.PartnerParticipant> cached = SERIES_PARTNERS_CACHE.get(sid);
+        if (cached != null) return new ArrayList<>(cached);
+
         String sql = "SELECT * FROM partner_participants WHERE series_id = ? ORDER BY created_at ASC";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, seriesId);
+            ps.setString(1, sid);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     model.PartnerParticipant p = new model.PartnerParticipant(
@@ -148,12 +169,19 @@ public class SeriesDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (!list.isEmpty()) {
+            SERIES_PARTNERS_CACHE.put(sid, list);
+        }
         return list;
     }
 
     public List<Tournament> getTournamentsBySeriesId(String seriesId) {
         List<Tournament> list = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return list;
+        String sid = seriesId.trim();
+        List<Tournament> cached = SERIES_TOURNAMENTS_CACHE.get(sid);
+        if (cached != null) return new ArrayList<>(cached);
+
         String sql = "SELECT t.*, " +
                 "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
                 "(SELECT TOP 1 tm.raw_name FROM matches m " +
@@ -165,7 +193,7 @@ public class SeriesDAO {
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, seriesId.trim());
+            ps.setString(1, sid);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Tournament t = new Tournament(
@@ -206,6 +234,9 @@ public class SeriesDAO {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        if (!list.isEmpty()) {
+            SERIES_TOURNAMENTS_CACHE.put(sid, list);
         }
         return list;
     }

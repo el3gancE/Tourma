@@ -47,22 +47,27 @@ public class RollingStandingsServlet extends HttpServlet {
         }
 
         List<Tournament> tournamentsList = null;
-        List<SeriesStanding> standingsList = null;
+        List<model.PartnerParticipant> partnerList = null;
         List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = null;
+        List<java.util.Map<String, Integer>> serverTourneyPoints = null;
+        List<java.util.Map<String, Boolean>> serverTourneyParticipation = null;
 
         if (series != null) {
             seriesId = series.getId();
             service.RollingWindowPointService serviceEngine = service.RollingWindowPointService.getInstance();
             standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(seriesId);
-            serviceEngine.recalculateAndPersistStandings(seriesId);
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
-            standingsList = seriesDAO.getStandingsBySeriesId(seriesId);
+            partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
+            serverTourneyPoints = serviceEngine.getTourneyPointsPerTournament(seriesId);
+            serverTourneyParticipation = serviceEngine.getTourneyParticipationPerTournament(seriesId);
         }
 
         request.setAttribute("series", series);
         request.setAttribute("tournamentsList", tournamentsList);
-        request.setAttribute("standingsList", standingsList);
+        request.setAttribute("partnerList", partnerList);
         request.setAttribute("standingsDTOList", standingsDTOList);
+        request.setAttribute("serverTourneyPoints", serverTourneyPoints);
+        request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
 
         request.getRequestDispatcher("/common/rolling/rolling-standings.jsp").forward(request, response);
     }

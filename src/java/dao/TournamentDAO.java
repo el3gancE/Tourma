@@ -80,6 +80,10 @@ public class TournamentDAO {
     }
 
     public Tournament getTournamentById(String id) {
+        if (id == null || id.trim().isEmpty()) return null;
+        Tournament cached = TOURNAMENT_BY_ID_CACHE.get(id.trim());
+        if (cached != null) return cached;
+
         String sql = "SELECT t.*, " +
                 "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, "
                 +
@@ -141,6 +145,9 @@ public class TournamentDAO {
                     try {
                         t.setMultiStageConfig(rs.getString("multi_stage_config"));
                     } catch (Exception ignore) {
+                    }
+                    if (id != null) {
+                        TOURNAMENT_BY_ID_CACHE.put(id.trim(), t);
                     }
                     return t;
                 }
@@ -536,14 +543,31 @@ public class TournamentDAO {
         return updateTournamentFormatAndType(tournamentId, format, tournamentType, null, null, 0);
     }
 
+    private static final java.util.Map<String, List<String>> STAGE_FORMATS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, Tournament> TOURNAMENT_BY_ID_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static void clearStageFormatsCache() {
+        STAGE_FORMATS_CACHE.clear();
+        TOURNAMENT_BY_ID_CACHE.clear();
+    }
+
+    public static void clearTournamentCaches() {
+        STAGE_FORMATS_CACHE.clear();
+        TOURNAMENT_BY_ID_CACHE.clear();
+    }
+
     public List<String> getStageFormats(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return new ArrayList<>();
+        String tid = tournamentId.trim();
+        List<String> cached = STAGE_FORMATS_CACHE.get(tid);
+        if (cached != null) return cached;
+
         List<String> list = new ArrayList<>();
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return list;
         String sql = "SELECT format FROM tournament_stages WHERE tournament_id = ? ORDER BY stage_order ASC";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tournamentId.trim());
+            ps.setString(1, tid);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String f = rs.getString("format");
@@ -553,6 +577,7 @@ public class TournamentDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        STAGE_FORMATS_CACHE.put(tid, list);
         return list;
     }
 
