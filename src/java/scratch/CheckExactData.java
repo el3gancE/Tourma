@@ -1,43 +1,34 @@
 package scratch;
 
 import dao.DBContext;
+import service.RollingWindowPointService;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 
 public class CheckExactData {
     public static void main(String[] args) {
+        System.out.println("Calling recalculateAndPersistStandings for S_9b4717cd...");
+        boolean ok = RollingWindowPointService.getInstance().recalculateAndPersistStandings("S_9b4717cd");
+        System.out.println("Recalculate result: " + ok);
+
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection()) {
-            System.out.println("=== TOURNAMENTS TABLE ===");
-            String sqlT = "SELECT * FROM tournaments ORDER BY created_at ASC";
-            try (PreparedStatement psT = conn.prepareStatement(sqlT);
-                 ResultSet rsT = psT.executeQuery()) {
-                ResultSetMetaData md = rsT.getMetaData();
-                for (int i = 1; i <= md.getColumnCount(); i++) {
-                    System.out.print(md.getColumnName(i) + " | ");
-                }
-                System.out.println();
-                while (rsT.next()) {
-                    System.out.println(rsT.getString("id") + " | " + rsT.getString("name") + " | Type=" + rsT.getString("tournament_type") + " | Tier=" + rsT.getString("tier_name") + " | Status=" + rsT.getString("status"));
+            System.out.println("\n=== SERIES STANDINGS FOR PONGERS ===");
+            String sqlS = "SELECT normalized_team_name, rank_overall, total_rolling_points FROM series_standings WHERE normalized_team_name LIKE '%pongers%'";
+            try (PreparedStatement ps = conn.prepareStatement(sqlS);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    System.out.println(rs.getString(1) + " | Rank=" + rs.getInt(2) + " | Points=" + rs.getInt(3));
                 }
             }
 
-            System.out.println("\n=== SERIES TOURNAMENT HISTORY COLUMNS ===");
-            String sqlH = "SELECT TOP 5 * FROM series_tournament_history";
-            try (PreparedStatement psH = conn.prepareStatement(sqlH);
-                 ResultSet rsH = psH.executeQuery()) {
-                ResultSetMetaData mdH = rsH.getMetaData();
-                for (int i = 1; i <= mdH.getColumnCount(); i++) {
-                    System.out.print(mdH.getColumnName(i) + " | ");
-                }
-                System.out.println();
-                while (rsH.next()) {
-                    for (int i = 1; i <= mdH.getColumnCount(); i++) {
-                        System.out.print(rsH.getString(i) + " | ");
-                    }
-                    System.out.println();
+            System.out.println("\n=== SERIES TOURNAMENT HISTORY FOR PONGERS ===");
+            String sqlH = "SELECT tournament_id, tournament_rank, points_earned FROM series_tournament_history WHERE normalized_team_name LIKE '%pongers%'";
+            try (PreparedStatement ps = conn.prepareStatement(sqlH);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    System.out.println(rs.getString(1) + " | Rank=" + rs.getInt(2) + " | Points=" + rs.getInt(3));
                 }
             }
         } catch (Exception e) {
@@ -45,3 +36,4 @@ public class CheckExactData {
         }
     }
 }
+

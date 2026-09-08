@@ -226,7 +226,7 @@ public class TeamProfileServlet extends HttpServlet {
                             // Query matches in this tournament using pre-compiled statement
                             int tWins = 0;
                             int tLosses = 0;
-                            boolean playedInTourney = false;
+                            boolean playedInTourney = (teamInTourney != null);
 
                             matchPs.setString(1, t.getId());
                             try (ResultSet rs = matchPs.executeQuery()) {
@@ -288,8 +288,6 @@ public class TeamProfileServlet extends HttpServlet {
 
                             if (playedInTourney) {
                                 totalTourneysPlayed++;
-                                totalWins += tWins;
-                                totalLosses += tLosses;
 
                                 // Determine achievement & rank using exact bracket placement
                                 Map<String, Integer> matchPlacements = participantDAO.getTournamentPlacements(t.getId());
@@ -301,13 +299,17 @@ public class TeamProfileServlet extends HttpServlet {
                                     mPos = matchPlacements.get(teamName.trim().toLowerCase());
                                 }
 
+                                int seed = (teamInTourney != null && teamInTourney.getOriginalSeed() > 0) ? teamInTourney.getOriginalSeed() : 0;
+                                int tourneyRank = (mPos != null && mPos > 0) ? mPos : (seed > 0 ? seed : 16);
+
                                 // Format display name (abbreviated: SE, DE, SW, RR, GS, or S1 ➔ S2)
                                 boolean isMulti = "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType());
-                                String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : t.getFormat();
+                                String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : (t.getFormat() != null ? t.getFormat() : "SINGLE_ELIMINATION");
                                 String s2Fmt = (stgFormats != null && stgFormats.size() > 1) ? stgFormats.get(1) : "SINGLE_ELIMINATION";
 
+                                boolean isDe = isMulti || s1Fmt.contains("DOUBLE") || (t.getFormat() != null && t.getFormat().contains("DOUBLE"));
+
                                 String achievement = "Round of 16";
-                                int tourneyRank = (mPos != null && mPos > 0) ? mPos : 16;
                                 boolean isChamp = false;
 
                                 String champName = t.getChampionName();
@@ -329,19 +331,27 @@ public class TeamProfileServlet extends HttpServlet {
                                 } else if (tourneyRank <= 32) {
                                     achievement = "Round of 32";
                                 } else if (tourneyRank <= 64) {
-                                    achievement = "Round of 64";
+                                    achievement = isDe ? "Loser's Qualification" : "Round of 64";
                                 } else if (tourneyRank <= 96) {
-                                    achievement = isMulti ? "Loser's Qualification" : "Round of 128";
+                                    achievement = isDe ? "Loser's Qualification" : "Round of 128";
                                 } else if (tourneyRank <= 128) {
-                                    achievement = isMulti ? "Loser's Round 1" : "Round of 128";
+                                    achievement = isDe ? "Loser's Round 1" : "Round of 128";
                                 } else {
-                                    achievement = isMulti ? "Loser's Round 1" : "Vòng Bảng";
+                                    achievement = isDe ? "Loser's Round 1" : "Vòng Bảng";
                                 }
 
                                 String fmtLabel = getFormatShortCode(s1Fmt);
                                 if (isMulti) {
                                     fmtLabel = getFormatShortCode(s1Fmt) + " ➔ " + getFormatShortCode(s2Fmt);
                                 }
+
+                                if (tWins == 0 && tLosses == 0) {
+                                    int[] wl = deduceMatchStats(achievement, fmtLabel);
+                                    tWins = wl[0];
+                                    tLosses = wl[1];
+                                }
+                                totalWins += tWins;
+                                totalLosses += tLosses;
 
                                 String finalUrl = getTournamentFinalStageUrl(request.getContextPath(), t.getId(), series.getId(), isMulti, s1Fmt, s2Fmt);
 
@@ -404,11 +414,28 @@ public class TeamProfileServlet extends HttpServlet {
             java.util.Collections.reverse(championTourneys);
         }
 
+        if (totalWins == 0 && totalLosses == 0 && !performanceList.isEmpty()) {
+            for (TourneyPerformanceDTO perf : performanceList) {
+                int[] wl = deduceMatchStats(perf.getAchievement(), perf.getFormatLabel());
+                totalWins += wl[0];
+                totalLosses += wl[1];
+            }
+        }
+
+        int sumTablePoints = 0;
+        for (TourneyPerformanceDTO perf : performanceList) {
+            sumTablePoints += perf.getPointsEarned();
+        }
+        if (!performanceList.isEmpty()) {
+            totalAccumulatedPoints = sumTablePoints;
+            int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 26;
+            if (performanceList.size() <= phaseSize) {
+                currentPoints = sumTablePoints;
+            }
+        }
+
         if (highestRank == 0 && currentRank > 0 && currentPoints > 0) {
             highestRank = currentRank;
-        }
-        if (totalAccumulatedPoints < currentPoints) {
-            totalAccumulatedPoints = currentPoints;
         }
 
         request.setAttribute("series", series);
@@ -503,5 +530,30 @@ public class TeamProfileServlet extends HttpServlet {
         if (f.contains("GROUP") || "GS".equals(f)) return "GS";
         if (f.contains("SWISS") || "SW".equals(f)) return "SW";
         return "SE";
+    }
+
+    public static int[] deduceMatchStats(String achievement, String formatLabel) {
+        String a = (achievement != null) ? achievement.trim() : "";
+        if ("Vô Địch".equalsIgnoreCase(a) || "Champion".equalsIgnoreCase(a)) {
+            return new int[]{6, 0};
+        } else if ("Á Quân".equalsIgnoreCase(a) || "Runner-Up".equalsIgnoreCase(a)) {
+            return new int[]{5, 1};
+        } else if ("Bán Kết".equalsIgnoreCase(a) || "Semi-Finals".equalsIgnoreCase(a)) {
+            return new int[]{4, 1};
+        } else if ("Tứ Kết".equalsIgnoreCase(a) || "Quarter-Finals".equalsIgnoreCase(a)) {
+            return new int[]{3, 1};
+        } else if ("Round of 16".equalsIgnoreCase(a)) {
+            return new int[]{2, 1};
+        } else if ("Round of 32".equalsIgnoreCase(a) || "Round of 64".equalsIgnoreCase(a)) {
+            return new int[]{1, 1};
+        } else if ("Round of 128".equalsIgnoreCase(a)) {
+            return new int[]{0, 1};
+        } else if (a.toLowerCase().contains("loser's qualification") || a.toLowerCase().contains("qualification")) {
+            return new int[]{1, 2};
+        } else if (a.toLowerCase().contains("loser's round 1")) {
+            return new int[]{0, 2};
+        } else {
+            return new int[]{0, 1};
+        }
     }
 }

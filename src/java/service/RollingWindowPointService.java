@@ -154,7 +154,7 @@ public class RollingWindowPointService {
                 Tournament pt = allTourneys.get(pIdx);
                 String pCfgRaw = pt.getSeriesPointsConfig();
                 if (pCfgRaw == null || pCfgRaw.trim().isEmpty() || !pCfgRaw.trim().startsWith("{")) {
-                    pCfgRaw = "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                    pCfgRaw = buildFallbackConfig(pt);
                 }
                 Map<String, Integer> posPtsMap = parsePointsConfigJson(pCfgRaw);
                 Map<String, Integer> matchPlacements = placementsCache.computeIfAbsent(pt.getId(), id -> pDao.getTournamentPlacements(id));
@@ -168,7 +168,10 @@ public class RollingWindowPointService {
                             if (matchPos == null) {
                                 matchPos = matchPlacements.get(pk);
                             }
-                            int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
+                            if (matchPos == null && tm.getNormalizedName() != null) {
+                                matchPos = matchPlacements.get(tm.getNormalizedName().trim().toLowerCase());
+                            }
+                            int pos = (matchPos != null && matchPos > 0) ? matchPos : (tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : 0);
                             int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
                             prevPointsMap.put(pk, prevPointsMap.get(pk) + pts);
                         }
@@ -193,7 +196,7 @@ public class RollingWindowPointService {
             // Parse position points map JSON e.g. {"1":500,"2":200,"3-4":100}
             String tCfgRaw = t.getSeriesPointsConfig();
             if (tCfgRaw == null || tCfgRaw.trim().isEmpty() || !tCfgRaw.trim().startsWith("{")) {
-                tCfgRaw = "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                tCfgRaw = buildFallbackConfig(t);
             }
             Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
 
@@ -224,7 +227,7 @@ public class RollingWindowPointService {
                         matchPos = matchPlacements.get(team.getNormalizedName().trim().toLowerCase());
                     }
 
-                    int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
+                    int pos = (matchPos != null && matchPos > 0) ? matchPos : (team.getOriginalSeed() > 0 ? team.getOriginalSeed() : 0);
                     int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
 
                     if (isActiveWindow) {
@@ -287,7 +290,7 @@ public class RollingWindowPointService {
             Map<String, Integer> ptsMap = new HashMap<>();
             String tCfgRaw = t.getSeriesPointsConfig();
             if (tCfgRaw == null || tCfgRaw.trim().isEmpty() || !tCfgRaw.trim().startsWith("{")) {
-                tCfgRaw = "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                tCfgRaw = buildFallbackConfig(t);
             }
             Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
             Map<String, Integer> matchPlacements = pDao.getTournamentPlacements(t.getId());
@@ -303,7 +306,7 @@ public class RollingWindowPointService {
                     if (matchPos == null && tm.getNormalizedName() != null) {
                         matchPos = matchPlacements.get(tm.getNormalizedName().trim().toLowerCase());
                     }
-                    int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
+                    int pos = (matchPos != null && matchPos > 0) ? matchPos : (tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : 0);
                     int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
                     ptsMap.put(pk, pts);
                 }
@@ -398,7 +401,7 @@ public class RollingWindowPointService {
                     for (Tournament t : allTourneys) {
                         String tCfgRaw = t.getSeriesPointsConfig();
                         if (tCfgRaw == null || tCfgRaw.trim().isEmpty() || !tCfgRaw.trim().startsWith("{")) {
-                            tCfgRaw = "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                            tCfgRaw = buildFallbackConfig(t);
                         }
                         Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
                         Map<String, Integer> placements = pDao.getTournamentPlacements(t.getId());
@@ -411,8 +414,11 @@ public class RollingWindowPointService {
                                 if (matchPos == null) {
                                     matchPos = placements.get(tm.getRawName().trim().toLowerCase());
                                 }
-                                int pos = (matchPos != null && matchPos > 0) ? matchPos : tm.getOriginalSeed();
-                                int pts = resolvePointsForPosition(pos, posPtsMap);
+                                if (matchPos == null && tm.getNormalizedName() != null) {
+                                    matchPos = placements.get(tm.getNormalizedName().trim().toLowerCase());
+                                }
+                                int pos = (matchPos != null && matchPos > 0) ? matchPos : (tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : 0);
+                                int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
 
                                 String histId = "H_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
                                 psH.setString(1, histId);
@@ -609,7 +615,7 @@ public class RollingWindowPointService {
             Tournament t = allTourneys.get(tIdx);
             String tCfgRaw = t.getSeriesPointsConfig();
             if (tCfgRaw == null || tCfgRaw.trim().isEmpty() || !tCfgRaw.trim().startsWith("{")) {
-                tCfgRaw = "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                tCfgRaw = buildFallbackConfig(t);
             }
             Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
             Map<String, Integer> matchPlacements = pDao.getTournamentPlacements(t.getId());
@@ -624,8 +630,12 @@ public class RollingWindowPointService {
                     if (matchPos == null) {
                         matchPos = matchPlacements.get(k);
                     }
-                    if (matchPos != null && matchPos > 0) {
-                        int pts = resolvePointsForPosition(matchPos, posPtsMap);
+                    if (matchPos == null && team.getNormalizedName() != null) {
+                        matchPos = matchPlacements.get(team.getNormalizedName().trim().toLowerCase());
+                    }
+                    int pos = (matchPos != null && matchPos > 0) ? matchPos : (team.getOriginalSeed() > 0 ? team.getOriginalSeed() : 0);
+                    if (pos > 0) {
+                        int pts = resolvePointsForPosition(pos, posPtsMap);
                         ptsForTourney.put(k, pts);
                     }
                 }
@@ -677,6 +687,18 @@ public class RollingWindowPointService {
             return new HighestRankDTO(0, "", "");
         }
         return new HighestRankDTO(highestRank, firstTourneyId, firstTourneyName);
+    }
+
+    // Helper: Build a fallback points config from a tournament's seriesRewardPoints
+    // Used when seriesPointsConfig is null or invalid, to stay consistent with TeamProfileServlet.calculatePointsForTournament
+    private String buildFallbackConfig(Tournament t) {
+        int champPts = (t != null && t.getSeriesRewardPoints() != null && t.getSeriesRewardPoints() > 0)
+            ? t.getSeriesRewardPoints() : 100;
+        int runnerUpPts  = (int) Math.round(champPts * 0.70);
+        int semiPts      = (int) Math.round(champPts * 0.40);
+        int quarterPts   = (int) Math.round(champPts * 0.20);
+        int r16Pts       = (int) Math.round(champPts * 0.10);
+        return "{\"1\":" + champPts + ",\"2\":" + runnerUpPts + ",\"3-4\":" + semiPts + ",\"5-8\":" + quarterPts + ",\"9-16\":" + r16Pts + "}";
     }
 
     // Helper: Parse JSON string into Map

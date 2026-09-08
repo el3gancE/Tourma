@@ -82,6 +82,19 @@
       }
     }
 
+    // Guarantee that totalAccumulatedPoints strictly equals the sum of pointsEarned in prof.performances
+    var tablePointsSum = 0;
+    if (prof.performances && prof.performances.length > 0) {
+      prof.performances.forEach(function (perf) {
+        tablePointsSum += (perf.pointsEarned || 0);
+      });
+      prof.totalAccumulatedPoints = tablePointsSum;
+      var phaseSize = window.seriesPhaseSize || 26;
+      if (prof.playedCount <= phaseSize || prof.performances.length <= phaseSize) {
+        prof.currentPoints = tablePointsSum;
+      }
+    }
+
     // 3. Current Points
     var cpEl = document.getElementById('profCurrentPoints');
     if (cpEl) {
@@ -97,7 +110,19 @@
     // 5. Win / Loss
     var wlEl = document.getElementById('profWinLoss');
     if (wlEl) {
-      wlEl.textContent = (prof.wins || 0) + 'W - ' + (prof.losses || 0) + 'L';
+      var w = prof.wins || 0;
+      var l = prof.losses || 0;
+      if (w === 0 && l === 0 && prof.performances && prof.performances.length > 0) {
+        prof.performances.forEach(function (perf) {
+          var isMulti = perf.format && perf.format.indexOf('➔') !== -1;
+          var d = (TourmaRollingStandingsEngine && TourmaRollingStandingsEngine.deduceMatchStatsFromAchievement) ?
+                  TourmaRollingStandingsEngine.deduceMatchStatsFromAchievement(perf.format, perf.achievement, isMulti) :
+                  { wins: 0, losses: 1 };
+          w += d.wins;
+          l += d.losses;
+        });
+      }
+      wlEl.textContent = w + 'W - ' + l + 'L';
     }
 
     // 6. Tournaments Played

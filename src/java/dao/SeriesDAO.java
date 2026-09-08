@@ -156,7 +156,11 @@ public class SeriesDAO {
         if (seriesId == null || seriesId.trim().isEmpty()) return list;
         String sql = "SELECT t.*, " +
                 "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
-                "(SELECT TOP 1 tm.raw_name FROM matches m JOIN teams tm ON m.winner_id = tm.id WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL ORDER BY m.round_number DESC) AS db_champion_name " +
+                "(SELECT TOP 1 tm.raw_name FROM matches m " +
+                " JOIN teams tm ON m.winner_id = tm.id " +
+                " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
+                " WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL " +
+                " ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) AS db_champion_name " +
                 "FROM tournaments t WHERE t.series_id = ? ORDER BY t.tournament_index_in_series ASC, t.created_at ASC";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();

@@ -171,6 +171,33 @@
     return ctx + '/common/' + page + '?id=' + encodeURIComponent(t.id) + stageParam + seriesParam;
   }
 
+  function deduceMatchStatsFromAchievement(format, ach, isMulti) {
+    var a = (ach || '').trim();
+    if (a === "Vô Địch" || a === "Champion") {
+      return { wins: 6, losses: 0 };
+    } else if (a === "Á Quân" || a === "Runner-Up") {
+      return { wins: 5, losses: 1 };
+    } else if (a === "Bán Kết" || a === "Semi-Finals") {
+      return { wins: 4, losses: 1 };
+    } else if (a === "Tứ Kết" || a === "Quarter-Finals") {
+      return { wins: 3, losses: 1 };
+    } else if (a === "Round of 16") {
+      return { wins: 2, losses: 1 };
+    } else if (a === "Round of 32") {
+      return { wins: 1, losses: 1 };
+    } else if (a === "Round of 64") {
+      return { wins: 1, losses: 1 };
+    } else if (a === "Round of 128") {
+      return { wins: 0, losses: 1 };
+    } else if (a === "Loser's Qualification") {
+      return { wins: 1, losses: 2 };
+    } else if (a === "Loser's Round 1") {
+      return { wins: 0, losses: 2 };
+    } else {
+      return { wins: 0, losses: 1 };
+    }
+  }
+
   function resolvePointsFromConfig(ptsCfg, positionKey, altKey) {
     if (!ptsCfg || typeof ptsCfg !== 'object') return 0;
 
@@ -518,6 +545,17 @@
               }
             });
           }
+          if (swissStats && typeof swissStats === 'object') {
+            Object.keys(swissStats).forEach(function (sk) {
+              var st = swissStats[sk];
+              var k = findTeamKey(st.name);
+              if (k) {
+                if (!teamMatchStats[k]) teamMatchStats[k] = { wins: 0, losses: 0 };
+                teamMatchStats[k].wins += (st.wins || 0);
+                teamMatchStats[k].losses += (st.losses || 0);
+              }
+            });
+          }
         } catch (e) {}
       }
     }
@@ -563,9 +601,19 @@
               if (!isNaN(s1) && !isNaN(s2) && (m.status === 'COMPLETED' || m.status === 'DONE' || s1 > 0 || s2 > 0)) {
                 rrStats[k1].gf += s1; rrStats[k1].ga += s2;
                 rrStats[k2].gf += s2; rrStats[k2].ga += s1;
-                if (s1 > s2) rrStats[k1].pts += 3;
-                else if (s2 > s1) rrStats[k2].pts += 3;
-                else { rrStats[k1].pts += 1; rrStats[k2].pts += 1; }
+                if (!teamMatchStats[k1]) teamMatchStats[k1] = { wins: 0, losses: 0 };
+                if (!teamMatchStats[k2]) teamMatchStats[k2] = { wins: 0, losses: 0 };
+                if (s1 > s2) {
+                  rrStats[k1].pts += 3;
+                  teamMatchStats[k1].wins++;
+                  teamMatchStats[k2].losses++;
+                } else if (s2 > s1) {
+                  rrStats[k2].pts += 3;
+                  teamMatchStats[k2].wins++;
+                  teamMatchStats[k1].losses++;
+                } else {
+                  rrStats[k1].pts += 1; rrStats[k2].pts += 1;
+                }
               }
             });
           }
@@ -637,9 +685,19 @@
                       grpStats[k1].diff += (s1 - s2);
                       grpStats[k2].gf += s2;
                       grpStats[k2].diff += (s2 - s1);
-                      if (s1 > s2) grpStats[k1].pts += 3;
-                      else if (s2 > s1) grpStats[k2].pts += 3;
-                      else { grpStats[k1].pts += 1; grpStats[k2].pts += 1; }
+                      if (!teamMatchStats[k1]) teamMatchStats[k1] = { wins: 0, losses: 0 };
+                      if (!teamMatchStats[k2]) teamMatchStats[k2] = { wins: 0, losses: 0 };
+                      if (s1 > s2) {
+                        grpStats[k1].pts += 3;
+                        teamMatchStats[k1].wins++;
+                        teamMatchStats[k2].losses++;
+                      } else if (s2 > s1) {
+                        grpStats[k2].pts += 3;
+                        teamMatchStats[k2].wins++;
+                        teamMatchStats[k1].losses++;
+                      } else {
+                        grpStats[k1].pts += 1; grpStats[k2].pts += 1;
+                      }
                     }
                   });
                 }
@@ -709,6 +767,7 @@
                 if (t2N) markTeamParticipated(t2N);
 
                 if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                  recordMatchStats(m);
                   var mRes = resolveWinnerAndLoser(m);
                   if (mRes.loser) {
                     awardTeamPoints(mRes.loser, posKey, "stage1_eliminated");
@@ -763,6 +822,7 @@
               if (t2N) markTeamParticipated(t2N);
 
               if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                recordMatchStats(m);
                 var mRes = resolveWinnerAndLoser(m);
                 var roundDiff = 0;
                 if (matchDistToFinal[mk] !== undefined) {
@@ -818,6 +878,9 @@
                     var t2N = extractName(m.team2) || (m.team2Name ? extractName(m.team2Name) : null);
                     if (t1N) markTeamParticipated(t1N);
                     if (t2N) markTeamParticipated(t2N);
+                    if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                      recordMatchStats(m);
+                    }
                   }
                 });
               }
@@ -854,6 +917,7 @@
                     if (t2N) markTeamParticipated(t2N);
 
                     if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                      recordMatchStats(m);
                       var res = resolveWinnerAndLoser(m);
                       if (res.loser) {
                         awardTeamPoints(res.loser, posKey, "stage1_eliminated");
@@ -875,6 +939,7 @@
               if (t2N) markTeamParticipated(t2N);
 
               if (gfFinal.winnerId || gfFinal.winner || gfFinal.status === 'COMPLETED' || gfFinal.status === 'DONE') {
+                recordMatchStats(gfFinal);
                 var resGF = resolveWinnerAndLoser(gfFinal);
                 if (resGF.winner) awardTeamPoints(resGF.winner, "1");
                 if (resGF.loser) awardTeamPoints(resGF.loser, "2");
@@ -928,9 +993,19 @@
                 if (!isNaN(s1) && !isNaN(s2) && (m.status === 'COMPLETED' || m.status === 'DONE' || s1 > 0 || s2 > 0)) {
                   rrStatsS2[k1].gf += s1; rrStatsS2[k1].ga += s2;
                   rrStatsS2[k2].gf += s2; rrStatsS2[k2].ga += s1;
-                  if (s1 > s2) rrStatsS2[k1].pts += 3;
-                  else if (s2 > s1) rrStatsS2[k2].pts += 3;
-                  else { rrStatsS2[k1].pts += 1; rrStatsS2[k2].pts += 1; }
+                  if (!teamMatchStats[k1]) teamMatchStats[k1] = { wins: 0, losses: 0 };
+                  if (!teamMatchStats[k2]) teamMatchStats[k2] = { wins: 0, losses: 0 };
+                  if (s1 > s2) {
+                    rrStatsS2[k1].pts += 3;
+                    teamMatchStats[k1].wins++;
+                    teamMatchStats[k2].losses++;
+                  } else if (s2 > s1) {
+                    rrStatsS2[k2].pts += 3;
+                    teamMatchStats[k2].wins++;
+                    teamMatchStats[k1].losses++;
+                  } else {
+                    rrStatsS2[k1].pts += 1; rrStatsS2[k2].pts += 1;
+                  }
                 }
               });
             }
@@ -974,6 +1049,9 @@
                       var t2N = extractName(m.team2) || (m.team2Name ? extractName(m.team2Name) : null);
                       if (t1N) markTeamParticipated(t1N);
                       if (t2N) markTeamParticipated(t2N);
+                      if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                        recordMatchStats(m);
+                      }
                     }
                   });
                 }
@@ -1006,6 +1084,7 @@
                       if (t2N) markTeamParticipated(t2N);
 
                       if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                        recordMatchStats(m);
                         var res2 = resolveWinnerAndLoser(m);
                         if (res2.loser) {
                           awardTeamPoints(res2.loser, posKey2, "s2_lb_r" + lrNum2);
@@ -1027,6 +1106,7 @@
                 if (t2N) markTeamParticipated(t2N);
 
                 if (gfFinalS2.winnerId || gfFinalS2.winner || gfFinalS2.status === 'COMPLETED' || gfFinalS2.status === 'DONE') {
+                  recordMatchStats(gfFinalS2);
                   var resGFS2 = resolveWinnerAndLoser(gfFinalS2);
                   if (resGFS2.winner) awardTeamPoints(resGFS2.winner, "1");
                   if (resGFS2.loser) awardTeamPoints(resGFS2.loser, "2");
@@ -1075,6 +1155,7 @@
                   if (t2N) markTeamParticipated(t2N);
 
                   if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                    recordMatchStats(m);
                     var resS2 = resolveWinnerAndLoser(m);
                     if (distS2 === 0 && resS2.winner) {
                       awardTeamPoints(resS2.winner, "1");
@@ -1129,6 +1210,7 @@
                 if (t2N) markTeamParticipated(t2N);
 
                 if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
+                  recordMatchStats(m);
                   var resS2 = resolveWinnerAndLoser(m);
                   var roundDiffS2 = 0;
                   if (matchDistToFinalS2[mk] !== undefined) {
@@ -1204,11 +1286,23 @@
           } else if (p === (ptsCfg["17-32"] || 0)) {
             teamAchievementsAwarded[k] = "Round of 32";
             teamPositionsAwarded[k] = "17-32";
+          } else if (p === (ptsCfg["33-64"] || 0)) {
+            teamAchievementsAwarded[k] = isMultiStage ? "Loser's Qualification" : "Round of 64";
+            teamPositionsAwarded[k] = "33-64";
+          } else if (p === (ptsCfg["s1_lb_r2"] || 0) || p === (ptsCfg["s1_lb_cut"] || 0)) {
+            teamAchievementsAwarded[k] = "Loser's Qualification";
+            teamPositionsAwarded[k] = "s1_lb_r2";
+          } else if (p === (ptsCfg["65-128"] || 0) || p === (ptsCfg["65-96"] || 0)) {
+            teamAchievementsAwarded[k] = isMultiStage ? "Loser's Qualification" : "Round of 128";
+            teamPositionsAwarded[k] = "65-128";
+          } else if (p === (ptsCfg["s1_lb_r1"] || 0)) {
+            teamAchievementsAwarded[k] = "Loser's Round 1";
+            teamPositionsAwarded[k] = "s1_lb_r1";
           } else {
-            teamAchievementsAwarded[k] = "Round of 16";
+            teamAchievementsAwarded[k] = isMultiStage ? "Loser's Qualification" : "Round of 128";
           }
         } else {
-          teamAchievementsAwarded[k] = isMultiStage ? "Vòng Bảng" : "Round of 16";
+          teamAchievementsAwarded[k] = isMultiStage ? "Loser's Round 1" : "Round of 128";
         }
       }
     });
@@ -1305,11 +1399,14 @@
       parsedResultsPerTourney[tIdx] = localRes;
 
       // Merge local live results on top of server data
+      // Priority: local data is the client ground truth when present for this tournament.
+      // Server data fills in for tournaments not present or not modified locally.
       var mergedPts = Object.assign({}, serverPts);
       if (localRes && localRes.pointsMap) {
         Object.keys(localRes.pointsMap).forEach(function (k) {
-          if (localRes.pointsMap[k] > 0 || mergedPts[k] === undefined) {
-            mergedPts[k] = localRes.pointsMap[k];
+          var localVal = localRes.pointsMap[k];
+          if (localVal !== undefined) {
+            mergedPts[k] = localVal;
           }
         });
       }
@@ -1322,6 +1419,11 @@
           }
         });
       }
+      Object.keys(mergedPts).forEach(function (k) {
+        if (mergedPts[k] > 0) {
+          mergedPart[k] = true;
+        }
+      });
 
       tourneyPointsArray[tIdx] = mergedPts;
       tourneyParticipatedArray[tIdx] = mergedPart;
@@ -1499,7 +1601,25 @@
         var pts = (res.pointsMap && res.pointsMap[k]) !== undefined ? res.pointsMap[k] : ((tourneyPointsArray[tI] && tourneyPointsArray[tI][k]) || 0);
         var part = (res.participatedMap && res.participatedMap[k]) || (tourneyParticipatedArray[tI] && tourneyParticipatedArray[tI][k]) || (pts > 0);
         var isMulti = tObj.isMultiStage || tObj.tournamentType === 'MULTI_STAGE';
-        var ach = (res.achievementsMap && res.achievementsMap[k]) || (isMulti ? "Vòng Bảng" : "Round of 16");
+        var isDe = isMulti || (tObj.format && tObj.format.indexOf('DOUBLE') !== -1) || (tObj.stage1Format && tObj.stage1Format.indexOf('DOUBLE') !== -1);
+        var ach = (res.achievementsMap && res.achievementsMap[k]);
+        if (!ach) {
+          var tPtsCfg = tObj.pointsConfig || {};
+          if (pts > 0) {
+            if (pts === (tPtsCfg["1"] || 0)) ach = "Vô Địch";
+            else if (pts === (tPtsCfg["2"] || 0)) ach = "Á Quân";
+            else if (pts === (tPtsCfg["3-4"] || 0) || pts === (tPtsCfg["3"] || 0) || pts === (tPtsCfg["4"] || 0)) ach = "Bán Kết";
+            else if (pts === (tPtsCfg["5-8"] || 0)) ach = "Tứ Kết";
+            else if (pts === (tPtsCfg["9-16"] || 0)) ach = "Round of 16";
+            else if (pts === (tPtsCfg["17-32"] || 0)) ach = "Round of 32";
+            else if (pts === (tPtsCfg["33-64"] || 0)) ach = isDe ? "Loser's Qualification" : "Round of 64";
+            else if (pts === (tPtsCfg["s1_lb_r2"] || 0) || pts === (tPtsCfg["s1_lb_cut"] || 0)) ach = "Loser's Qualification";
+            else if (pts === (tPtsCfg["65-128"] || 0) || pts === (tPtsCfg["65-96"] || 0)) ach = isDe ? "Loser's Qualification" : "Round of 128";
+            else ach = isDe ? "Loser's Qualification" : "Round of 128";
+          } else {
+            ach = isDe ? "Loser's Round 1" : "Round of 128";
+          }
+        }
         var mStats = (res.matchStatsMap && res.matchStatsMap[k]) || { wins: 0, losses: 0 };
         var isChamp = (ach === "Vô Địch") || (res.championName && isTeamSelf(res.championName, k)) || (tObj.championName && isTeamSelf(tObj.championName, k));
 
@@ -1512,10 +1632,16 @@
         var hasLocalPart = !!(res.participatedMap && res.participatedMap[k]);
         var hasPoints = pts > 0;
 
-        if (isChamp || hasPoints || hasMatchPlay || hasExplicitAchievement || hasLocalPart) {
+        if (isChamp || hasPoints || hasMatchPlay || hasExplicitAchievement || hasLocalPart || part) {
           playedCount++;
-          wins += mStats.wins;
-          losses += mStats.losses;
+          if (hasMatchPlay) {
+            wins += mStats.wins;
+            losses += mStats.losses;
+          } else {
+            var deduced = deduceMatchStatsFromAchievement(tObj.format, ach, isMulti);
+            wins += deduced.wins;
+            losses += deduced.losses;
+          }
           totalAccumPts += pts;
 
           var tourneyUrl = getTournamentFinalStageUrl(tObj, options.seriesId);
@@ -1571,7 +1697,30 @@
         hData.rank = curRank;
       }
 
-      if (totalAccumPts < curPts) totalAccumPts = curPts;
+      // Exact sum of performance points table
+      var sumTablePts = 0;
+      if (allTourneyPerformances[k] && allTourneyPerformances[k].length > 0) {
+        allTourneyPerformances[k].forEach(function (perf) {
+          sumTablePts += (perf.pointsEarned || 0);
+        });
+      }
+      totalAccumPts = sumTablePts;
+
+      if (wins === 0 && losses === 0 && allTourneyPerformances[k] && allTourneyPerformances[k].length > 0) {
+        allTourneyPerformances[k].forEach(function (perf) {
+          var isMultiP = perf.format && perf.format.indexOf('➔') !== -1;
+          var d = deduceMatchStatsFromAchievement(perf.format, perf.achievement, isMultiP);
+          wins += d.wins;
+          losses += d.losses;
+        });
+      }
+
+      // In rolling window, if playedCount <= phaseSize, current points must strictly equal total accumulated points
+      if (playedCount <= phaseSize || (allTourneyPerformances[k] && allTourneyPerformances[k].length <= phaseSize)) {
+        curPts = sumTablePts;
+      } else if (curPts > totalAccumPts) {
+        curPts = totalAccumPts;
+      }
 
       teamProfileStats[k] = {
         partnerName: teamDataMap[k].name,
@@ -1635,6 +1784,7 @@
     getTournamentFinalStageUrl: getTournamentFinalStageUrl,
     getStorageData: getStorageData,
     parseTournamentResults: parseTournamentResults,
+    deduceMatchStatsFromAchievement: deduceMatchStatsFromAchievement,
     calculateSeriesStandings: calculateSeriesStandings,
     getTeamProfile: getTeamProfile
   };

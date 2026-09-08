@@ -381,7 +381,7 @@ public class SingleEliminationDAO extends DBContext {
                     + "team1_id = COALESCE(?, team1_id), "
                     + "team2_id = COALESCE(?, team2_id), "
                     + "winner_id = ? "
-                    + "WHERE id = ?";
+                    + "WHERE (id = ? OR id LIKE ?) AND tournament_id = ?";
 
             try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
                 setNullableInt(ps, 1, score1);
@@ -390,6 +390,8 @@ public class SingleEliminationDAO extends DBContext {
                 setNullableString(ps, 4, t2Id);
                 setNullableString(ps, 5, winnerId);
                 ps.setString(6, matchDbId);
+                ps.setString(7, tournamentId.trim() + "_%_M" + matchId);
+                ps.setString(8, tournamentId.trim());
                 int rows = ps.executeUpdate();
                 if (rows == 0) {
                     // Row might not exist yet, trigger single insert
@@ -399,11 +401,13 @@ public class SingleEliminationDAO extends DBContext {
 
             // 2. Advance winner into next match slot in DB
             if (winnerId != null) {
-                String selectNextSql = "SELECT next_match_id, next_slot FROM matches WHERE id = ?";
+                String selectNextSql = "SELECT next_match_id, next_slot FROM matches WHERE (id = ? OR id LIKE ?) AND tournament_id = ?";
                 String nextMatchId = null;
                 String nextSlot = null;
                 try (PreparedStatement psSel = conn.prepareStatement(selectNextSql)) {
                     psSel.setString(1, matchDbId);
+                    psSel.setString(2, tournamentId.trim() + "_%_M" + matchId);
+                    psSel.setString(3, tournamentId.trim());
                     try (ResultSet rs = psSel.executeQuery()) {
                         if (rs.next()) {
                             nextMatchId = rs.getString("next_match_id");
@@ -439,19 +443,10 @@ public class SingleEliminationDAO extends DBContext {
     }
 
     /**
-     * Backward-compatible updateMatchScoreAndAdvance
+     * Backward-compatible updateMatchScoreAndAdvance (Unsafe without tournamentId, disabled)
      */
     public boolean updateMatchScoreAndAdvance(int matchId, int score1, int score2, String winnerFlag) {
-        String updateSql = "UPDATE matches SET score1 = ?, score2 = ?, status = 'FINISHED' WHERE id LIKE ?";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(updateSql)) {
-            ps.setInt(1, score1);
-            ps.setInt(2, score2);
-            ps.setString(3, "%_M" + matchId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            return false;
-        }
+        return false;
     }
 
     /**

@@ -393,7 +393,7 @@ public class DoubleEliminationDAO extends DBContext {
                     + "team1_id = COALESCE(?, team1_id), "
                     + "team2_id = COALESCE(?, team2_id), "
                     + "winner_id = ? "
-                    + "WHERE id = ? OR id LIKE ?";
+                    + "WHERE (id = ? OR id LIKE ?) AND tournament_id = ?";
 
             int updated = 0;
             try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
@@ -403,7 +403,8 @@ public class DoubleEliminationDAO extends DBContext {
                 setNullableString(ps, 4, t2Id);
                 setNullableString(ps, 5, winnerId);
                 ps.setString(6, matchDbId);
-                ps.setString(7, "%_M" + matchId);
+                ps.setString(7, tournamentId.trim() + "_%_M" + matchId);
+                ps.setString(8, tournamentId.trim());
                 updated = ps.executeUpdate();
             }
 
@@ -426,13 +427,14 @@ public class DoubleEliminationDAO extends DBContext {
 
             // 2. Advance winner to next match if present
             if (winnerId != null) {
-                String selectNextSql = "SELECT next_match_id, next_slot FROM matches WHERE id = ? OR id LIKE ?";
+                String selectNextSql = "SELECT next_match_id, next_slot FROM matches WHERE (id = ? OR id LIKE ?) AND tournament_id = ?";
                 String nextMatchId = null;
                 String nextSlot = null;
 
                 try (PreparedStatement psSel = conn.prepareStatement(selectNextSql)) {
                     psSel.setString(1, matchDbId);
-                    psSel.setString(2, "%_M" + matchId);
+                    psSel.setString(2, tournamentId.trim() + "_%_M" + matchId);
+                    psSel.setString(3, tournamentId.trim());
                     try (ResultSet rs = psSel.executeQuery()) {
                         if (rs.next()) {
                             nextMatchId = rs.getString("next_match_id");
