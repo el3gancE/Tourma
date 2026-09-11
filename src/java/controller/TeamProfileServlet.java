@@ -315,9 +315,15 @@ public class TeamProfileServlet extends HttpServlet {
                                 if (mPos == null) {
                                     mPos = matchPlacements.get(teamName.trim().toLowerCase());
                                 }
+                                if (mPos == null && t.getChampionName() != null) {
+                                    String cName = t.getChampionName().trim().toLowerCase();
+                                    if (teamName.trim().toLowerCase().equals(cName)
+                                            || (teamInTourney != null && teamInTourney.getRawName() != null && teamInTourney.getRawName().trim().toLowerCase().equals(cName))) {
+                                        mPos = 1;
+                                    }
+                                }
 
-                                int seed = (teamInTourney != null && teamInTourney.getOriginalSeed() > 0) ? teamInTourney.getOriginalSeed() : 0;
-                                int tourneyRank = (mPos != null && mPos > 0) ? mPos : (seed > 0 ? seed : 16);
+                                int tourneyRank = (mPos != null && mPos > 0) ? mPos : 16;
 
                                 // Format display name (abbreviated: SE, DE, SW, RR, GS, or S1 ➔ S2)
                                 boolean isMulti = "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType());

@@ -81,9 +81,10 @@ public class RollingStandingsServlet extends HttpServlet {
             response.setContentType("application/json;charset=UTF-8");
             String seriesId = request.getParameter("seriesId");
             String standingsJson = request.getParameter("standingsJson");
+            String historyJson = request.getParameter("historyJson");
             boolean success = false;
             if (seriesId != null && standingsJson != null) {
-                success = service.RollingWindowPointService.getInstance().saveClientStandings(seriesId, standingsJson);
+                success = service.RollingWindowPointService.getInstance().saveClientStandings(seriesId, standingsJson, historyJson);
             }
             response.getWriter().write("{\"success\":" + success + "}");
             return;

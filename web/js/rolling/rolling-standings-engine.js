@@ -920,7 +920,9 @@
                       recordMatchStats(m);
                       var res = resolveWinnerAndLoser(m);
                       if (res.loser) {
-                        awardTeamPoints(res.loser, posKey, "stage1_eliminated");
+                        var altK = isMultiStage ? (isLbCut ? "s1_lb_cut" : (lrNum === 1 ? "s1_lb_r1" : "stage1_eliminated")) : "stage1_eliminated";
+                        var custAch = isMultiStage ? (isLbCut ? "Loser's Qualification" : ("Loser's Round " + lrNum)) : null;
+                        awardTeamPoints(res.loser, posKey, altK, custAch);
                       }
                     }
                   }
@@ -1398,26 +1400,45 @@
       var localRes = parseTournamentResults(t, teamDataMap);
       parsedResultsPerTourney[tIdx] = localRes;
 
-      // Merge local live results on top of server data
-      // Priority: local data is the client ground truth when present for this tournament.
-      // Server data fills in for tournaments not present or not modified locally.
-      var mergedPts = Object.assign({}, serverPts);
-      if (localRes && localRes.pointsMap) {
-        Object.keys(localRes.pointsMap).forEach(function (k) {
-          var localVal = localRes.pointsMap[k];
-          if (localVal !== undefined) {
-            mergedPts[k] = localVal;
+      // Check if server actually has scored points (> 0) for this tournament
+      var serverHasScores = false;
+      if (serverPts && Object.keys(serverPts).length > 0) {
+        var sKeys = Object.keys(serverPts);
+        for (var sk = 0; sk < sKeys.length; sk++) {
+          if (serverPts[sKeys[sk]] > 0) {
+            serverHasScores = true;
+            break;
           }
-        });
+        }
       }
 
-      var mergedPart = Object.assign({}, serverPart);
-      if (localRes && localRes.participatedMap) {
-        Object.keys(localRes.participatedMap).forEach(function (k) {
-          if (localRes.participatedMap[k]) {
-            mergedPart[k] = true;
+      var localHasScores = false;
+      if (localRes && localRes.pointsMap && Object.keys(localRes.pointsMap).length > 0) {
+        var lKeys = Object.keys(localRes.pointsMap);
+        for (var lk = 0; lk < lKeys.length; lk++) {
+          if (localRes.pointsMap[lKeys[lk]] > 0) {
+            localHasScores = true;
+            break;
           }
-        });
+        }
+      }
+
+      var mergedPts = {};
+      if (localHasScores) {
+        mergedPts = Object.assign({}, serverPts || {}, localRes.pointsMap || {});
+      } else if (serverHasScores) {
+        mergedPts = Object.assign({}, serverPts);
+      } else if (localRes && localRes.pointsMap) {
+        mergedPts = Object.assign({}, localRes.pointsMap);
+      } else if (serverPts) {
+        mergedPts = Object.assign({}, serverPts);
+      }
+
+      var mergedPart = {};
+      if (localRes && localRes.participatedMap && Object.keys(localRes.participatedMap).length > 0) {
+        mergedPart = Object.assign({}, serverPart || {}, localRes.participatedMap || {});
+      } else if (serverPart) {
+        mergedPart = Object.assign({}, serverPart);
       }
       Object.keys(mergedPts).forEach(function (k) {
         if (mergedPts[k] > 0) {

@@ -67,7 +67,7 @@ public class RollingWindowPointService {
 
     public Map<String, Integer> getCachedTournamentPlacements(String tourneyId) {
         if (tourneyId == null || tourneyId.trim().isEmpty()) return new HashMap<>();
-        return GLOBAL_PLACEMENTS_CACHE.computeIfAbsent(tourneyId.trim(), id -> new ParticipantDAO().getTournamentPlacements(id));
+        return GLOBAL_PLACEMENTS_CACHE.computeIfAbsent(tourneyId.trim(), id -> TournamentPlacementService.getInstance().getTournamentPlacements(id));
     }
 
     public List<Team> getCachedTeamsByTournamentId(String tourneyId) {
@@ -274,8 +274,15 @@ public class RollingWindowPointService {
                     if (matchPos == null && team.getNormalizedName() != null) {
                         matchPos = matchPlacements.get(team.getNormalizedName().trim().toLowerCase());
                     }
+                    if (matchPos == null && t.getChampionName() != null) {
+                        String cName = t.getChampionName().trim().toLowerCase();
+                        if ((team.getRawName() != null && team.getRawName().trim().toLowerCase().equals(cName))
+                                || (team.getNormalizedName() != null && team.getNormalizedName().trim().toLowerCase().equals(cName))) {
+                            matchPos = 1;
+                        }
+                    }
 
-                    int pos = (matchPos != null && matchPos > 0) ? matchPos : (team.getOriginalSeed() > 0 ? team.getOriginalSeed() : 0);
+                    int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
                     int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
 
                     if (isActiveWindow) {
@@ -360,7 +367,13 @@ public class RollingWindowPointService {
                     if (matchPos == null && tm.getNormalizedName() != null) {
                         matchPos = matchPlacements.get(tm.getNormalizedName().trim().toLowerCase());
                     }
-                    int pos = (matchPos != null && matchPos > 0) ? matchPos : (tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : 0);
+                    if (matchPos == null && t.getChampionName() != null) {
+                        String cName = t.getChampionName().trim().toLowerCase();
+                        if (pk.equals(cName) || (tm.getNormalizedName() != null && tm.getNormalizedName().trim().toLowerCase().equals(cName))) {
+                            matchPos = 1;
+                        }
+                    }
+                    int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
                     int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
                     ptsMap.put(pk, pts);
                 }
@@ -393,8 +406,10 @@ public class RollingWindowPointService {
             List<Team> tourneyTeams = getCachedTeamsByTournamentId(t.getId());
             if (tourneyTeams != null) {
                 for (Team tm : tourneyTeams) {
-                    if (tm.getRawName() != null) {
-                        partMap.put(tm.getRawName().trim().toLowerCase(), true);
+                    if (tm.getRawName() == null) continue;
+                    partMap.put(tm.getRawName().trim().toLowerCase(), true);
+                    if (tm.getNormalizedName() != null) {
+                        partMap.put(tm.getNormalizedName().trim().toLowerCase(), true);
                     }
                 }
             }
@@ -405,16 +420,19 @@ public class RollingWindowPointService {
     }
 
     /**
-     * Recalculates and persists the updated standings & expired points into the database
+     * Recalculates and persists standings for a series into `series_standings` and `series_tournament_history`.
      */
     public boolean recalculateAndPersistStandings(String seriesId) {
         if (seriesId == null || seriesId.trim().isEmpty()) return false;
 
-        List<RollingStandingDTO> standings = calculateSeriesStandingsWithExpiry(seriesId);
-        if (standings.isEmpty()) return false;
-
         SeriesDAO seriesDAO = new SeriesDAO();
+        TournamentDAO tournamentDAO = new TournamentDAO();
         ParticipantDAO pDao = new ParticipantDAO();
+
+        Series series = seriesDAO.getSeriesById(seriesId.trim());
+        if (series == null) return false;
+
+        List<RollingStandingDTO> standings = calculateSeriesStandingsWithExpiry(seriesId.trim());
         List<Tournament> allTourneys = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
 
         DBContext db = new DBContext();
@@ -465,7 +483,7 @@ public class RollingWindowPointService {
                             tCfgRaw = buildFallbackConfig(t);
                         }
                         Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
-                        Map<String, Integer> placements = pDao.getTournamentPlacements(t.getId());
+                        Map<String, Integer> placements = TournamentPlacementService.getInstance().getTournamentPlacements(t.getId());
                         List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
 
                         if (tourneyTeams != null) {
@@ -478,7 +496,14 @@ public class RollingWindowPointService {
                                 if (matchPos == null && tm.getNormalizedName() != null) {
                                     matchPos = placements.get(tm.getNormalizedName().trim().toLowerCase());
                                 }
-                                int pos = (matchPos != null && matchPos > 0) ? matchPos : (tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : 0);
+                                if (matchPos == null && t.getChampionName() != null) {
+                                    String cName = t.getChampionName().trim().toLowerCase();
+                                    if ((tm.getRawName() != null && tm.getRawName().trim().toLowerCase().equals(cName))
+                                            || (tm.getNormalizedName() != null && tm.getNormalizedName().trim().toLowerCase().equals(cName))) {
+                                        matchPos = 1;
+                                    }
+                                }
+                                int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
                                 int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
 
                                 String histId = "H_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
@@ -510,6 +535,10 @@ public class RollingWindowPointService {
      * Persists client-calculated standings (which merge localStorage with DB data) into SQL Server
      */
     public boolean saveClientStandings(String seriesId, String standingsJson) {
+        return saveClientStandings(seriesId, standingsJson, null);
+    }
+
+    public boolean saveClientStandings(String seriesId, String standingsJson, String historyJson) {
         if (seriesId == null || seriesId.trim().isEmpty() || standingsJson == null || standingsJson.trim().isEmpty()) {
             return false;
         }
@@ -584,6 +613,44 @@ public class RollingWindowPointService {
                     r++;
                 }
                 ps.executeBatch();
+            }
+
+            // If historyJson is provided, also sync series_tournament_history!
+            if (historyJson != null && !historyJson.trim().isEmpty() && !historyJson.trim().equals("[]")) {
+                try (PreparedStatement psDelH = conn.prepareStatement("DELETE FROM series_tournament_history WHERE series_id = ?")) {
+                    psDelH.setString(1, seriesId.trim());
+                    psDelH.executeUpdate();
+                }
+
+                String sqlInsertHistory = "INSERT INTO series_tournament_history (id, series_id, tournament_id, phase_number, " +
+                        "normalized_team_name, tournament_rank, points_earned, points_deducted, elo_change, completed_at) " +
+                        "VALUES (?, ?, ?, 1, ?, ?, ?, 0, 0.0, CURRENT_TIMESTAMP)";
+
+                try (PreparedStatement psH = conn.prepareStatement(sqlInsertHistory)) {
+                    java.util.regex.Matcher mH = p.matcher(historyJson);
+                    while (mH.find()) {
+                        String blockH = mH.group(1);
+                        String tName = extractJsonString(blockH, "teamName");
+                        if (tName == null || tName.isEmpty()) tName = extractJsonString(blockH, "name");
+                        String tourneyId = extractJsonString(blockH, "tournamentId");
+                        if (tourneyId == null || tourneyId.isEmpty()) tourneyId = extractJsonString(blockH, "tId");
+                        int tRank = extractJsonInt(blockH, "rank", 0);
+                        int tPts = extractJsonInt(blockH, "points", 0);
+                        if (tPts == 0) tPts = extractJsonInt(blockH, "pointsEarned", 0);
+
+                        if (tName != null && !tName.isEmpty() && tourneyId != null && !tourneyId.isEmpty() && (tPts > 0 || tRank > 0)) {
+                            String histId = "H_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+                            psH.setString(1, histId);
+                            psH.setString(2, seriesId.trim());
+                            psH.setString(3, tourneyId.trim());
+                            psH.setString(4, tName.trim());
+                            psH.setInt(5, tRank);
+                            psH.setInt(6, tPts);
+                            psH.addBatch();
+                        }
+                    }
+                    psH.executeBatch();
+                }
             }
 
             conn.commit();
@@ -785,29 +852,23 @@ public class RollingWindowPointService {
         } else if (pos >= 33 && pos <= 64 && posPtsMap.containsKey("33-64")) {
             return posPtsMap.get("33-64");
         } else if (pos >= 65 && pos <= 96) {
+            if (posPtsMap.containsKey("65-96")) return posPtsMap.get("65-96");
             if (posPtsMap.containsKey("s1_lb_r2")) return posPtsMap.get("s1_lb_r2");
             if (posPtsMap.containsKey("s1_lb_cut")) return posPtsMap.get("s1_lb_cut");
             if (posPtsMap.containsKey("65-128")) return posPtsMap.get("65-128");
             if (posPtsMap.containsKey("stage1_eliminated")) return posPtsMap.get("stage1_eliminated");
-            if (posPtsMap.containsKey("s1_lb_r1")) return posPtsMap.get("s1_lb_r1");
+            return 0;
         } else if (pos >= 97) {
             if (posPtsMap.containsKey("s1_lb_r1")) return posPtsMap.get("s1_lb_r1");
+            if (posPtsMap.containsKey("97-128")) return posPtsMap.get("97-128");
             if (posPtsMap.containsKey("65-128")) return posPtsMap.get("65-128");
-            if (posPtsMap.containsKey("stage1_eliminated")) return posPtsMap.get("stage1_eliminated");
+            return 0;
         } else if (pos >= 9 && pos <= 11 && posPtsMap.containsKey("swiss_2-3")) {
             return posPtsMap.get("swiss_2-3");
         } else if (pos >= 12 && pos <= 14 && posPtsMap.containsKey("swiss_1-3")) {
             return posPtsMap.get("swiss_1-3");
         } else if (pos >= 15 && pos <= 16 && posPtsMap.containsKey("swiss_0-3")) {
             return posPtsMap.get("swiss_0-3");
-        } else if (posPtsMap.containsKey("s1_lb_r2")) {
-            return posPtsMap.get("s1_lb_r2");
-        } else if (posPtsMap.containsKey("s1_lb_cut")) {
-            return posPtsMap.get("s1_lb_cut");
-        } else if (posPtsMap.containsKey("stage1_eliminated")) {
-            return posPtsMap.get("stage1_eliminated");
-        } else if (posPtsMap.containsKey("swiss_2-3") && pos >= 9) {
-            return posPtsMap.get("swiss_2-3");
         }
         return 0;
     }

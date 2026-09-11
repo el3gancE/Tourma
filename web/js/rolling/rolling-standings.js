@@ -217,8 +217,10 @@
         if (ptsCfg["s1_lb_r2"] !== undefined) return parseInt(ptsCfg["s1_lb_r2"], 10) || 0;
         if (ptsCfg["s1_lb_cut"] !== undefined) return parseInt(ptsCfg["s1_lb_cut"], 10) || 0;
         if (ptsCfg["65-128"] !== undefined) return parseInt(ptsCfg["65-128"], 10) || 0;
+        if (ptsCfg["stage1_eliminated"] !== undefined) return parseInt(ptsCfg["stage1_eliminated"], 10) || 0;
       } else if (pMin >= 97) {
         if (ptsCfg["s1_lb_r1"] !== undefined) return parseInt(ptsCfg["s1_lb_r1"], 10) || 0;
+        if (ptsCfg["97-128"] !== undefined) return parseInt(ptsCfg["97-128"], 10) || 0;
         if (ptsCfg["65-128"] !== undefined) return parseInt(ptsCfg["65-128"], 10) || 0;
       }
     }
@@ -794,7 +796,8 @@
                     if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
                       var res = resolveWinnerAndLoser(m);
                       if (res.loser) {
-                        awardTeamPoints(res.loser, posKey, "stage1_eliminated");
+                        var altK = isMultiStage ? (isLbCut ? "s1_lb_cut" : (lrNum === 1 ? "s1_lb_r1" : "stage1_eliminated")) : "stage1_eliminated";
+                        awardTeamPoints(res.loser, posKey, altK);
                       }
                     }
                   }
@@ -1263,7 +1266,28 @@
             rank: d.rank || (idx + 1)
           };
         });
-        var postData = 'action=syncClientStandings&seriesId=' + encodeURIComponent(seriesId) + '&standingsJson=' + encodeURIComponent(JSON.stringify(payloadStandings));
+
+        var payloadHistory = [];
+        if (result.allTourneyPerformances) {
+          Object.keys(result.allTourneyPerformances).forEach(function(k) {
+            var perfs = result.allTourneyPerformances[k] || [];
+            perfs.forEach(function(p) {
+              if (p && p.tournamentId && (p.pointsEarned > 0 || p.rank > 0)) {
+                var teamRealName = (result.teamProfileStats && result.teamProfileStats[k] && result.teamProfileStats[k].partnerName) || k;
+                payloadHistory.push({
+                  teamName: teamRealName,
+                  tournamentId: p.tournamentId,
+                  rank: p.rank || 0,
+                  points: p.pointsEarned || 0
+                });
+              }
+            });
+          });
+        }
+
+        var postData = 'action=syncClientStandings&seriesId=' + encodeURIComponent(seriesId) +
+                       '&standingsJson=' + encodeURIComponent(JSON.stringify(payloadStandings)) +
+                       '&historyJson=' + encodeURIComponent(JSON.stringify(payloadHistory));
         var xhr = new XMLHttpRequest();
         xhr.open('POST', ctx + '/rolling/standings', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
