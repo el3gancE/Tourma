@@ -97,7 +97,7 @@ public class BatchMatchSyncServlet extends HttpServlet {
             String updateSql = "UPDATE matches SET " +
                     "team1_id = COALESCE(?, team1_id), " +
                     "team2_id = COALESCE(?, team2_id), " +
-                    "score1 = ?, score2 = ?, winner_id = ?, status = 'FINISHED' " +
+                    "score1 = ?, score2 = ?, winner_id = ?, loser_id = COALESCE(?, loser_id), status = 'FINISHED' " +
                     "WHERE tournament_id = ? AND (id = ? OR id LIKE ? OR (round_number = ? AND (team1_id = ? OR team2_id = ?)))";
 
             try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
@@ -129,18 +129,25 @@ public class BatchMatchSyncServlet extends HttpServlet {
                         winnerId = (s1 > s2) ? t1Id : t2Id;
                     }
 
+                    String loserId = null;
+                    if (winnerId != null) {
+                        if (winnerId.equals(t1Id)) loserId = t2Id;
+                        else if (winnerId.equals(t2Id)) loserId = t1Id;
+                    }
+
                     if (s1 >= 0 && s2 >= 0 && (winnerId != null || t1Id != null || t2Id != null)) {
                         ps.setString(1, t1Id);
                         ps.setString(2, t2Id);
                         ps.setInt(3, s1);
                         ps.setInt(4, s2);
                         ps.setString(5, winnerId);
-                        ps.setString(6, tournamentId.trim());
-                        ps.setString(7, mId != null ? mId : "");
-                        ps.setString(8, mId != null ? ("%" + mId) : "%NOT_MATCH%");
-                        ps.setInt(9, rnd);
-                        ps.setString(10, t1Id != null ? t1Id : "NONE");
-                        ps.setString(11, t2Id != null ? t2Id : "NONE");
+                        ps.setString(6, loserId);
+                        ps.setString(7, tournamentId.trim());
+                        ps.setString(8, mId != null ? mId : "");
+                        ps.setString(9, mId != null ? ("%" + mId) : "%NOT_MATCH%");
+                        ps.setInt(10, rnd);
+                        ps.setString(11, t1Id != null ? t1Id : "NONE");
+                        ps.setString(12, t2Id != null ? t2Id : "NONE");
                         ps.addBatch();
                         updatedCount++;
                     }

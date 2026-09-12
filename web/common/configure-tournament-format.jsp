@@ -401,17 +401,15 @@
                                             <label class="form-label"
                                                 style="font-size: 0.78rem; color: var(--text-muted);">Số Đội Đi Tiếp
                                                 <span style="color: #f43f5e;">*</span> <span
-                                                    style="font-size: 0.72rem; color: #94a3b8;">(Bắt buộc là số mũ của
-                                                    2: 2, 4, 8, 16...)</span></label>
+                                                    style="font-size: 0.72rem; color: #94a3b8;">Bắt buộc là số mũ của 2: 2, 4, 8, 16</span></label>
                                             <input type="number" id="stage1AdvanceDE" name="stage1AdvanceDE"
                                                 class="form-control"
                                                 style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
-                                                value="" min="2" step="2" placeholder="Ví dụ: 2, 4, 8, 16..."
+                                                value="" min="2" step="2" placeholder="Ví dụ 2, 4, 8, 16"
                                                 onchange="validatePowerOfTwoInput(this)">
                                             <div id="dePowerErrorMsg1"
                                                 style="display: none; color: #f43f5e; font-size: 0.75rem; margin-top: 0.4rem; font-weight: 600;">
-                                                ⚠️ Số đội đi tiếp của Double Elimination bắt buộc phải là số mũ của 2
-                                                (2, 4, 8, 16...)
+                                                Số đội đi tiếp của Double Elimination bắt buộc phải là số mũ của 2: 2, 4, 8, 16
                                             </div>
                                         </div>
 

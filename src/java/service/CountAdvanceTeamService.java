@@ -86,9 +86,24 @@ public class CountAdvanceTeamService {
     }
 
     /**
-     * Universal Validation of cutTarget for Knockout Formats (SE / DE)
+     * Single Elimination Cut Target Validation: allows any K (1 <= K < totalTeams)
+     * e.g. 26 teams cut to 13 teams (13 pairs in 1 round)
+     */
+    public static boolean isValidSECutTarget(int totalTeams, int cutTarget) {
+        return cutTarget >= 1 && cutTarget < totalTeams;
+    }
+
+    /**
+     * Double Elimination Cut Target Validation: must be power of 2 (2, 4, 8, 16...)
+     */
+    public static boolean isValidDECutTarget(int totalTeams, int cutTarget) {
+        return cutTarget > 1 && cutTarget < totalTeams && isPowerOfTwo(cutTarget);
+    }
+
+    /**
+     * Universal Validation of cutTarget for Knockout Formats
      */
     public static boolean isValidKnockoutCutTarget(int totalTeams, int cutTarget) {
-        return cutTarget > 1 && cutTarget < totalTeams && isPowerOfTwo(cutTarget);
+        return isValidSECutTarget(totalTeams, cutTarget);
     }
 }

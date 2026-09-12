@@ -149,6 +149,11 @@ public class CutStageServlet extends HttpServlet {
                 List<Team> dbTeams = participantDAO.getTeamsByTournamentId(tournamentId);
                 int totalTeams = (dbTeams != null && !dbTeams.isEmpty()) ? dbTeams.size() : 16;
                 
+                if (!CountAdvanceTeamService.isValidDECutTarget(totalTeams, cutTarget)) {
+                    out.print("{\"status\":\"error\",\"message\":\"Số đội đi tiếp của Double Elimination bắt buộc là số mũ của 2: 2, 4, 8, 16!\"}");
+                    return;
+                }
+                
                 int ubStopRound = DECutService.calculateUbStoppingRound(totalTeams, cutTarget);
                 int lbStopRound = DECutService.calculateLbStoppingRound(ubStopRound);
                 

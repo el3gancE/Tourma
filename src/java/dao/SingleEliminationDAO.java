@@ -272,7 +272,7 @@ public class SingleEliminationDAO extends DBContext {
             String mergeSql = "MERGE INTO matches AS target "
                     + "USING (SELECT ? AS id, ? AS tournament_id, ? AS stage_id, ? AS round_number, ? AS match_code, "
                     + "              ? AS bracket_type, ? AS team1_id, ? AS team2_id, ? AS score1, ? AS score2, "
-                    + "              ? AS winner_id, ? AS next_match_id, ? AS next_slot, ? AS is_bye, ? AS status) AS source "
+                    + "              ? AS winner_id, ? AS loser_id, ? AS next_match_id, ? AS next_slot, ? AS is_bye, ? AS status) AS source "
                     + "ON (target.id = source.id) "
                     + "WHEN MATCHED THEN "
                     + "    UPDATE SET "
@@ -283,15 +283,16 @@ public class SingleEliminationDAO extends DBContext {
                     + "        target.score1 = source.score1, "
                     + "        target.score2 = source.score2, "
                     + "        target.winner_id = source.winner_id, "
+                    + "        target.loser_id = source.loser_id, "
                     + "        target.next_match_id = source.next_match_id, "
                     + "        target.next_slot = source.next_slot, "
                     + "        target.is_bye = source.is_bye, "
                     + "        target.status = source.status "
                     + "WHEN NOT MATCHED THEN "
                     + "    INSERT (id, tournament_id, stage_id, round_number, match_code, bracket_type, "
-                    + "            team1_id, team2_id, score1, score2, winner_id, next_match_id, next_slot, is_bye, status) "
+                    + "            team1_id, team2_id, score1, score2, winner_id, loser_id, next_match_id, next_slot, is_bye, status) "
                     + "    VALUES (source.id, source.tournament_id, source.stage_id, source.round_number, source.match_code, source.bracket_type, "
-                    + "            source.team1_id, source.team2_id, source.score1, source.score2, source.winner_id, source.next_match_id, source.next_slot, source.is_bye, source.status);";
+                    + "            source.team1_id, source.team2_id, source.score1, source.score2, source.winner_id, source.loser_id, source.next_match_id, source.next_slot, source.is_bye, source.status);";
 
             // Pass 1: Upsert all matches with next_match_id = NULL to ensure no FK constraint conflicts
             try (PreparedStatement ps1 = conn.prepareStatement(mergeSql)) {
@@ -300,6 +301,7 @@ public class SingleEliminationDAO extends DBContext {
                     String t1Id = lookupTeamId(teamMap, m.team1Name, m.team1Seed);
                     String t2Id = lookupTeamId(teamMap, m.team2Name, m.team2Seed);
                     String winnerId = "team1".equalsIgnoreCase(m.winnerId) ? t1Id : ("team2".equalsIgnoreCase(m.winnerId) ? t2Id : null);
+                    String loserId = (winnerId != null) ? (winnerId.equals(t1Id) ? t2Id : (winnerId.equals(t2Id) ? t1Id : null)) : null;
                     String status = ("COMPLETED".equalsIgnoreCase(m.status) || "FINISHED".equalsIgnoreCase(m.status) || (m.team1Score != null && m.team2Score != null)) ? "FINISHED" : "PENDING";
                     String nextSlotStr = (m.nextMatchSlot != null && m.nextMatchSlot == 2) ? "SLOT_2" : ((m.nextMatchSlot != null && m.nextMatchSlot == 1) ? "SLOT_1" : null);
 
@@ -314,10 +316,11 @@ public class SingleEliminationDAO extends DBContext {
                     setNullableInt(ps1, 9, m.team1Score);
                     setNullableInt(ps1, 10, m.team2Score);
                     setNullableString(ps1, 11, winnerId);
-                    ps1.setNull(12, Types.VARCHAR); // Set NULL initially for FK safety
-                    setNullableString(ps1, 13, nextSlotStr);
-                    ps1.setBoolean(14, m.isBye);
-                    ps1.setString(15, status);
+                    setNullableString(ps1, 12, loserId);
+                    ps1.setNull(13, Types.VARCHAR); // Set NULL initially for FK safety
+                    setNullableString(ps1, 14, nextSlotStr);
+                    ps1.setBoolean(15, m.isBye);
+                    ps1.setString(16, status);
                     ps1.addBatch();
                 }
                 ps1.executeBatch();
@@ -338,11 +341,51 @@ public class SingleEliminationDAO extends DBContext {
                 ps2.executeBatch();
             }
 
+            // Pass 3: Ensure participants in stage_participants table
+            syncStageParticipants(conn, tournamentId, stageId, list, teamMap);
+
             return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
+    }
+
+    private void syncStageParticipants(Connection conn, String tournamentId, String stageId, List<MatchDTO> list, Map<String, String> teamMap) {
+        String stagePartSql = "MERGE INTO stage_participants AS target "
+                + "USING (SELECT ? AS id, ? AS tournament_id, ? AS stage_id, ? AS team_id, ? AS seed_in_stage) AS source "
+                + "ON (target.stage_id = source.stage_id AND target.team_id = source.team_id) "
+                + "WHEN NOT MATCHED THEN "
+                + "    INSERT (id, tournament_id, stage_id, team_id, seed_in_stage, qualification_source, status) "
+                + "    VALUES (source.id, source.tournament_id, source.stage_id, source.team_id, source.seed_in_stage, 'AUTO_SEED', 'ACTIVE');";
+        try (PreparedStatement ps = conn.prepareStatement(stagePartSql)) {
+            java.util.Set<String> seenTeams = new java.util.HashSet<>();
+            for (MatchDTO m : list) {
+                if (m.team1Name != null && !m.team1Name.trim().isEmpty() && !"BYE".equalsIgnoreCase(m.team1Name)) {
+                    String t1Id = lookupTeamId(teamMap, m.team1Name, m.team1Seed);
+                    if (t1Id != null && seenTeams.add(t1Id)) {
+                        ps.setString(1, stageId + "_" + t1Id);
+                        ps.setString(2, tournamentId);
+                        ps.setString(3, stageId);
+                        ps.setString(4, t1Id);
+                        ps.setInt(5, m.team1Seed != null ? m.team1Seed : seenTeams.size());
+                        ps.addBatch();
+                    }
+                }
+                if (m.team2Name != null && !m.team2Name.trim().isEmpty() && !"BYE".equalsIgnoreCase(m.team2Name)) {
+                    String t2Id = lookupTeamId(teamMap, m.team2Name, m.team2Seed);
+                    if (t2Id != null && seenTeams.add(t2Id)) {
+                        ps.setString(1, stageId + "_" + t2Id);
+                        ps.setString(2, tournamentId);
+                        ps.setString(3, stageId);
+                        ps.setString(4, t2Id);
+                        ps.setInt(5, m.team2Seed != null ? m.team2Seed : seenTeams.size());
+                        ps.addBatch();
+                    }
+                }
+            }
+            ps.executeBatch();
+        } catch (Exception ignore) {}
     }
 
     /**
@@ -374,13 +417,15 @@ public class SingleEliminationDAO extends DBContext {
             if (winnerId == null && score1 != null && score2 != null) {
                 winnerId = (score1 > score2) ? t1Id : ((score2 > score1) ? t2Id : null);
             }
+            String loserId = (winnerId != null) ? (winnerId.equals(t1Id) ? t2Id : (winnerId.equals(t2Id) ? t1Id : null)) : null;
 
             // 1. Update the match score and status
             String updateSql = "UPDATE matches SET "
                     + "score1 = ?, score2 = ?, status = 'FINISHED', "
                     + "team1_id = COALESCE(?, team1_id), "
                     + "team2_id = COALESCE(?, team2_id), "
-                    + "winner_id = ? "
+                    + "winner_id = ?, "
+                    + "loser_id = ? "
                     + "WHERE (id = ? OR id LIKE ?) AND tournament_id = ?";
 
             try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
@@ -389,9 +434,10 @@ public class SingleEliminationDAO extends DBContext {
                 setNullableString(ps, 3, t1Id);
                 setNullableString(ps, 4, t2Id);
                 setNullableString(ps, 5, winnerId);
-                ps.setString(6, matchDbId);
-                ps.setString(7, tournamentId.trim() + "_%_M" + matchId);
-                ps.setString(8, tournamentId.trim());
+                setNullableString(ps, 6, loserId);
+                ps.setString(7, matchDbId);
+                ps.setString(8, tournamentId.trim() + "_%_M" + matchId);
+                ps.setString(9, tournamentId.trim());
                 int rows = ps.executeUpdate();
                 if (rows == 0) {
                     // Row might not exist yet, trigger single insert

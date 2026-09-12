@@ -208,23 +208,25 @@ public class RoundRobinDAO extends DBContext {
             String mergeSql = "MERGE INTO matches AS target "
                     + "USING (SELECT ? AS id, ? AS tournament_id, ? AS stage_id, ? AS round_number, ? AS match_code, "
                     + "              ? AS bracket_type, ? AS team1_id, ? AS team2_id, ? AS score1, ? AS score2, "
-                    + "              ? AS winner_id, ? AS status) AS source "
+                    + "              ? AS winner_id, ? AS loser_id, ? AS status) AS source "
                     + "ON (target.id = source.id) "
                     + "WHEN MATCHED THEN "
                     + "    UPDATE SET "
                     + "        target.round_number = source.round_number, "
                     + "        target.match_code = source.match_code, "
+                    + "        target.bracket_type = source.bracket_type, "
                     + "        target.team1_id = source.team1_id, "
                     + "        target.team2_id = source.team2_id, "
                     + "        target.score1 = source.score1, "
                     + "        target.score2 = source.score2, "
                     + "        target.winner_id = source.winner_id, "
+                    + "        target.loser_id = source.loser_id, "
                     + "        target.status = source.status "
                     + "WHEN NOT MATCHED THEN "
                     + "    INSERT (id, tournament_id, stage_id, round_number, match_code, bracket_type, "
-                    + "            team1_id, team2_id, score1, score2, winner_id, status) "
+                    + "            team1_id, team2_id, score1, score2, winner_id, loser_id, status) "
                     + "    VALUES (source.id, source.tournament_id, source.stage_id, source.round_number, source.match_code, source.bracket_type, "
-                    + "            source.team1_id, source.team2_id, source.score1, source.score2, source.winner_id, source.status);";
+                    + "            source.team1_id, source.team2_id, source.score1, source.score2, source.winner_id, source.loser_id, source.status);";
 
             try (PreparedStatement ps = conn.prepareStatement(mergeSql)) {
                 for (RRMatchDTO m : list) {
@@ -232,6 +234,7 @@ public class RoundRobinDAO extends DBContext {
                     String t1Id = lookupTeamId(teamMap, m.team1Name, m.team1Seed);
                     String t2Id = lookupTeamId(teamMap, m.team2Name, m.team2Seed);
                     String winnerId = "team1".equalsIgnoreCase(m.winnerId) ? t1Id : ("team2".equalsIgnoreCase(m.winnerId) ? t2Id : null);
+                    String loserId = (winnerId != null) ? (winnerId.equals(t1Id) ? t2Id : (winnerId.equals(t2Id) ? t1Id : null)) : null;
                     String status = ("COMPLETED".equalsIgnoreCase(m.status) || "FINISHED".equalsIgnoreCase(m.status) || (m.team1Score != null && m.team2Score != null)) ? "FINISHED" : "PENDING";
 
                     ps.setString(1, matchDbId);
@@ -239,23 +242,63 @@ public class RoundRobinDAO extends DBContext {
                     ps.setString(3, stageId);
                     ps.setInt(4, m.roundNumber);
                     ps.setString(5, "Vòng " + m.roundNumber + " - Trận #" + m.matchNumber);
-                    ps.setString(6, "MAIN");
+                    ps.setString(6, "ROUND_ROBIN");
                     setNullableString(ps, 7, t1Id);
                     setNullableString(ps, 8, t2Id);
                     setNullableInt(ps, 9, m.team1Score);
                     setNullableInt(ps, 10, m.team2Score);
                     setNullableString(ps, 11, winnerId);
-                    ps.setString(12, status);
+                    setNullableString(ps, 12, loserId);
+                    ps.setString(13, status);
                     ps.addBatch();
                 }
                 ps.executeBatch();
             }
+
+            syncStageParticipants(conn, tournamentId, stageId, list, teamMap);
 
             return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
+    }
+
+    private void syncStageParticipants(Connection conn, String tournamentId, String stageId, List<RRMatchDTO> list, Map<String, String> teamMap) {
+        String stagePartSql = "MERGE INTO stage_participants AS target "
+                + "USING (SELECT ? AS id, ? AS tournament_id, ? AS stage_id, ? AS team_id, ? AS seed_in_stage) AS source "
+                + "ON (target.stage_id = source.stage_id AND target.team_id = source.team_id) "
+                + "WHEN NOT MATCHED THEN "
+                + "    INSERT (id, tournament_id, stage_id, team_id, seed_in_stage, qualification_source, status) "
+                + "    VALUES (source.id, source.tournament_id, source.stage_id, source.team_id, source.seed_in_stage, 'AUTO_SEED', 'ACTIVE');";
+        try (PreparedStatement ps = conn.prepareStatement(stagePartSql)) {
+            java.util.Set<String> seenTeams = new java.util.HashSet<>();
+            for (RRMatchDTO m : list) {
+                if (m.team1Name != null && !m.team1Name.trim().isEmpty() && !"BYE".equalsIgnoreCase(m.team1Name)) {
+                    String t1Id = lookupTeamId(teamMap, m.team1Name, m.team1Seed);
+                    if (t1Id != null && seenTeams.add(t1Id)) {
+                        ps.setString(1, stageId + "_" + t1Id);
+                        ps.setString(2, tournamentId);
+                        ps.setString(3, stageId);
+                        ps.setString(4, t1Id);
+                        ps.setInt(5, m.team1Seed != null ? m.team1Seed : seenTeams.size());
+                        ps.addBatch();
+                    }
+                }
+                if (m.team2Name != null && !m.team2Name.trim().isEmpty() && !"BYE".equalsIgnoreCase(m.team2Name)) {
+                    String t2Id = lookupTeamId(teamMap, m.team2Name, m.team2Seed);
+                    if (t2Id != null && seenTeams.add(t2Id)) {
+                        ps.setString(1, stageId + "_" + t2Id);
+                        ps.setString(2, tournamentId);
+                        ps.setString(3, stageId);
+                        ps.setString(4, t2Id);
+                        ps.setInt(5, m.team2Seed != null ? m.team2Seed : seenTeams.size());
+                        ps.addBatch();
+                    }
+                }
+            }
+            ps.executeBatch();
+        } catch (Exception ignore) {}
     }
 
     /**
@@ -286,12 +329,15 @@ public class RoundRobinDAO extends DBContext {
             if (winnerId == null && score1 != null && score2 != null) {
                 winnerId = (score1 > score2) ? t1Id : ((score2 > score1) ? t2Id : null);
             }
+            String loserId = (winnerId != null) ? (winnerId.equals(t1Id) ? t2Id : (winnerId.equals(t2Id) ? t1Id : null)) : null;
 
             String updateSql = "UPDATE matches SET "
                     + "score1 = ?, score2 = ?, status = 'FINISHED', "
                     + "team1_id = COALESCE(?, team1_id), "
                     + "team2_id = COALESCE(?, team2_id), "
-                    + "winner_id = ? "
+                    + "winner_id = ?, "
+                    + "loser_id = ?, "
+                    + "bracket_type = 'ROUND_ROBIN' "
                     + "WHERE id = ? OR id LIKE ?";
 
             int updated = 0;
@@ -301,14 +347,15 @@ public class RoundRobinDAO extends DBContext {
                 setNullableString(ps, 3, t1Id);
                 setNullableString(ps, 4, t2Id);
                 setNullableString(ps, 5, winnerId);
-                ps.setString(6, matchDbId);
-                ps.setString(7, "%_M" + matchId);
+                setNullableString(ps, 6, loserId);
+                ps.setString(7, matchDbId);
+                ps.setString(8, "%_M" + matchId);
                 updated = ps.executeUpdate();
             }
 
             if (updated == 0) {
-                String insertSql = "INSERT INTO matches (id, tournament_id, stage_id, round_number, match_code, bracket_type, team1_id, team2_id, score1, score2, winner_id, status) "
-                        + "VALUES (?, ?, ?, 1, ?, 'MAIN', ?, ?, ?, ?, ?, 'FINISHED')";
+                String insertSql = "INSERT INTO matches (id, tournament_id, stage_id, round_number, match_code, bracket_type, team1_id, team2_id, score1, score2, winner_id, loser_id, status) "
+                        + "VALUES (?, ?, ?, 1, ?, 'ROUND_ROBIN', ?, ?, ?, ?, ?, ?, 'FINISHED')";
                 try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
                     psIns.setString(1, matchDbId);
                     psIns.setString(2, tournamentId);
@@ -319,6 +366,7 @@ public class RoundRobinDAO extends DBContext {
                     setNullableInt(psIns, 7, score1);
                     setNullableInt(psIns, 8, score2);
                     setNullableString(psIns, 9, winnerId);
+                    setNullableString(psIns, 10, loserId);
                     psIns.executeUpdate();
                 }
             }
