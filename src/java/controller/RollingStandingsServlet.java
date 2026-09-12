@@ -51,6 +51,7 @@ public class RollingStandingsServlet extends HttpServlet {
         List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = null;
         List<java.util.Map<String, Integer>> serverTourneyPoints = null;
         List<java.util.Map<String, Boolean>> serverTourneyParticipation = null;
+        java.util.Map<String, List<String>> stageFormatsMap = new java.util.HashMap<>();
 
         if (series != null) {
             seriesId = series.getId();
@@ -60,6 +61,13 @@ public class RollingStandingsServlet extends HttpServlet {
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
             serverTourneyPoints = serviceEngine.getTourneyPointsPerTournament(seriesId);
             serverTourneyParticipation = serviceEngine.getTourneyParticipationPerTournament(seriesId);
+
+            if (tournamentsList != null) {
+                for (Tournament t : tournamentsList) {
+                    List<String> stgFormats = tournamentDAO.getStageFormats(t.getId());
+                    stageFormatsMap.put(t.getId(), stgFormats);
+                }
+            }
         }
 
         request.setAttribute("series", series);
@@ -68,6 +76,7 @@ public class RollingStandingsServlet extends HttpServlet {
         request.setAttribute("standingsDTOList", standingsDTOList);
         request.setAttribute("serverTourneyPoints", serverTourneyPoints);
         request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
+        request.setAttribute("stageFormatsMap", stageFormatsMap);
 
         request.getRequestDispatcher("/common/rolling/rolling-standings.jsp").forward(request, response);
     }

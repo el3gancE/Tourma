@@ -59,7 +59,6 @@ public class TournamentPlacementService {
         DBContext db = new DBContext();
         String sql = "SELECT m.*, ts.stage_order, ts.format as stage_format, " +
                      "t.tournament_type, " +
-                     "(SELECT TOP 1 tm.raw_name FROM matches m2 JOIN teams tm ON m2.winner_id = tm.id WHERE m2.tournament_id = t.id AND m2.winner_id IS NOT NULL ORDER BY m2.round_number DESC) AS db_champion_name, " +
                      "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS tourney_format, " +
                      "t1.raw_name AS t1_name, t1.normalized_name AS t1_norm, " +
                      "t2.raw_name AS t2_name, t2.normalized_name AS t2_norm, " +
@@ -80,21 +79,28 @@ public class TournamentPlacementService {
                 int highestStageOrder = 1;
                 String tourneyType = "SINGLE_STAGE";
                 String tourneyFormat = "SINGLE_ELIMINATION";
-                String tourneyChamp = null;
 
                 List<MatchRow> rows = new ArrayList<>();
+                java.util.Set<String> distinctTeams = new java.util.HashSet<>();
+
                 while (rs.next()) {
                     MatchRow row = new MatchRow();
                     int stgOrder = rs.getInt("stage_order");
-                    if (rs.wasNull()) stgOrder = 1;
+                    if (rs.wasNull()) {
+                        String rawId = rs.getString("id");
+                        String stgId = rs.getString("stage_id");
+                        if ((rawId != null && rawId.contains("_S2_")) || (stgId != null && stgId.contains("_S2_"))) {
+                            stgOrder = 2;
+                        } else {
+                            stgOrder = 1;
+                        }
+                    }
                     if (stgOrder > highestStageOrder) highestStageOrder = stgOrder;
 
                     String tType = rs.getString("tournament_type");
                     if (tType != null && !tType.trim().isEmpty()) tourneyType = tType.trim();
                     String tFmt = rs.getString("tourney_format");
                     if (tFmt != null && !tFmt.trim().isEmpty()) tourneyFormat = tFmt.trim();
-                    String cName = rs.getString("db_champion_name");
-                    if (cName != null && !cName.trim().isEmpty()) tourneyChamp = cName.trim();
 
                     row.id = rs.getString("id");
                     row.stageOrder = stgOrder;
@@ -113,6 +119,9 @@ public class TournamentPlacementService {
                     int s2 = rs.getInt("score2");
                     row.score2 = rs.wasNull() ? null : s2;
                     row.status = rs.getString("status");
+
+                    if (row.t1Name != null && !row.t1Name.isEmpty()) distinctTeams.add(row.t1Name.trim().toLowerCase());
+                    if (row.t2Name != null && !row.t2Name.isEmpty()) distinctTeams.add(row.t2Name.trim().toLowerCase());
 
                     // Resolve winner if not explicitly set but scores exist
                     if (row.winnerId == null && row.score1 != null && row.score2 != null && !row.score1.equals(row.score2)) {
@@ -137,11 +146,7 @@ public class TournamentPlacementService {
                 } else if (isDoubleElimination(tourneyFormat, rows)) {
                     processSingleStageDoubleElimination(rows, placementMap);
                 } else {
-                    processSingleStageElimination(rows, placementMap);
-                }
-
-                if (tourneyChamp != null && !tourneyChamp.isEmpty()) {
-                    assignPlacement(placementMap, null, tourneyChamp, 1);
+                    processSingleStageElimination(rows, distinctTeams.size(), placementMap);
                 }
             }
         } catch (Exception e) {
@@ -151,7 +156,7 @@ public class TournamentPlacementService {
     }
 
     private boolean isDoubleElimination(String tourneyFormat, List<MatchRow> rows) {
-        if ("DOUBLE_ELIMINATION".equalsIgnoreCase(tourneyFormat)) return true;
+        if (tourneyFormat != null && tourneyFormat.toUpperCase().contains("DOUBLE")) return true;
         for (MatchRow r : rows) {
             if (isLoserBracket(r.bracketType)) return true;
         }
@@ -161,19 +166,29 @@ public class TournamentPlacementService {
     private boolean isLoserBracket(String bType) {
         if (bType == null) return false;
         String b = bType.toUpperCase().trim();
-        return b.equals("LOSER_BRACKET") || b.equals("LB") || b.equals("LOWER");
+        return b.contains("LOSER") || b.contains("LB") || b.contains("LOWER");
     }
 
     private boolean isGrandFinal(String bType) {
         if (bType == null) return false;
         String b = bType.toUpperCase().trim();
-        return b.equals("GRAND_FINAL") || b.equals("GRAND_FINALS");
+        return b.contains("GRAND_FINAL") || b.contains("GRAND_FINALS") || b.contains("GF");
     }
 
     private void assignPlacement(Map<String, Integer> map, String teamId, String teamName, int pos) {
-        if (teamId != null) map.putIfAbsent(teamId, pos);
+        if (pos <= 0) return;
+        if (teamId != null && !teamId.trim().isEmpty()) {
+            Integer existing = map.get(teamId);
+            if (existing == null || pos < existing) {
+                map.put(teamId, pos);
+            }
+        }
         if (teamName != null && !teamName.trim().isEmpty()) {
-            map.putIfAbsent(teamName.trim().toLowerCase(), pos);
+            String k = teamName.trim().toLowerCase();
+            Integer existing = map.get(k);
+            if (existing == null || pos < existing) {
+                map.put(k, pos);
+            }
         }
     }
 
@@ -184,14 +199,20 @@ public class TournamentPlacementService {
         // 1. Process Stage 2 (Final Stage)
         int maxRoundStage2 = -1;
         int maxLbRoundStage2 = 0;
+        java.util.Set<String> s2Teams = new java.util.HashSet<>();
         for (MatchRow r : rows) {
             if (r.stageOrder == highestStageOrder) {
                 if (r.roundNumber > maxRoundStage2) maxRoundStage2 = r.roundNumber;
                 if (isLoserBracket(r.bracketType) && r.roundNumber > maxLbRoundStage2) {
                     maxLbRoundStage2 = r.roundNumber;
                 }
+                if (r.t1Name != null && !r.t1Name.isEmpty()) s2Teams.add(r.t1Name.trim().toLowerCase());
+                if (r.t2Name != null && !r.t2Name.isEmpty()) s2Teams.add(r.t2Name.trim().toLowerCase());
             }
         }
+
+        int expectedS2Rounds = (s2Teams.size() >= 2) ? (int) Math.ceil(Math.log(s2Teams.size()) / Math.log(2)) : 1;
+        int totalS2Rounds = Math.max(maxRoundStage2, expectedS2Rounds);
 
         for (MatchRow r : rows) {
             if (r.stageOrder == highestStageOrder && r.winnerId != null) {
@@ -215,8 +236,8 @@ public class TournamentPlacementService {
                     }
                 } else {
                     // Stage 2 is Single Elimination
-                    int diff = Math.max(0, maxRoundStage2 - r.roundNumber);
-                    if (diff == 0) {
+                    int diff = Math.max(0, totalS2Rounds - r.roundNumber);
+                    if (diff == 0 && r.roundNumber == totalS2Rounds) {
                         assignPlacement(map, r.winnerId, r.winnerName, 1);
                         assignPlacement(map, loserId, loserName, 2);
                     } else {
@@ -236,9 +257,9 @@ public class TournamentPlacementService {
             if (r.stageOrder < highestStageOrder) {
                 if (isLoserBracket(r.bracketType)) {
                     if (r.roundNumber > maxLbRoundStage1) maxLbRoundStage1 = r.roundNumber;
-                } else if ("SWISS".equalsIgnoreCase(r.bracketType)) {
+                } else if (r.bracketType != null && r.bracketType.toUpperCase().contains("SWISS")) {
                     isStage1Swiss = true;
-                } else if ("GROUP".equalsIgnoreCase(r.bracketType)) {
+                } else if (r.bracketType != null && r.bracketType.toUpperCase().contains("GROUP")) {
                     isStage1Group = true;
                 }
             }
@@ -378,19 +399,22 @@ public class TournamentPlacementService {
     /**
      * Process Single-Stage Single Elimination Tournament
      */
-    private void processSingleStageElimination(List<MatchRow> rows, Map<String, Integer> map) {
+    private void processSingleStageElimination(List<MatchRow> rows, int distinctTeamCount, Map<String, Integer> map) {
         int maxRound = 0;
         for (MatchRow r : rows) {
             if (r.roundNumber > maxRound) maxRound = r.roundNumber;
         }
+
+        int expectedRounds = (distinctTeamCount >= 2) ? (int) Math.ceil(Math.log(distinctTeamCount) / Math.log(2)) : 1;
+        int totalRounds = Math.max(maxRound, expectedRounds);
 
         for (MatchRow r : rows) {
             if (r.winnerId == null) continue;
             String loserId = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.team2Id : r.team1Id;
             String loserName = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.t2Name : r.t1Name;
 
-            int diff = Math.max(0, maxRound - r.roundNumber);
-            if (diff == 0) {
+            int diff = Math.max(0, totalRounds - r.roundNumber);
+            if (diff == 0 && r.roundNumber == totalRounds) {
                 assignPlacement(map, r.winnerId, r.winnerName, 1);
                 assignPlacement(map, loserId, loserName, 2);
             } else {

@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="model.Series, model.Tournament, model.SeriesStanding, model.PartnerParticipant, service.RollingWindowPointService, service.RollingWindowPointService.RollingStandingDTO, dao.SeriesDAO, dao.TournamentDAO, java.util.List"%>
+<%@page import="model.Series, model.Tournament, model.SeriesStanding, model.PartnerParticipant, service.RollingWindowPointService, service.RollingWindowPointService.RollingStandingDTO, dao.SeriesDAO, dao.TournamentDAO, java.util.List, java.util.Map"%>
 <%
     String seriesIdVal = request.getParameter("id");
     if (seriesIdVal == null || seriesIdVal.trim().isEmpty()) {
@@ -270,7 +270,9 @@
 
         <script>
             window.seriesSubTournaments = [
-                <% if (tournamentsList != null) {
+                <% 
+                java.util.Map<String, java.util.List<String>> stageFormatsMap = (java.util.Map<String, java.util.List<String>>) request.getAttribute("stageFormatsMap");
+                if (tournamentsList != null) {
                     for (int i = 0; i < tournamentsList.size(); i++) {
                         Tournament t = tournamentsList.get(i);
                         String rawCfg = (t != null) ? t.getSeriesPointsConfig() : null;
@@ -292,6 +294,9 @@
                         boolean isMulti = (t != null && "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType()));
                         String fmt = (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
                         String tTier = (t != null && t.getTierName() != null) ? t.getTierName().toUpperCase() : "A";
+                        List<String> stgFormats = (stageFormatsMap != null) ? stageFormatsMap.get(safeId) : null;
+                        String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : fmt;
+                        String s2Fmt = (stgFormats != null && stgFormats.size() > 1) ? stgFormats.get(1) : "SINGLE_ELIMINATION";
                 %>
                     {
                         id: "<%= safeId %>",
@@ -300,6 +305,9 @@
                         format: "<%= fmt %>",
                         tournamentType: "<%= tType %>",
                         isMultiStage: <%= isMulti %>,
+                        stage1Format: "<%= (s1Fmt != null) ? s1Fmt.toUpperCase() : "" %>",
+                        stage2Format: "<%= (s2Fmt != null) ? s2Fmt.toUpperCase() : "" %>",
+                        championName: "<%= (t != null && t.getChampionName() != null) ? t.getChampionName().replace("\\", "\\\\").replace("\"", "\\\"") : "" %>",
                         tierName: "<%= tTier %>",
                         pointsConfig: <%= cfgJson %>
                     }<%= (i < tournamentsList.size() - 1) ? "," : "" %>

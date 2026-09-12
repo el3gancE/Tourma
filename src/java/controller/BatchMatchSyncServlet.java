@@ -129,7 +129,7 @@ public class BatchMatchSyncServlet extends HttpServlet {
                         winnerId = (s1 > s2) ? t1Id : t2Id;
                     }
 
-                    if (s1 >= 0 && s2 >= 0 && winnerId != null) {
+                    if (s1 >= 0 && s2 >= 0 && (winnerId != null || t1Id != null || t2Id != null)) {
                         ps.setString(1, t1Id);
                         ps.setString(2, t2Id);
                         ps.setInt(3, s1);

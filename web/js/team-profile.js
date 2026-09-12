@@ -89,7 +89,7 @@
         tablePointsSum += (perf.pointsEarned || 0);
       });
       prof.totalAccumulatedPoints = tablePointsSum;
-      var phaseSize = window.seriesPhaseSize || 26;
+      var phaseSize = (window.seriesPhaseSize && window.seriesPhaseSize > 0) ? window.seriesPhaseSize : 3;
       if (prof.playedCount <= phaseSize || prof.performances.length <= phaseSize) {
         prof.currentPoints = tablePointsSum;
       }

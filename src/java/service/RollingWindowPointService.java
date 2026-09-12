@@ -823,30 +823,40 @@ public class RollingWindowPointService {
 
     // Helper: Resolve points awarded for a given position
     public int resolvePointsForPosition(int pos, Map<String, Integer> posPtsMap) {
+        if (posPtsMap == null || posPtsMap.isEmpty()) return 0;
         if (posPtsMap.containsKey(String.valueOf(pos))) {
             return posPtsMap.get(String.valueOf(pos));
-        } else if (pos == 1 && posPtsMap.containsKey("1")) {
-            return posPtsMap.get("1");
-        } else if (pos == 2 && posPtsMap.containsKey("2")) {
-            return posPtsMap.get("2");
-        } else if (pos == 3 && posPtsMap.containsKey("3")) {
-            return posPtsMap.get("3");
-        } else if (pos == 4 && posPtsMap.containsKey("4")) {
-            return posPtsMap.get("4");
-        } else if (pos >= 3 && pos <= 4 && posPtsMap.containsKey("3-4")) {
-            return posPtsMap.get("3-4");
+        } else if (pos == 1) {
+            if (posPtsMap.containsKey("1")) return posPtsMap.get("1");
+            if (posPtsMap.containsKey("champPoints")) return posPtsMap.get("champPoints");
+        } else if (pos == 2) {
+            if (posPtsMap.containsKey("2")) return posPtsMap.get("2");
+            if (posPtsMap.containsKey("runnerUpPoints")) return posPtsMap.get("runnerUpPoints");
+        } else if (pos == 3) {
+            if (posPtsMap.containsKey("3")) return posPtsMap.get("3");
+            if (posPtsMap.containsKey("3-4")) return posPtsMap.get("3-4");
+            if (posPtsMap.containsKey("semiPoints")) return posPtsMap.get("semiPoints");
+        } else if (pos == 4) {
+            if (posPtsMap.containsKey("4")) return posPtsMap.get("4");
+            if (posPtsMap.containsKey("3-4")) return posPtsMap.get("3-4");
+            if (posPtsMap.containsKey("semiPoints")) return posPtsMap.get("semiPoints");
+        } else if (pos >= 3 && pos <= 4) {
+            if (posPtsMap.containsKey("3-4")) return posPtsMap.get("3-4");
+            if (posPtsMap.containsKey("semiPoints")) return posPtsMap.get("semiPoints");
         } else if (pos >= 5 && pos <= 6 && posPtsMap.containsKey("5-6")) {
             return posPtsMap.get("5-6");
         } else if (pos >= 7 && pos <= 8 && posPtsMap.containsKey("7-8")) {
             return posPtsMap.get("7-8");
-        } else if (pos >= 5 && pos <= 8 && posPtsMap.containsKey("5-8")) {
-            return posPtsMap.get("5-8");
+        } else if (pos >= 5 && pos <= 8) {
+            if (posPtsMap.containsKey("5-8")) return posPtsMap.get("5-8");
+            if (posPtsMap.containsKey("quarterPoints")) return posPtsMap.get("quarterPoints");
         } else if (pos >= 9 && pos <= 12 && posPtsMap.containsKey("9-12")) {
             return posPtsMap.get("9-12");
         } else if (pos >= 13 && pos <= 16 && posPtsMap.containsKey("13-16")) {
             return posPtsMap.get("13-16");
-        } else if (pos >= 9 && pos <= 16 && posPtsMap.containsKey("9-16")) {
-            return posPtsMap.get("9-16");
+        } else if (pos >= 9 && pos <= 16) {
+            if (posPtsMap.containsKey("9-16")) return posPtsMap.get("9-16");
+            if (posPtsMap.containsKey("r16Points")) return posPtsMap.get("r16Points");
         } else if (pos >= 17 && pos <= 32 && posPtsMap.containsKey("17-32")) {
             return posPtsMap.get("17-32");
         } else if (pos >= 33 && pos <= 64 && posPtsMap.containsKey("33-64")) {

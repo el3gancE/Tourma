@@ -231,18 +231,25 @@
   var storageDataCache = {};
   function getStorageData(prefixList, id) {
     if (!prefixList || prefixList.length === 0 || !id) return null;
-    var cacheKey = prefixList.join('|') + '__' + id;
+    var rawId = String(id).trim();
+    var cleanId = rawId.replace(/^tournament_/, '');
+    var cacheKey = prefixList.join('|') + '__' + rawId;
     if (storageDataCache[cacheKey] !== undefined) {
       return storageDataCache[cacheKey];
     }
     for (var i = 0; i < prefixList.length; i++) {
       var p = prefixList[i];
-      var val = localStorage.getItem(p + id);
+      var val = localStorage.getItem(p + rawId);
       if (val) {
         storageDataCache[cacheKey] = val;
         return val;
       }
-      val = localStorage.getItem(p + 'tournament_' + id);
+      val = localStorage.getItem(p + 'tournament_' + cleanId);
+      if (val) {
+        storageDataCache[cacheKey] = val;
+        return val;
+      }
+      val = localStorage.getItem(p + cleanId);
       if (val) {
         storageDataCache[cacheKey] = val;
         return val;
@@ -980,7 +987,7 @@
 
       // Stage 2 Single Elimination
       else {
-        var rawBracketS2 = getStorageData(['tourma_bracket_stage2_', 'tourma_matches_stage2_'], t.id);
+        var rawBracketS2 = getStorageData(['tourma_bracket_stage2_', 'tourma_stage2_bracket_', 'tourma_bracket_matches_stage2_', 'tourma_matches_stage2_', 'tourma_stage2_matches_', 'tourma_bracket_', 'tourma_bracket_matches_', 'tourma_matches_'], t.id);
         if (rawBracketS2) {
           try {
             var bracketDataS2 = JSON.parse(rawBracketS2);
