@@ -79,6 +79,10 @@ public class DoubleEliminationDAO extends DBContext {
         return dataMap;
     }
 
+    public List<Match> getMatchesByTournamentId(int tournamentId) {
+        return getMatchesByTournamentId(String.valueOf(tournamentId));
+    }
+
     /**
      * Query matches from database table for a tournament
      */

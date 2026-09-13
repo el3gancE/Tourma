@@ -853,6 +853,22 @@
                 }
             }
 
+            try {
+                localStorage.removeItem('tourma_final_locked_' + this.tournamentId);
+                localStorage.removeItem('tourma_champion_' + this.tournamentId);
+                localStorage.removeItem('tourma_stage1_locked_' + this.tournamentId);
+            } catch (e) {}
+
+            if (window.FinalStagePopup) {
+                window.FinalStagePopup.isLocked = false;
+                var banner = document.getElementById('finalStagePopupBanner');
+                if (banner) banner.style.display = 'none';
+            }
+            if (window.StageEndPopup) {
+                var sBanner = document.getElementById('stageEndPopupBanner');
+                if (sBanner) sBanner.style.display = 'none';
+            }
+
             this.saveMatchesState();
             this.renderMatchesView();
         },

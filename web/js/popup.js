@@ -33,35 +33,38 @@
 
             if (!tid) return false;
 
-            // 1. Final champion lock (always applies regardless of tournament type)
-            try {
-                if (localStorage.getItem('tourma_final_locked_' + tid) === 'true') return true;
-            } catch (e) {}
-            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
-
-            // 2. Stage 1 lock — ONLY for Multi-Stage tournaments, ONLY when currently in Stage 1
             var stageParam = null;
             try {
                 stageParam = new URLSearchParams(window.location.search).get('stage');
             } catch(e) {}
             var isStage2 = (stageParam === '2');
 
-            if (!isStage2) {
-                // Check if this is actually a Multi-Stage tournament
-                var isMultiStage = false;
-                try {
-                    isMultiStage = (
-                        localStorage.getItem('tourma_type_' + tid) === 'MULTI_STAGE' ||
-                        !!localStorage.getItem('tourma_multi_config_' + tid)
-                    );
-                } catch(e) {}
+            // Check if this is a Multi-Stage tournament
+            var isMultiStage = false;
+            try {
+                isMultiStage = (
+                    localStorage.getItem('tourma_type_' + tid) === 'MULTI_STAGE' ||
+                    !!localStorage.getItem('tourma_multi_config_' + tid) ||
+                    (window.TourmaDoubleElimination && window.TourmaDoubleElimination.cutTarget > 1) ||
+                    (window.SingleEliminationEngine && window.SingleEliminationEngine.cutTarget > 1) ||
+                    (window.TourmaRoundRobin && window.TourmaRoundRobin.cutTarget > 1)
+                );
+            } catch(e) {}
 
-                if (isMultiStage) {
-                    try {
-                        if (localStorage.getItem('tourma_stage1_locked_' + tid) === 'true') return true;
-                    } catch (e) {}
-                }
+            if (isMultiStage && !isStage2) {
+                // In Multi-Stage Stage 1: ONLY check Stage 1 lock flag
+                try {
+                    if (localStorage.getItem('tourma_stage1_locked_' + tid) === 'true') return true;
+                } catch (e) {}
+                if (window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(tid)) return true;
+                return false;
             }
+
+            // Otherwise (Single Stage or Stage 2): Check Final Champion Lock
+            try {
+                if (localStorage.getItem('tourma_final_locked_' + tid) === 'true') return true;
+            } catch (e) {}
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
 
             return false;
         },

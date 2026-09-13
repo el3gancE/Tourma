@@ -91,6 +91,7 @@ public class ParticipantDAO {
             }
 
             conn.commit();
+            service.RollingWindowPointService.clearAllCaches();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -106,7 +107,11 @@ public class ParticipantDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, teamId);
-            return ps.executeUpdate() > 0;
+            boolean res = ps.executeUpdate() > 0;
+            if (res) {
+                service.RollingWindowPointService.clearAllCaches();
+            }
+            return res;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -153,6 +158,7 @@ public class ParticipantDAO {
             }
             if (addedCount > 0) {
                 insertPs.executeBatch();
+                service.RollingWindowPointService.clearAllCaches();
             }
             return true;
         } catch (Exception e) {

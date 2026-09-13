@@ -294,17 +294,26 @@
                     var match = roundObj.matches[m];
                     var t1 = match.team1 ? match.team1.name : '';
                     var t2 = match.team2 ? match.team2.name : '';
-                    var isBye = (t1 === 'BYE' || t2 === 'BYE');
+                    var isBye = (match.isBye === true || t1 === 'BYE' || t2 === 'BYE' || (match.team1 && match.team1.isBye) || (match.team2 && match.team2.isBye));
 
                     if (isBye) {
+                        match.isBye = true;
                         match.matchNumber = null;
+                        if (t1 === 'BYE') {
+                            match.winnerId = 'team2';
+                            match.status = 'COMPLETED';
+                        } else if (t2 === 'BYE') {
+                            match.winnerId = 'team1';
+                            match.status = 'COMPLETED';
+                        }
                     } else {
+                        match.isBye = false;
                         match.matchNumber = counter++;
                     }
                 }
             }
 
-            // Update placeholders in subsequent rounds to reference parent matchNumber
+            // Update placeholders in subsequent rounds to reference parent matchNumber or propagate BYE winner
             for (var r = 1; r < roundsList.length; r++) {
                 var roundObj = roundsList[r];
                 for (var m = 0; m < roundObj.matches.length; m++) {
@@ -313,13 +322,25 @@
                     var parent1 = this.findParentMatch(matchesMap, match.matchId, 1);
                     var parent2 = this.findParentMatch(matchesMap, match.matchId, 2);
 
-                    if (parent1 && !parent1.winnerId) {
-                        if (parent1.matchNumber) {
+                    if (parent1) {
+                        if (parent1.winnerId) {
+                            var w1 = (parent1.winnerId === 'team1') ? parent1.team1 : parent1.team2;
+                            if (w1 && w1.name && w1.name !== 'BYE') {
+                                match.team1.name = w1.name;
+                                match.team1.seed = (w1.seed !== undefined && w1.seed !== null) ? w1.seed : '';
+                            }
+                        } else if (parent1.matchNumber) {
                             match.team1.name = 'W #' + parent1.matchNumber;
                         }
                     }
-                    if (parent2 && !parent2.winnerId) {
-                        if (parent2.matchNumber) {
+                    if (parent2) {
+                        if (parent2.winnerId) {
+                            var w2 = (parent2.winnerId === 'team1') ? parent2.team1 : parent2.team2;
+                            if (w2 && w2.name && w2.name !== 'BYE') {
+                                match.team2.name = w2.name;
+                                match.team2.seed = (w2.seed !== undefined && w2.seed !== null) ? w2.seed : '';
+                            }
+                        } else if (parent2.matchNumber) {
                             match.team2.name = 'W #' + parent2.matchNumber;
                         }
                     }

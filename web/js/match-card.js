@@ -17,39 +17,53 @@
             if (!data) return null;
 
             var matchId = data.matchId || data.id || '1';
-            var matchNum = data.matchNumber || null;
-
-            var status = (data.status || 'PENDING').toLowerCase();
-            var isDone = (status === 'completed' || status === 'done');
-            var statusClass = isDone ? 'done' : 'pending';
-            var statusLabel = isDone ? 'DONE' : 'PENDING';
-
-            var defaultT1Name = data.team1Placeholder || (matchNum ? ('W #' + (Number(matchNum) * 2 - 1)) : '');
-            var defaultT2Name = data.team2Placeholder || (matchNum ? ('W #' + (Number(matchNum) * 2)) : '');
-
             var t1 = data.team1 || {};
             var t2 = data.team2 || {};
 
-            var resolveStrName = function(val, defaultVal) {
-                if (!val) return defaultVal;
-                if (typeof val === 'object') return val.name || val.rawName || defaultVal;
+            var resolveStrName = function(val) {
+                if (!val) return '';
+                if (typeof val === 'object') return val.name || val.rawName || '';
                 return String(val);
             };
 
-            var t1Name = resolveStrName(t1.name, defaultT1Name);
-            var t2Name = resolveStrName(t2.name, defaultT2Name);
+            var rawT1Name = resolveStrName(t1.name);
+            var rawT2Name = resolveStrName(t2.name);
 
-            var isT1Placeholder = !t1.name || t1Name.startsWith('W #') || t1Name.startsWith('L #');
-            var isT2Placeholder = !t2.name || t2Name.startsWith('W #') || t2Name.startsWith('L #');
+            var isT1Bye = (rawT1Name === 'BYE' || t1.isBye === true);
+            var isT2Bye = (rawT2Name === 'BYE' || t2.isBye === true);
+            var hasBye = data.isBye === true || isT1Bye || isT2Bye;
 
-            var isT1Bye = (t1Name === 'BYE' || t1.isBye === true);
-            var isT2Bye = (t2Name === 'BYE' || t2.isBye === true);
-            var hasBye = isT1Bye || isT2Bye;
+            var matchNum = hasBye ? null : (data.matchNumber || null);
+
+            var defaultT1Name = hasBye ? (isT1Bye ? 'BYE' : '') : (data.team1Placeholder || (matchNum ? ('W #' + (Number(matchNum) * 2 - 1)) : ''));
+            var defaultT2Name = hasBye ? (isT2Bye ? 'BYE' : '') : (data.team2Placeholder || (matchNum ? ('W #' + (Number(matchNum) * 2)) : ''));
+
+            var t1Name = rawT1Name ? rawT1Name : defaultT1Name;
+            var t2Name = rawT2Name ? rawT2Name : defaultT2Name;
+
+            if (hasBye) {
+                if (isT1Bye || t1Name === 'BYE') t1Name = 'BYE';
+                if (isT2Bye || t2Name === 'BYE') t2Name = 'BYE';
+            }
+
+            var checkIsPlaceholder = function (name) {
+                if (name === undefined || name === null) return true;
+                var t = String(name).trim();
+                if (!t || t === 'BYE' || t === 'TBD' || t === '?') return true;
+                if (t.startsWith('W #') || t.startsWith('L #') || t.startsWith('W#') || t.startsWith('L#')) return true;
+                if (t.startsWith('Winner ') || t.startsWith('Loser ')) return true;
+                if (t === 'Winner UB' || t === 'Winner LB' || t === 'Loser UB' || t === 'Loser LB') return true;
+                return false;
+            };
+
+            var isT1Placeholder = checkIsPlaceholder(t1Name);
+            var isT2Placeholder = checkIsPlaceholder(t2Name);
 
             var matchHeaderLabel = (matchNum && !hasBye) ? ('#' + matchNum) : '';
 
-            // Only matches with 2 real confirmed teams and NOT BYE are clickable
-            var isPlayable = !isT1Placeholder && !isT2Placeholder && !hasBye;
+            // Only matches with 2 real confirmed teams, NOT BYE, and unlocked reset match are clickable
+            var isLockedReset = (data.isResetMatch && !data.isUnlocked);
+            var isPlayable = !isT1Placeholder && !isT2Placeholder && !hasBye && !isLockedReset;
 
             var getDisplaySeed = function (rawSeed, matchData, teamName) {
                 var sNum = NaN;
@@ -136,6 +150,11 @@
             var seed1 = (isT1Bye || isT1Placeholder) ? '' : getDisplaySeed(t1.seed, data, t1Name);
             var seed2 = (isT2Bye || isT2Placeholder) ? '' : getDisplaySeed(t2.seed, data, t2Name);
 
+            var rawStatus = (data.status || '').toUpperCase();
+            var isDone = (rawStatus === 'DONE' || rawStatus === 'COMPLETED' || rawStatus === 'FINISHED' || (data.winnerId !== undefined && data.winnerId !== null && data.winnerId !== ''));
+            var statusLabel = isDone ? 'DONE' : ((rawStatus === 'LIVE' || rawStatus === 'IN_PROGRESS' || rawStatus === 'PLAYING') ? 'LIVE' : 'PENDING');
+            var statusClass = isDone ? 'done' : ((rawStatus === 'LIVE' || rawStatus === 'IN_PROGRESS' || rawStatus === 'PLAYING') ? 'live' : 'pending');
+
             var t1ScoreDisp = (isDone && !hasBye && t1.score !== undefined && t1.score !== null && t1.score !== '') ? t1.score : '';
             var t2ScoreDisp = (isDone && !hasBye && t2.score !== undefined && t2.score !== null && t2.score !== '') ? t2.score : '';
 
@@ -200,13 +219,14 @@
                 '</div>';
 
             var checkCardLocked = function () {
+                var tid = (data && (data.tournamentId || data.tourneyId)) || null;
                 // Delegate to TourmaScoreModal.isLocked which properly checks multi-stage guard
                 if (window.TourmaScoreModal && typeof window.TourmaScoreModal.isLocked === 'function') {
-                    return window.TourmaScoreModal.isLocked(null);
+                    return window.TourmaScoreModal.isLocked(tid);
                 }
                 // Fallback: only check final champion lock
                 if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
-                var _tid = window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null;
+                var _tid = tid || (window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null);
                 if (_tid) {
                     try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') return true; } catch(e) {}
                 }
@@ -262,6 +282,7 @@
                 if (window.TourmaScoreModal && typeof window.TourmaScoreModal.open === 'function') {
                     window.TourmaScoreModal.open({
                         matchId: matchId,
+                        tournamentId: (data && (data.tournamentId || data.tourneyId)) || null,
                         roundName: data.roundName || ('Trận ' + matchHeaderLabel),
                         team1Name: t1Name,
                         team1Seed: seed1,

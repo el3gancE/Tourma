@@ -61,6 +61,19 @@
         },
 
         /**
+         * Helper: Check if a team name is an unconfirmed placeholder or BYE
+         */
+        isPlaceholder: function (name) {
+            if (name === undefined || name === null) return true;
+            var t = String(name).trim();
+            if (!t || t === 'BYE' || t === 'TBD' || t === '?') return true;
+            if (t.startsWith('W #') || t.startsWith('L #') || t.startsWith('W#') || t.startsWith('L#')) return true;
+            if (t.startsWith('Winner ') || t.startsWith('Loser ')) return true;
+            if (t === 'Winner UB' || t === 'Winner LB' || t === 'Loser UB' || t === 'Loser LB') return true;
+            return false;
+        },
+
+        /**
          * Check if all matches in a round have determined teams AND at least one match is uncompleted.
          * If 100% of matches are completed (DONE), returns false (Random button is disabled until Reset).
          *
@@ -83,12 +96,9 @@
                 var isBye = (t1 === 'BYE' || t2 === 'BYE');
                 if (isBye) continue;
 
-                var isPending = (!t1 || !t2 ||
-                    t1.startsWith('W #') || t1.startsWith('L #') ||
-                    t2.startsWith('W #') || t2.startsWith('L #') ||
-                    t1 === 'Winner UB' || t2 === 'Winner LB');
-
-                if (isPending) return false; // Found an undetermined team placeholder!
+                if (this.isPlaceholder(t1) || this.isPlaceholder(t2)) {
+                    return false; // Found an undetermined team placeholder!
+                }
 
                 hasPlayable = true;
                 if (m.status !== 'COMPLETED') {
@@ -121,12 +131,9 @@
                 var isBye = (t1 === 'BYE' || t2 === 'BYE');
                 if (isBye) continue;
 
-                var isPending = (!t1 || !t2 ||
-                    t1.startsWith('W #') || t1.startsWith('L #') ||
-                    t2.startsWith('W #') || t2.startsWith('L #') ||
-                    t1 === 'Winner UB' || t2 === 'Winner LB');
-
-                if (isPending) return false;
+                if (this.isPlaceholder(t1) || this.isPlaceholder(t2)) {
+                    return false;
+                }
 
                 hasPlayable = true;
                 if (m.status !== 'COMPLETED') return false;
@@ -136,7 +143,7 @@
         },
 
         /**
-         * Randomize all playable matches in a round (including DONE matches)
+         * Randomize all playable matches in a round (prioritizing uncompleted matches)
          * and invoke onMatchCompleted callback for each
          *
          * @param {Object} roundObj
@@ -151,6 +158,17 @@
             var map = matchesMap || {};
             var changed = false;
 
+            // Check if there are uncompleted matches
+            var hasUncompleted = false;
+            for (var c = 0; c < roundObj.matches.length; c++) {
+                var chk = map[roundObj.matches[c].matchId] || roundObj.matches[c];
+                if (chk.isResetMatch && !chk.isUnlocked) continue;
+                if (chk.status !== 'COMPLETED') {
+                    hasUncompleted = true;
+                    break;
+                }
+            }
+
             for (var m = 0; m < roundObj.matches.length; m++) {
                 var match = roundObj.matches[m];
                 var mId = match.matchId;
@@ -158,15 +176,16 @@
 
                 if (currMatch.isResetMatch && !currMatch.isUnlocked) continue;
 
+                // If some matches were already completed, ONLY randomize the uncompleted ones!
+                if (hasUncompleted && currMatch.status === 'COMPLETED') {
+                    continue;
+                }
+
                 var t1 = currMatch.team1 ? currMatch.team1.name : '';
                 var t2 = currMatch.team2 ? currMatch.team2.name : '';
                 var isBye = (t1 === 'BYE' || t2 === 'BYE');
-                var isPending = (!t1 || !t2 ||
-                    t1.startsWith('W #') || t1.startsWith('L #') ||
-                    t2.startsWith('W #') || t2.startsWith('L #') ||
-                    t1 === 'Winner UB' || t2 === 'Winner LB');
+                var isPending = this.isPlaceholder(t1) || this.isPlaceholder(t2);
 
-                // Randomize ALL playable matches in this round, including already DONE matches!
                 if (!isBye && !isPending) {
                     var result = this.generateMatchScore(rawWinScore);
 

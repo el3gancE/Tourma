@@ -106,7 +106,12 @@ public class SeriesDAO {
             ps.setDouble(7, s.getInitialElo());
             ps.setString(8, s.getStatus() != null ? s.getStatus() : "ACTIVE");
 
-            return ps.executeUpdate() > 0;
+            boolean res = ps.executeUpdate() > 0;
+            if (res) {
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
+            }
+            return res;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -243,8 +248,9 @@ public class SeriesDAO {
 
     public boolean addPartnerParticipant(String seriesId, String teamName, String customPartnerId, int initialPoints) {
         if (seriesId == null || teamName == null || teamName.trim().isEmpty()) return false;
-        String partnerId = (customPartnerId != null && !customPartnerId.trim().isEmpty()) ? customPartnerId.trim() : ("PARTNER_" + System.currentTimeMillis() + "_" + (int)(Math.random()*1000));
-        String standingId = "ST_" + System.currentTimeMillis() + "_" + (int)(Math.random()*1000);
+        String cleanName = teamName.trim();
+        String partnerId = (customPartnerId != null && !customPartnerId.trim().isEmpty()) ? customPartnerId.trim() : ("PARTNER_" + java.util.UUID.randomUUID().toString().substring(0, 8));
+        String standingId = "ST_" + java.util.UUID.randomUUID().toString().substring(0, 8);
         
         DBContext db = new DBContext();
         String sqlPartner = "INSERT INTO partner_participants (id, series_id, name, group_name) VALUES (?, ?, ?, ?)";
@@ -256,7 +262,7 @@ public class SeriesDAO {
                 try (PreparedStatement psP = conn.prepareStatement(sqlPartner)) {
                     psP.setString(1, partnerId);
                     psP.setString(2, seriesId);
-                    psP.setString(3, teamName.trim());
+                    psP.setString(3, cleanName);
                     psP.setString(4, "General");
                     psP.executeUpdate();
                 }
@@ -264,13 +270,15 @@ public class SeriesDAO {
                 try (PreparedStatement psS = conn.prepareStatement(sqlStanding)) {
                     psS.setString(1, standingId);
                     psS.setString(2, seriesId);
-                    psS.setString(3, teamName.trim());
+                    psS.setString(3, cleanName);
                     psS.setString(4, partnerId);
                     psS.setInt(5, initialPoints);
                     psS.executeUpdate();
                 }
 
                 conn.commit();
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
                 return true;
             } catch (Exception e) {
                 conn.rollback();
@@ -287,6 +295,10 @@ public class SeriesDAO {
     public int bulkAddPartnerParticipants(String seriesId, List<String> teamNames, int initialPoints) {
         if (seriesId == null || teamNames == null || teamNames.isEmpty()) return 0;
         int count = 0;
+
+        // Fetch existing partner participants to avoid duplicate names in the series
+        List<model.PartnerParticipant> existingPartners = getPartnerParticipantsBySeriesId(seriesId);
+
         DBContext db = new DBContext();
         String sqlPartner = "INSERT INTO partner_participants (id, series_id, name, group_name) VALUES (?, ?, ?, ?)";
         String sqlStanding = "INSERT INTO series_standings (id, series_id, phase_number, normalized_team_name, partner_participant_id, total_rolling_points) VALUES (?, ?, 1, ?, ?, ?)";
@@ -296,14 +308,24 @@ public class SeriesDAO {
             try (PreparedStatement psP = conn.prepareStatement(sqlPartner);
                  PreparedStatement psS = conn.prepareStatement(sqlStanding)) {
                 
-                long now = System.currentTimeMillis();
-                int idx = 0;
                 for (String rawName : teamNames) {
                     if (rawName == null || rawName.trim().isEmpty()) continue;
                     String tName = rawName.trim();
-                    idx++;
-                    String partnerId = "PARTNER_" + now + "_" + idx;
-                    String standingId = "ST_" + now + "_" + idx;
+
+                    // Check if already exists in this series
+                    boolean alreadyExists = false;
+                    if (existingPartners != null) {
+                        for (model.PartnerParticipant ep : existingPartners) {
+                            if (ep.getName() != null && ep.getName().trim().equalsIgnoreCase(tName)) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (alreadyExists) continue;
+
+                    String partnerId = "PARTNER_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+                    String standingId = "ST_" + java.util.UUID.randomUUID().toString().substring(0, 8);
 
                     psP.setString(1, partnerId);
                     psP.setString(2, seriesId);
@@ -321,9 +343,13 @@ public class SeriesDAO {
                     count++;
                 }
 
-                psP.executeBatch();
-                psS.executeBatch();
+                if (count > 0) {
+                    psP.executeBatch();
+                    psS.executeBatch();
+                }
                 conn.commit();
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
             } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
@@ -340,11 +366,16 @@ public class SeriesDAO {
     public boolean deletePartnerParticipant(String partnerId, String seriesId) {
         if (partnerId == null || partnerId.trim().isEmpty()) return false;
         DBContext db = new DBContext();
+        String sqlUnlinkTeams = "UPDATE teams SET partner_participant_id = NULL WHERE partner_participant_id = ?";
         String sqlStanding = "DELETE FROM series_standings WHERE partner_participant_id = ?";
         String sqlPartner = "DELETE FROM partner_participants WHERE id = ?";
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
             try {
+                try (PreparedStatement psU = conn.prepareStatement(sqlUnlinkTeams)) {
+                    psU.setString(1, partnerId);
+                    psU.executeUpdate();
+                } catch (Exception ignore) {}
                 try (PreparedStatement psS = conn.prepareStatement(sqlStanding)) {
                     psS.setString(1, partnerId);
                     psS.executeUpdate();
@@ -354,6 +385,8 @@ public class SeriesDAO {
                     psP.executeUpdate();
                 }
                 conn.commit();
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
                 return true;
             } catch (Exception e) {
                 conn.rollback();
@@ -390,7 +423,13 @@ public class SeriesDAO {
             ps.setInt(6, t.getTournamentIndexInSeries() > 0 ? t.getTournamentIndexInSeries() : 1);
             ps.setInt(7, t.getPhaseNumber() > 0 ? t.getPhaseNumber() : 1);
             ps.setString(8, t.getStatus() != null ? t.getStatus() : "DRAFT");
-            return ps.executeUpdate() > 0;
+            boolean res = ps.executeUpdate() > 0;
+            if (res) {
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
+                dao.TournamentDAO.clearTournamentCaches();
+            }
+            return res;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -455,6 +494,9 @@ public class SeriesDAO {
                 }
             }
             conn.commit();
+            clearSeriesCaches();
+            service.RollingWindowPointService.clearAllCaches();
+            dao.TournamentDAO.clearTournamentCaches();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -523,6 +565,9 @@ public class SeriesDAO {
                     ps.setString(1, id);
                     int rows = ps.executeUpdate();
                     conn.commit();
+                    clearSeriesCaches();
+                    service.RollingWindowPointService.clearAllCaches();
+                    dao.TournamentDAO.clearTournamentCaches();
                     return rows > 0;
                 }
             } catch (Exception ex) {
