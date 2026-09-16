@@ -33,35 +33,38 @@
 
             if (!tid) return false;
 
-            // 1. Final champion lock (always applies regardless of tournament type)
-            try {
-                if (localStorage.getItem('tourma_final_locked_' + tid) === 'true') return true;
-            } catch (e) {}
-            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
-
-            // 2. Stage 1 lock — ONLY for Multi-Stage tournaments, ONLY when currently in Stage 1
             var stageParam = null;
             try {
                 stageParam = new URLSearchParams(window.location.search).get('stage');
             } catch(e) {}
             var isStage2 = (stageParam === '2');
 
-            if (!isStage2) {
-                // Check if this is actually a Multi-Stage tournament
-                var isMultiStage = false;
-                try {
-                    isMultiStage = (
-                        localStorage.getItem('tourma_type_' + tid) === 'MULTI_STAGE' ||
-                        !!localStorage.getItem('tourma_multi_config_' + tid)
-                    );
-                } catch(e) {}
+            // Check if this is a Multi-Stage tournament
+            var isMultiStage = false;
+            try {
+                isMultiStage = (
+                    localStorage.getItem('tourma_type_' + tid) === 'MULTI_STAGE' ||
+                    !!localStorage.getItem('tourma_multi_config_' + tid) ||
+                    (window.TourmaDoubleElimination && window.TourmaDoubleElimination.cutTarget > 1) ||
+                    (window.SingleEliminationEngine && window.SingleEliminationEngine.cutTarget > 1) ||
+                    (window.TourmaRoundRobin && window.TourmaRoundRobin.cutTarget > 1)
+                );
+            } catch(e) {}
 
-                if (isMultiStage) {
-                    try {
-                        if (localStorage.getItem('tourma_stage1_locked_' + tid) === 'true') return true;
-                    } catch (e) {}
-                }
+            if (isMultiStage && !isStage2) {
+                // In Multi-Stage Stage 1: ONLY check Stage 1 lock flag
+                try {
+                    if (localStorage.getItem('tourma_stage1_locked_' + tid) === 'true') return true;
+                } catch (e) {}
+                if (window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(tid)) return true;
+                return false;
             }
+
+            // Otherwise (Single Stage or Stage 2): Check Final Champion Lock
+            try {
+                if (localStorage.getItem('tourma_final_locked_' + tid) === 'true') return true;
+            } catch (e) {}
+            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
 
             return false;
         },
@@ -92,16 +95,22 @@
             var hiddenMatchId = document.getElementById('modalMatchIdInput');
             if (hiddenMatchId) hiddenMatchId.value = this.activeMatchId;
 
-            // Clean seed numbers
-            var cleanSeed1 = (matchData.team1Seed || '1').toString().replace('#', '');
-            var cleanSeed2 = (matchData.team2Seed || '2').toString().replace('#', '');
+            // Clean seed numbers (do not fallback to 1 and 2 when unseeded or hidden)
+            var cleanSeed1 = (matchData.team1Seed !== undefined && matchData.team1Seed !== null && String(matchData.team1Seed).trim() !== '') 
+                ? matchData.team1Seed.toString().replace('#', '').trim() 
+                : '';
+            var cleanSeed2 = (matchData.team2Seed !== undefined && matchData.team2Seed !== null && String(matchData.team2Seed).trim() !== '') 
+                ? matchData.team2Seed.toString().replace('#', '').trim() 
+                : '';
 
             var t1NameStr = matchData.team1Name || 'Đội 1';
             var t2NameStr = matchData.team2Name || 'Đội 2';
 
             // Populate Team 1 & Team 2 Rows
             var t1Seed = document.getElementById('modalTeam1Seed');
-            if (t1Seed) t1Seed.innerText = cleanSeed1;
+            if (t1Seed) {
+                t1Seed.innerText = cleanSeed1;
+            }
             var t1Name = document.getElementById('modalTeam1Name');
             if (t1Name) t1Name.innerText = t1NameStr;
             
@@ -110,7 +119,9 @@
             if (t1Score) t1Score.value = s1Val;
 
             var t2Seed = document.getElementById('modalTeam2Seed');
-            if (t2Seed) t2Seed.innerText = cleanSeed2;
+            if (t2Seed) {
+                t2Seed.innerText = cleanSeed2;
+            }
             var t2Name = document.getElementById('modalTeam2Name');
             if (t2Name) t2Name.innerText = t2NameStr;
 

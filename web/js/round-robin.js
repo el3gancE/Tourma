@@ -786,6 +786,9 @@
                 localStorage.removeItem('tourma_rr_matches_' + this.tournamentId);
                 localStorage.removeItem('tourma_matches_' + this.tournamentId);
                 localStorage.removeItem('tourma_rr_round_inputs_' + this.tournamentId);
+                localStorage.removeItem('tourma_final_locked_' + this.tournamentId);
+                localStorage.removeItem('tourma_champion_' + this.tournamentId);
+                localStorage.removeItem('tourma_stage1_locked_' + this.tournamentId);
                 if (this.currentStage === 1) {
                     localStorage.removeItem('tourma_stage2_teams_' + this.tournamentId);
                     localStorage.removeItem('tourma_bracket_stage2_' + this.tournamentId);
@@ -797,6 +800,17 @@
                     localStorage.setItem('tourma_multi_config_' + this.tournamentId, JSON.stringify(mCfg));
                 }
             } catch (e) {}
+
+            // Unlock UI and banners
+            if (window.FinalStagePopup) {
+                window.FinalStagePopup.isLocked = false;
+                var banner = document.getElementById('finalStagePopupBanner');
+                if (banner) banner.style.display = 'none';
+            }
+            if (window.StageEndPopup) {
+                var sBanner = document.getElementById('stageEndPopupBanner');
+                if (sBanner) sBanner.style.display = 'none';
+            }
 
             // Send reset request to DB
             var rParams = new URLSearchParams();

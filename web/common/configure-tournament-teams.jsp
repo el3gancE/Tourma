@@ -772,7 +772,16 @@
                 // Swiss System validation: MUST have EXACTLY 16 teams!
                 if (checkIsSwissFormat()) {
                     if (currentTeamsList.length !== 16) {
-                        alert('⚠️ Thể thức Swiss System bắt buộc phải có CHÍNH XÁC 16 đội tham gia (Hiện tại bạn đã nhập ' + currentTeamsList.length + ' đội).\n\nVui lòng nhập đúng 16 đội để tiếp tục sinh sơ đồ Swiss System.');
+                        alert('Thể thức Swiss System bắt buộc phải có chính xác 16 đội tham gia. Hiện tại bạn đã nhập ' + currentTeamsList.length + ' đội. Vui lòng nhập đúng 16 đội để tiếp tục.');
+                        if (e && e.preventDefault) e.preventDefault();
+                        return false;
+                    }
+                }
+
+                // Round Robin validation: MUST NOT exceed 24 teams!
+                if (checkIsRoundRobin()) {
+                    if (currentTeamsList.length > 24) {
+                        alert('Thể thức Round Robin chỉ hỗ trợ tối đa 24 đội bóng. Hiện tại bạn đã nhập ' + currentTeamsList.length + ' đội. Vui lòng bớt đội để tiếp tục.');
                         if (e && e.preventDefault) e.preventDefault();
                         return false;
                     }

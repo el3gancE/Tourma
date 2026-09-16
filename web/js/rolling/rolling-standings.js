@@ -217,8 +217,10 @@
         if (ptsCfg["s1_lb_r2"] !== undefined) return parseInt(ptsCfg["s1_lb_r2"], 10) || 0;
         if (ptsCfg["s1_lb_cut"] !== undefined) return parseInt(ptsCfg["s1_lb_cut"], 10) || 0;
         if (ptsCfg["65-128"] !== undefined) return parseInt(ptsCfg["65-128"], 10) || 0;
+        if (ptsCfg["stage1_eliminated"] !== undefined) return parseInt(ptsCfg["stage1_eliminated"], 10) || 0;
       } else if (pMin >= 97) {
         if (ptsCfg["s1_lb_r1"] !== undefined) return parseInt(ptsCfg["s1_lb_r1"], 10) || 0;
+        if (ptsCfg["97-128"] !== undefined) return parseInt(ptsCfg["97-128"], 10) || 0;
         if (ptsCfg["65-128"] !== undefined) return parseInt(ptsCfg["65-128"], 10) || 0;
       }
     }
@@ -229,18 +231,25 @@
   var storageDataCache = {};
   function getStorageData(prefixList, id) {
     if (!prefixList || prefixList.length === 0 || !id) return null;
-    var cacheKey = prefixList.join('|') + '__' + id;
+    var rawId = String(id).trim();
+    var cleanId = rawId.replace(/^tournament_/, '');
+    var cacheKey = prefixList.join('|') + '__' + rawId;
     if (storageDataCache[cacheKey] !== undefined) {
       return storageDataCache[cacheKey];
     }
     for (var i = 0; i < prefixList.length; i++) {
       var p = prefixList[i];
-      var val = localStorage.getItem(p + id);
+      var val = localStorage.getItem(p + rawId);
       if (val) {
         storageDataCache[cacheKey] = val;
         return val;
       }
-      val = localStorage.getItem(p + 'tournament_' + id);
+      val = localStorage.getItem(p + 'tournament_' + cleanId);
+      if (val) {
+        storageDataCache[cacheKey] = val;
+        return val;
+      }
+      val = localStorage.getItem(p + cleanId);
       if (val) {
         storageDataCache[cacheKey] = val;
         return val;
@@ -794,7 +803,8 @@
                     if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
                       var res = resolveWinnerAndLoser(m);
                       if (res.loser) {
-                        awardTeamPoints(res.loser, posKey, "stage1_eliminated");
+                        var altK = isMultiStage ? (isLbCut ? "s1_lb_cut" : (lrNum === 1 ? "s1_lb_r1" : "stage1_eliminated")) : "stage1_eliminated";
+                        awardTeamPoints(res.loser, posKey, altK);
                       }
                     }
                   }
@@ -977,7 +987,7 @@
 
       // Stage 2 Single Elimination
       else {
-        var rawBracketS2 = getStorageData(['tourma_bracket_stage2_', 'tourma_matches_stage2_'], t.id);
+        var rawBracketS2 = getStorageData(['tourma_bracket_stage2_', 'tourma_stage2_bracket_', 'tourma_bracket_matches_stage2_', 'tourma_matches_stage2_', 'tourma_stage2_matches_', 'tourma_bracket_', 'tourma_bracket_matches_', 'tourma_matches_'], t.id);
         if (rawBracketS2) {
           try {
             var bracketDataS2 = JSON.parse(rawBracketS2);
@@ -1263,7 +1273,28 @@
             rank: d.rank || (idx + 1)
           };
         });
-        var postData = 'action=syncClientStandings&seriesId=' + encodeURIComponent(seriesId) + '&standingsJson=' + encodeURIComponent(JSON.stringify(payloadStandings));
+
+        var payloadHistory = [];
+        if (result.allTourneyPerformances) {
+          Object.keys(result.allTourneyPerformances).forEach(function(k) {
+            var perfs = result.allTourneyPerformances[k] || [];
+            perfs.forEach(function(p) {
+              if (p && p.tournamentId && (p.pointsEarned > 0 || p.rank > 0)) {
+                var teamRealName = (result.teamProfileStats && result.teamProfileStats[k] && result.teamProfileStats[k].partnerName) || k;
+                payloadHistory.push({
+                  teamName: teamRealName,
+                  tournamentId: p.tournamentId,
+                  rank: p.rank || 0,
+                  points: p.pointsEarned || 0
+                });
+              }
+            });
+          });
+        }
+
+        var postData = 'action=syncClientStandings&seriesId=' + encodeURIComponent(seriesId) +
+                       '&standingsJson=' + encodeURIComponent(JSON.stringify(payloadStandings)) +
+                       '&historyJson=' + encodeURIComponent(JSON.stringify(payloadHistory));
         var xhr = new XMLHttpRequest();
         xhr.open('POST', ctx + '/rolling/standings', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');

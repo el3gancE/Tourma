@@ -1,5 +1,6 @@
 package controller;
 
+import dao.DoubleEliminationDAO;
 import dao.ParticipantDAO;
 import dao.SingleEliminationDAO;
 import dao.TournamentDAO;
@@ -32,6 +33,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class CutStageServlet extends HttpServlet {
 
     private final SingleEliminationDAO singleEliminationDAO = new SingleEliminationDAO();
+    private final DoubleEliminationDAO doubleEliminationDAO = new DoubleEliminationDAO();
     private final ParticipantDAO participantDAO = new ParticipantDAO();
     private final TournamentDAO tournamentDAO = new TournamentDAO();
 
@@ -149,10 +151,15 @@ public class CutStageServlet extends HttpServlet {
                 List<Team> dbTeams = participantDAO.getTeamsByTournamentId(tournamentId);
                 int totalTeams = (dbTeams != null && !dbTeams.isEmpty()) ? dbTeams.size() : 16;
                 
+                if (!CountAdvanceTeamService.isValidDECutTarget(totalTeams, cutTarget)) {
+                    out.print("{\"status\":\"error\",\"message\":\"Số đội đi tiếp của Double Elimination bắt buộc là số mũ của 2: 2, 4, 8, 16!\"}");
+                    return;
+                }
+                
                 int ubStopRound = DECutService.calculateUbStoppingRound(totalTeams, cutTarget);
                 int lbStopRound = DECutService.calculateLbStoppingRound(ubStopRound);
                 
-                List<Match> matchesList = singleEliminationDAO.getMatchesByTournamentId(intTourneyId);
+                List<Match> matchesList = doubleEliminationDAO.getMatchesByTournamentId(intTourneyId);
                 boolean roundFinished = DECutService.isCutStageFinished(matchesList, ubStopRound, lbStopRound);
                 if (!roundFinished) {
                     out.print("{\"status\":\"error\",\"message\":\"Các trận vòng dừng (UB " + ubStopRound + ", LB " + lbStopRound + ") chưa hoàn tất!\"}");

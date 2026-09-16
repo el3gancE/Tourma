@@ -47,22 +47,36 @@ public class RollingStandingsServlet extends HttpServlet {
         }
 
         List<Tournament> tournamentsList = null;
-        List<SeriesStanding> standingsList = null;
+        List<model.PartnerParticipant> partnerList = null;
         List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = null;
+        List<java.util.Map<String, Integer>> serverTourneyPoints = null;
+        List<java.util.Map<String, Boolean>> serverTourneyParticipation = null;
+        java.util.Map<String, List<String>> stageFormatsMap = new java.util.HashMap<>();
 
         if (series != null) {
             seriesId = series.getId();
             service.RollingWindowPointService serviceEngine = service.RollingWindowPointService.getInstance();
             standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(seriesId);
-            serviceEngine.recalculateAndPersistStandings(seriesId);
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
-            standingsList = seriesDAO.getStandingsBySeriesId(seriesId);
+            partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
+            serverTourneyPoints = serviceEngine.getTourneyPointsPerTournament(seriesId);
+            serverTourneyParticipation = serviceEngine.getTourneyParticipationPerTournament(seriesId);
+
+            if (tournamentsList != null) {
+                for (Tournament t : tournamentsList) {
+                    List<String> stgFormats = tournamentDAO.getStageFormats(t.getId());
+                    stageFormatsMap.put(t.getId(), stgFormats);
+                }
+            }
         }
 
         request.setAttribute("series", series);
         request.setAttribute("tournamentsList", tournamentsList);
-        request.setAttribute("standingsList", standingsList);
+        request.setAttribute("partnerList", partnerList);
         request.setAttribute("standingsDTOList", standingsDTOList);
+        request.setAttribute("serverTourneyPoints", serverTourneyPoints);
+        request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
+        request.setAttribute("stageFormatsMap", stageFormatsMap);
 
         request.getRequestDispatcher("/common/rolling/rolling-standings.jsp").forward(request, response);
     }
@@ -72,13 +86,42 @@ public class RollingStandingsServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
-        if ("syncClientStandings".equalsIgnoreCase(action)) {
+        if ("updateSettings".equalsIgnoreCase(action) || "updatePhaseSize".equalsIgnoreCase(action)) {
+            String seriesId = request.getParameter("seriesId");
+            if (seriesId == null || seriesId.trim().isEmpty()) {
+                seriesId = request.getParameter("id");
+            }
+            String name = request.getParameter("name");
+            String phaseSizeStr = request.getParameter("phaseSize");
+            String status = request.getParameter("status");
+            int phaseSize = 3;
+            try {
+                if (phaseSizeStr != null && !phaseSizeStr.trim().isEmpty()) {
+                    phaseSize = Integer.parseInt(phaseSizeStr.trim());
+                }
+            } catch (Exception ignore) {}
+
+            SeriesDAO seriesDAO = new SeriesDAO();
+            if (seriesId != null && !seriesId.trim().isEmpty()) {
+                Series current = seriesDAO.getSeriesById(seriesId.trim());
+                if (name == null || name.trim().isEmpty()) {
+                    if (current != null) name = current.getName();
+                }
+                if (status == null || status.trim().isEmpty()) {
+                    if (current != null) status = current.getStatus();
+                }
+                seriesDAO.updateSeriesSettings(seriesId.trim(), name, phaseSize, status);
+            }
+            response.sendRedirect(request.getContextPath() + "/rolling/standings?id=" + (seriesId != null ? seriesId.trim() : ""));
+            return;
+        } else if ("syncClientStandings".equalsIgnoreCase(action)) {
             response.setContentType("application/json;charset=UTF-8");
             String seriesId = request.getParameter("seriesId");
             String standingsJson = request.getParameter("standingsJson");
+            String historyJson = request.getParameter("historyJson");
             boolean success = false;
             if (seriesId != null && standingsJson != null) {
-                success = service.RollingWindowPointService.getInstance().saveClientStandings(seriesId, standingsJson);
+                success = service.RollingWindowPointService.getInstance().saveClientStandings(seriesId, standingsJson, historyJson);
             }
             response.getWriter().write("{\"success\":" + success + "}");
             return;

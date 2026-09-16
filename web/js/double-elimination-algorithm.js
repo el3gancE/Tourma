@@ -390,6 +390,7 @@
                 var lbFinalMatch = (lowerRounds.length > 0) ? lowerRounds[lowerRounds.length - 1].matches[0] : null;
 
                 var gf1Id = internalIdCounter++;
+                var gf2Id = internalIdCounter++;
 
                 var grandFinal1 = {
                     matchId: gf1Id,
@@ -400,9 +401,24 @@
                     team1: { name: 'Winner UB', seed: '', score: '' },
                     team2: { name: lbFinalMatch ? 'Winner LB' : 'Loser UB', seed: '', score: '' },
                     winnerId: null,
-                    nextMatchId: null,
+                    nextMatchId: gf2Id,
                     nextMatchSlot: 1,
                     isResetMatch: false
+                };
+
+                var grandFinalReset = {
+                    matchId: gf2Id,
+                    matchNumber: null,
+                    bracketType: 'GRAND_FINAL',
+                    roundNumber: totalUbRounds + 1,
+                    status: 'SCHEDULED',
+                    team1: { name: 'Winner UB', seed: '', score: '' },
+                    team2: { name: lbFinalMatch ? 'Winner LB' : 'Loser UB', seed: '', score: '' },
+                    winnerId: null,
+                    nextMatchId: null,
+                    nextMatchSlot: 1,
+                    isResetMatch: true,
+                    isUnlocked: false
                 };
 
                 if (ubFinalMatch) {
@@ -419,12 +435,13 @@
                 }
 
                 matchesMap[gf1Id] = grandFinal1;
+                matchesMap[gf2Id] = grandFinalReset;
 
                 grandFinalsRound = {
                     roundNumber: totalUbRounds + 1,
                     bracketType: 'GRAND_FINAL',
                     title: 'Grand Final',
-                    matches: [grandFinal1]
+                    matches: [grandFinal1, grandFinalReset]
                 };
             }
 
@@ -491,8 +508,8 @@
                         }
                     }
                     // Case B: Single BYE with an already determined Real Team
-                    else if ((t1 === 'BYE' && t2 && t2 !== 'BYE' && !t2.startsWith('W #') && !t2.startsWith('L #') && !t2.startsWith('Winner')) ||
-                             (t2 === 'BYE' && t1 && t1 !== 'BYE' && !t1.startsWith('W #') && !t1.startsWith('L #') && !t1.startsWith('Winner'))) {
+                    else if ((t1 === 'BYE' && t2 && t2 !== 'BYE' && !String(t2).startsWith('W #') && !String(t2).startsWith('L #') && !String(t2).startsWith('Winner')) ||
+                             (t2 === 'BYE' && t1 && t1 !== 'BYE' && !String(t1).startsWith('W #') && !String(t1).startsWith('L #') && !String(t1).startsWith('Winner'))) {
                         var realWinnerSlot = (t1 === 'BYE') ? 'team2' : 'team1';
                         var realWinnerName = (t1 === 'BYE') ? t2 : t1;
                         var realWinnerSeed = (t1 === 'BYE') ? (m.team2 ? m.team2.seed : '') : (m.team1 ? m.team1.seed : '');
@@ -639,9 +656,11 @@
                         }
 
                         if (pLabel) {
-                            if (slot === 1 && (!nextM.team1.name || nextM.team1.name.startsWith('W #') || nextM.team1.name.startsWith('L #') || nextM.team1.name === 'Winner UB' || nextM.team1.name === '')) {
+                            var n1 = String(nextM.team1.name || '');
+                            var n2 = String(nextM.team2.name || '');
+                            if (slot === 1 && (!nextM.team1.name || n1.startsWith('W #') || n1.startsWith('L #') || n1 === 'Winner UB' || n1 === '')) {
                                 nextM.team1.name = pLabel;
-                            } else if (slot === 2 && (!nextM.team2.name || nextM.team2.name.startsWith('W #') || nextM.team2.name.startsWith('L #') || nextM.team2.name === 'Winner LB' || nextM.team2.name === '')) {
+                            } else if (slot === 2 && (!nextM.team2.name || n2.startsWith('W #') || n2.startsWith('L #') || n2 === 'Winner LB' || n2 === '')) {
                                 nextM.team2.name = pLabel;
                             }
                         }
@@ -654,9 +673,11 @@
                     var dropSlot = curr.dropToMatchSlot || 1;
                     if (!curr.winnerId && curr.matchNumber) {
                         var lLabel = 'L #' + curr.matchNumber;
-                        if (dropSlot === 1 && (!dropM.team1.name || dropM.team1.name.startsWith('L #') || dropM.team1.name.startsWith('W #') || dropM.team1.name === '')) {
+                        var d1 = String(dropM.team1.name || '');
+                        var d2 = String(dropM.team2.name || '');
+                        if (dropSlot === 1 && (!dropM.team1.name || d1.startsWith('L #') || d1.startsWith('W #') || d1 === '')) {
                             dropM.team1.name = lLabel;
-                        } else if (dropSlot === 2 && (!dropM.team2.name || dropM.team2.name.startsWith('L #') || dropM.team2.name.startsWith('W #') || dropM.team2.name === '')) {
+                        } else if (dropSlot === 2 && (!dropM.team2.name || d2.startsWith('L #') || d2.startsWith('W #') || d2 === '')) {
                             dropM.team2.name = lLabel;
                         }
                     }
@@ -685,6 +706,10 @@
                 } else {
                     nextMatch.team2.name = placeholderName;
                     nextMatch.team2.seed = '';
+                }
+
+                if (nextMatch.isResetMatch) {
+                    nextMatch.isUnlocked = false;
                 }
 
                 nextMatch.team1.score = '';
@@ -796,10 +821,16 @@
                         resetMatch.team1.seed = currMatch.team1.seed;
                         resetMatch.team2.name = currMatch.team2.name;
                         resetMatch.team2.seed = currMatch.team2.seed;
+                        resetMatch.team1.score = '';
+                        resetMatch.team2.score = '';
+                        resetMatch.winnerId = null;
                         resetMatch.status = 'SCHEDULED';
                     } else {
                         // Winner of UB won GF1! Champion crowned, Reset match not needed
                         resetMatch.isUnlocked = false;
+                        resetMatch.team1.score = '';
+                        resetMatch.team2.score = '';
+                        resetMatch.winnerId = null;
                         resetMatch.status = 'SCHEDULED';
                     }
                 }
@@ -880,6 +911,7 @@
             }
 
             // 3. Subsequent Rounds matching Play-Order
+            var maxLbIdxPushed = 0;
             for (var k = 1; k < upperRounds.length; k++) {
                 // a. UB Round (k + 1)
                 pushRound(upperRounds[k], 'UPPER', false);
@@ -888,13 +920,20 @@
                 var lbEvenIdx = (k - 1) * 2 + 1;
                 if (lbEvenIdx < lowerRounds.length) {
                     pushRound(lowerRounds[lbEvenIdx], 'LOWER', false);
+                    if (lbEvenIdx > maxLbIdxPushed) maxLbIdxPushed = lbEvenIdx;
                 }
 
                 // c. LB Odd Round (pure intra-LB round)
                 var lbOddIdx = (k - 1) * 2 + 2;
                 if (lbOddIdx < lowerRounds.length) {
                     pushRound(lowerRounds[lbOddIdx], 'LOWER', false);
+                    if (lbOddIdx > maxLbIdxPushed) maxLbIdxPushed = lbOddIdx;
                 }
+            }
+
+            // Push any remaining LB rounds not covered by upperRounds loop
+            for (var rem = maxLbIdxPushed + 1; rem < lowerRounds.length; rem++) {
+                pushRound(lowerRounds[rem], 'LOWER', false);
             }
 
             // 4. Grand Finals

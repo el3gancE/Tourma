@@ -212,35 +212,58 @@
                 }
                 if (!cutTarget || cutTarget <= 1) return false;
 
-                // Primary signal: checkAndTriggerStage2Cut already sets tourma_stage1_completed_ when cut is done
+                // Check actual matches in UB stop round and LB stop round
+                if (teamsList && teamsList.length > 0) {
+                    var pow2 = 1;
+                    while (pow2 < teamsList.length) pow2 *= 2;
+                    var totalUbRounds = Math.log2(pow2);
+                    var ubQualifiersCount = cutTarget / 2;
+                    var ubStopRound = Math.max(1, totalUbRounds - Math.round(Math.log2(ubQualifiersCount)));
+                    var lbStopRound = Math.max(1, (ubStopRound - 1) * 2);
+
+                    var mKeys = Object.keys(matchesMap);
+                    var ubCutDone = true;
+                    var lbCutDone = true;
+                    var hasUbCut = false;
+                    var hasLbCut = false;
+
+                    for (var mIdx = 0; mIdx < mKeys.length; mIdx++) {
+                        var mat = matchesMap[mKeys[mIdx]];
+                        if (!mat) continue;
+                        var bType = (mat.bracketType || '').toUpperCase();
+                        var rNum = mat.roundNumber;
+
+                        if (bType === 'UPPER' && rNum === ubStopRound) {
+                            var t1 = mat.team1 ? mat.team1.name : '';
+                            var t2 = mat.team2 ? mat.team2.name : '';
+                            if (t1 === 'BYE' || t2 === 'BYE' || mat.isBye) continue;
+                            hasUbCut = true;
+                            if (!mat.winnerId || (mat.winnerId !== 'team1' && mat.winnerId !== 'team2')) {
+                                ubCutDone = false;
+                            }
+                        } else if (bType === 'LOWER' && rNum === lbStopRound) {
+                            var lt1 = mat.team1 ? mat.team1.name : '';
+                            var lt2 = mat.team2 ? mat.team2.name : '';
+                            if (lt1 === 'BYE' || lt2 === 'BYE' || mat.isBye) continue;
+                            hasLbCut = true;
+                            if (!mat.winnerId || (mat.winnerId !== 'team1' && mat.winnerId !== 'team2')) {
+                                lbCutDone = false;
+                            }
+                        }
+                    }
+
+                    if (hasUbCut && ubCutDone && hasLbCut && lbCutDone) {
+                        return true;
+                    }
+                    if (hasUbCut || hasLbCut) {
+                        return false;
+                    }
+                }
+
+                // Fallback signal: check tourma_stage1_completed_
                 try {
                     if (localStorage.getItem('tourma_stage1_completed_' + tid) === 'true') return true;
                 } catch(e) {}
-
-                // Secondary signal: stage2 teams have been created with correct count
-                try {
-                    var s2Raw = localStorage.getItem('tourma_stage2_teams_' + tid);
-                    if (s2Raw) {
-                        var s2Teams = JSON.parse(s2Raw);
-                        if (Array.isArray(s2Teams) && s2Teams.length >= cutTarget) return true;
-                    }
-                } catch(e) {}
-
-                // Tertiary signal: all scheduled matches in matchesMap have winners
-                var mKeys = Object.keys(matchesMap);
-                var hasMatches = false;
-                var allMatchesDone = true;
-                for (var mIdx = 0; mIdx < mKeys.length; mIdx++) {
-                    var mat = matchesMap[mKeys[mIdx]];
-                    if (mat && (mat.matchId !== undefined || mat.id !== undefined)) {
-                        hasMatches = true;
-                        if (!mat.winnerId || (mat.winnerId !== 'team1' && mat.winnerId !== 'team2')) {
-                            allMatchesDone = false;
-                            break;
-                        }
-                    }
-                }
-                if (hasMatches && allMatchesDone) return true;
 
                 return false;
             }

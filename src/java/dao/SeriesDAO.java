@@ -15,6 +15,16 @@ import model.Tournament;
  */
 public class SeriesDAO {
 
+    private static final java.util.Map<String, Series> SERIES_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, List<Tournament>> SERIES_TOURNAMENTS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, List<model.PartnerParticipant>> SERIES_PARTNERS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static void clearSeriesCaches() {
+        SERIES_CACHE.clear();
+        SERIES_TOURNAMENTS_CACHE.clear();
+        SERIES_PARTNERS_CACHE.clear();
+    }
+
     public List<Series> getAllSeries() {
         List<Series> list = new ArrayList<>();
         String sql = "SELECT * FROM series ORDER BY created_at DESC";
@@ -44,16 +54,21 @@ public class SeriesDAO {
     }
 
     public Series getSeriesById(String id) {
+        if (id == null || id.trim().isEmpty()) return null;
+        String sid = id.trim();
+        Series cached = SERIES_CACHE.get(sid);
+        if (cached != null) return cached;
+
         String sql = "SELECT * FROM series WHERE id = ?";
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, id);
+            ps.setString(1, sid);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return new Series(
+                    Series s = new Series(
                             rs.getString("id"),
                             rs.getString("name"),
                             rs.getString("ranking_model"),
@@ -63,6 +78,8 @@ public class SeriesDAO {
                             rs.getDouble("initial_elo"),
                             rs.getString("status"),
                             rs.getTimestamp("created_at"));
+                    SERIES_CACHE.put(sid, s);
+                    return s;
                 }
             }
         } catch (Exception e) {
@@ -89,7 +106,60 @@ public class SeriesDAO {
             ps.setDouble(7, s.getInitialElo());
             ps.setString(8, s.getStatus() != null ? s.getStatus() : "ACTIVE");
 
-            return ps.executeUpdate() > 0;
+            boolean res = ps.executeUpdate() > 0;
+            if (res) {
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
+            }
+            return res;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateSeriesSettings(String seriesId, String name, int phaseSize, String status) {
+        if (seriesId == null || seriesId.trim().isEmpty()) return false;
+        String sql = "UPDATE series SET name = ?, phase_size = ?, status = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, (name != null && !name.trim().isEmpty()) ? name.trim() : "Series");
+            ps.setInt(2, phaseSize > 0 ? phaseSize : 3);
+            ps.setString(3, (status != null && !status.trim().isEmpty()) ? status.trim().toUpperCase() : "ACTIVE");
+            ps.setString(4, seriesId.trim());
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
+                try {
+                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
+                } catch (Exception ignore) {}
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateSeriesPhaseSize(String seriesId, int phaseSize) {
+        if (seriesId == null || seriesId.trim().isEmpty() || phaseSize <= 0) return false;
+        String sql = "UPDATE series SET phase_size = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, phaseSize);
+            ps.setString(2, seriesId.trim());
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
+                try {
+                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
+                } catch (Exception ignore) {}
+                return true;
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -128,11 +198,15 @@ public class SeriesDAO {
     public List<model.PartnerParticipant> getPartnerParticipantsBySeriesId(String seriesId) {
         List<model.PartnerParticipant> list = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return list;
+        String sid = seriesId.trim();
+        List<model.PartnerParticipant> cached = SERIES_PARTNERS_CACHE.get(sid);
+        if (cached != null) return new ArrayList<>(cached);
+
         String sql = "SELECT * FROM partner_participants WHERE series_id = ? ORDER BY created_at ASC";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, seriesId);
+            ps.setString(1, sid);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     model.PartnerParticipant p = new model.PartnerParticipant(
@@ -148,20 +222,31 @@ public class SeriesDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (!list.isEmpty()) {
+            SERIES_PARTNERS_CACHE.put(sid, list);
+        }
         return list;
     }
 
     public List<Tournament> getTournamentsBySeriesId(String seriesId) {
         List<Tournament> list = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return list;
+        String sid = seriesId.trim();
+        List<Tournament> cached = SERIES_TOURNAMENTS_CACHE.get(sid);
+        if (cached != null) return new ArrayList<>(cached);
+
         String sql = "SELECT t.*, " +
                 "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
-                "(SELECT TOP 1 tm.raw_name FROM matches m JOIN teams tm ON m.winner_id = tm.id WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL ORDER BY m.round_number DESC) AS db_champion_name " +
+                "(SELECT TOP 1 tm.raw_name FROM matches m " +
+                " JOIN teams tm ON m.winner_id = tm.id " +
+                " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
+                " WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL " +
+                " ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) AS db_champion_name " +
                 "FROM tournaments t WHERE t.series_id = ? ORDER BY t.tournament_index_in_series ASC, t.created_at ASC";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, seriesId.trim());
+            ps.setString(1, sid);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Tournament t = new Tournament(
@@ -203,13 +288,17 @@ public class SeriesDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (!list.isEmpty()) {
+            SERIES_TOURNAMENTS_CACHE.put(sid, list);
+        }
         return list;
     }
 
     public boolean addPartnerParticipant(String seriesId, String teamName, String customPartnerId, int initialPoints) {
         if (seriesId == null || teamName == null || teamName.trim().isEmpty()) return false;
-        String partnerId = (customPartnerId != null && !customPartnerId.trim().isEmpty()) ? customPartnerId.trim() : ("PARTNER_" + System.currentTimeMillis() + "_" + (int)(Math.random()*1000));
-        String standingId = "ST_" + System.currentTimeMillis() + "_" + (int)(Math.random()*1000);
+        String cleanName = teamName.trim();
+        String partnerId = (customPartnerId != null && !customPartnerId.trim().isEmpty()) ? customPartnerId.trim() : ("PARTNER_" + java.util.UUID.randomUUID().toString().substring(0, 8));
+        String standingId = "ST_" + java.util.UUID.randomUUID().toString().substring(0, 8);
         
         DBContext db = new DBContext();
         String sqlPartner = "INSERT INTO partner_participants (id, series_id, name, group_name) VALUES (?, ?, ?, ?)";
@@ -221,7 +310,7 @@ public class SeriesDAO {
                 try (PreparedStatement psP = conn.prepareStatement(sqlPartner)) {
                     psP.setString(1, partnerId);
                     psP.setString(2, seriesId);
-                    psP.setString(3, teamName.trim());
+                    psP.setString(3, cleanName);
                     psP.setString(4, "General");
                     psP.executeUpdate();
                 }
@@ -229,13 +318,15 @@ public class SeriesDAO {
                 try (PreparedStatement psS = conn.prepareStatement(sqlStanding)) {
                     psS.setString(1, standingId);
                     psS.setString(2, seriesId);
-                    psS.setString(3, teamName.trim());
+                    psS.setString(3, cleanName);
                     psS.setString(4, partnerId);
                     psS.setInt(5, initialPoints);
                     psS.executeUpdate();
                 }
 
                 conn.commit();
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
                 return true;
             } catch (Exception e) {
                 conn.rollback();
@@ -252,6 +343,10 @@ public class SeriesDAO {
     public int bulkAddPartnerParticipants(String seriesId, List<String> teamNames, int initialPoints) {
         if (seriesId == null || teamNames == null || teamNames.isEmpty()) return 0;
         int count = 0;
+
+        // Fetch existing partner participants to avoid duplicate names in the series
+        List<model.PartnerParticipant> existingPartners = getPartnerParticipantsBySeriesId(seriesId);
+
         DBContext db = new DBContext();
         String sqlPartner = "INSERT INTO partner_participants (id, series_id, name, group_name) VALUES (?, ?, ?, ?)";
         String sqlStanding = "INSERT INTO series_standings (id, series_id, phase_number, normalized_team_name, partner_participant_id, total_rolling_points) VALUES (?, ?, 1, ?, ?, ?)";
@@ -261,14 +356,24 @@ public class SeriesDAO {
             try (PreparedStatement psP = conn.prepareStatement(sqlPartner);
                  PreparedStatement psS = conn.prepareStatement(sqlStanding)) {
                 
-                long now = System.currentTimeMillis();
-                int idx = 0;
                 for (String rawName : teamNames) {
                     if (rawName == null || rawName.trim().isEmpty()) continue;
                     String tName = rawName.trim();
-                    idx++;
-                    String partnerId = "PARTNER_" + now + "_" + idx;
-                    String standingId = "ST_" + now + "_" + idx;
+
+                    // Check if already exists in this series
+                    boolean alreadyExists = false;
+                    if (existingPartners != null) {
+                        for (model.PartnerParticipant ep : existingPartners) {
+                            if (ep.getName() != null && ep.getName().trim().equalsIgnoreCase(tName)) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (alreadyExists) continue;
+
+                    String partnerId = "PARTNER_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+                    String standingId = "ST_" + java.util.UUID.randomUUID().toString().substring(0, 8);
 
                     psP.setString(1, partnerId);
                     psP.setString(2, seriesId);
@@ -286,9 +391,13 @@ public class SeriesDAO {
                     count++;
                 }
 
-                psP.executeBatch();
-                psS.executeBatch();
+                if (count > 0) {
+                    psP.executeBatch();
+                    psS.executeBatch();
+                }
                 conn.commit();
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
             } catch (Exception e) {
                 conn.rollback();
                 e.printStackTrace();
@@ -305,11 +414,16 @@ public class SeriesDAO {
     public boolean deletePartnerParticipant(String partnerId, String seriesId) {
         if (partnerId == null || partnerId.trim().isEmpty()) return false;
         DBContext db = new DBContext();
+        String sqlUnlinkTeams = "UPDATE teams SET partner_participant_id = NULL WHERE partner_participant_id = ?";
         String sqlStanding = "DELETE FROM series_standings WHERE partner_participant_id = ?";
         String sqlPartner = "DELETE FROM partner_participants WHERE id = ?";
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
             try {
+                try (PreparedStatement psU = conn.prepareStatement(sqlUnlinkTeams)) {
+                    psU.setString(1, partnerId);
+                    psU.executeUpdate();
+                } catch (Exception ignore) {}
                 try (PreparedStatement psS = conn.prepareStatement(sqlStanding)) {
                     psS.setString(1, partnerId);
                     psS.executeUpdate();
@@ -319,6 +433,8 @@ public class SeriesDAO {
                     psP.executeUpdate();
                 }
                 conn.commit();
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
                 return true;
             } catch (Exception e) {
                 conn.rollback();
@@ -355,7 +471,13 @@ public class SeriesDAO {
             ps.setInt(6, t.getTournamentIndexInSeries() > 0 ? t.getTournamentIndexInSeries() : 1);
             ps.setInt(7, t.getPhaseNumber() > 0 ? t.getPhaseNumber() : 1);
             ps.setString(8, t.getStatus() != null ? t.getStatus() : "DRAFT");
-            return ps.executeUpdate() > 0;
+            boolean res = ps.executeUpdate() > 0;
+            if (res) {
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
+                dao.TournamentDAO.clearTournamentCaches();
+            }
+            return res;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -420,6 +542,9 @@ public class SeriesDAO {
                 }
             }
             conn.commit();
+            clearSeriesCaches();
+            service.RollingWindowPointService.clearAllCaches();
+            dao.TournamentDAO.clearTournamentCaches();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -488,6 +613,9 @@ public class SeriesDAO {
                     ps.setString(1, id);
                     int rows = ps.executeUpdate();
                     conn.commit();
+                    clearSeriesCaches();
+                    service.RollingWindowPointService.clearAllCaches();
+                    dao.TournamentDAO.clearTournamentCaches();
                     return rows > 0;
                 }
             } catch (Exception ex) {

@@ -21,6 +21,7 @@
         <!-- Main Design System CSS & Dedicated My Series CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-series.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css">
     </head>
     <body>
         <!-- Include Shared Navigation Header Component -->
@@ -98,13 +99,18 @@
                                 </div>
 
                                 <div class="series-card-footer">
-                                    <form action="${pageContext.request.contextPath}/my-series" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa Series \'${s.name}\'?\nToàn bộ các giải con, lịch sử và bảng xếp hạng thuộc Series này sẽ bị xóa.');">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="seriesId" value="${s.id}">
-                                        <button type="submit" class="btn-delete-series" title="Xóa Series">
-                                            <i class="fa-solid fa-trash-can"></i> Xóa
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <form action="${pageContext.request.contextPath}/my-series" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa Series \'${s.name}\'?\nToàn bộ các giải con, lịch sử và bảng xếp hạng thuộc Series này sẽ bị xóa.');">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="seriesId" value="${s.id}">
+                                            <button type="submit" class="btn-delete-series" title="Xóa Series">
+                                                <i class="fa-solid fa-trash-can"></i> Xóa
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn" onclick="openEditSeriesPopup({ id: '${s.id}', name: '${s.name.replace('\'', '\\\'')}', phaseSize: ${s.phaseSize > 0 ? s.phaseSize : 10}, status: '${s.status}', actionUrl: '${pageContext.request.contextPath}/my-series' })" title="Chỉnh sửa cấu hình & số giải tích lũy W" style="background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.25); padding: 0.45rem 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                            <i class="fa-solid fa-sliders"></i> Sửa (W = ${s.phaseSize})
                                         </button>
-                                    </form>
+                                    </div>
                                     <c:choose>
                                         <c:when test="${s.rankingModel == 'ROLLING_WINDOW'}">
                                             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=${s.id}" class="btn-view-series-card">
@@ -141,6 +147,11 @@
             </c:choose>
 
         </main>
+
+        <!-- Reusable Edit Series Popup Component -->
+        <jsp:include page="/common/component/edit-series-popup.jsp">
+            <jsp:param name="formActionUrl" value="${pageContext.request.contextPath}/my-series"/>
+        </jsp:include>
 
         <script>
             function filterSeries(modelType, btn) {

@@ -79,15 +79,22 @@ public class RollingTeamListServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        response.setContentType("text/html;charset=UTF-8");
+
         String action = request.getParameter("action");
         String seriesId = request.getParameter("seriesId");
+        if (seriesId == null || seriesId.trim().isEmpty()) {
+            seriesId = request.getParameter("id");
+        }
+
         SeriesDAO seriesDAO = new SeriesDAO();
 
         if ("bulkAddPartners".equalsIgnoreCase(action)) {
             String rawText = request.getParameter("bulkTeamNames");
             int initialPoints = 0;
 
-            if (rawText != null && !rawText.trim().isEmpty()) {
+            if (rawText != null && !rawText.trim().isEmpty() && seriesId != null && !seriesId.trim().isEmpty()) {
                 String[] lines = rawText.split("\\r?\\n");
                 java.util.List<String> teamNames = new java.util.ArrayList<>();
                 for (String line : lines) {
@@ -95,9 +102,11 @@ public class RollingTeamListServlet extends HttpServlet {
                         teamNames.add(line.trim());
                     }
                 }
-                seriesDAO.bulkAddPartnerParticipants(seriesId, teamNames, initialPoints);
+                seriesDAO.bulkAddPartnerParticipants(seriesId.trim(), teamNames, initialPoints);
             }
-            response.sendRedirect(request.getContextPath() + "/rolling/team-list?id=" + seriesId);
+            dao.SeriesDAO.clearSeriesCaches();
+            service.RollingWindowPointService.clearAllCaches();
+            response.sendRedirect(request.getContextPath() + "/rolling/team-list?id=" + (seriesId != null ? seriesId.trim() : ""));
             return;
         } else if ("addPartner".equalsIgnoreCase(action)) {
             String teamName = request.getParameter("teamName");
@@ -107,13 +116,21 @@ public class RollingTeamListServlet extends HttpServlet {
                 initialPoints = Integer.parseInt(request.getParameter("initialPoints"));
             } catch (Exception ignore) {}
 
-            seriesDAO.addPartnerParticipant(seriesId, teamName, customPartnerId, initialPoints);
-            response.sendRedirect(request.getContextPath() + "/rolling/team-list?id=" + seriesId);
+            if (seriesId != null && !seriesId.trim().isEmpty()) {
+                seriesDAO.addPartnerParticipant(seriesId.trim(), teamName, customPartnerId, initialPoints);
+            }
+            dao.SeriesDAO.clearSeriesCaches();
+            service.RollingWindowPointService.clearAllCaches();
+            response.sendRedirect(request.getContextPath() + "/rolling/team-list?id=" + (seriesId != null ? seriesId.trim() : ""));
             return;
         } else if ("deletePartner".equalsIgnoreCase(action)) {
             String partnerId = request.getParameter("partnerId");
-            seriesDAO.deletePartnerParticipant(partnerId, seriesId);
-            response.sendRedirect(request.getContextPath() + "/rolling/team-list?id=" + seriesId);
+            if (seriesId != null && !seriesId.trim().isEmpty()) {
+                seriesDAO.deletePartnerParticipant(partnerId, seriesId.trim());
+            }
+            dao.SeriesDAO.clearSeriesCaches();
+            service.RollingWindowPointService.clearAllCaches();
+            response.sendRedirect(request.getContextPath() + "/rolling/team-list?id=" + (seriesId != null ? seriesId.trim() : ""));
             return;
         }
 

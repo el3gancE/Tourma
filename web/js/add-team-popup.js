@@ -10,6 +10,13 @@
     var modal = document.getElementById('modalAddTeamPopup');
     if (modal) {
       modal.style.display = 'flex';
+      var textarea = modal.querySelector('textarea[name="bulkTeamNames"]');
+      if (textarea) {
+        textarea.value = '';
+        setTimeout(function () {
+          textarea.focus();
+        }, 100);
+      }
     }
   };
 
@@ -17,7 +24,27 @@
     var modal = document.getElementById('modalAddTeamPopup');
     if (modal) {
       modal.style.display = 'none';
+      var textarea = modal.querySelector('textarea[name="bulkTeamNames"]');
+      if (textarea) {
+        textarea.value = '';
+      }
     }
   };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var modal = document.getElementById('modalAddTeamPopup');
+    if (modal) {
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) {
+          window.closeAddTeamPopup();
+        }
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        window.closeAddTeamPopup();
+      }
+    });
+  });
 
 })();

@@ -31,10 +31,40 @@ public class MySeriesServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        response.setContentType("text/html;charset=UTF-8");
+
         String action = request.getParameter("action");
         String seriesId = request.getParameter("seriesId");
+        if (seriesId == null || seriesId.trim().isEmpty()) {
+            seriesId = request.getParameter("id");
+        }
 
-        if ("delete".equalsIgnoreCase(action) && seriesId != null && !seriesId.trim().isEmpty()) {
+        if ("updateSettings".equalsIgnoreCase(action) || "updatePhaseSize".equalsIgnoreCase(action)) {
+            String name = request.getParameter("name");
+            String phaseSizeStr = request.getParameter("phaseSize");
+            String status = request.getParameter("status");
+            int phaseSize = 3;
+            try {
+                if (phaseSizeStr != null && !phaseSizeStr.trim().isEmpty()) {
+                    phaseSize = Integer.parseInt(phaseSizeStr.trim());
+                }
+            } catch (Exception ignore) {}
+
+            SeriesDAO dao = new SeriesDAO();
+            if (seriesId != null && !seriesId.trim().isEmpty()) {
+                Series current = dao.getSeriesById(seriesId.trim());
+                if (name == null || name.trim().isEmpty()) {
+                    if (current != null) name = current.getName();
+                }
+                if (status == null || status.trim().isEmpty()) {
+                    if (current != null) status = current.getStatus();
+                }
+                dao.updateSeriesSettings(seriesId.trim(), name, phaseSize, status);
+            }
+            response.sendRedirect(request.getContextPath() + "/my-series");
+            return;
+        } else if ("delete".equalsIgnoreCase(action) && seriesId != null && !seriesId.trim().isEmpty()) {
             SeriesDAO dao = new SeriesDAO();
             dao.deleteSeries(seriesId.trim());
             response.sendRedirect(request.getContextPath() + "/my-series");

@@ -71,11 +71,40 @@ public class RollingDashboardServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        response.setContentType("text/html;charset=UTF-8");
+
         String action = request.getParameter("action");
         String seriesId = request.getParameter("seriesId");
+        if (seriesId == null || seriesId.trim().isEmpty()) {
+            seriesId = request.getParameter("id");
+        }
         SeriesDAO seriesDAO = new SeriesDAO();
 
-        if ("addPartner".equalsIgnoreCase(action)) {
+        if ("updateSettings".equalsIgnoreCase(action) || "updatePhaseSize".equalsIgnoreCase(action)) {
+            String name = request.getParameter("name");
+            String phaseSizeStr = request.getParameter("phaseSize");
+            String status = request.getParameter("status");
+            int phaseSize = 3;
+            try {
+                if (phaseSizeStr != null && !phaseSizeStr.trim().isEmpty()) {
+                    phaseSize = Integer.parseInt(phaseSizeStr.trim());
+                }
+            } catch (Exception ignore) {}
+
+            if (seriesId != null && !seriesId.trim().isEmpty()) {
+                Series current = seriesDAO.getSeriesById(seriesId.trim());
+                if (name == null || name.trim().isEmpty()) {
+                    if (current != null) name = current.getName();
+                }
+                if (status == null || status.trim().isEmpty()) {
+                    if (current != null) status = current.getStatus();
+                }
+                seriesDAO.updateSeriesSettings(seriesId.trim(), name, phaseSize, status);
+            }
+            response.sendRedirect(request.getContextPath() + "/rolling/dashboard?id=" + (seriesId != null ? seriesId.trim() : ""));
+            return;
+        } else if ("addPartner".equalsIgnoreCase(action)) {
             String teamName = request.getParameter("teamName");
             String customPartnerId = request.getParameter("partnerId");
             int initialPoints = 0;
@@ -83,13 +112,21 @@ public class RollingDashboardServlet extends HttpServlet {
                 initialPoints = Integer.parseInt(request.getParameter("initialPoints"));
             } catch (Exception ignore) {}
 
-            seriesDAO.addPartnerParticipant(seriesId, teamName, customPartnerId, initialPoints);
-            response.sendRedirect(request.getContextPath() + "/rolling/dashboard?id=" + seriesId + "&tab=partners");
+            if (seriesId != null && !seriesId.trim().isEmpty()) {
+                seriesDAO.addPartnerParticipant(seriesId.trim(), teamName, customPartnerId, initialPoints);
+            }
+            dao.SeriesDAO.clearSeriesCaches();
+            service.RollingWindowPointService.clearAllCaches();
+            response.sendRedirect(request.getContextPath() + "/rolling/dashboard?id=" + (seriesId != null ? seriesId.trim() : "") + "&tab=partners");
             return;
         } else if ("deletePartner".equalsIgnoreCase(action)) {
             String partnerId = request.getParameter("partnerId");
-            seriesDAO.deletePartnerParticipant(partnerId, seriesId);
-            response.sendRedirect(request.getContextPath() + "/rolling/dashboard?id=" + seriesId + "&tab=partners");
+            if (seriesId != null && !seriesId.trim().isEmpty()) {
+                seriesDAO.deletePartnerParticipant(partnerId, seriesId.trim());
+            }
+            dao.SeriesDAO.clearSeriesCaches();
+            service.RollingWindowPointService.clearAllCaches();
+            response.sendRedirect(request.getContextPath() + "/rolling/dashboard?id=" + (seriesId != null ? seriesId.trim() : "") + "&tab=partners");
             return;
         }
 

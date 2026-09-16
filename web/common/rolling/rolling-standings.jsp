@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="model.Series, model.Tournament, model.SeriesStanding, model.PartnerParticipant, service.RollingWindowPointService, service.RollingWindowPointService.RollingStandingDTO, dao.SeriesDAO, dao.TournamentDAO, java.util.List"%>
+<%@page import="model.Series, model.Tournament, model.SeriesStanding, model.PartnerParticipant, service.RollingWindowPointService, service.RollingWindowPointService.RollingStandingDTO, dao.SeriesDAO, dao.TournamentDAO, java.util.List, java.util.Map"%>
 <%
     String seriesIdVal = request.getParameter("id");
     if (seriesIdVal == null || seriesIdVal.trim().isEmpty()) {
@@ -33,7 +33,10 @@
         tournamentsList = seriesDAO.getTournamentsBySeriesId(series.getId());
     }
 
-    List<PartnerParticipant> partnerList = (series != null) ? seriesDAO.getPartnerParticipantsBySeriesId(series.getId()) : null;
+    List<PartnerParticipant> partnerList = (List<PartnerParticipant>) request.getAttribute("partnerList");
+    if (partnerList == null && series != null) {
+        partnerList = seriesDAO.getPartnerParticipantsBySeriesId(series.getId());
+    }
 
     List<SeriesStanding> standingsList = (List<SeriesStanding>) request.getAttribute("standingsList");
     List<RollingStandingDTO> standingsDTOList = (List<RollingStandingDTO>) request.getAttribute("standingsDTOList");
@@ -67,6 +70,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css?v=<%= System.currentTimeMillis() %>">
     </head>
     <body>
         <!-- Shared Navigation Header Component -->
@@ -100,7 +104,10 @@
                             Tích lũy điểm trượt trong <strong><%= phaseSize %> giải đấu gần nhất (W = <%= phaseSize %>)</strong>. Tự động khấu trừ điểm hết hạn khi vượt cửa sổ trượt.
                         </p>
                     </div>
-                    <div>
+                    <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                        <button type="button" onclick="openEditSeriesPopup()" class="btn btn-gold-outline" title="Chỉnh sửa số giải tích lũy điểm (Cửa sổ trượt W) của Series này" style="font-weight: 700; font-size: 0.85rem; padding: 0.55rem 1.15rem; border-radius: 9px; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; cursor: pointer;">
+                            <i class="fa-solid fa-sliders"></i> Đổi Cửa Sổ Trượt W (<%= phaseSize %>)
+                        </button>
                         <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" title="Tạo giải đấu con mới cho chuỗi giải này" style="font-weight: 700; font-size: 0.85rem; padding: 0.55rem 1.15rem; border-radius: 9px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; box-shadow: 0 4px 12px rgba(45, 212, 191, 0.25);">
                             <i class="fa-solid fa-plus-circle"></i> Tạo giải con
                         </a>
@@ -263,16 +270,33 @@
                         <% } %>
                     </tbody>
                 </table>
-            </div>
+            </div></main>
+
+        <!-- Reusable Edit Series Popup Component -->
+        <jsp:include page="/common/component/edit-series-popup.jsp">
+            <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
+            <jsp:param name="formActionUrl" value="${pageContext.request.contextPath}/rolling/standings"/>
+        </jsp:include>
 
         <script>
             window.seriesSubTournaments = [
-                <% if (tournamentsList != null) {
+                <% 
+                java.util.Map<String, java.util.List<String>> stageFormatsMap = (java.util.Map<String, java.util.List<String>>) request.getAttribute("stageFormatsMap");
+                if (tournamentsList != null) {
                     for (int i = 0; i < tournamentsList.size(); i++) {
                         Tournament t = tournamentsList.get(i);
                         String rawCfg = (t != null) ? t.getSeriesPointsConfig() : null;
-                        String cfgJson = (rawCfg != null && rawCfg.trim().startsWith("{") && rawCfg.trim().endsWith("}")) 
-                            ? rawCfg.trim() : "{\"1\":500,\"2\":200,\"3-4\":100,\"5-8\":0}";
+                        String cfgJson;
+                        if (rawCfg != null && rawCfg.trim().startsWith("{") && rawCfg.trim().endsWith("}")) {
+                            cfgJson = rawCfg.trim();
+                        } else {
+                            int champPts = (t != null && t.getSeriesRewardPoints() != null && t.getSeriesRewardPoints() > 0) ? t.getSeriesRewardPoints() : 100;
+                            int runnerUpPts = (int) Math.round(champPts * 0.70);
+                            int semiPts = (int) Math.round(champPts * 0.40);
+                            int quarterPts = (int) Math.round(champPts * 0.20);
+                            int r16Pts = (int) Math.round(champPts * 0.10);
+                            cfgJson = "{\"1\":" + champPts + ",\"2\":" + runnerUpPts + ",\"3-4\":" + semiPts + ",\"5-8\":" + quarterPts + ",\"9-16\":" + r16Pts + "}";
+                        }
                         String safeName = (t != null && t.getName() != null) ? t.getName().replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
                         String safeId = (t != null && t.getId() != null) ? t.getId() : "";
                         int tIdx = (t != null && t.getTournamentIndexInSeries() > 0) ? t.getTournamentIndexInSeries() : (i + 1);
@@ -280,6 +304,9 @@
                         boolean isMulti = (t != null && "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType()));
                         String fmt = (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
                         String tTier = (t != null && t.getTierName() != null) ? t.getTierName().toUpperCase() : "A";
+                        List<String> stgFormats = (stageFormatsMap != null) ? stageFormatsMap.get(safeId) : null;
+                        String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : fmt;
+                        String s2Fmt = (stgFormats != null && stgFormats.size() > 1) ? stgFormats.get(1) : "SINGLE_ELIMINATION";
                 %>
                     {
                         id: "<%= safeId %>",
@@ -288,6 +315,9 @@
                         format: "<%= fmt %>",
                         tournamentType: "<%= tType %>",
                         isMultiStage: <%= isMulti %>,
+                        stage1Format: "<%= (s1Fmt != null) ? s1Fmt.toUpperCase() : "" %>",
+                        stage2Format: "<%= (s2Fmt != null) ? s2Fmt.toUpperCase() : "" %>",
+                        championName: "<%= (t != null && t.getChampionName() != null) ? t.getChampionName().replace("\\", "\\\\").replace("\"", "\\\"") : "" %>",
                         tierName: "<%= tTier %>",
                         pointsConfig: <%= cfgJson %>
                     }<%= (i < tournamentsList.size() - 1) ? "," : "" %>
@@ -309,8 +339,14 @@
                 } %>
             ];
             <%
-                List<java.util.Map<String, Integer>> serverTourneyPoints = (series != null) ? RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId()) : null;
-                List<java.util.Map<String, Boolean>> serverTourneyParticipation = (series != null) ? RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId()) : null;
+                List<java.util.Map<String, Integer>> serverTourneyPoints = (List<java.util.Map<String, Integer>>) request.getAttribute("serverTourneyPoints");
+                if (serverTourneyPoints == null && series != null) {
+                    serverTourneyPoints = RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId());
+                }
+                List<java.util.Map<String, Boolean>> serverTourneyParticipation = (List<java.util.Map<String, Boolean>>) request.getAttribute("serverTourneyParticipation");
+                if (serverTourneyParticipation == null && series != null) {
+                    serverTourneyParticipation = RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId());
+                }
             %>
             window.serverTourneyPoints = [
                 <% if (serverTourneyPoints != null) {

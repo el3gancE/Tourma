@@ -475,7 +475,7 @@
       // Check Stage 2 if Multi-Stage
       if (!champName && isMultiStage) {
         if (s2Format === 'SINGLE_ELIMINATION') {
-          var rawS2SE = getStorageData(['tourma_bracket_matches_stage2_', 'tourma_matches_stage2_'], t.id);
+          var rawS2SE = getStorageData(['tourma_bracket_stage2_', 'tourma_stage2_bracket_', 'tourma_bracket_matches_stage2_', 'tourma_matches_stage2_'], t.id);
           if (rawS2SE) {
             try {
               var s2Data = JSON.parse(rawS2SE);

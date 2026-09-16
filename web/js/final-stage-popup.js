@@ -28,11 +28,12 @@
 
             // Helper to check if a team name is a real confirmed participant (not a placeholder or BYE)
             var isRealTeam = function (name) {
-                if (!name || typeof name !== 'string') return false;
-                var trimmed = name.trim();
-                if (!trimmed || trimmed === 'BYE' || trimmed === 'TBD') return false;
-                if (trimmed.startsWith('W #') || trimmed.startsWith('L #')) return false;
-                if (trimmed.startsWith('Winner ') || trimmed === 'Winner UB' || trimmed === 'Winner LB') return false;
+                if (name === undefined || name === null) return false;
+                var trimmed = String(name).trim();
+                if (!trimmed || trimmed === 'BYE' || trimmed === 'TBD' || trimmed === '?') return false;
+                if (trimmed.startsWith('W #') || trimmed.startsWith('L #') || trimmed.startsWith('W#') || trimmed.startsWith('L#')) return false;
+                if (trimmed.startsWith('Winner ') || trimmed.startsWith('Loser ')) return false;
+                if (trimmed === 'Winner UB' || trimmed === 'Winner LB' || trimmed === 'Loser UB' || trimmed === 'Loser LB') return false;
                 return true;
             };
 
@@ -152,6 +153,9 @@
                     if (gfS2 > gfS1) {
                         if (gfReset && gfReset.isUnlocked) {
                             return null; // Must wait for reset match!
+                        }
+                        if (gfReset) {
+                            return null; // Reset match exists, waiting for reset match
                         }
                         return gft2Name;
                     }

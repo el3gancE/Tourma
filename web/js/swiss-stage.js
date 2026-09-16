@@ -659,7 +659,23 @@
       return;
     }
     var storageKey = (currentStage === 2) ? ("tourma_swiss_matches_stage2_" + tournamentId) : ("tourma_swiss_matches_" + tournamentId);
-    try { localStorage.removeItem(storageKey); } catch(e) {}
+    try {
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem('tourma_final_locked_' + tournamentId);
+      localStorage.removeItem('tourma_champion_' + tournamentId);
+      localStorage.removeItem('tourma_stage1_locked_' + tournamentId);
+    } catch(e) {}
+
+    // Unlock UI and banners
+    if (window.FinalStagePopup) {
+      window.FinalStagePopup.isLocked = false;
+      var banner = document.getElementById('finalStagePopupBanner');
+      if (banner) banner.style.display = 'none';
+    }
+    if (window.StageEndPopup) {
+      var sBanner = document.getElementById('stageEndPopupBanner');
+      if (sBanner) sBanner.style.display = 'none';
+    }
 
     // Send reset to backend DB
     var rParams = new URLSearchParams();
@@ -1564,6 +1580,23 @@
     });
   }
 
+  // Listen for custom tourmaMatchUpdated events
+  document.addEventListener('tourmaMatchUpdated', function (e) {
+    var detail = e.detail;
+    if (!detail || !detail.matchId) return;
+    var m = matchesMap[detail.matchId];
+    if (m) {
+      m.team1Score = (detail.team1Score !== undefined) ? detail.team1Score : m.team1Score;
+      m.team2Score = (detail.team2Score !== undefined) ? detail.team2Score : m.team2Score;
+      m.winnerId = detail.winner || null;
+      m.status = detail.status || 'COMPLETED';
+      invalidateFutureRounds(m.roundIndex);
+      saveSwissMatches();
+      if (currentViewMode === 'LIST') renderListView();
+      else renderBracketView();
+    }
+  });
+
   // Export Swiss Engine to window
   window.TourmaSwiss = {
     tournamentId: tournamentId,
@@ -1572,7 +1605,33 @@
     resetSwissMatches: window.resetSwissMatches,
     randomizeSwissMatches: window.randomizeSwissMatches,
     toggleQuickMode: window.toggleSwissQuickMode,
-    switchViewMode: window.switchSwissViewMode
+    switchViewMode: window.switchSwissViewMode,
+    handleQuickWinner: function(matchKey, winnerTeamNum, customScore) {
+      var m = matchesMap[matchKey];
+      if (!m) return;
+      var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
+      var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
+      if (t1Name === 'TBD' || t2Name === 'TBD' || t1Name === 'BYE' || t2Name === 'BYE') return;
+
+      var wScoreVal = (customScore && Number(customScore) > 0) ? Number(customScore) : 1;
+      var lScoreVal = (wScoreVal > 0) ? Math.floor(Math.random() * wScoreVal) : 0;
+
+      if (winnerTeamNum === 2) {
+        m.team1Score = lScoreVal;
+        m.team2Score = wScoreVal;
+        m.winnerId = 'team2';
+      } else {
+        m.team1Score = wScoreVal;
+        m.team2Score = lScoreVal;
+        m.winnerId = 'team1';
+      }
+      m.status = 'COMPLETED';
+
+      invalidateFutureRounds(m.roundIndex);
+      saveSwissMatches();
+      if (currentViewMode === 'LIST') renderListView();
+      else renderBracketView();
+    }
   };
 
   if (document.readyState === 'loading') {
