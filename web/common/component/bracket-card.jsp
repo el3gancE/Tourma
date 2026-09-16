@@ -41,7 +41,7 @@
     String s2Disp = (isDone && !hasBye && s2Param != null && !s2Param.trim().isEmpty()) ? s2Param : "";
 %>
 
-<div class="bracket-node-card <%= !isPlayable ? "disabled-unconfirmed" : "" %>" data-match-id="${param.matchId != null ? param.matchId : '1'}" <% if (isPlayable) { %>onclick="window.TourmaBracketCard && window.TourmaScoreModal && window.TourmaScoreModal.open({matchId: '${param.matchId != null ? param.matchId : '1'}', roundName: 'Trận #<%= matchNum %>', team1Name: '<%= t1Name %>', team1Seed: '<%= isT1Bye ? "" : (request.getParameter("team1Seed") != null ? request.getParameter("team1Seed") : "1") %>', team1Score: '<%= s1Disp %>', team2Name: '<%= t2Name %>', team2Seed: '<%= isT2Bye ? "" : (request.getParameter("team2Seed") != null ? request.getParameter("team2Seed") : "2") %>', team2Score: '<%= s2Disp %>', status: '<%= isDone ? "COMPLETED" : "SCHEDULED" %>'})"<% } %>>
+<div class="bracket-node-card <%= !isPlayable ? "disabled-unconfirmed" : "" %>" data-match-id="${param.matchId != null ? param.matchId : '1'}" <% if (isPlayable) { %>onclick="window.TourmaBracketCard && window.TourmaScoreModal && window.TourmaScoreModal.open({matchId: '${param.matchId != null ? param.matchId : '1'}', roundName: 'Trận #<%= matchNum %>', team1Name: '<%= t1Name %>', team1Seed: '<%= isT1Bye ? "" : (request.getParameter("team1Seed") != null ? request.getParameter("team1Seed") : "") %>', team1Score: '<%= s1Disp %>', team2Name: '<%= t2Name %>', team2Seed: '<%= isT2Bye ? "" : (request.getParameter("team2Seed") != null ? request.getParameter("team2Seed") : "") %>', team2Score: '<%= s2Disp %>', status: '<%= isDone ? "COMPLETED" : "SCHEDULED" %>'})"<% } %>>
     <div class="bracket-node-header">
         <span class="bracket-match-id">#<%= matchNum %></span>
         <span class="bracket-status-badge <%= isDone ? "done" : "pending" %>">
@@ -53,7 +53,7 @@
         <div class="bracket-team-row ${param.winner == 'team1' ? 'winner' : ''} <%= isT1Bye ? "bye-row" : "" %>">
             <div class="bracket-team-info">
                 <% if (!isT1Bye) { %>
-                    <span class="bracket-seed-badge">${param.team1Seed != null ? param.team1Seed : '1'}</span>
+                    <span class="bracket-seed-badge">${param.team1Seed}</span>
                 <% } else { %>
                     <span class="bracket-seed-badge" style="visibility: hidden;"></span>
                 <% } %>
@@ -67,7 +67,7 @@
         <div class="bracket-team-row ${param.winner == 'team2' ? 'winner' : ''} <%= isT2Bye ? "bye-row" : "" %>">
             <div class="bracket-team-info">
                 <% if (!isT2Bye) { %>
-                    <span class="bracket-seed-badge">${param.team2Seed != null ? param.team2Seed : '2'}</span>
+                    <span class="bracket-seed-badge">${param.team2Seed}</span>
                 <% } else { %>
                     <span class="bracket-seed-badge" style="visibility: hidden;"></span>
                 <% } %>

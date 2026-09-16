@@ -24,7 +24,7 @@
 %>
 
 <!-- Reusable Horizontal List Match Card Template (Clickable to Edit) -->
-<div class="match-card-item" data-match-id="${param.matchId != null ? param.matchId : '1'}" data-status="<%= isDone ? "COMPLETED" : "SCHEDULED" %>" onclick="window.TourmaScoreModal && window.TourmaScoreModal.open({matchId: '${param.matchId != null ? param.matchId : '1'}', roundName: 'Trận #<%= matchNum %>', team1Name: '${param.team1Name != null ? param.team1Name : 'Đội A'}', team1Seed: '${param.team1Seed != null ? param.team1Seed : '1'}', team1Score: '<%= s1Disp %>', team2Name: '${param.team2Name != null ? param.team2Name : 'Đội B'}', team2Seed: '${param.team2Seed != null ? param.team2Seed : '2'}', team2Score: '<%= s2Disp %>', winnerId: '${param.winner != null ? param.winner : ''}', status: '<%= isDone ? "COMPLETED" : "SCHEDULED" %>'})">
+<div class="match-card-item" data-match-id="${param.matchId != null ? param.matchId : '1'}" data-status="<%= isDone ? "COMPLETED" : "SCHEDULED" %>" onclick="window.TourmaScoreModal && window.TourmaScoreModal.open({matchId: '${param.matchId != null ? param.matchId : '1'}', roundName: 'Trận #<%= matchNum %>', team1Name: '${param.team1Name != null ? param.team1Name : 'Đội A'}', team1Seed: '${param.team1Seed != null ? param.team1Seed : ''}', team1Score: '<%= s1Disp %>', team2Name: '${param.team2Name != null ? param.team2Name : 'Đội B'}', team2Seed: '${param.team2Seed != null ? param.team2Seed : ''}', team2Score: '<%= s2Disp %>', winnerId: '${param.winner != null ? param.winner : ''}', status: '<%= isDone ? "COMPLETED" : "SCHEDULED" %>'})">
     
     <!-- Left Section: Static Mint Accent Bar + Match Number (#1, #2, #3...) -->
     <div class="match-card-meta">
@@ -35,7 +35,7 @@
     <!-- Center Section: 5-Column Grid Versus Display (Seeds at Far Corners) -->
     <div class="match-card-versus">
         <!-- Col 1: Far Left Corner Seed 1 -->
-        <span class="match-list-seed">${param.team1Seed != null ? param.team1Seed : '1'}</span>
+        <span class="match-list-seed">${param.team1Seed != null ? param.team1Seed : ''}</span>
 
         <!-- Col 2: Team 1 Name -->
         <div class="match-team-side team-left ${param.winner == 'team1' ? 'winner' : ''}">
@@ -63,7 +63,7 @@
         </div>
 
         <!-- Col 5: Far Right Corner Seed 2 -->
-        <span class="match-list-seed">${param.team2Seed != null ? param.team2Seed : '2'}</span>
+        <span class="match-list-seed">${param.team2Seed != null ? param.team2Seed : ''}</span>
     </div>
 
     <!-- Right Section: Status Badge (DONE / PENDING) -->

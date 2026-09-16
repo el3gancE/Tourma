@@ -70,6 +70,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css?v=<%= System.currentTimeMillis() %>">
     </head>
     <body>
         <!-- Shared Navigation Header Component -->
@@ -103,7 +104,10 @@
                             Tích lũy điểm trượt trong <strong><%= phaseSize %> giải đấu gần nhất (W = <%= phaseSize %>)</strong>. Tự động khấu trừ điểm hết hạn khi vượt cửa sổ trượt.
                         </p>
                     </div>
-                    <div>
+                    <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                        <button type="button" onclick="openEditSeriesPopup()" class="btn btn-gold-outline" title="Chỉnh sửa số giải tích lũy điểm (Cửa sổ trượt W) của Series này" style="font-weight: 700; font-size: 0.85rem; padding: 0.55rem 1.15rem; border-radius: 9px; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; cursor: pointer;">
+                            <i class="fa-solid fa-sliders"></i> Đổi Cửa Sổ Trượt W (<%= phaseSize %>)
+                        </button>
                         <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" title="Tạo giải đấu con mới cho chuỗi giải này" style="font-weight: 700; font-size: 0.85rem; padding: 0.55rem 1.15rem; border-radius: 9px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; box-shadow: 0 4px 12px rgba(45, 212, 191, 0.25);">
                             <i class="fa-solid fa-plus-circle"></i> Tạo giải con
                         </a>
@@ -266,7 +270,13 @@
                         <% } %>
                     </tbody>
                 </table>
-            </div>
+            </div></main>
+
+        <!-- Reusable Edit Series Popup Component -->
+        <jsp:include page="/common/component/edit-series-popup.jsp">
+            <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
+            <jsp:param name="formActionUrl" value="${pageContext.request.contextPath}/rolling/standings"/>
+        </jsp:include>
 
         <script>
             window.seriesSubTournaments = [

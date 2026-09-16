@@ -95,16 +95,22 @@
             var hiddenMatchId = document.getElementById('modalMatchIdInput');
             if (hiddenMatchId) hiddenMatchId.value = this.activeMatchId;
 
-            // Clean seed numbers
-            var cleanSeed1 = (matchData.team1Seed || '1').toString().replace('#', '');
-            var cleanSeed2 = (matchData.team2Seed || '2').toString().replace('#', '');
+            // Clean seed numbers (do not fallback to 1 and 2 when unseeded or hidden)
+            var cleanSeed1 = (matchData.team1Seed !== undefined && matchData.team1Seed !== null && String(matchData.team1Seed).trim() !== '') 
+                ? matchData.team1Seed.toString().replace('#', '').trim() 
+                : '';
+            var cleanSeed2 = (matchData.team2Seed !== undefined && matchData.team2Seed !== null && String(matchData.team2Seed).trim() !== '') 
+                ? matchData.team2Seed.toString().replace('#', '').trim() 
+                : '';
 
             var t1NameStr = matchData.team1Name || 'Đội 1';
             var t2NameStr = matchData.team2Name || 'Đội 2';
 
             // Populate Team 1 & Team 2 Rows
             var t1Seed = document.getElementById('modalTeam1Seed');
-            if (t1Seed) t1Seed.innerText = cleanSeed1;
+            if (t1Seed) {
+                t1Seed.innerText = cleanSeed1;
+            }
             var t1Name = document.getElementById('modalTeam1Name');
             if (t1Name) t1Name.innerText = t1NameStr;
             
@@ -113,7 +119,9 @@
             if (t1Score) t1Score.value = s1Val;
 
             var t2Seed = document.getElementById('modalTeam2Seed');
-            if (t2Seed) t2Seed.innerText = cleanSeed2;
+            if (t2Seed) {
+                t2Seed.innerText = cleanSeed2;
+            }
             var t2Name = document.getElementById('modalTeam2Name');
             if (t2Name) t2Name.innerText = t2NameStr;
 

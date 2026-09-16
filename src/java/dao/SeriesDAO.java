@@ -118,6 +118,54 @@ public class SeriesDAO {
         return false;
     }
 
+    public boolean updateSeriesSettings(String seriesId, String name, int phaseSize, String status) {
+        if (seriesId == null || seriesId.trim().isEmpty()) return false;
+        String sql = "UPDATE series SET name = ?, phase_size = ?, status = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, (name != null && !name.trim().isEmpty()) ? name.trim() : "Series");
+            ps.setInt(2, phaseSize > 0 ? phaseSize : 3);
+            ps.setString(3, (status != null && !status.trim().isEmpty()) ? status.trim().toUpperCase() : "ACTIVE");
+            ps.setString(4, seriesId.trim());
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
+                try {
+                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
+                } catch (Exception ignore) {}
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateSeriesPhaseSize(String seriesId, int phaseSize) {
+        if (seriesId == null || seriesId.trim().isEmpty() || phaseSize <= 0) return false;
+        String sql = "UPDATE series SET phase_size = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, phaseSize);
+            ps.setString(2, seriesId.trim());
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                clearSeriesCaches();
+                service.RollingWindowPointService.clearAllCaches();
+                try {
+                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
+                } catch (Exception ignore) {}
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public List<model.SeriesStanding> getStandingsBySeriesId(String seriesId) {
         List<model.SeriesStanding> list = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return list;

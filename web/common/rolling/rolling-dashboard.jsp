@@ -41,6 +41,7 @@
         <!-- Design System CSS & Dedicated Rolling Dashboard CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-dashboard.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css">
     </head>
     <body>
         <!-- Shared Navigation Header Component -->
@@ -74,17 +75,24 @@
                             </span>
                         </h1>
                         <p class="text-muted" style="font-size: 0.85rem; margin-top: 0.25rem;">
-                            Tích lũy điểm trượt trong <%= phaseSize %> giải đấu gần nhất. Tự động khấu trừ điểm hết hạn khi vượt cửa sổ trượt.
+                            Tích lũy điểm trượt trong <strong><%= phaseSize %> giải đấu gần nhất (W = <%= phaseSize %>)</strong>. Tự động khấu trừ điểm hết hạn khi vượt cửa sổ trượt.
                         </p>
                     </div>
+
+                    <button type="button" onclick="openEditSeriesPopup()" class="btn btn-gold-outline" style="font-weight: 700; font-size: 0.85rem; padding: 0.55rem 1.1rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer;">
+                        <i class="fa-solid fa-sliders"></i> Chỉnh Sửa Số Giải & Cấu Hình
+                    </button>
                 </div>
 
                 <!-- Quick Stats Row Grid -->
                 <div class="rolling-quick-stats-grid">
-                    <div class="rolling-stat-box">
+                    <div class="rolling-stat-box" onclick="openEditSeriesPopup()" style="cursor: pointer;" title="Bấm để chỉnh sửa số giải tích lũy điểm W">
                         <div class="rolling-stat-icon gold"><i class="fa-solid fa-trophy"></i></div>
-                        <div>
-                            <div class="rolling-stat-label">Cửa Sổ Trượt (W)</div>
+                        <div style="flex: 1;">
+                            <div class="rolling-stat-label" style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Cửa Sổ Trượt (W)</span>
+                                <i class="fa-solid fa-pen-to-square text-gold" style="font-size: 0.78rem; opacity: 0.8;"></i>
+                            </div>
                             <div class="rolling-stat-value"><%= phaseSize %> Giải</div>
                         </div>
                     </div>
@@ -116,6 +124,12 @@
             </div>
 
         </main>
+
+        <!-- Reusable Edit Series Popup Component -->
+        <jsp:include page="/common/component/edit-series-popup.jsp">
+            <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
+            <jsp:param name="formActionUrl" value="${pageContext.request.contextPath}/rolling/dashboard"/>
+        </jsp:include>
 
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-dashboard.js"></script>
     </body>
