@@ -29,7 +29,6 @@
                 <!-- Team 1 Row -->
                 <div class="modal-team-row">
                     <div class="modal-team-left-info">
-                        <span id="modalTeam1Seed" class="modal-seed-badge"></span>
                         <span id="modalTeam1Name" class="modal-team-name">Đội 1</span>
                     </div>
                     <input type="number" id="modalTeam1Score" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">
@@ -38,7 +37,6 @@
                 <!-- Team 2 Row -->
                 <div class="modal-team-row">
                     <div class="modal-team-left-info">
-                        <span id="modalTeam2Seed" class="modal-seed-badge"></span>
                         <span id="modalTeam2Name" class="modal-team-name">Đội 2</span>
                     </div>
                     <input type="number" id="modalTeam2Score" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">

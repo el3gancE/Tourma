@@ -31,10 +31,14 @@
   white-space: nowrap;
   line-height: 1;
   transition: all 0.2s ease;
+  z-index: 1;
 }
 
-.tourma-badge-pill:hover {
+.tourma-badge-pill:hover,
+.tourma-badge-pill:focus,
+.tourma-badge-pill.active-touch {
   transform: translateY(-1.5px);
+  z-index: 10000 !important;
 }
 
 .tourma-badge-pill:active {
@@ -361,38 +365,41 @@
   visibility: hidden;
   opacity: 0;
   position: absolute;
-  top: 135%;
-  right: 0;
-  background: #0d121d;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  top: calc(100% + 8px);
+  left: 0;
+  background: #0e1422 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: #f1f5f9;
   text-align: left;
-  padding: 0.6rem 0.8rem;
-  border-radius: 9px;
-  width: 220px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75);
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  width: 240px;
+  max-width: min(240px, calc(100vw - 24px));
+  box-sizing: border-box;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 1px rgba(255, 255, 255, 0.3) !important;
   font-size: 0.76rem;
-  line-height: 1.35;
-  z-index: 100;
-  transition: all 0.2s ease-out;
+  line-height: 1.4;
+  z-index: 999999 !important;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform: translateY(4px);
   pointer-events: none;
   white-space: normal;
 }
 
 .tourma-badge-gold .tourma-badge-tooltip {
-  border-color: rgba(245, 158, 11, 0.45);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 15px rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(245, 158, 11, 0.25) !important;
 }
 
 .tourma-badge-bright-gold .tourma-badge-tooltip,
 .tourma-badge-defending .tourma-badge-tooltip {
-  border-color: rgba(250, 204, 21, 0.65);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 18px rgba(250, 204, 21, 0.35);
+  border-color: rgba(250, 204, 21, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 20px rgba(250, 204, 21, 0.35) !important;
 }
 
 .tourma-badge-tier-s .tourma-badge-tooltip {
-  border-color: rgba(251, 191, 36, 0.55);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 15px rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.65) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(251, 191, 36, 0.25) !important;
 }
 .tourma-badge-tier-s .tourma-badge-tooltip-title { color: #fbbf24; }
 .tourma-badge-tier-s .tourma-badge-tooltip-rarity {
@@ -402,8 +409,8 @@
 }
 
 .tourma-badge-tier-a .tourma-badge-tooltip {
-  border-color: rgba(192, 132, 252, 0.55);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 15px rgba(192, 132, 252, 0.2);
+  border-color: rgba(192, 132, 252, 0.65) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(192, 132, 252, 0.25) !important;
 }
 .tourma-badge-tier-a .tourma-badge-tooltip-title { color: #c084fc; }
 .tourma-badge-tier-a .tourma-badge-tooltip-rarity {
@@ -413,8 +420,8 @@
 }
 
 .tourma-badge-tier-b .tourma-badge-tooltip {
-  border-color: rgba(52, 211, 153, 0.55);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 15px rgba(52, 211, 153, 0.2);
+  border-color: rgba(52, 211, 153, 0.65) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(52, 211, 153, 0.25) !important;
 }
 .tourma-badge-tier-b .tourma-badge-tooltip-title { color: #34d399; }
 .tourma-badge-tier-b .tourma-badge-tooltip-rarity {
@@ -424,8 +431,8 @@
 }
 
 .tourma-badge-tier-c .tourma-badge-tooltip {
-  border-color: rgba(96, 165, 250, 0.55);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 15px rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.65) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(96, 165, 250, 0.25) !important;
 }
 .tourma-badge-tier-c .tourma-badge-tooltip-title { color: #60a5fa; }
 .tourma-badge-tier-c .tourma-badge-tooltip-rarity {
@@ -435,8 +442,8 @@
 }
 
 .tourma-badge-tier-d .tourma-badge-tooltip {
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 15px rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(255, 255, 255, 0.2) !important;
 }
 .tourma-badge-tier-d .tourma-badge-tooltip-title { color: #ffffff; }
 .tourma-badge-tier-d .tourma-badge-tooltip-rarity {
@@ -449,14 +456,36 @@
   content: '';
   position: absolute;
   bottom: 100%;
-  right: 20px;
-  margin-right: -5px;
-  border-width: 5px;
+  left: 20px;
+  border-width: 6px;
   border-style: solid;
-  border-color: transparent transparent #0d121d transparent;
+  border-color: transparent transparent #0e1422 transparent;
 }
 
-.tourma-badge-pill:hover .tourma-badge-tooltip {
+/* Tooltip Alignment Helpers (Prevents Screen & Card Overflow) */
+.tourma-badge-tooltip.align-right {
+  left: auto !important;
+  right: 0 !important;
+}
+
+.tourma-badge-tooltip.align-right::after {
+  left: auto !important;
+  right: 20px !important;
+}
+
+.tourma-badge-tooltip.align-left {
+  left: 0 !important;
+  right: auto !important;
+}
+
+.tourma-badge-tooltip.align-left::after {
+  left: 20px !important;
+  right: auto !important;
+}
+
+.tourma-badge-pill:hover .tourma-badge-tooltip,
+.tourma-badge-pill:focus .tourma-badge-tooltip,
+.tourma-badge-pill.active-touch .tourma-badge-tooltip {
   visibility: visible;
   opacity: 1;
   transform: translateY(0);
