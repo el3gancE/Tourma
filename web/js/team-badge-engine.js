@@ -745,7 +745,7 @@
           footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-trophy"></i> Vô địch ' + tourneyName + '</div>';
         }
 
-        html += '<div class="tourma-badge-pill ' + (b.themeClass || 'tourma-badge-gold') + '" tabindex="0" title="' + b.name + '">' +
+        html += '<div class="tourma-badge-pill ' + (b.themeClass || 'tourma-badge-gold') + '" tabindex="0">' +
           circuitSvg +
           '<i class="' + iconClass + ' badge-icon"></i>' +
           '<span class="tourma-badge-name">' + b.name + '</span>' +

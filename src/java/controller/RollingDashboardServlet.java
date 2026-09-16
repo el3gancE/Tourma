@@ -57,6 +57,10 @@ public class RollingDashboardServlet extends HttpServlet {
             seriesId = series.getId();
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
             standingsList = seriesDAO.getStandingsBySeriesId(seriesId);
+            if ((standingsList == null || standingsList.isEmpty()) && tournamentsList != null && !tournamentsList.isEmpty()) {
+                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId);
+                standingsList = seriesDAO.getStandingsBySeriesId(seriesId);
+            }
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
         }
 
