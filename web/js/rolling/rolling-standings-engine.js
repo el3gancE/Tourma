@@ -1681,6 +1681,8 @@
     // Compute Highest Milestone Rank and Milestone Progression achieved across all milestones
     var teamHighestRank = {};
     var teamRankProgression = {};
+    var teamPhaseBadgesMap = {};
+    var phaseWinnersList = [];
     Object.keys(teamDataMap).forEach(function (k) {
       teamRankProgression[k] = [];
     });
@@ -1709,6 +1711,37 @@
         if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
         return a.name.localeCompare(b.name);
       });
+
+      // Check if mStep marks the completion of Phase 1 (when total tournaments reach phaseSize)
+      if (phaseSize > 0 && (mStep + 1) === phaseSize && mScores.length > 0 && mScores[0].pts > 0) {
+        var phaseNum = 1;
+        var phaseChampK = mScores[0].key;
+        var pTourney = subTourneys[mStep];
+        var pTourneyName = (pTourney && pTourney.name) ? pTourney.name : ('Giải #' + (mStep + 1));
+        var pTourneyIdx = (pTourney && pTourney.index) ? pTourney.index : (mStep + 1);
+
+        var pBadgeObj = {
+          phase: 1,
+          badgeId: 'PHASE_1_LEADER',
+          name: 'Phase 1 #1',
+          label: 'Phase 1 #1',
+          title: 'Hạng 1 BXH khi kết thúc Phase 1 (' + pTourneyName + ')',
+          tourneyName: pTourneyName,
+          tourneyIndex: pTourneyIdx,
+          totalPts: mScores[0].pts,
+          teamName: teamDataMap[phaseChampK] ? teamDataMap[phaseChampK].name : mScores[0].name,
+          themeClass: 'tourma-badge-phase-1',
+          iconClass: 'fa-solid fa-gem',
+          colorName: 'green'
+        };
+
+        if (!teamPhaseBadgesMap[phaseChampK]) {
+          teamPhaseBadgesMap[phaseChampK] = [];
+        }
+        teamPhaseBadgesMap[phaseChampK].push(pBadgeObj);
+        phaseWinnersList.push(pBadgeObj);
+      }
+
       mScores.forEach(function (ms, mRankIdx) {
         var mRank = mRankIdx + 1;
         var curT = subTourneys[mStep];
@@ -1736,6 +1769,12 @@
         }
       });
     }
+
+    // Attach phaseBadges to teamDataArray items
+    teamDataArray.forEach(function (data) {
+      var k = data.name.toLowerCase().trim();
+      data.phaseBadges = teamPhaseBadgesMap[k] || [];
+    });
 
     // Build Individual Team Profile Data across all sub-tournaments
     var allTourneyPerformances = {};
@@ -1898,7 +1937,8 @@
         quarterCount: qCount,
         championTourneys: allChampionTourneys[k],
         performances: allTourneyPerformances[k],
-        rankProgression: teamRankProgression[k] || []
+        rankProgression: teamRankProgression[k] || [],
+        phaseBadges: teamPhaseBadgesMap[k] || []
       };
     });
 
@@ -1911,8 +1951,15 @@
       totalTourneys: totalTourneys,
       allTourneyPerformances: allTourneyPerformances,
       allChampionTourneys: allChampionTourneys,
-      teamProfileStats: teamProfileStats
+      teamProfileStats: teamProfileStats,
+      phaseBadgesMap: teamPhaseBadgesMap,
+      phaseWinnersList: phaseWinnersList
     };
+  }
+
+  function getPhaseWinners(options) {
+    var standingsRes = calculateSeriesStandings(options || {});
+    return (standingsRes && standingsRes.phaseWinnersList) ? standingsRes.phaseWinnersList : [];
   }
 
   function getTeamProfile(teamName, options) {
@@ -1947,6 +1994,7 @@
     parseTournamentResults: parseTournamentResults,
     deduceMatchStatsFromAchievement: deduceMatchStatsFromAchievement,
     calculateSeriesStandings: calculateSeriesStandings,
+    getPhaseWinners: getPhaseWinners,
     getTeamProfile: getTeamProfile
   };
 

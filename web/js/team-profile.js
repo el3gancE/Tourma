@@ -173,7 +173,9 @@
         tourneyPerformances: prof.performances || [],
         currentRank: prof.currentRank,
         highestRank: prof.highestRank,
-        totalAccumulatedPoints: prof.totalAccumulatedPoints
+        totalAccumulatedPoints: prof.totalAccumulatedPoints,
+        phaseBadges: prof.phaseBadges || [],
+        phaseSize: window.seriesPhaseSize || 3
       });
     }
 

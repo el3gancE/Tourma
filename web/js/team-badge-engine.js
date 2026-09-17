@@ -663,6 +663,61 @@
     }
   });
 
+  /**
+   * 10. PHASE 1 LEADER (Đứng đầu BXH khi kết thúc Phase 1)
+   * Màu xanh lá cây (Emerald Green)
+   */
+  registry.push({
+    id: 'PHASE_1_LEADER',
+    name: 'Phase 1 #1',
+    category: 'PHASE_CHAMPION',
+    rarity: 'Phase 1 #1',
+    themeClass: 'tourma-badge-phase-1',
+    iconClass: 'fa-solid fa-gem',
+    evaluate: function (teamName, context) {
+      if (!teamName) return null;
+      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
+        var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
+        badges = [];
+        pWinners.forEach(function (pw) {
+          if (isTeamSelf(pw.teamName, teamName)) {
+            badges.push(pw);
+          }
+        });
+      }
+      if (badges && badges.length > 0) {
+        var phase1Badge = null;
+        for (var i = 0; i < badges.length; i++) {
+          if (badges[i].phase === 1) {
+            phase1Badge = badges[i];
+            break;
+          }
+        }
+        if (phase1Badge) {
+          var tName = phase1Badge.tourneyName || ('Giải #' + (phase1Badge.tourneyIndex || 1));
+          var pts = phase1Badge.totalPts || 0;
+          return {
+            id: 'PHASE_1_LEADER',
+            name: 'Phase 1 #1',
+            title: 'Phase 1 #1',
+            category: 'PHASE_CHAMPION',
+            rarity: 'Phase 1 #1',
+            themeClass: 'tourma-badge-phase-1',
+            iconClass: 'fa-solid fa-gem',
+            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 1 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            meta: {
+              phase: 1,
+              tourneyName: tName,
+              totalPts: pts
+            }
+          };
+        }
+      }
+      return null;
+    }
+  });
+
   // =========================================================================
   // BADGE ENGINE PUBLIC API
   // =========================================================================
@@ -681,7 +736,13 @@
         try {
           var result = badgeDef.evaluate(teamName, context || {});
           if (result) {
-            earnedBadges.push(Object.assign({}, badgeDef, result));
+            if (Array.isArray(result)) {
+              result.forEach(function (item) {
+                earnedBadges.push(Object.assign({}, badgeDef, item));
+              });
+            } else {
+              earnedBadges.push(Object.assign({}, badgeDef, result));
+            }
           }
         } catch (err) {
           console.warn('[TeamBadgeEngine] Error evaluating badge ' + badgeDef.id, err);
@@ -713,6 +774,7 @@
         var tourneyName = (b.meta && b.meta.tourneyName) ? b.meta.tourneyName : '';
         var iconClass = b.iconClass || 'fa-solid fa-trophy';
         var isDefending = (b.id === 'DEFENDING_CHAMPION' || (b.themeClass && b.themeClass.indexOf('defending') !== -1));
+        var isPhase1 = (b.id === 'PHASE_1_LEADER' || (b.themeClass && b.themeClass.indexOf('phase-1') !== -1));
 
         var circuitSvg = isDefending ? (
           '<svg class="tourma-badge-svg-border" aria-hidden="true">' +
@@ -728,8 +790,12 @@
           '</svg>'
         ) : '';
 
+        var phase1Shine = isPhase1 ? '<span class="phase1-shine-fx" aria-hidden="true"></span>' : '';
+
         var footerText = '';
-        if (b.meta && b.meta.streakTourneys && b.meta.streakTourneys.length > 0) {
+        if (b.meta && b.meta.phase) {
+          footerText = '<div class="tourma-badge-tooltip-footer"><i class="' + iconClass + '"></i> Hạng 1 BXH kết thúc Phase ' + b.meta.phase + (b.meta.tourneyName ? (': ' + b.meta.tourneyName) : '') + (b.meta.totalPts ? (' (' + b.meta.totalPts + ' điểm)') : '') + '</div>';
+        } else if (b.meta && b.meta.streakTourneys && b.meta.streakTourneys.length > 0) {
           var itemsHtml = b.meta.streakTourneys.map(function(t) {
             var tName = t.name || t;
             var tTier = t.tier ? (' (' + t.tier + ')') : '';
@@ -747,6 +813,7 @@
 
         html += '<div class="tourma-badge-pill ' + (b.themeClass || 'tourma-badge-gold') + '" tabindex="0">' +
           circuitSvg +
+          phase1Shine +
           '<i class="' + iconClass + ' badge-icon"></i>' +
           '<span class="tourma-badge-name">' + b.name + '</span>' +
           '<!-- Tooltip on Hover -->' +

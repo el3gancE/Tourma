@@ -448,6 +448,8 @@
                 <%  }
                 } %>
             ];
+            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
+            window.seriesIdVal = "<%= (series != null && series.getId() != null) ? series.getId() : "" %>";
         </script>
         <!-- Rolling Standings Engine, Modular Team Badge Engine & Unified Profile Stats Script -->
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
