@@ -292,8 +292,25 @@
       }
     } catch (e) {}
 
-    // Priority: DB pointsConfig first, fallback to localPtsCfg
-    var ptsCfg = Object.assign({}, localPtsCfg || {}, t.pointsConfig || {});
+    // Dynamic points config resolution:
+    // 1. Base from database (t.pointsConfig)
+    // 2. User's custom configuration from browser (localPtsCfg) takes precedence/enriches
+    // 3. If completely empty, apply dynamic proportional fallback
+    var ptsCfg = {};
+    if (t.pointsConfig && typeof t.pointsConfig === 'object') {
+      Object.assign(ptsCfg, t.pointsConfig);
+    }
+    if (localPtsCfg && typeof localPtsCfg === 'object' && Object.keys(localPtsCfg).length > 0) {
+      Object.assign(ptsCfg, localPtsCfg);
+    }
+    if (Object.keys(ptsCfg).length === 0) {
+      var champPts = (t.seriesRewardPoints && t.seriesRewardPoints > 0) ? t.seriesRewardPoints : 100;
+      ptsCfg["1"] = champPts;
+      ptsCfg["2"] = Math.round(champPts * 0.70);
+      ptsCfg["3-4"] = Math.round(champPts * 0.40);
+      ptsCfg["5-8"] = Math.round(champPts * 0.20);
+      ptsCfg["9-16"] = Math.round(champPts * 0.10);
+    }
     var teamPointsAwarded = {}; // teamKey -> max points
     var teamParticipated = {};  // teamKey -> true
 

@@ -340,20 +340,23 @@
                 <% 
                 List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
                 Map<String, List<String>> stageFormatsMap = (Map<String, List<String>>) request.getAttribute("stageFormatsMap");
+                if (tournamentsList != null && tournamentsList.size() > 1) {
+                    tournamentsList = new java.util.ArrayList<>(tournamentsList);
+                    tournamentsList.sort((a, b) -> {
+                        int idxA = a.getTournamentIndexInSeries();
+                        int idxB = b.getTournamentIndexInSeries();
+                        if (idxA != idxB) return Integer.compare(idxA, idxB);
+                        if (a.getCreatedAt() != null && b.getCreatedAt() != null) return a.getCreatedAt().compareTo(b.getCreatedAt());
+                        return 0;
+                    });
+                }
                 if (tournamentsList != null) {
                     for (int i = 0; i < tournamentsList.size(); i++) {
                         Tournament t = tournamentsList.get(i);
                         String rawCfg = (t != null) ? t.getSeriesPointsConfig() : null;
-                        String cfgJson;
+                        String cfgJson = "{}";
                         if (rawCfg != null && rawCfg.trim().startsWith("{") && rawCfg.trim().endsWith("}")) {
                             cfgJson = rawCfg.trim();
-                        } else {
-                            int champPts = (t != null && t.getSeriesRewardPoints() != null && t.getSeriesRewardPoints() > 0) ? t.getSeriesRewardPoints() : 100;
-                            int runnerUpPts = (int) Math.round(champPts * 0.70);
-                            int semiPts = (int) Math.round(champPts * 0.40);
-                            int quarterPts = (int) Math.round(champPts * 0.20);
-                            int r16Pts = (int) Math.round(champPts * 0.10);
-                            cfgJson = "{\"1\":" + champPts + ",\"2\":" + runnerUpPts + ",\"3-4\":" + semiPts + ",\"5-8\":" + quarterPts + ",\"9-16\":" + r16Pts + "}";
                         }
                         String safeName = (t != null && t.getName() != null) ? t.getName().replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
                         String safeId = (t != null && t.getId() != null) ? t.getId() : "";

@@ -233,7 +233,17 @@ public class SeriesDAO {
         if (seriesId == null || seriesId.trim().isEmpty()) return list;
         String sid = seriesId.trim();
         List<Tournament> cached = SERIES_TOURNAMENTS_CACHE.get(sid);
-        if (cached != null) return new ArrayList<>(cached);
+        if (cached != null) {
+            List<Tournament> copy = new ArrayList<>(cached);
+            copy.sort((a, b) -> {
+                int idxA = a.getTournamentIndexInSeries();
+                int idxB = b.getTournamentIndexInSeries();
+                if (idxA != idxB) return Integer.compare(idxA, idxB);
+                if (a.getCreatedAt() != null && b.getCreatedAt() != null) return a.getCreatedAt().compareTo(b.getCreatedAt());
+                return 0;
+            });
+            return copy;
+        }
 
         String sql = "SELECT t.*, " +
                 "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format " +
@@ -309,9 +319,16 @@ public class SeriesDAO {
             }
         }
         if (!list.isEmpty()) {
-            SERIES_TOURNAMENTS_CACHE.put(sid, list);
+            list.sort((a, b) -> {
+                int idxA = a.getTournamentIndexInSeries();
+                int idxB = b.getTournamentIndexInSeries();
+                if (idxA != idxB) return Integer.compare(idxA, idxB);
+                if (a.getCreatedAt() != null && b.getCreatedAt() != null) return a.getCreatedAt().compareTo(b.getCreatedAt());
+                return 0;
+            });
+            SERIES_TOURNAMENTS_CACHE.put(sid, new ArrayList<>(list));
         }
-        return list;
+        return new ArrayList<>(list);
     }
 
     public boolean addPartnerParticipant(String seriesId, String teamName, String customPartnerId, int initialPoints) {

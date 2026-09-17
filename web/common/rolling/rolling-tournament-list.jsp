@@ -148,10 +148,8 @@
             <!-- Tournament Cards Grid -->
             <div class="tourney-cards-grid" id="tourneyCardList">
                 <% if (tournamentsList != null && !tournamentsList.isEmpty()) { 
-                    // Reverse list so newest sub-tournament displays first at top
-                    java.util.Collections.reverse(tournamentsList);
-
-                    for (int i = 0; i < tournamentsList.size(); i++) {
+                    // Render newest sub-tournament first by iterating backwards without mutating the list
+                    for (int i = tournamentsList.size() - 1; i >= 0; i--) {
                         Tournament t = tournamentsList.get(i);
                         int nTeams = teamCountMap.containsKey(t.getId()) ? teamCountMap.get(t.getId()) : 0;
                         String tierName = (t.getTierName() != null) ? t.getTierName().toUpperCase() : "S";
