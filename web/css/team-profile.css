@@ -326,3 +326,57 @@
   color: var(--text-muted, #94a3b8);
 }
 
+/* Rank Progression Chart */
+.rank-chart-card {
+  margin-bottom: 2rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rank-chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  margin-top: 1rem;
+}
+
+.rank-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.rank-chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rank-chart-dot-gold {
+  width: 8px;
+  height: 8px;
+  background: #fbbf24;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 5px rgba(251, 191, 36, 0.6);
+}
+
+.rank-chart-dot-mint {
+  width: 7px;
+  height: 7px;
+  background: #2dd4bf;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 5px rgba(45, 212, 191, 0.4);
+}
+
+.rank-chart-dot-muted {
+  width: 6px;
+  height: 6px;
+  background: #64748b;
+  border-radius: 50%;
+  display: inline-block;
+}
+

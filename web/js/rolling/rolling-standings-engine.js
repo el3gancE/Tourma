@@ -1657,8 +1657,15 @@
       };
     });
 
-    // Compute Highest Milestone Rank achieved across all milestones
+    // Compute Highest Milestone Rank and Milestone Progression achieved across all milestones
     var teamHighestRank = {};
+    var teamRankProgression = {};
+    Object.keys(teamDataMap).forEach(function (k) {
+      teamRankProgression[k] = [];
+    });
+
+    var limitTourneyIdx = (targetIdx >= 0 && targetIdx < totalTourneys) ? targetIdx : (totalTourneys - 1);
+
     for (var mStep = 0; mStep < totalTourneys; mStep++) {
       var mWinStart = Math.max(0, mStep - phaseSize + 1);
       var mScores = [];
@@ -1683,15 +1690,28 @@
       });
       mScores.forEach(function (ms, mRankIdx) {
         var mRank = mRankIdx + 1;
+        var curT = subTourneys[mStep];
         if (ms.pts > 0) {
           if (!teamHighestRank[ms.key] || mRank < teamHighestRank[ms.key].rank) {
-            var curT = subTourneys[mStep];
             teamHighestRank[ms.key] = {
               rank: mRank,
               tourneyName: curT ? curT.name : "",
               tourneyUrl: curT ? getTournamentFinalStageUrl(curT, options.seriesId) : "#"
             };
           }
+        }
+        if (mStep <= limitTourneyIdx && teamRankProgression[ms.key]) {
+          var hasPart = !!(tourneyParticipatedArray[mStep] && tourneyParticipatedArray[mStep][ms.key]);
+          var pEarned = (tourneyPointsArray[mStep] && tourneyPointsArray[mStep][ms.key]) || 0;
+          teamRankProgression[ms.key].push({
+            tournamentId: curT ? curT.id : "",
+            tournamentName: curT ? curT.name : ("Giải #" + (mStep + 1)),
+            tournamentIndex: (curT && curT.index) ? curT.index : (mStep + 1),
+            rank: mRank,
+            totalActivePoints: ms.pts,
+            pointsEarned: pEarned,
+            participated: hasPart
+          });
         }
       });
     }
@@ -1820,6 +1840,26 @@
         curPts = sumTablePts;
       }
 
+      if (teamRankProgression[k] && allTourneyPerformances[k]) {
+        teamRankProgression[k].forEach(function (rp) {
+          var perf = null;
+          for (var pi = 0; pi < allTourneyPerformances[k].length; pi++) {
+            var tp = allTourneyPerformances[k][pi];
+            if (tp.id === rp.tournamentId || tp.tournamentId === rp.tournamentId) {
+              perf = tp;
+              break;
+            }
+          }
+          if (perf && perf.achievement) {
+            rp.achievement = perf.achievement;
+          } else if (rp.participated) {
+            rp.achievement = "+" + rp.pointsEarned + " pts";
+          } else {
+            rp.achievement = "Không tham gia";
+          }
+        });
+      }
+
       teamProfileStats[k] = {
         partnerName: teamDataMap[k].name,
         currentRank: curRank,
@@ -1836,7 +1876,8 @@
         semiCount: sCount,
         quarterCount: qCount,
         championTourneys: allChampionTourneys[k],
-        performances: allTourneyPerformances[k]
+        performances: allTourneyPerformances[k],
+        rankProgression: teamRankProgression[k] || []
       };
     });
 

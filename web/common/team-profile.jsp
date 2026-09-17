@@ -57,6 +57,9 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=<%= System.currentTimeMillis() %>">
+        
+        <!-- Chart.js for Rank Progression Chart -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body>
         <!-- Shared Navigation Header Component -->
@@ -218,6 +221,35 @@
                     </div>
                 </div>
 
+            </div>
+
+            <!-- Rank Progression Chart Card -->
+            <div class="team-performance-card rank-chart-card" id="rankProgressionCard">
+                <div class="team-performance-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <h3 class="team-performance-title" style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-chart-line text-mint"></i> Biến Động Thứ Hạng Qua Các Mốc Giải Đấu
+                        </h3>
+                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
+                            Thứ hạng trên BXH Series sau từng giải đấu (Điểm tích lũy trong cửa sổ trượt W = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>)
+                        </p>
+                    </div>
+                    <div class="rank-chart-legend">
+                        <span class="rank-chart-legend-item">
+                            <span class="rank-chart-dot-gold"></span> Hạng #1 BXH
+                        </span>
+                        <span class="rank-chart-legend-item">
+                            <span class="rank-chart-dot-mint"></span> Có tham gia
+                        </span>
+                        <span class="rank-chart-legend-item">
+                            <span class="rank-chart-dot-muted"></span> Không tham gia
+                        </span>
+                    </div>
+                </div>
+
+                <div class="rank-chart-wrapper">
+                    <canvas id="teamRankChart"></canvas>
+                </div>
             </div>
 
             <!-- Tournament Performance Table Card -->
@@ -387,6 +419,29 @@
                         sb.append("}");
                 %>
                     <%= sb.toString() %><%= (sIdx < serverTourneyParticipation.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
+            <%
+                List<controller.TeamProfileServlet.RankProgressionDTO> rankProgressionList = (List<controller.TeamProfileServlet.RankProgressionDTO>) request.getAttribute("rankProgressionList");
+            %>
+            window.teamRankProgression = [
+                <% if (rankProgressionList != null) {
+                    for (int i = 0; i < rankProgressionList.size(); i++) {
+                        controller.TeamProfileServlet.RankProgressionDTO rp = rankProgressionList.get(i);
+                        String safeTName = (rp.getTournamentName() != null) ? rp.getTournamentName().replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
+                        String safeAch = (rp.getAchievement() != null) ? rp.getAchievement().replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                %>
+                    {
+                        tournamentId: "<%= rp.getTournamentId() %>",
+                        tournamentName: "<%= safeTName %>",
+                        tournamentIndex: <%= rp.getTournamentIndex() %>,
+                        rank: <%= rp.getRank() %>,
+                        totalActivePoints: <%= rp.getTotalActivePoints() %>,
+                        pointsEarned: <%= rp.getPointsEarned() %>,
+                        achievement: "<%= safeAch %>",
+                        participated: <%= rp.isParticipated() %>
+                    }<%= (i < rankProgressionList.size() - 1) ? "," : "" %>
                 <%  }
                 } %>
             ];
