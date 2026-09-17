@@ -404,8 +404,25 @@
       }
     } catch (e) {}
 
-    // Priority: DB pointsConfig first, fallback to localPtsCfg
-    var ptsCfg = Object.assign({}, localPtsCfg || {}, t.pointsConfig || {});
+    // Dynamic points config resolution:
+    // 1. Base from database (t.pointsConfig)
+    // 2. User's custom configuration from browser (localPtsCfg) takes precedence/enriches
+    // 3. If completely empty, apply dynamic proportional fallback
+    var ptsCfg = {};
+    if (t.pointsConfig && typeof t.pointsConfig === 'object') {
+      Object.assign(ptsCfg, t.pointsConfig);
+    }
+    if (localPtsCfg && typeof localPtsCfg === 'object' && Object.keys(localPtsCfg).length > 0) {
+      Object.assign(ptsCfg, localPtsCfg);
+    }
+    if (Object.keys(ptsCfg).length === 0) {
+      var champPts = (t.seriesRewardPoints && t.seriesRewardPoints > 0) ? t.seriesRewardPoints : 100;
+      ptsCfg["1"] = champPts;
+      ptsCfg["2"] = Math.round(champPts * 0.70);
+      ptsCfg["3-4"] = Math.round(champPts * 0.40);
+      ptsCfg["5-8"] = Math.round(champPts * 0.20);
+      ptsCfg["9-16"] = Math.round(champPts * 0.10);
+    }
     var teamPointsAwarded = {}; // teamKey -> max points
     var teamParticipated = {};  // teamKey -> true
     var teamPositionsAwarded = {}; // teamKey -> posKey
@@ -475,6 +492,7 @@
       if (s === "65-128") return "Round of 128";
       if (s === "s1_lb_r2") return "Loser's Qualification";
       if (s === "s1_lb_r1") return "Loser's Round 1";
+      if (s.startsWith("s1_lb_r")) return "Loser's Qualification";
       if (s === "stage1_eliminated") return "Vòng Bảng";
       return "Round of 16";
     }
@@ -490,8 +508,11 @@
       if (s === "17-32") return 17;
       if (s === "33-64") return 33;
       if (s === "s1_lb_cut" || s === "Loser's Qualification" || s === "65-96") return 65;
-      if (s === "s1_lb_r2") return 80;
-      if (s === "s1_lb_r1" || s === "65-128") return 97;
+      if (s.startsWith("s1_lb_r")) {
+        var rNum = parseInt(s.replace("s1_lb_r", ""), 10) || 1;
+        return Math.max(66, 100 - rNum);
+      }
+      if (s === "65-128") return 97;
       return 129;
     }
 
