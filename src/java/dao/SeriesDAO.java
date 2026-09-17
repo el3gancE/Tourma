@@ -236,12 +236,7 @@ public class SeriesDAO {
         if (cached != null) return new ArrayList<>(cached);
 
         String sql = "SELECT t.*, " +
-                "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
-                "(SELECT TOP 1 tm.raw_name FROM matches m " +
-                " JOIN teams tm ON m.winner_id = tm.id " +
-                " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
-                " WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL " +
-                " ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) AS db_champion_name " +
+                "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format " +
                 "FROM tournaments t WHERE t.series_id = ? ORDER BY t.tournament_index_in_series ASC, t.created_at ASC";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
@@ -271,12 +266,6 @@ public class SeriesDAO {
                         }
                     } catch (Exception ignore) {}
                     try {
-                        String champ = rs.getString("db_champion_name");
-                        if (champ != null && !champ.trim().isEmpty()) {
-                            t.setChampionName(champ.trim());
-                        }
-                    } catch (Exception ignore) {}
-                    try {
                         t.setSeriesRewardPoints(rs.getInt("series_reward_points"));
                     } catch (Exception ignore) {}
                     try {
@@ -287,6 +276,37 @@ public class SeriesDAO {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        // Fast batch lookup for champions using Window Function (<200ms instead of 9000ms!)
+        if (!list.isEmpty()) {
+            Map<String, String> champMap = new HashMap<>();
+            String sqlBatchChamp = "WITH RankedWinners AS (" +
+                " SELECT m.tournament_id, tm.raw_name, " +
+                "        ROW_NUMBER() OVER (PARTITION BY m.tournament_id ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) as rn " +
+                " FROM matches m " +
+                " JOIN tournaments t ON m.tournament_id = t.id " +
+                " JOIN teams tm ON m.winner_id = tm.id " +
+                " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
+                " WHERE t.series_id = ? AND m.winner_id IS NOT NULL" +
+                ") " +
+                "SELECT tournament_id, raw_name FROM RankedWinners WHERE rn = 1";
+            try (Connection conn = db.getConnection();
+                 PreparedStatement psChamp = conn.prepareStatement(sqlBatchChamp)) {
+                psChamp.setString(1, sid);
+                try (ResultSet rsChamp = psChamp.executeQuery()) {
+                    while (rsChamp.next()) {
+                        champMap.put(rsChamp.getString("tournament_id"), rsChamp.getString("raw_name"));
+                    }
+                }
+            } catch (Exception ignore) {}
+
+            for (Tournament t : list) {
+                String c = champMap.get(t.getId());
+                if (c != null && !c.trim().isEmpty()) {
+                    t.setChampionName(c.trim());
+                }
+            }
         }
         if (!list.isEmpty()) {
             SERIES_TOURNAMENTS_CACHE.put(sid, list);

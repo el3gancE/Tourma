@@ -118,14 +118,14 @@ public class RollingHofServlet extends HttpServlet {
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
 
-            ParticipantDAO pDao = new ParticipantDAO();
+            service.RollingWindowPointService rwps = service.RollingWindowPointService.getInstance();
             Map<String, TeamChampionStatsDTO> statsMap = new HashMap<>();
             Map<String, Integer> teamCumulativeChamps = new HashMap<>();
 
             if (tournamentsList != null) {
                 for (Tournament t : tournamentsList) {
-                    Map<String, Integer> placements = pDao.getTournamentPlacements(t.getId());
-                    List<Team> teams = pDao.getTeamsByTournamentId(t.getId());
+                    Map<String, Integer> placements = rwps.getCachedTournamentPlacements(t.getId());
+                    List<Team> teams = rwps.getCachedTeamsByTournamentId(t.getId());
 
                     String champName = null;
                     String runnerUpName = null;

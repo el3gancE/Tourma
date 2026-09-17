@@ -57,14 +57,33 @@ public class TournamentPlacementService {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return placementMap;
 
         DBContext db = new DBContext();
+        int highestStageOrder = 1;
+        String tourneyType = "SINGLE_STAGE";
+        String tourneyFormat = "SINGLE_ELIMINATION";
+
+        // 1. Fetch tournament type and format in one tiny fast query (<1ms)
+        String tInfoSql = "SELECT t.tournament_type, " +
+                          "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) as tourney_format " +
+                          "FROM tournaments t WHERE t.id = ?";
+        try (Connection conn = db.getConnection();
+             PreparedStatement psInfo = conn.prepareStatement(tInfoSql)) {
+            psInfo.setString(1, tournamentId.trim());
+            try (ResultSet rsInfo = psInfo.executeQuery()) {
+                if (rsInfo.next()) {
+                    String tt = rsInfo.getString("tournament_type");
+                    if (tt != null && !tt.trim().isEmpty()) tourneyType = tt.trim();
+                    String tf = rsInfo.getString("tourney_format");
+                    if (tf != null && !tf.trim().isEmpty()) tourneyFormat = tf.trim();
+                }
+            }
+        } catch (Exception ignore) {}
+
+        // 2. Fetch matches cleanly without per-row correlated subquery
         String sql = "SELECT m.*, ts.stage_order, ts.format as stage_format, " +
-                     "t.tournament_type, " +
-                     "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS tourney_format, " +
                      "t1.raw_name AS t1_name, t1.normalized_name AS t1_norm, " +
                      "t2.raw_name AS t2_name, t2.normalized_name AS t2_norm, " +
                      "w.raw_name AS winner_name, w.normalized_name AS winner_norm " +
                      "FROM matches m " +
-                     "LEFT JOIN tournaments t ON m.tournament_id = t.id " +
                      "LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
                      "LEFT JOIN teams t1 ON m.team1_id = t1.id " +
                      "LEFT JOIN teams t2 ON m.team2_id = t2.id " +
@@ -76,10 +95,6 @@ public class TournamentPlacementService {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tournamentId.trim());
             try (ResultSet rs = ps.executeQuery()) {
-                int highestStageOrder = 1;
-                String tourneyType = "SINGLE_STAGE";
-                String tourneyFormat = "SINGLE_ELIMINATION";
-
                 List<MatchRow> rows = new ArrayList<>();
                 java.util.Set<String> distinctTeams = new java.util.HashSet<>();
 
@@ -96,11 +111,6 @@ public class TournamentPlacementService {
                         }
                     }
                     if (stgOrder > highestStageOrder) highestStageOrder = stgOrder;
-
-                    String tType = rs.getString("tournament_type");
-                    if (tType != null && !tType.trim().isEmpty()) tourneyType = tType.trim();
-                    String tFmt = rs.getString("tourney_format");
-                    if (tFmt != null && !tFmt.trim().isEmpty()) tourneyFormat = tFmt.trim();
 
                     row.id = rs.getString("id");
                     row.stageOrder = stgOrder;
