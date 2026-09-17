@@ -688,20 +688,21 @@
    Nền ngọc lục bảo đặc (solid emerald), sóng sonar xung tỏa và vệt sáng pha lê quét chéo
    ============================================================================ */
 
-/* --- PHASE 1: Nền Xanh Ngọc Lục Bảo Đặc + Xung Sóng Sonar Tỏa Ra --- */
+/* --- PHASE 1: Nền Xanh Lục Bảo Trong Suốt Kính Mờ (Đồng Bộ Hệ Thống) --- */
 .tourma-badge-phase-1 {
   position: relative;
-  background: linear-gradient(135deg, #044332 0%, #065f46 50%, #047857 100%);
-  border: 1.5px solid #10b981;
-  color: #ffffff;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1.25px solid #10b981;
+  color: #34d399;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
   animation: phase1SonarPulse 2.8s infinite cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .tourma-badge-phase-1:hover {
   transform: translateY(-2px) scale(1.03);
   border-color: #6ee7b7;
-  background: linear-gradient(135deg, #05553f 0%, #047857 50%, #059669 100%);
-  box-shadow: 0 6px 18px rgba(6, 78, 59, 0.7), 0 0 18px rgba(52, 211, 153, 0.8);
+  background: rgba(16, 185, 129, 0.32);
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.7), inset 0 0 8px rgba(52, 211, 153, 0.25);
 }
 
 /* Lớp Phủ Vệt Sáng Pha Lê Lướt Chéo Qua Bề Mặt Badge */
@@ -727,9 +728,9 @@
   background: linear-gradient(
     105deg,
     transparent 15%,
-    rgba(255, 255, 255, 0.2) 35%,
-    rgba(255, 255, 255, 0.85) 50%,
-    rgba(167, 243, 208, 0.6) 62%,
+    rgba(255, 255, 255, 0.15) 35%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(167, 243, 208, 0.5) 62%,
     transparent 80%
   );
   transform: rotate(22deg);
@@ -741,7 +742,7 @@
   position: relative;
   z-index: 2;
   font-size: 0.82rem;
-  color: #6ee7b7;
+  color: #34d399;
   flex-shrink: 0;
   display: inline-block;
   transform-style: preserve-3d;
@@ -749,15 +750,14 @@
   animation: phase1Gem3DSpin 3.4s infinite ease-in-out;
 }
 
-/* Tên Badge "Phase 1 #1" - Trắng tinh khiết nổi bật trên nền xanh ngọc */
+/* Tên Badge "Phase 1 #1" - Màu xanh ngọc đồng bộ với icon và viền */
 .tourma-badge-phase-1 .tourma-badge-name {
   position: relative;
   z-index: 2;
   font-weight: 800;
   font-size: 0.82rem;
-  letter-spacing: 0.3px;
-  color: #ffffff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7), 0 0 8px rgba(52, 211, 153, 0.5);
+  letter-spacing: 0.2px;
+  color: #34d399;
 }
 
 /* Tooltip Hover Cho Phase 1 */
@@ -781,15 +781,15 @@
 /* 1. Sóng Sonar xung tỏa ra ngoài nhịp nhàng */
 @keyframes phase1SonarPulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.65), 0 4px 12px rgba(4, 67, 50, 0.7);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.65), 0 0 8px rgba(16, 185, 129, 0.35);
     border-color: #34d399;
   }
   55% {
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0), 0 4px 14px rgba(16, 185, 129, 0.35);
+    box-shadow: 0 0 0 7px rgba(16, 185, 129, 0), 0 0 12px rgba(16, 185, 129, 0.4);
     border-color: #10b981;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0), 0 4px 12px rgba(4, 67, 50, 0.7);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0), 0 0 8px rgba(16, 185, 129, 0.35);
     border-color: #34d399;
   }
 }
@@ -840,4 +840,117 @@
     color: #6ee7b7;
     filter: drop-shadow(0 0 3px #10b981);
   }
+}
+
+/* ============================================================================
+   11. STATIC TOURNAMENT MILESTONE BADGES (Runner-Up, Veteran, Podium)
+   Badge tĩnh (Static): Nền kính mờ trong suốt (translucent rgba), màu chữ đồng bộ icon giống hệt hệ thống badge cũ
+   ============================================================================ */
+
+/* --- 1. RUNNER-UP (Bạc Bạch Kim - Silver Platinum) --- */
+.tourma-badge-runner-up {
+  background: rgba(148, 163, 184, 0.18);
+  border: 1.25px solid rgba(148, 163, 184, 0.55);
+  color: #cbd5e1;
+  box-shadow: 0 0 6px rgba(148, 163, 184, 0.25);
+}
+.tourma-badge-runner-up .badge-icon {
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-runner-up .tourma-badge-name {
+  color: #cbd5e1;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-runner-up:hover {
+  border-color: #f1f5f9;
+  background: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 0 14px rgba(148, 163, 184, 0.6), inset 0 0 6px rgba(148, 163, 184, 0.2);
+}
+.tourma-badge-runner-up .tourma-badge-tooltip {
+  border-color: rgba(148, 163, 184, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(148, 163, 184, 0.25) !important;
+}
+.tourma-badge-runner-up .tourma-badge-tooltip-title {
+  color: #cbd5e1;
+}
+.tourma-badge-runner-up .tourma-badge-tooltip-rarity {
+  background: rgba(148, 163, 184, 0.22);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+/* --- 2. VETERAN (Tím Lam Hoàng Gia - Royal Purple / Violet) --- */
+.tourma-badge-veteran {
+  background: rgba(168, 85, 247, 0.18);
+  border: 1.25px solid rgba(168, 85, 247, 0.55);
+  color: #c084fc;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.25);
+}
+.tourma-badge-veteran .badge-icon {
+  color: #c084fc;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-veteran .tourma-badge-name {
+  color: #c084fc;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-veteran:hover {
+  border-color: #d8b4fe;
+  background: rgba(168, 85, 247, 0.28);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.6), inset 0 0 6px rgba(168, 85, 247, 0.2);
+}
+.tourma-badge-veteran .tourma-badge-tooltip {
+  border-color: rgba(168, 85, 247, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(168, 85, 247, 0.25) !important;
+}
+.tourma-badge-veteran .tourma-badge-tooltip-title {
+  color: #c084fc;
+}
+.tourma-badge-veteran .tourma-badge-tooltip-rarity {
+  background: rgba(168, 85, 247, 0.22);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+}
+
+/* --- 3. PODIUM (Hổ Phách Bục Vinh Quang - Warm Amber) --- */
+.tourma-badge-podium {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1.25px solid rgba(245, 158, 11, 0.55);
+  color: #fbbf24;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.25);
+}
+.tourma-badge-podium .badge-icon {
+  color: #fbbf24;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-podium .tourma-badge-name {
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-podium:hover {
+  border-color: #fde047;
+  background: rgba(245, 158, 11, 0.28);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.6), inset 0 0 6px rgba(245, 158, 11, 0.2);
+}
+.tourma-badge-podium .tourma-badge-tooltip {
+  border-color: rgba(245, 158, 11, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(245, 158, 11, 0.25) !important;
+}
+.tourma-badge-podium .tourma-badge-tooltip-title {
+  color: #fbbf24;
+}
+.tourma-badge-podium .tourma-badge-tooltip-rarity {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.45);
 }
