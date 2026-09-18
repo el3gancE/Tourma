@@ -605,8 +605,7 @@ public class TeamProfileServlet extends HttpServlet {
         }
         if (!performanceList.isEmpty()) {
             totalAccumulatedPoints = sumTablePoints;
-            int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
-            if (performanceList.size() <= phaseSize) {
+            if (currentPoints == 0 && currentRank == 0) {
                 currentPoints = sumTablePoints;
             }
         }

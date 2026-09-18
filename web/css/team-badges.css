@@ -373,8 +373,8 @@
   text-align: left;
   padding: 0.65rem 0.85rem;
   border-radius: 10px;
-  width: 240px;
-  max-width: min(240px, calc(100vw - 24px));
+  width: 260px;
+  max-width: min(300px, calc(100vw - 32px));
   box-sizing: border-box;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 1px rgba(255, 255, 255, 0.3) !important;
   font-size: 0.76rem;
@@ -481,6 +481,17 @@
 .tourma-badge-tooltip.align-left::after {
   left: 20px !important;
   right: auto !important;
+}
+
+/* Specific to Header Badges (.team-profile-badges-top) which are justified to flex-end (top right of screen) */
+.team-profile-badges-top .tourma-badge-tooltip {
+  left: auto !important;
+  right: 0 !important;
+}
+
+.team-profile-badges-top .tourma-badge-tooltip::after {
+  left: auto !important;
+  right: 20px !important;
 }
 
 .tourma-badge-pill:hover .tourma-badge-tooltip,
@@ -682,6 +693,30 @@
   color: #fbbf24;
   font-size: 0.6rem;
 }
+
+.tourma-badge-tier-s .streak-footer-title { color: #fbbf24; }
+.tourma-badge-tier-s .streak-tourney-item i { color: #fbbf24; }
+
+.tourma-badge-tier-a .streak-footer-title { color: #c084fc; }
+.tourma-badge-tier-a .streak-tourney-item i { color: #c084fc; }
+
+.tourma-badge-tier-b .streak-footer-title { color: #34d399; }
+.tourma-badge-tier-b .streak-tourney-item i { color: #34d399; }
+
+.tourma-badge-tier-c .streak-footer-title { color: #60a5fa; }
+.tourma-badge-tier-c .streak-tourney-item i { color: #60a5fa; }
+
+.tourma-badge-tier-d .streak-footer-title { color: #e2e8f0; }
+.tourma-badge-tier-d .streak-tourney-item i { color: #e2e8f0; }
+
+.tourma-badge-runner-up .streak-footer-title { color: #38bdf8; }
+.tourma-badge-runner-up .streak-tourney-item i { color: #38bdf8; }
+
+.tourma-badge-veteran .streak-footer-title { color: #fbbf24; }
+.tourma-badge-veteran .streak-tourney-item i { color: #fbbf24; }
+
+.tourma-badge-podium .streak-footer-title { color: #a78bfa; }
+.tourma-badge-podium .streak-tourney-item i { color: #a78bfa; }
 
 /* ============================================================================
    10. PHASE 1 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 1)

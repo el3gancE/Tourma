@@ -203,25 +203,47 @@
   }
 
   /**
-   * Helper to count cups won by tier for a given team
+   * Helper to count cups won by tier for a given team and collect the exact tournament objects won
    */
-  function getTierWinCounts(teamName, context) {
-    var counts = { S: 0, A: 0, B: 0, C: 0, D: 0 };
+  function getTierWinStats(teamName, context) {
+    var stats = {
+      S: { count: 0, tourneys: [] },
+      A: { count: 0, tourneys: [] },
+      B: { count: 0, tourneys: [] },
+      C: { count: 0, tourneys: [] },
+      D: { count: 0, tourneys: [] }
+    };
     var subTourneys = context.subTournaments || window.seriesSubTournaments || [];
-    // Use a Set-like object keyed by tournament id to prevent any double-counting
-    var processed = {};
+    var processedIds = {};
+    var processedNames = {};
 
-    // 1. Scan subTourneys — the authoritative list; mark ALL visited ids regardless of win
+    function addWin(tId, tName, tierStr) {
+      var cleanName = (tName || '').trim();
+      var keyName = cleanName.toLowerCase();
+      var tier = (tierStr || 'A').toUpperCase().trim();
+      if (!stats.hasOwnProperty(tier)) tier = 'A';
+
+      if (stats.hasOwnProperty(tier)) {
+        stats[tier].count++;
+        stats[tier].tourneys.push({
+          id: tId || '',
+          name: cleanName || ('Giải ' + tId),
+          tier: tier
+        });
+      }
+    }
+
+    // 1. Scan subTourneys — authoritative list; mark all visited ids
     for (var i = 0; i < subTourneys.length; i++) {
       var t = subTourneys[i];
       if (!t || !t.id) continue;
-      // Always mark as processed so steps 2 & 3 won't re-count same tournament
-      processed[t.id] = true;
+      processedIds[t.id] = true;
+      var subName = (t.name || '').trim();
+      if (subName) processedNames[subName.toLowerCase()] = true;
+
       if (isTeamChampOfTourney(t, teamName, context)) {
         var tier = (t.tierName || t.tier || 'A').toUpperCase().trim();
-        if (counts.hasOwnProperty(tier)) {
-          counts[tier]++;
-        }
+        addWin(t.id, t.name, tier);
       }
     }
 
@@ -231,14 +253,15 @@
       var ct = champList[j];
       if (!ct) continue;
       var ctId = ct.id || ct.tournamentId;
-      // Skip if this tournament was already processed in step 1
-      if (ctId && processed[ctId]) continue;
+      var ctName = (ct.name || ct.tournamentName || '').trim();
+      if (ctId && processedIds[ctId]) continue;
+      if (ctName && processedNames[ctName.toLowerCase()]) continue;
+
+      if (ctId) processedIds[ctId] = true;
+      if (ctName) processedNames[ctName.toLowerCase()] = true;
 
       var cTier = (ct.tier || ct.tierName || 'A').toUpperCase().trim();
-      if (counts.hasOwnProperty(cTier)) {
-        counts[cTier]++;
-        if (ctId) processed[ctId] = true;
-      }
+      addWin(ctId, ctName, cTier);
     }
 
     // 3. Scan tourneyPerformances — only count tournaments NOT already seen in steps 1 or 2
@@ -247,17 +270,33 @@
       var perf = perfs[k];
       if (perf && (perf.achievement === 'Vô Địch' || perf.achievement === 'Champion')) {
         var pId = perf.id || perf.tournamentId;
-        if (pId && processed[pId]) continue;
+        var pName = (perf.name || perf.tournamentName || '').trim();
+        if (pId && processedIds[pId]) continue;
+        if (pName && processedNames[pName.toLowerCase()]) continue;
+
+        if (pId) processedIds[pId] = true;
+        if (pName) processedNames[pName.toLowerCase()] = true;
 
         var pTier = (perf.tier || perf.tierName || 'A').toUpperCase().trim();
-        if (counts.hasOwnProperty(pTier)) {
-          counts[pTier]++;
-          if (pId) processed[pId] = true;
-        }
+        addWin(pId, pName, pTier);
       }
     }
 
-    return counts;
+    return stats;
+  }
+
+  /**
+   * Helper to count cups won by tier for a given team
+   */
+  function getTierWinCounts(teamName, context) {
+    var stats = getTierWinStats(teamName, context);
+    return {
+      S: stats.S.count,
+      A: stats.A.count,
+      B: stats.B.count,
+      C: stats.C.count,
+      D: stats.D.count
+    };
   }
 
   /**
@@ -303,19 +342,19 @@
         milestones.champCount++;
         milestones.finalsCount++;
         milestones.top4Count++;
-        milestones.finalTourneys.push(tObj);
+        milestones.finalTourneys.push({ id: tObj.id, name: tObj.name, tier: tObj.tier, isChamp: true });
         milestones.top4Tourneys.push(tObj);
       } else if (isRunnerUp) {
         milestones.runnerUpCount++;
         milestones.finalsCount++;
         milestones.top4Count++;
         milestones.runnerUpTourneys.push(tObj);
-        milestones.finalTourneys.push(tObj);
+        milestones.finalTourneys.push({ id: tObj.id, name: tObj.name, tier: tObj.tier, isRunnerUp: true });
         milestones.top4Tourneys.push(tObj);
       } else if (isSemi) {
         milestones.semiCount++;
         milestones.top4Count++;
-        milestones.top4Tourneys.push(tObj);
+        milestones.top4Tourneys.push({ id: tObj.id, name: tObj.name, tier: tObj.tier, isSemi: true });
       }
     }
 
@@ -334,7 +373,7 @@
         milestones.champCount++;
         milestones.finalsCount++;
         milestones.top4Count++;
-        milestones.finalTourneys.push(subObj);
+        milestones.finalTourneys.push({ id: subObj.id, name: subObj.name, tier: subObj.tier, isChamp: true });
         milestones.top4Tourneys.push(subObj);
         continue;
       }
@@ -360,7 +399,7 @@
                   milestones.finalsCount++;
                   milestones.top4Count++;
                   milestones.runnerUpTourneys.push(fObj);
-                  milestones.finalTourneys.push(fObj);
+                  milestones.finalTourneys.push({ id: fObj.id, name: fObj.name, tier: fObj.tier, isRunnerUp: true });
                   milestones.top4Tourneys.push(fObj);
                   continue;
                 }
@@ -499,19 +538,21 @@
     themeClass: 'tourma-badge-tier-s',
     iconClass: 'fa-solid fa-trophy',
     evaluate: function (teamName, context) {
-      var counts = getTierWinCounts(teamName, context);
-      var n = counts['S'] || 0;
+      var stats = getTierWinStats(teamName, context);
+      var stat = stats['S'] || { count: 0, tourneys: [] };
+      var n = stat.count;
       if (n >= 1) {
         var name = (n === 1) ? 'S-Tier Winner' : (n + 'x S-Tier Winner');
         return {
           id: 'TIER_S_WINNER',
           name: name,
           title: name,
+          category: 'TIER_CHAMPION',
           themeClass: 'tourma-badge-tier-s',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier S',
           description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ S (Tier S).',
-          meta: { count: n, tier: 'S' }
+          meta: { count: n, tier: 'S', tierTourneys: stat.tourneys }
         };
       }
       return null;
@@ -529,19 +570,21 @@
     themeClass: 'tourma-badge-tier-a',
     iconClass: 'fa-solid fa-trophy',
     evaluate: function (teamName, context) {
-      var counts = getTierWinCounts(teamName, context);
-      var n = counts['A'] || 0;
+      var stats = getTierWinStats(teamName, context);
+      var stat = stats['A'] || { count: 0, tourneys: [] };
+      var n = stat.count;
       if (n >= 2) {
         var name = n + 'x A-Tier Winner';
         return {
           id: 'TIER_A_WINNER',
           name: name,
           title: name,
+          category: 'TIER_CHAMPION',
           themeClass: 'tourma-badge-tier-a',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier A',
           description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ A (Tier A).',
-          meta: { count: n, tier: 'A' }
+          meta: { count: n, tier: 'A', tierTourneys: stat.tourneys }
         };
       }
       return null;
@@ -559,19 +602,21 @@
     themeClass: 'tourma-badge-tier-b',
     iconClass: 'fa-solid fa-trophy',
     evaluate: function (teamName, context) {
-      var counts = getTierWinCounts(teamName, context);
-      var n = counts['B'] || 0;
+      var stats = getTierWinStats(teamName, context);
+      var stat = stats['B'] || { count: 0, tourneys: [] };
+      var n = stat.count;
       if (n >= 3) {
         var name = n + 'x B-Tier Winner';
         return {
           id: 'TIER_B_WINNER',
           name: name,
           title: name,
+          category: 'TIER_CHAMPION',
           themeClass: 'tourma-badge-tier-b',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier B',
           description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ B (Tier B).',
-          meta: { count: n, tier: 'B' }
+          meta: { count: n, tier: 'B', tierTourneys: stat.tourneys }
         };
       }
       return null;
@@ -589,19 +634,21 @@
     themeClass: 'tourma-badge-tier-c',
     iconClass: 'fa-solid fa-trophy',
     evaluate: function (teamName, context) {
-      var counts = getTierWinCounts(teamName, context);
-      var n = counts['C'] || 0;
+      var stats = getTierWinStats(teamName, context);
+      var stat = stats['C'] || { count: 0, tourneys: [] };
+      var n = stat.count;
       if (n >= 4) {
         var name = n + 'x C-Tier Winner';
         return {
           id: 'TIER_C_WINNER',
           name: name,
           title: name,
+          category: 'TIER_CHAMPION',
           themeClass: 'tourma-badge-tier-c',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier C',
           description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ C (Tier C).',
-          meta: { count: n, tier: 'C' }
+          meta: { count: n, tier: 'C', tierTourneys: stat.tourneys }
         };
       }
       return null;
@@ -619,19 +666,21 @@
     themeClass: 'tourma-badge-tier-d',
     iconClass: 'fa-solid fa-trophy',
     evaluate: function (teamName, context) {
-      var counts = getTierWinCounts(teamName, context);
-      var n = counts['D'] || 0;
+      var stats = getTierWinStats(teamName, context);
+      var stat = stats['D'] || { count: 0, tourneys: [] };
+      var n = stat.count;
       if (n >= 5) {
         var name = n + 'x D-Tier Winner';
         return {
           id: 'TIER_D_WINNER',
           name: name,
           title: name,
+          category: 'TIER_CHAMPION',
           themeClass: 'tourma-badge-tier-d',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier D',
           description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ D (Tier D).',
-          meta: { count: n, tier: 'D' }
+          meta: { count: n, tier: 'D', tierTourneys: stat.tourneys }
         };
       }
       return null;
@@ -884,6 +933,8 @@
             finalsCount: m.finalsCount,
             runnerUpCount: m.runnerUpCount,
             champCount: m.champCount,
+            runnerUpTourneys: m.runnerUpTourneys,
+            finalTourneys: m.finalTourneys,
             tourneyName: m.runnerUpCount + ' lần Á Quân / ' + m.finalsCount + ' trận Chung Kết'
           }
         };
@@ -921,6 +972,7 @@
             finalsCount: m.finalsCount,
             champCount: m.champCount,
             runnerUpCount: m.runnerUpCount,
+            finalTourneys: m.finalTourneys,
             tourneyName: m.finalsCount + ' lần vào Chung Kết'
           }
         };
@@ -956,6 +1008,9 @@
           description: 'Tên tuổi quen thuộc trên bục vinh quang với ' + m.top4Count + ' lần lọt vào vòng Bán Kết của chuỗi giải.',
           meta: {
             top4Count: m.top4Count,
+            semiCount: m.semiCount,
+            finalsCount: m.finalsCount,
+            top4Tourneys: m.top4Tourneys,
             tourneyName: m.top4Count + ' lần vào Bán Kết'
           }
         };
@@ -1040,13 +1095,49 @@
 
         var footerText = '';
         if (b.meta && b.meta.phase) {
-          footerText = '<div class="tourma-badge-tooltip-footer"><i class="' + iconClass + '"></i> Hạng 1 BXH kết thúc Phase ' + b.meta.phase + (b.meta.tourneyName ? (': ' + b.meta.tourneyName) : '') + (b.meta.totalPts ? (' (' + b.meta.totalPts + ' điểm)') : '') + '</div>';
+          var pName = b.meta.tourneyName ? (': <strong>' + b.meta.tourneyName + '</strong>') : '';
+          var pPts = b.meta.totalPts ? (' (' + b.meta.totalPts + ' điểm)') : '';
+          footerText = '<div class="tourma-badge-tooltip-footer"><i class="' + iconClass + '"></i> Hạng 1 BXH kết thúc Phase ' + b.meta.phase + pName + pPts + '</div>';
         } else if (b.id === 'RUNNER_UP') {
-          footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-medal"></i> ' + (b.meta.runnerUpCount || 0) + ' lần Á Quân / ' + (b.meta.finalsCount || 0) + ' trận Chung Kết</div>';
+          if (b.meta && b.meta.runnerUpTourneys && b.meta.runnerUpTourneys.length > 0) {
+            var ruHtml = b.meta.runnerUpTourneys.map(function(t) {
+              var tName = t.name || t;
+              return '<span class="streak-tourney-item"><i class="fa-solid fa-medal"></i> ' + tName + '</span>';
+            }).join('');
+            footerText = '<div class="tourma-badge-tooltip-footer streak-footer">' +
+              '<div class="streak-footer-title"><i class="fa-solid fa-medal"></i> Các giải đạt Á Quân (' + (b.meta.runnerUpCount || b.meta.runnerUpTourneys.length) + '/' + (b.meta.finalsCount || 0) + ' CK):</div>' +
+              '<div class="streak-tourney-list">' + ruHtml + '</div>' +
+            '</div>';
+          } else {
+            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-medal"></i> ' + (b.meta.runnerUpCount || 0) + ' lần Á Quân / ' + (b.meta.finalsCount || 0) + ' trận Chung Kết</div>';
+          }
         } else if (b.id === 'VETERAN') {
-          footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Đã thi đấu ' + (b.meta.finalsCount || 0) + ' trận Chung Kết (' + (b.meta.champCount || 0) + ' Cúp, ' + (b.meta.runnerUpCount || 0) + ' Nhì)</div>';
+          if (b.meta && b.meta.finalTourneys && b.meta.finalTourneys.length > 0) {
+            var fnHtml = b.meta.finalTourneys.map(function(t) {
+              var tName = t.name || t;
+              var suffix = t.isChamp ? ' (VĐ)' : (t.isRunnerUp ? ' (Nhì)' : '');
+              return '<span class="streak-tourney-item"><i class="fa-solid fa-award"></i> ' + tName + suffix + '</span>';
+            }).join('');
+            footerText = '<div class="tourma-badge-tooltip-footer streak-footer">' +
+              '<div class="streak-footer-title"><i class="fa-solid fa-award"></i> Các giải vào Chung Kết (' + (b.meta.finalsCount || b.meta.finalTourneys.length) + ' trận):</div>' +
+              '<div class="streak-tourney-list">' + fnHtml + '</div>' +
+            '</div>';
+          } else {
+            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Đã thi đấu ' + (b.meta.finalsCount || 0) + ' trận Chung Kết (' + (b.meta.champCount || 0) + ' Cúp, ' + (b.meta.runnerUpCount || 0) + ' Nhì)</div>';
+          }
         } else if (b.id === 'PODIUM') {
-          footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-ranking-star"></i> ' + (b.meta.top4Count || 0) + ' lần vào Bán Kết trở lên</div>';
+          if (b.meta && b.meta.top4Tourneys && b.meta.top4Tourneys.length > 0) {
+            var top4Html = b.meta.top4Tourneys.map(function(t) {
+              var tName = t.name || t;
+              return '<span class="streak-tourney-item"><i class="fa-solid fa-ranking-star"></i> ' + tName + '</span>';
+            }).join('');
+            footerText = '<div class="tourma-badge-tooltip-footer streak-footer">' +
+              '<div class="streak-footer-title"><i class="fa-solid fa-ranking-star"></i> Các giải vào Bán Kết trở lên (' + (b.meta.top4Count || b.meta.top4Tourneys.length) + ' lần):</div>' +
+              '<div class="streak-tourney-list">' + top4Html + '</div>' +
+            '</div>';
+          } else {
+            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-ranking-star"></i> ' + (b.meta.top4Count || 0) + ' lần vào Bán Kết trở lên</div>';
+          }
         } else if (b.meta && b.meta.streakTourneys && b.meta.streakTourneys.length > 0) {
           var itemsHtml = b.meta.streakTourneys.map(function(t) {
             var tName = t.name || t;
@@ -1058,7 +1149,26 @@
             '<div class="streak-tourney-list">' + itemsHtml + '</div>' +
           '</div>';
         } else if (b.category === 'TIER_CHAMPION' && b.meta && b.meta.tier) {
-          footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Danh hiệu vô địch Tier ' + b.meta.tier + ' (' + b.meta.count + ' cúp)</div>';
+          if (b.meta.tierTourneys && b.meta.tierTourneys.length > 0) {
+            var tItemsHtml = b.meta.tierTourneys.map(function(t) {
+              var tName = t.name || t;
+              return '<span class="streak-tourney-item"><i class="fa-solid fa-trophy"></i> ' + tName + '</span>';
+            }).join('');
+            footerText = '<div class="tourma-badge-tooltip-footer streak-footer">' +
+              '<div class="streak-footer-title"><i class="fa-solid fa-trophy"></i> Các giải đã vô địch (Tier ' + b.meta.tier + '):</div>' +
+              '<div class="streak-tourney-list">' + tItemsHtml + '</div>' +
+            '</div>';
+          } else {
+            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Danh hiệu vô địch Tier ' + b.meta.tier + ' (' + b.meta.count + ' cúp)</div>';
+          }
+        } else if (b.id === 'INAUGURAL_CHAMPION' && (b.meta && b.meta.tourneyName || tourneyName)) {
+          var inName = (b.meta && b.meta.tourneyName) ? b.meta.tourneyName : tourneyName;
+          var inTier = (b.meta && b.meta.tier) ? (' (Tier ' + b.meta.tier + ')') : '';
+          footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-crown"></i> Vô địch giải mở màn: <strong>' + inName + '</strong>' + inTier + '</div>';
+        } else if (b.id === 'DEFENDING_CHAMPION' && (b.meta && b.meta.tourneyName || tourneyName)) {
+          var defName = (b.meta && b.meta.tourneyName) ? b.meta.tourneyName : tourneyName;
+          var defTier = (b.meta && b.meta.tier) ? (' (Tier ' + b.meta.tier + ')') : '';
+          footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-shield-halved"></i> Đương kim vô địch: <strong>' + defName + '</strong>' + defTier + '</div>';
         } else if (tourneyName) {
           footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-trophy"></i> Vô địch ' + tourneyName + '</div>';
         }
@@ -1081,6 +1191,43 @@
       });
 
       container.innerHTML = html;
+
+      // Smart boundary-aware tooltip alignment (prevents screen edge overflow)
+      var pills = container.querySelectorAll('.tourma-badge-pill');
+      pills.forEach(function (pill) {
+        var tooltip = pill.querySelector('.tourma-badge-tooltip');
+        if (!tooltip) return;
+
+        if (pill.hasAttribute('title')) pill.removeAttribute('title');
+        var elTitles = pill.querySelectorAll('[title]');
+        elTitles.forEach(function (el) { el.removeAttribute('title'); });
+
+        function checkPosition() {
+          var pillRect = pill.getBoundingClientRect();
+          var windowWidth = window.innerWidth || document.documentElement.clientWidth;
+          var tooltipWidth = tooltip.offsetWidth > 0 ? tooltip.offsetWidth : 260;
+
+          var isTopRightContainer = !!pill.closest('.team-profile-badges-top');
+          var overflowsRight = (pillRect.left + tooltipWidth > windowWidth - 16);
+
+          if (overflowsRight || (isTopRightContainer && pillRect.right > windowWidth / 2)) {
+            tooltip.classList.add('align-right');
+            tooltip.classList.remove('align-left');
+            tooltip.style.left = 'auto';
+            tooltip.style.right = '0px';
+          } else {
+            tooltip.classList.remove('align-right');
+            tooltip.classList.add('align-left');
+            tooltip.style.left = '0px';
+            tooltip.style.right = 'auto';
+          }
+        }
+
+        pill.addEventListener('mouseenter', checkPosition);
+        pill.addEventListener('focus', checkPosition);
+        pill.addEventListener('touchstart', checkPosition, { passive: true });
+        checkPosition();
+      });
     }
   };
 

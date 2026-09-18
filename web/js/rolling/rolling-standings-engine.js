@@ -1895,8 +1895,7 @@
         });
       }
 
-      var effectivePhaseSize = (options.phaseSize && options.phaseSize > 0) ? options.phaseSize : 3;
-      if (playedCount <= effectivePhaseSize || (allTourneyPerformances[k] && allTourneyPerformances[k].length <= effectivePhaseSize)) {
+      if (curPts === 0 && (!rankMap || !rankMap[k])) {
         curPts = sumTablePts;
       }
 
