@@ -177,12 +177,14 @@ public class RoundRobinServlet extends HttpServlet {
 
     private void tryRecalculateSeriesStandings(String tournamentId) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return;
-        try {
-            dao.TournamentDAO tDao = new dao.TournamentDAO();
-            model.Tournament t = tDao.getTournamentById(tournamentId.trim());
-            if (t != null && t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
-                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(t.getSeriesId().trim());
-            }
-        } catch (Exception ignore) {}
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                dao.TournamentDAO tDao = new dao.TournamentDAO();
+                model.Tournament t = tDao.getTournamentById(tournamentId.trim());
+                if (t != null && t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
+                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(t.getSeriesId().trim());
+                }
+            } catch (Exception ignore) {}
+        });
     }
 }

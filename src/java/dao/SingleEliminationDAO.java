@@ -477,7 +477,7 @@ public class SingleEliminationDAO extends DBContext {
             try {
                 String sId = new TournamentDAO().getSeriesIdByTournamentId(tournamentId);
                 if (sId != null && !sId.trim().isEmpty()) {
-                    new SeriesDAO().recalculateSeriesStandings(sId.trim());
+                    new SeriesDAO().recalculateSeriesStandingsAsync(sId.trim());
                 }
             } catch (Exception ignore) {}
 

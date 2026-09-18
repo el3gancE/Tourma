@@ -212,6 +212,16 @@
             }
 
             var hasDbMatches = (dbMatches && Array.isArray(dbMatches) && dbMatches.length > 0);
+
+            // Validate dbMatches integrity (reject stale or incomplete DB data)
+            if (hasDbMatches && this.teamsList && this.teamsList.length >= 2) {
+                var expectedMatches = this.teamsList.length - 1;
+                if (dbMatches.length < expectedMatches) {
+                    console.warn('[SE restore] dbMatches has only ' + dbMatches.length + ' matches, expected at least ' + expectedMatches + '. Stale/incomplete DB data ignored!');
+                    hasDbMatches = false;
+                }
+            }
+
             console.log('[SE restore] key=' + bKey + ' | hasSaved=' + savedValid + ' | hasDbMatches=' + hasDbMatches + ' (count=' + (hasDbMatches ? dbMatches.length : 0) + ')');
 
             if (savedValid && savedBracket && savedBracket.matchesMap && Object.keys(savedBracket.matchesMap).length > 0) {
@@ -229,8 +239,8 @@
                     this.teamsList = savedBracket.teamsList;
                 }
 
-                // Immediately persist and sync user's actual bracket to SQL Server!
-                this.syncBracketToDB(true);
+                // Sync bracket to SQL Server in background without blocking initial rendering
+                this.syncBracketToDB(false);
             } else if (hasDbMatches) {
                 // 2. RESTORE DIRECTLY FROM DATABASE (When localStorage has no saved state)
                 console.log('[SE restore] Restoring directly from DATABASE matches!');
@@ -517,9 +527,13 @@
             }
 
             self.alignTreeCards();
-            requestAnimationFrame(function () { self.alignTreeCards(); self.drawTreeConnectors(); });
-            setTimeout(function () { self.alignTreeCards(); self.drawTreeConnectors(); }, 60);
-            setTimeout(function () { self.alignTreeCards(); self.drawTreeConnectors(); }, 250);
+            requestAnimationFrame(function () {
+                self.alignTreeCards();
+                self.drawTreeConnectors();
+            });
+            setTimeout(function () {
+                self.drawTreeConnectors();
+            }, 120);
         },
 
         alignTreeCards: function () {
@@ -530,6 +544,19 @@
             if (cols.length < 2) return;
 
             var self = this;
+
+            // 1. Precompute child-to-parents mapping once (O(M) instead of O(K * M))
+            var nextToSources = {};
+            var mKeys = Object.keys(self.matchesMap || {});
+            for (var i = 0; i < mKeys.length; i++) {
+                var m = self.matchesMap[mKeys[i]];
+                if (m && m.nextMatchId) {
+                    var nid = String(m.nextMatchId);
+                    if (!nextToSources[nid]) nextToSources[nid] = [];
+                    nextToSources[nid].push(m);
+                }
+            }
+
             for (var c = 1; c < cols.length; c++) {
                 var prevCol = cols[c - 1];
                 var curCol = cols[c];
@@ -544,48 +571,55 @@
                     curBox.style.minHeight = prevBox.offsetHeight + 'px';
                 }
 
-                // Include bye-empty-slot so BYE matches contribute to child positioning
                 var prevCards = prevBox.querySelectorAll('.bracket-node-card');
                 var curCards = curBox.querySelectorAll('.bracket-node-card:not(.bye-empty-slot)');
                 if (!curCards || curCards.length === 0) continue;
 
-                var prevCardMap = {};
+                // 2. Batch read parent midpoints in a single pass (NO write interleaving)
+                var parentMidMap = {};
                 for (var p = 0; p < prevCards.length; p++) {
-                    var pid = prevCards[p].getAttribute('data-match-id') || prevCards[p].dataset.matchId;
-                    if (pid) prevCardMap[String(pid)] = prevCards[p];
+                    var pc = prevCards[p];
+                    var pid = pc.getAttribute('data-match-id') || (pc.dataset ? pc.dataset.matchId : null);
+                    if (pid) {
+                        parentMidMap[String(pid)] = pc.offsetTop + (pc.offsetHeight / 2);
+                    }
                 }
 
+                // 3. Batch compute desired positions without writing styles yet
+                var updates = [];
                 for (var k = 0; k < curCards.length; k++) {
                     var curCard = curCards[k];
-                    var mId = curCard.getAttribute('data-match-id') || curCard.dataset.matchId;
+                    var mId = curCard.getAttribute('data-match-id') || (curCard.dataset ? curCard.dataset.matchId : null);
                     if (!mId) continue;
 
-                    var parentCards = [];
-                    var keys = Object.keys(self.matchesMap || {});
-                    for (var i = 0; i < keys.length; i++) {
-                        var m = self.matchesMap[keys[i]];
-                        if (m && String(m.nextMatchId) === String(mId)) {
-                            var pCard = prevCardMap[String(m.matchId)];
-                            if (pCard) parentCards.push(pCard);
-                        }
-                    }
-
-                    if (parentCards.length > 0) {
+                    var srcMatches = nextToSources[String(mId)];
+                    if (srcMatches && srcMatches.length > 0) {
                         var sumY = 0;
-                        for (var j = 0; j < parentCards.length; j++) {
-                            var pc = parentCards[j];
-                            sumY += pc.offsetTop + (pc.offsetHeight / 2);
+                        var validCount = 0;
+                        for (var j = 0; j < srcMatches.length; j++) {
+                            var pMid = parentMidMap[String(srcMatches[j].matchId || srcMatches[j].id)];
+                            if (pMid !== undefined) {
+                                sumY += pMid;
+                                validCount++;
+                            }
                         }
-                        var targetMidY = sumY / parentCards.length;
-                        var cardH = curCard.offsetHeight || 66;
-                        var desiredTop = targetMidY - (cardH / 2);
-
-                        curCard.style.position = 'absolute';
-                        curCard.style.top = Math.max(0, desiredTop).toFixed(1) + 'px';
-                        curCard.style.left = '0';
-                        curCard.style.right = '0';
-                        curCard.style.margin = '0 auto';
+                        if (validCount > 0) {
+                            var targetMidY = sumY / validCount;
+                            var cardH = curCard.offsetHeight || 66;
+                            var desiredTop = Math.max(0, targetMidY - (cardH / 2));
+                            updates.push({ card: curCard, top: desiredTop.toFixed(1) + 'px' });
+                        }
                     }
+                }
+
+                // 4. Batch DOM write phase (eliminates layout thrashing completely)
+                for (var u = 0; u < updates.length; u++) {
+                    var cStyle = updates[u].card.style;
+                    cStyle.position = 'absolute';
+                    cStyle.top = updates[u].top;
+                    cStyle.left = '0';
+                    cStyle.right = '0';
+                    cStyle.margin = '0 auto';
                 }
             }
         },

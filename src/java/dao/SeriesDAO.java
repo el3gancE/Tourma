@@ -601,6 +601,15 @@ public class SeriesDAO {
         return service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId);
     }
 
+    public void recalculateSeriesStandingsAsync(String seriesId) {
+        if (seriesId == null || seriesId.trim().isEmpty()) return;
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
+            } catch (Exception ignore) {}
+        });
+    }
+
     public boolean deleteSeries(String seriesId) {
         if (seriesId == null || seriesId.trim().isEmpty()) return false;
         String id = seriesId.trim();

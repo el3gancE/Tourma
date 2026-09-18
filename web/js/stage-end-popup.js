@@ -385,12 +385,44 @@
             }
         },
 
+        showTransitionLoader: function (msg) {
+            var loader = document.getElementById('stageEndTransitionOverlay');
+            if (!loader) {
+                loader = document.createElement('div');
+                loader.id = 'stageEndTransitionOverlay';
+                loader.style.cssText = 'position: fixed; inset: 0; z-index: 99999; background: rgba(10, 15, 29, 0.75); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #fff; font-family: Lexend, sans-serif;';
+                loader.innerHTML = '<div style="width: 44px; height: 44px; border: 4px solid rgba(45, 212, 191, 0.2); border-top-color: #2dd4bf; border-radius: 50%; animation: stageSpin 0.7s linear infinite;"></div>' +
+                                   '<div id="stageEndTransitionMsg" style="font-size: 1.05rem; font-weight: 600; color: #f1f5f9; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">' + (msg || 'Đang chuyển sang Vòng 2...') + '</div>' +
+                                   '<style>@keyframes stageSpin { to { transform: rotate(360deg); } }</style>';
+                document.body.appendChild(loader);
+            } else {
+                var msgEl = document.getElementById('stageEndTransitionMsg');
+                if (msgEl) msgEl.textContent = msg || 'Đang chuyển sang Vòng 2...';
+                loader.style.display = 'flex';
+            }
+        },
+
         /**
          * Handle Confirm End Stage: Lock and immediately transition to Stage 2
          */
         confirmStageEnd: function () {
             var tid = this.tournamentId;
             if (!tid) return;
+
+            // 0. Immediate UI feedback (instant responsiveness)
+            var confirmBtn = document.getElementById('stageEndConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.style.pointerEvents = 'none';
+                confirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang chuyển Vòng 2...';
+            }
+            var modalBtn = document.getElementById('stageEndModalConfirmBtn');
+            if (modalBtn) {
+                modalBtn.disabled = true;
+                modalBtn.style.pointerEvents = 'none';
+                modalBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang chuyển Vòng 2...';
+            }
+            this.showTransitionLoader('Đang xác nhận kết quả và chuyển sang Vòng 2...');
 
             try {
                 // 1. Set Lock flag
@@ -417,7 +449,7 @@
                 // 4. Redirect to Stage 2 (short timeout ensures background AJAX sync to DB flushes)
                 setTimeout(function () {
                     window.location.href = s2Url;
-                }, 150);
+                }, 100);
             } catch (e) {
                 console.error('[StageEndPopup] confirmStageEnd error:', e);
             }
@@ -427,6 +459,12 @@
          * Navigate directly to Stage 2
          */
         goToStage2: function () {
+            var nextBtn = document.getElementById('stageEndNextBtn');
+            if (nextBtn) {
+                nextBtn.disabled = true;
+                nextBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang tải...';
+            }
+            this.showTransitionLoader('Đang chuyển sang Vòng 2...');
             var s2Url = this.resolveStage2Url(this.tournamentId);
             window.location.href = s2Url;
         },

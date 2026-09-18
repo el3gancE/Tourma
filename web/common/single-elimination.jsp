@@ -312,10 +312,11 @@
                         } catch (e) { }
                     }
 
-                    // Stage 2 SE: Load qualified teams from DB first, then fallback to LocalStorage
-                    var s2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
+                    // Stage 2 SE: Load qualified teams from LocalStorage first (authoritative user state), then fallback to DB
+                    var s2TeamsRaw = null;
+                    try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch (e) { }
                     if (!s2TeamsRaw || s2TeamsRaw.length === 0) {
-                        try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch (e) { }
+                        s2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
                     }
                     if (s2TeamsRaw && s2TeamsRaw.length > 0) {
                         preloadedTeams = s2TeamsRaw;
