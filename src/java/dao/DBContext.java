@@ -38,7 +38,7 @@ public class DBContext {
             Connection candidate = POOL.poll();
             if (candidate != null) {
                 try {
-                    if (!candidate.isClosed() && candidate.isValid(1)) {
+                    if (!candidate.isClosed()) {
                         realConn = candidate;
                         break;
                     } else {

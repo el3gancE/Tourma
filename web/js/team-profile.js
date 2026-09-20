@@ -190,6 +190,8 @@
           else if (perf.achievement === "Á Quân" || perf.achievement === "Runner-Up") achClass = "runner-up";
           else if (perf.achievement === "Bán Kết" || perf.achievement === "Semi-Finals") achClass = "semi";
           else if (perf.achievement === "Tứ Kết" || perf.achievement === "Quarter-Finals") achClass = "quarter";
+          else if (perf.achievement && (perf.achievement === "3-0" || perf.achievement === "3-1" || perf.achievement === "3-2" || perf.achievement.indexOf("Đi tiếp") !== -1)) achClass = "advance";
+          else if (perf.achievement && (perf.achievement === "2-3" || perf.achievement === "1-3" || perf.achievement === "0-3" || perf.achievement.indexOf("Bị loại") !== -1)) achClass = "eliminated";
 
           var sttVal = (perf.stt !== undefined && perf.stt !== null && perf.stt > 0) ? perf.stt : (reversedPerformances.length - idx);
           var tourneyUrl = perf.finalStageUrl || '#';

@@ -1312,10 +1312,13 @@
         var postData = 'action=syncClientStandings&seriesId=' + encodeURIComponent(seriesId) +
                        '&standingsJson=' + encodeURIComponent(JSON.stringify(payloadStandings)) +
                        '&historyJson=' + encodeURIComponent(JSON.stringify(payloadHistory));
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', ctx + '/rolling/standings', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-        xhr.send(postData);
+        if (window._lastSyncedPostData !== postData) {
+          window._lastSyncedPostData = postData;
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', ctx + '/rolling/standings', true);
+          xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+          xhr.send(postData);
+        }
       } catch (e) {}
     }
   }
@@ -1339,11 +1342,15 @@
     computeStandingsForMilestone(curVal);
   };
 
-  // Automatically compute and sync on page load and lifecycle events so standings are always 100% up-to-date
+  // Automatically compute and sync on page load and lifecycle events with debounce
+  var autoUpdateTimer = null;
   function triggerAutoUpdate() {
-    var milestoneSelect = document.getElementById('milestoneSelect');
-    var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
-    computeStandingsForMilestone(curVal);
+    if (autoUpdateTimer) clearTimeout(autoUpdateTimer);
+    autoUpdateTimer = setTimeout(function() {
+      var milestoneSelect = document.getElementById('milestoneSelect');
+      var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
+      computeStandingsForMilestone(curVal);
+    }, 100);
   }
 
   if (document.readyState === 'loading') {

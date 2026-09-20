@@ -140,22 +140,34 @@
       return pools;
     },
 
-    // Robust Backtracking Matchmaker for a Pool
+    // Deterministic Backtracking Matchmaker for a Pool
     pairPool: function (pool) {
       if (!pool || pool.length < 2) return [];
 
-      // Try multiple randomized orders with backtracking to find a 100% valid rematch-free pairing
-      for (var attempt = 0; attempt < 25; attempt++) {
-        var shuffled = pool.slice().sort(function () { return 0.5 - Math.random(); });
-        var result = this._backtrackPairing(shuffled, []);
-        if (result !== null) {
-          return result;
-        }
+      // Sort pool deterministically by standard Swiss tiebreakers:
+      // 1. Buchholz DESC
+      // 2. Score Difference (diff) DESC
+      // 3. Scores For DESC
+      // 4. Initial Seed (if present) / Team Name ASC
+      var sortedPool = pool.slice().sort(function (a, b) {
+        if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
+        if (b.diff !== a.diff) return b.diff - a.diff;
+        if (b.scoresFor !== a.scoresFor) return b.scoresFor - a.scoresFor;
+        var sA = (a.seed !== undefined && a.seed !== null) ? Number(a.seed) : 9999;
+        var sB = (b.seed !== undefined && b.seed !== null) ? Number(b.seed) : 9999;
+        if (sA !== sB) return sA - sB;
+        return String(a.name || '').localeCompare(String(b.name || ''));
+      });
+
+      // Standard Swiss Dutch Pairing: Top half vs Bottom half ordering
+      var result = this._deterministicBacktrackPairing(sortedPool, []);
+      if (result !== null) {
+        return result;
       }
 
-      // If strict rematch-free pairing was not found after attempts, pair greedily ignoring rematches as absolute fallback
+      // If strict rematch-free pairing is not possible due to exhaustive matches, pair greedily by rank
       var fallback = [];
-      var remaining = pool.slice().sort(function () { return 0.5 - Math.random(); });
+      var remaining = sortedPool.slice();
       while (remaining.length >= 2) {
         var a = remaining.shift();
         var b = remaining.shift();
@@ -164,26 +176,33 @@
       return fallback;
     },
 
-    _backtrackPairing: function (teams, currentPairs) {
+    _deterministicBacktrackPairing: function (teams, currentPairs) {
       if (teams.length === 0) return currentPairs;
       if (teams.length === 1) return null; // Odd team cannot be paired
 
       var first = teams[0];
       var rest = teams.slice(1);
 
-      for (var i = 0; i < rest.length; i++) {
+      // In Swiss matchmaking with 2k teams, prioritize pairing with bottom half first
+      var half = Math.floor(rest.length / 2);
+      var candidateIndices = [];
+      for (var c = half; c < rest.length; c++) candidateIndices.push(c);
+      for (var c = 0; c < half; c++) candidateIndices.push(c);
+
+      for (var idx = 0; idx < candidateIndices.length; idx++) {
+        var i = candidateIndices[idx];
         var candidate = rest[i];
         var isRematch = (first.opponents && first.opponents.indexOf(candidate.name) !== -1);
         if (!isRematch) {
           var nextTeams = rest.slice(0, i).concat(rest.slice(i + 1));
-          var subResult = this._backtrackPairing(nextTeams, currentPairs.concat([[first, candidate]]));
+          var subResult = this._deterministicBacktrackPairing(nextTeams, currentPairs.concat([[first, candidate]]));
           if (subResult !== null) return subResult;
         }
       }
       return null;
     },
 
-    // Generate Next Swiss Round Pairings with Dynamic Pool Shuffling & Strict Non-Rematch Rule
+    // Generate Next Swiss Round Pairings with Deterministic Pool Pairings & Strict Non-Rematch Rule
     generateNextRound: function (standings, matchesMap, currentRound) {
       var activeTeams = standings.filter(function (st) {
         return !st.qualified && !st.eliminated;

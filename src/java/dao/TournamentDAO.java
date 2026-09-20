@@ -581,6 +581,38 @@ public class TournamentDAO {
         TOURNAMENT_BY_ID_CACHE.clear();
     }
 
+    public Map<String, List<String>> getStageFormatsBySeriesId(String seriesId) {
+        Map<String, List<String>> resultMap = new HashMap<>();
+        if (seriesId == null || seriesId.trim().isEmpty()) return resultMap;
+        String sid = seriesId.trim();
+
+        String sql = "SELECT ts.tournament_id, ts.format " +
+                     "FROM tournament_stages ts " +
+                     "JOIN tournaments t ON ts.tournament_id = t.id " +
+                     "WHERE t.series_id = ? " +
+                     "ORDER BY ts.tournament_id, ts.stage_order ASC";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sid);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String tid = rs.getString("tournament_id");
+                    String fmt = rs.getString("format");
+                    if (tid != null && fmt != null) {
+                        resultMap.computeIfAbsent(tid.trim(), k -> new ArrayList<>()).add(fmt.trim().toUpperCase());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        for (Map.Entry<String, List<String>> entry : resultMap.entrySet()) {
+            STAGE_FORMATS_CACHE.put(entry.getKey(), entry.getValue());
+        }
+        return resultMap;
+    }
+
     public List<String> getStageFormats(String tournamentId) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return new ArrayList<>();
         String tid = tournamentId.trim();

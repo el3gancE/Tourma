@@ -279,6 +279,8 @@
                                 else if ("Á Quân".equalsIgnoreCase(perf.getAchievement())) achClass = "runner-up";
                                 else if ("Bán Kết".equalsIgnoreCase(perf.getAchievement())) achClass = "semi";
                                 else if ("Tứ Kết".equalsIgnoreCase(perf.getAchievement())) achClass = "quarter";
+                                else if (perf.getAchievement() != null && (perf.getAchievement().equals("3-0") || perf.getAchievement().equals("3-1") || perf.getAchievement().equals("3-2") || perf.getAchievement().contains("Đi tiếp"))) achClass = "advance";
+                                else if (perf.getAchievement() != null && (perf.getAchievement().equals("2-3") || perf.getAchievement().equals("1-3") || perf.getAchievement().equals("0-3") || perf.getAchievement().contains("Bị loại"))) achClass = "eliminated";
                                 String pTier = (perf.getTierName() != null && !perf.getTierName().isEmpty()) ? perf.getTierName().toUpperCase() : "A";
                         %>
                             <tr>

@@ -320,7 +320,7 @@
             }
 
             // Attach Click Event to Launch Score Popup ONLY if match is playable and NOT in Quick Mode
-            card.addEventListener('click', function () {
+            card.addEventListener('click', function (e) {
                 if (checkCardLocked()) return;
 
                 if (!isPlayable) {
@@ -331,11 +331,18 @@
                     return; // In Quick Mode, only team row clicks are active
                 }
 
+                if (data && typeof data.onClick === 'function') {
+                    data.onClick(e);
+                    return;
+                }
+
                 if (window.TourmaScoreModal && typeof window.TourmaScoreModal.open === 'function') {
+                    var isSwissMatch = (data && (data.isSwiss || (data.matchId && String(data.matchId).startsWith('R'))));
+                    var canDraw = (data && data.allowDraw !== undefined) ? (data.allowDraw === true) : ((typeof window.TourmaRoundRobin !== 'undefined') && !isSwissMatch);
                     window.TourmaScoreModal.open({
                         matchId: matchId,
                         tournamentId: (data && (data.tournamentId || data.tourneyId)) || null,
-                        roundName: 'Trận ' + matchHeaderLabel,
+                        roundName: (data && data.roundName) ? data.roundName : ('Trận ' + matchHeaderLabel),
                         team1Name: t1Name,
                         team1Seed: seed1,
                         team1Score: t1ScoreDisp,
@@ -344,7 +351,7 @@
                         team2Score: t2ScoreDisp,
                         winnerId: isT1Winner ? 'team1' : (isT2Winner ? 'team2' : null),
                         status: isDone ? 'COMPLETED' : 'SCHEDULED',
-                        allowDraw: (typeof window.TourmaRoundRobin !== 'undefined')
+                        allowDraw: canDraw
                     });
                 }
             });

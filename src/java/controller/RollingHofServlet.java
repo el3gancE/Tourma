@@ -119,6 +119,7 @@ public class RollingHofServlet extends HttpServlet {
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
 
             service.RollingWindowPointService rwps = service.RollingWindowPointService.getInstance();
+            rwps.preloadSeriesData(seriesId);
             Map<String, TeamChampionStatsDTO> statsMap = new HashMap<>();
             Map<String, Integer> teamCumulativeChamps = new HashMap<>();
 

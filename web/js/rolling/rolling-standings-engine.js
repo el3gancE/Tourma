@@ -173,6 +173,17 @@
 
   function deduceMatchStatsFromAchievement(format, ach, isMulti) {
     var a = (ach || '').trim();
+    if (a.indexOf("3-0") !== -1) return { wins: 3, losses: 0 };
+    if (a.indexOf("3-1") !== -1) return { wins: 3, losses: 1 };
+    if (a.indexOf("3-2") !== -1) return { wins: 3, losses: 2 };
+    if (a.indexOf("2-3") !== -1) return { wins: 2, losses: 3 };
+    if (a.indexOf("1-3") !== -1) return { wins: 1, losses: 3 };
+    if (a.indexOf("0-3") !== -1) return { wins: 0, losses: 3 };
+    var matchWL = a.match(/^(\d+)-(\d+)/);
+    if (matchWL) {
+      return { wins: parseInt(matchWL[1], 10), losses: parseInt(matchWL[2], 10) };
+    }
+
     if (a === "Vô Địch" || a === "Champion") {
       return { wins: 6, losses: 0 };
     } else if (a === "Á Quân" || a === "Runner-Up") {
@@ -240,12 +251,38 @@
       }
     }
 
-    // 3. Fallback for champion
+    // 3. Swiss placement mapping
+    if (positionKey === "swiss_2-3" || altKey === "swiss_2-3" || positionKey === "2-3" || altKey === "2-3") {
+      if (ptsCfg["swiss_2-3"] !== undefined) return parseInt(ptsCfg["swiss_2-3"], 10) || 0;
+      if (ptsCfg["9-16"] !== undefined) return parseInt(ptsCfg["9-16"], 10) || 0;
+    }
+    if (positionKey === "swiss_1-3" || altKey === "swiss_1-3" || positionKey === "1-3" || altKey === "1-3") {
+      if (ptsCfg["swiss_1-3"] !== undefined) return parseInt(ptsCfg["swiss_1-3"], 10) || 0;
+      if (ptsCfg["9-16"] !== undefined) return parseInt(ptsCfg["9-16"], 10) || 0;
+    }
+    if (positionKey === "swiss_0-3" || altKey === "swiss_0-3" || positionKey === "0-3" || altKey === "0-3") {
+      if (ptsCfg["swiss_0-3"] !== undefined) return parseInt(ptsCfg["swiss_0-3"], 10) || 0;
+      if (ptsCfg["9-16"] !== undefined) return parseInt(ptsCfg["9-16"], 10) || 0;
+    }
+    if (positionKey === "swiss_3-0" || altKey === "swiss_3-0" || positionKey === "3-0" || altKey === "3-0") {
+      if (ptsCfg["swiss_3-0"] !== undefined) return parseInt(ptsCfg["swiss_3-0"], 10) || 0;
+      if (ptsCfg["1"] !== undefined) return parseInt(ptsCfg["1"], 10) || 0;
+    }
+    if (positionKey === "swiss_3-1" || altKey === "swiss_3-1" || positionKey === "3-1" || altKey === "3-1") {
+      if (ptsCfg["swiss_3-1"] !== undefined) return parseInt(ptsCfg["swiss_3-1"], 10) || 0;
+      if (ptsCfg["3-4"] !== undefined) return parseInt(ptsCfg["3-4"], 10) || 0;
+    }
+    if (positionKey === "swiss_3-2" || altKey === "swiss_3-2" || positionKey === "3-2" || altKey === "3-2") {
+      if (ptsCfg["swiss_3-2"] !== undefined) return parseInt(ptsCfg["swiss_3-2"], 10) || 0;
+      if (ptsCfg["5-8"] !== undefined) return parseInt(ptsCfg["5-8"], 10) || 0;
+    }
+
+    // 4. Fallback for champion
     if ((positionKey === "1" || positionKey === 1) && ptsCfg["champPoints"] !== undefined) {
       return parseInt(ptsCfg["champPoints"], 10) || 0;
     }
 
-    // 4. Range matching for bracket placements (3-4, 5-8, 9-16, etc.)
+    // 5. Range matching for bracket placements (3-4, 5-8, 9-16, etc.)
     var pMin = 0, pMax = 0;
     var posStr = String(positionKey);
     if (posStr.indexOf('-') !== -1) {
@@ -268,6 +305,9 @@
         if (ptsCfg["7-8"] !== undefined && pMin >= 7) return parseInt(ptsCfg["7-8"], 10) || 0;
         if (ptsCfg[String(pMin)] !== undefined) return parseInt(ptsCfg[String(pMin)], 10) || 0;
       } else if (pMin >= 9 && pMin <= 16) {
+        if (pMin <= 11 && ptsCfg["swiss_2-3"] !== undefined) return parseInt(ptsCfg["swiss_2-3"], 10) || 0;
+        if (pMin >= 12 && pMin <= 14 && ptsCfg["swiss_1-3"] !== undefined) return parseInt(ptsCfg["swiss_1-3"], 10) || 0;
+        if (pMin >= 15 && ptsCfg["swiss_0-3"] !== undefined) return parseInt(ptsCfg["swiss_0-3"], 10) || 0;
         if (ptsCfg["9-16"] !== undefined) return parseInt(ptsCfg["9-16"], 10) || 0;
         if (ptsCfg["9-12"] !== undefined && pMin <= 12) return parseInt(ptsCfg["9-12"], 10) || 0;
         if (ptsCfg["13-16"] !== undefined && pMin >= 13) return parseInt(ptsCfg["13-16"], 10) || 0;
@@ -291,22 +331,38 @@
   }
 
   function resolveAchievementFromPoints(pts, tPtsCfg, isMulti, s1Format, isDe, posKey) {
+    var isSw = (s1Format && s1Format.indexOf('SWISS') !== -1);
     if (posKey) {
       var s = String(posKey).trim();
       if (s === "1") return "Vô Địch";
       if (s === "2") return "Á Quân";
       if (s === "3-4" || s === "3" || s === "4") return "Bán Kết";
       if (s === "5-8" || s === "5" || s === "6" || s === "7" || s === "8") return "Tứ Kết";
-      if (s === "9-16") return "Round of 16";
-      if (s === "17-32") return "Round of 32";
-      if (s === "33-64") return (isDe && !isMulti) ? "Loser's Qualification" : "Round of 64";
-      if (s === "s1_lb_cut" || s === "s1_lb_r2" || s === "Loser's Qualification" || s === "65-96") return "Loser's Qualification";
-      if (s === "s1_lb_r1") return "Loser's Round 1";
+      if (s === "swiss_3-0" || s === "3-0") return isMulti ? "Tứ Kết" : "3-0";
+      if (s === "swiss_3-1" || s === "3-1") return isMulti ? "Tứ Kết" : "3-1";
+      if (s === "swiss_3-2" || s === "3-2") return isMulti ? "Tứ Kết" : "3-2";
+      if (s === "swiss_2-3" || s === "2-3") return "2-3";
+      if (s === "swiss_1-3" || s === "1-3") return "1-3";
+      if (s === "swiss_0-3" || s === "0-3") return "0-3";
+      if (s.startsWith("swiss_")) {
+        var rec = s.replace("swiss_", "");
+        if (isMulti && rec.startsWith("3-")) return "Tứ Kết";
+        return rec;
+      }
+      if (s === "s1_lb_cut" || s === "Loser's Qualification") return "Loser's Qualification";
+      if (s === "9-16") return isSw ? "2-3" : "Round of 16";
+      if (s === "17-32") return isSw ? "1-3" : "Round of 32";
+      if (s === "33-64") return isSw ? "0-3" : ((isDe && !isMulti) ? "Loser's Qualification" : "Round of 64");
+      if (s === "65-96") return "Loser's Qualification";
       if (s === "65-128") return (isDe && !isMulti) ? "Loser's Qualification" : "Round of 128";
-      if (s === "stage1_eliminated") return isMulti ? "Vòng Bảng" : "Round of 128";
+      if (s === "s1_lb_r2") return "Loser's Qualification";
+      if (s === "s1_lb_r1") return "Loser's Round 1";
+      if (s.startsWith("s1_lb_r")) return "Loser's Qualification";
+      if (s === "stage1_eliminated") return isSw ? "2-3" : (isMulti ? "Vòng Bảng" : "Round of 128");
     }
 
     if (!pts || pts <= 0) {
+      if (isSw) return "0-3";
       return (isDe && !isMulti) ? "Loser's Round 1" : (isMulti ? "Vòng Bảng" : "Round of 128");
     }
 
@@ -315,6 +371,9 @@
     var p2 = parseInt(cfg["2"] || cfg["runnerUpPoints"] || 0, 10);
     var p34 = parseInt(cfg["3-4"] || cfg["3"] || cfg["4"] || cfg["semiPoints"] || 0, 10);
     var p58 = parseInt(cfg["5-8"] || cfg["5"] || cfg["6"] || cfg["7"] || cfg["8"] || cfg["quarterPoints"] || 0, 10);
+    var pSw23 = parseInt(cfg["swiss_2-3"] || 0, 10);
+    var pSw13 = parseInt(cfg["swiss_1-3"] || 0, 10);
+    var pSw03 = parseInt(cfg["swiss_0-3"] || 0, 10);
     var p916 = parseInt(cfg["9-16"] || cfg["r16Points"] || 0, 10);
     var p1732 = parseInt(cfg["17-32"] || cfg["r32Points"] || 0, 10);
     var p3364 = parseInt(cfg["33-64"] || cfg["r64Points"] || 0, 10);
@@ -326,13 +385,30 @@
     if (p2 > 0 && pts === p2) return "Á Quân";
     if (p34 > 0 && pts === p34) return "Bán Kết";
     if (p58 > 0 && pts === p58) return "Tứ Kết";
-    if (p916 > 0 && pts === p916) return "Round of 16";
-    if (p1732 > 0 && pts === p1732) return "Round of 32";
-    if (p3364 > 0 && pts === p3364) return (isDe && !isMulti) ? "Loser's Qualification" : "Round of 64";
+    if (pSw23 > 0 && pts === pSw23) return "2-3";
+    if (pSw13 > 0 && pts === pSw13) return "1-3";
+    if (pSw03 > 0 && pts === pSw03) return "0-3";
+    if (p916 > 0 && pts === p916) return isSw ? "2-3" : "Round of 16";
+    if (p1732 > 0 && pts === p1732) return isSw ? "1-3" : "Round of 32";
+    if (p3364 > 0 && pts === p3364) return isSw ? "0-3" : ((isDe && !isMulti) ? "Loser's Qualification" : "Round of 64");
     if (pLbCut > 0 && pts === pLbCut) return "Loser's Qualification";
     if (pLbR1 > 0 && pts === pLbR1) return "Loser's Round 1";
 
     // 2. Proportional Thresholds (ratio against Champion points or placement brackets)
+    if (isSw) {
+      if (p1 > 0) {
+        if (pts >= p1 * 0.95) return isMulti ? "Tứ Kết" : "3-0";
+        if (pts >= p1 * 0.60) return isMulti ? "Tứ Kết" : "3-1";
+        if (pts >= p1 * 0.35) return isMulti ? "Tứ Kết" : "3-2";
+        if (pts >= p1 * 0.18) return "2-3";
+        if (pts >= p1 * 0.08) return "1-3";
+        return "0-3";
+      }
+      if (pts >= 180) return "2-3";
+      if (pts >= 80) return "1-3";
+      return "0-3";
+    }
+
     if (p1 > 0) {
       if (pts >= p1 * 0.95) return "Vô Địch";
       if (p2 > 0 && pts >= p2 * 0.90) return "Á Quân";
@@ -483,7 +559,16 @@
       if (s === "1") return "Vô Địch";
       if (s === "2") return "Á Quân";
       if (s === "3-4" || s === "3" || s === "4") return "Bán Kết";
-      if (s === "5-8") return "Tứ Kết";
+      if (s === "5-8" || s === "5" || s === "6" || s === "7" || s === "8") return "Tứ Kết";
+      if (s === "swiss_3-0" || s === "3-0") return "3-0";
+      if (s === "swiss_3-1" || s === "3-1") return "3-1";
+      if (s === "swiss_3-2" || s === "3-2") return "3-2";
+      if (s === "swiss_2-3" || s === "2-3") return "2-3";
+      if (s === "swiss_1-3" || s === "1-3") return "1-3";
+      if (s === "swiss_0-3" || s === "0-3") return "0-3";
+      if (s.startsWith("swiss_")) {
+        return s.replace("swiss_", "");
+      }
       if (s === "s1_lb_cut" || s === "Loser's Qualification") return "Loser's Qualification";
       if (s === "9-16") return "Round of 16";
       if (s === "17-32") return "Round of 32";
@@ -504,6 +589,12 @@
       if (s === "2") return 2;
       if (s === "3" || s === "4" || s === "3-4") return 3;
       if (s === "5-8" || s === "5" || s === "6" || s === "7" || s === "8") return 5;
+      if (s === "swiss_3-0" || s === "3-0") return 1;
+      if (s === "swiss_3-1" || s === "3-1") return 3;
+      if (s === "swiss_3-2" || s === "3-2") return 6;
+      if (s === "swiss_2-3" || s === "2-3") return 9;
+      if (s === "swiss_1-3" || s === "1-3") return 12;
+      if (s === "swiss_0-3" || s === "0-3") return 15;
       if (s === "9-16") return 9;
       if (s === "17-32") return 17;
       if (s === "33-64") return 33;
@@ -560,7 +651,7 @@
     var s2Format = (multiConfig && multiConfig.stage2Format) ? multiConfig.stage2Format.toUpperCase() : (t.stage2Format ? t.stage2Format.toUpperCase() : 'SINGLE_ELIMINATION');
 
     // 1. Stage 1 Swiss System
-    if (s1Format.indexOf('SWISS') !== -1 || (!isMultiStage && (t.format || '').indexOf('SWISS') !== -1)) {
+    if (s1Format.indexOf('SWISS') !== -1 || (!isMultiStage && (t.format || '').indexOf('SWISS') !== -1) || (t.format && t.format.indexOf('SWISS') !== -1)) {
       var rawSwiss = getStorageData(['tourma_swiss_matches_'], t.id);
       if (rawSwiss) {
         try {
@@ -650,15 +741,36 @@
 
           if (!isMultiStage) {
             swissList.forEach(function (st, idx) {
-              awardTeamPoints(st.name, String(idx + 1));
+              var customAch = null;
+              var posK = "swiss_" + st.wins + "-" + st.losses;
+              if (st.wins >= 3) {
+                if (st.losses === 0) customAch = (idx === 0) ? "Vô Địch" : "3-0";
+                else if (st.losses === 1) customAch = "3-1";
+                else customAch = "3-2";
+              } else if (st.losses >= 3) {
+                if (st.wins === 2) customAch = "2-3";
+                else if (st.wins === 1) customAch = "1-3";
+                else customAch = "0-3";
+              } else {
+                customAch = st.wins + "-" + st.losses;
+              }
+              awardTeamPoints(st.name, posK, String(idx + 1), customAch);
             });
           } else {
-            swissList.forEach(function (st) {
-              if (st.losses >= 3 || st.wins < 3) {
-                var recKey = "swiss_" + st.wins + "-" + st.losses;
-                var altRec = (st.wins === 2) ? "swiss_2-3" : ((st.wins === 1) ? "swiss_1-3" : "swiss_0-3");
-                awardTeamPoints(st.name, recKey, altRec);
+            swissList.forEach(function (st, idx) {
+              var customAch = null;
+              var posK = "swiss_" + st.wins + "-" + st.losses;
+              if (st.wins >= 3) {
+                customAch = "Tứ Kết";
+              } else if (st.losses >= 3) {
+                if (st.wins === 2) customAch = "2-3";
+                else if (st.wins === 1) customAch = "1-3";
+                else customAch = "0-3";
+              } else {
+                customAch = st.wins + "-" + st.losses;
               }
+              var altRec = (st.wins === 2) ? "swiss_2-3" : ((st.wins === 1) ? "swiss_1-3" : "swiss_0-3");
+              awardTeamPoints(st.name, posK, altRec, customAch);
             });
           }
           if (swissStats && typeof swissStats === 'object') {

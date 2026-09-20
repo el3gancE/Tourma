@@ -62,12 +62,7 @@ public class RollingStandingsServlet extends HttpServlet {
             serverTourneyPoints = serviceEngine.getTourneyPointsPerTournament(seriesId);
             serverTourneyParticipation = serviceEngine.getTourneyParticipationPerTournament(seriesId);
 
-            if (tournamentsList != null) {
-                for (Tournament t : tournamentsList) {
-                    List<String> stgFormats = tournamentDAO.getStageFormats(t.getId());
-                    stageFormatsMap.put(t.getId(), stgFormats);
-                }
-            }
+            stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(seriesId);
         }
 
         request.setAttribute("series", series);

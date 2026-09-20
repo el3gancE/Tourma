@@ -169,13 +169,18 @@ public class SwissSystemDAO extends DBContext {
                     }
 
                     String status = rs.getString("status");
-                    if ("FINISHED".equalsIgnoreCase(status)) {
+                    if (t1Name == null || t2Name == null || "TBD".equalsIgnoreCase(t1Name) || "TBD".equalsIgnoreCase(t2Name)) {
+                        status = "PENDING";
+                        s1 = 0;
+                        s2 = 0;
+                        winnerSlot = "";
+                    } else if ("FINISHED".equalsIgnoreCase(status)) {
                         status = "COMPLETED";
                     }
 
-                    String matchKey = "R" + roundNumber + "_" + poolKey + "_M" + matchNumber;
+                    String matchKey = "R" + roundNumber + "_M" + matchNumber;
                     if (rawId != null && rawId.contains("_M")) {
-                        matchKey = rawId.substring(rawId.indexOf("_M") + 2);
+                        matchKey = rawId.substring(rawId.lastIndexOf("_M") + 2);
                     }
 
                     sb.append("{");
@@ -241,14 +246,32 @@ public class SwissSystemDAO extends DBContext {
                     String matchDbId = tournamentId + "_S" + stageOrder + "_M" + m.matchKey;
                     String t1Id = lookupTeamId(teamMap, m.team1Name);
                     String t2Id = lookupTeamId(teamMap, m.team2Name);
-                    String winnerId = "team1".equalsIgnoreCase(m.winnerId) ? t1Id : ("team2".equalsIgnoreCase(m.winnerId) ? t2Id : null);
-                    String loserId = (winnerId != null) ? (winnerId.equals(t1Id) ? t2Id : (winnerId.equals(t2Id) ? t1Id : null)) : null;
+                    boolean isRealMatch = (t1Id != null && t2Id != null && !"TBD".equalsIgnoreCase(m.team1Name) && !"TBD".equalsIgnoreCase(m.team2Name));
 
                     String status = "PENDING";
-                    if ("COMPLETED".equalsIgnoreCase(m.status) || "FINISHED".equalsIgnoreCase(m.status) || "DONE".equalsIgnoreCase(m.status)) {
-                        status = "FINISHED";
-                    } else if ("READY".equalsIgnoreCase(m.status)) {
-                        status = "READY";
+                    Integer s1 = null;
+                    Integer s2 = null;
+                    String winnerId = null;
+                    String loserId = null;
+
+                    if (isRealMatch) {
+                        if ("COMPLETED".equalsIgnoreCase(m.status) || "FINISHED".equalsIgnoreCase(m.status) || "DONE".equalsIgnoreCase(m.status)) {
+                            status = "FINISHED";
+                            s1 = m.team1Score != null ? m.team1Score : 0;
+                            s2 = m.team2Score != null ? m.team2Score : 0;
+                            if ("team1".equalsIgnoreCase(m.winnerId)) {
+                                winnerId = t1Id;
+                                loserId = t2Id;
+                            } else if ("team2".equalsIgnoreCase(m.winnerId)) {
+                                winnerId = t2Id;
+                                loserId = t1Id;
+                            } else if (s1 != null && s2 != null && !s1.equals(s2)) {
+                                winnerId = (s1 > s2) ? t1Id : t2Id;
+                                loserId = (s1 > s2) ? t2Id : t1Id;
+                            }
+                        } else if ("READY".equalsIgnoreCase(m.status)) {
+                            status = "READY";
+                        }
                     }
 
                     String matchCode = "Vòng " + m.roundIndex + " (" + (m.recordPool != null ? m.recordPool : "0-0") + ") #" + m.matchNumber;
@@ -259,10 +282,10 @@ public class SwissSystemDAO extends DBContext {
                     ps.setInt(4, m.roundIndex);
                     ps.setString(5, matchCode);
                     ps.setString(6, "SWISS");
-                    setNullableString(ps, 7, t1Id);
-                    setNullableString(ps, 8, t2Id);
-                    setNullableInt(ps, 9, m.team1Score);
-                    setNullableInt(ps, 10, m.team2Score);
+                    setNullableString(ps, 7, isRealMatch ? t1Id : null);
+                    setNullableString(ps, 8, isRealMatch ? t2Id : null);
+                    setNullableInt(ps, 9, s1);
+                    setNullableInt(ps, 10, s2);
                     setNullableString(ps, 11, winnerId);
                     setNullableString(ps, 12, loserId);
                     ps.setString(13, status);

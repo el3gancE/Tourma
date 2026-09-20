@@ -599,7 +599,7 @@
   border: 1px solid rgba(249, 115, 22, 0.5);
 }
 
-/* Nx Winning Streak Badge (Đỏ Lửa Rực Rỡ - Động) */
+/* Nx Winning Streak Badge (Đỏ Lửa Rực Rỡ - Tĩnh) */
 .tourma-badge-streak-fire {
   background: rgba(239, 68, 68, 0.22);
   border: 1.25px solid #ef4444;
@@ -612,12 +612,6 @@
   font-size: 0.84rem;
   flex-shrink: 0;
   filter: drop-shadow(0 0 4px #ff4500);
-  animation: streakFirePulse 1.8s infinite ease-in-out;
-}
-
-@keyframes streakFirePulse {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px #ff4500); }
-  50% { transform: scale(1.15); filter: drop-shadow(0 0 8px #ffaa00); }
 }
 
 .tourma-badge-streak-fire .tourma-badge-name {
