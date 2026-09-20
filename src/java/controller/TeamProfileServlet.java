@@ -164,9 +164,16 @@ public class TeamProfileServlet extends HttpServlet {
 
         PartnerParticipant partner = null;
         String teamName = (teamNameParam != null) ? teamNameParam.trim() : "";
+        List<PartnerParticipant> partners = null;
+        List<Tournament> tourneys = null;
+        Map<String, List<String>> stageFormatsMap = new HashMap<>();
 
         if (series != null) {
-            List<PartnerParticipant> partners = seriesDAO.getPartnerParticipantsBySeriesId(series.getId());
+            RollingWindowPointService.getInstance().preloadSeriesData(series.getId());
+            partners = seriesDAO.getPartnerParticipantsBySeriesId(series.getId());
+            tourneys = seriesDAO.getTournamentsBySeriesId(series.getId());
+            stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(series.getId());
+
             if (partners != null) {
                 for (PartnerParticipant p : partners) {
                     if (partnerIdParam != null && partnerIdParam.trim().equalsIgnoreCase(p.getId())) {
@@ -204,7 +211,6 @@ public class TeamProfileServlet extends HttpServlet {
 
         List<ChampionTournamentDTO> championTourneys = new ArrayList<>();
         List<TourneyPerformanceDTO> performanceList = new ArrayList<>();
-        Map<String, List<String>> stageFormatsMap = new HashMap<>();
 
         if (series != null && !teamName.isEmpty()) {
             // Standings for current rank & active points
@@ -218,10 +224,6 @@ public class TeamProfileServlet extends HttpServlet {
                     }
                 }
             }
-
-            // Fetch all tournaments in series
-            List<Tournament> tourneys = seriesDAO.getTournamentsBySeriesId(series.getId());
-            stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(series.getId());
 
             if (tourneys != null) {
                 DBContext db = new DBContext();
@@ -532,7 +534,7 @@ public class TeamProfileServlet extends HttpServlet {
 
             // Calculate Rank Progression and track highest rank in a single fast pass
             List<RankProgressionDTO> rankProgressionList = new ArrayList<>();
-            List<PartnerParticipant> allPartners = seriesDAO.getPartnerParticipantsBySeriesId(series.getId());
+            List<PartnerParticipant> allPartners = (partners != null) ? partners : new ArrayList<>();
             List<Map<String, Integer>> tourneyPointsList = RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId());
             List<Map<String, Boolean>> tourneyPartList = RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId());
             int phaseSize = (series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
@@ -719,8 +721,8 @@ public class TeamProfileServlet extends HttpServlet {
         request.setAttribute("championTourneys", championTourneys);
         request.setAttribute("performanceList", performanceList);
 
-        List<Tournament> tournamentsList = (series != null) ? seriesDAO.getTournamentsBySeriesId(series.getId()) : new ArrayList<>();
-        List<PartnerParticipant> partnersList = (series != null) ? seriesDAO.getPartnerParticipantsBySeriesId(series.getId()) : new ArrayList<>();
+        List<Tournament> tournamentsList = (tourneys != null) ? tourneys : ((series != null) ? seriesDAO.getTournamentsBySeriesId(series.getId()) : new ArrayList<>());
+        List<PartnerParticipant> partnersList = (partners != null) ? partners : ((series != null) ? seriesDAO.getPartnerParticipantsBySeriesId(series.getId()) : new ArrayList<>());
         
         request.setAttribute("tournamentsList", tournamentsList);
         request.setAttribute("partnersList", partnersList);

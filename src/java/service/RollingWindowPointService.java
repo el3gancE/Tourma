@@ -53,6 +53,7 @@ public class RollingWindowPointService {
     private static final java.util.Map<String, CacheEntry<List<Map<String, Integer>>>> TOURNEY_POINTS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static final java.util.Map<String, CacheEntry<List<Map<String, Boolean>>>> TOURNEY_PART_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static final java.util.Map<String, CacheEntry<HighestRankDTO>> HIGHEST_RANK_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Set<String> PRELOADED_SERIES = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public static void clearAllCaches() {
         GLOBAL_PLACEMENTS_CACHE.clear();
@@ -61,6 +62,7 @@ public class RollingWindowPointService {
         TOURNEY_POINTS_CACHE.clear();
         TOURNEY_PART_CACHE.clear();
         HIGHEST_RANK_CACHE.clear();
+        PRELOADED_SERIES.clear();
         dao.TournamentDAO.clearTournamentCaches();
         dao.SeriesDAO.clearSeriesCaches();
     }
@@ -80,6 +82,7 @@ public class RollingWindowPointService {
     public void preloadSeriesData(String seriesId) {
         if (seriesId == null || seriesId.trim().isEmpty()) return;
         String sid = seriesId.trim();
+        if (PRELOADED_SERIES.contains(sid)) return;
 
         // 1. Bulk prefetch all stage formats in 1 query
         new dao.TournamentDAO().getStageFormatsBySeriesId(sid);
@@ -94,6 +97,7 @@ public class RollingWindowPointService {
 
         // 3. Bulk prefetch all tournament placements in 1 query
         TournamentPlacementService.getInstance().preloadSeriesPlacements(sid);
+        PRELOADED_SERIES.add(sid);
     }
 
     public Map<String, Integer> getCachedTournamentPlacements(String tourneyId) {

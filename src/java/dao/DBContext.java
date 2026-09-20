@@ -68,7 +68,7 @@ public class DBContext {
                         if (!isClosed) {
                             isClosed = true;
                             try {
-                                if (!underlying.isClosed() && underlying.isValid(1)) {
+                                if (!underlying.isClosed()) {
                                     if (!underlying.getAutoCommit()) {
                                         underlying.rollback();
                                         underlying.setAutoCommit(true);

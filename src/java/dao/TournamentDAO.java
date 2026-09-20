@@ -569,22 +569,28 @@ public class TournamentDAO {
     }
 
     private static final java.util.Map<String, List<String>> STAGE_FORMATS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, Map<String, List<String>>> SERIES_STAGE_FORMATS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static final java.util.Map<String, Tournament> TOURNAMENT_BY_ID_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
 
     public static void clearStageFormatsCache() {
         STAGE_FORMATS_CACHE.clear();
+        SERIES_STAGE_FORMATS_CACHE.clear();
         TOURNAMENT_BY_ID_CACHE.clear();
     }
 
     public static void clearTournamentCaches() {
         STAGE_FORMATS_CACHE.clear();
+        SERIES_STAGE_FORMATS_CACHE.clear();
         TOURNAMENT_BY_ID_CACHE.clear();
     }
 
     public Map<String, List<String>> getStageFormatsBySeriesId(String seriesId) {
-        Map<String, List<String>> resultMap = new HashMap<>();
-        if (seriesId == null || seriesId.trim().isEmpty()) return resultMap;
+        if (seriesId == null || seriesId.trim().isEmpty()) return new HashMap<>();
         String sid = seriesId.trim();
+        Map<String, List<String>> cachedSeries = SERIES_STAGE_FORMATS_CACHE.get(sid);
+        if (cachedSeries != null) return new HashMap<>(cachedSeries);
+
+        Map<String, List<String>> resultMap = new HashMap<>();
 
         String sql = "SELECT ts.tournament_id, ts.format " +
                      "FROM tournament_stages ts " +
@@ -609,6 +615,9 @@ public class TournamentDAO {
         }
         for (Map.Entry<String, List<String>> entry : resultMap.entrySet()) {
             STAGE_FORMATS_CACHE.put(entry.getKey(), entry.getValue());
+        }
+        if (!resultMap.isEmpty()) {
+            SERIES_STAGE_FORMATS_CACHE.put(sid, resultMap);
         }
         return resultMap;
     }
