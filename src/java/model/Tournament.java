@@ -103,6 +103,7 @@ public class Tournament {
     private String groupAssignments;
     private String stage2Teams;
     private String multiStageConfig;
+    private String teamsJson;
 
     public String getGroupAssignments() { return groupAssignments; }
     public void setGroupAssignments(String groupAssignments) { this.groupAssignments = groupAssignments; }
@@ -112,5 +113,9 @@ public class Tournament {
 
     public String getMultiStageConfig() { return multiStageConfig; }
     public void setMultiStageConfig(String multiStageConfig) { this.multiStageConfig = multiStageConfig; }
+
+    public String getTeamsJson() { return teamsJson; }
+    public void setTeamsJson(String teamsJson) { this.teamsJson = teamsJson; }
 }
+
 

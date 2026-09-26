@@ -625,9 +625,13 @@
       }
     }
 
-    // Check registered team list
+    // Check registered team list — localStorage first, then DB fallback (t.teamsJson from tournaments.teams_json)
     try {
       var rawTList = getStorageData(['tourma_teams_'], t.id);
+      // DB fallback: if localStorage evicted this entry (quota exceeded), use server-persisted value
+      if (!rawTList && t.teamsJson) {
+        rawTList = typeof t.teamsJson === 'string' ? t.teamsJson : JSON.stringify(t.teamsJson);
+      }
       if (rawTList) {
         var tArr = JSON.parse(rawTList);
         if (Array.isArray(tArr)) {

@@ -48,6 +48,18 @@ public class SaveTeamsServlet extends HttpServlet {
                 }
                 ParticipantDAO dao = new ParticipantDAO();
                 dao.saveTournamentTeams(tournamentId, teamNames);
+
+                // Also persist teams as JSON array to tournaments.teams_json
+                // so rolling standings engine can read from DB instead of localStorage
+                try {
+                    StringBuilder sb = new StringBuilder("[");
+                    for (int i = 0; i < teamNames.size(); i++) {
+                        if (i > 0) sb.append(",");
+                        sb.append("\"").append(teamNames.get(i).replace("\\", "\\\\").replace("\"", "\\\"")).append("\"");
+                    }
+                    sb.append("]");
+                    new dao.TournamentDAO().saveTeamsJson(tournamentId, sb.toString());
+                } catch (Exception ignore) {}
             }
         }
 

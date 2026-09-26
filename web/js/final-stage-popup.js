@@ -326,10 +326,14 @@
             if (!this.tournamentId) return;
 
             try {
-                localStorage.setItem('tourma_final_locked_' + this.tournamentId, 'true');
-                if (this.championName) {
-                    localStorage.setItem('tourma_champion_' + this.tournamentId, this.championName);
-                }
+                var self = this;
+                var rootPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+                if (!rootPath || rootPath === '/common') rootPath = '';
+                fetch(rootPath + '/api/tournament-finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: 'tournamentId=' + encodeURIComponent(this.tournamentId) + '&championName=' + encodeURIComponent(this.championName || '')
+                }).catch(function(err) { console.error('Error saving tournament finish to DB:', err); });
             } catch (e) {}
 
             this.isLocked = true;

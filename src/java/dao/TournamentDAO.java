@@ -89,6 +89,7 @@ public class TournamentDAO {
                 "(SELECT TOP 1 tm.raw_name FROM matches m JOIN teams tm ON m.winner_id = tm.id WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL ORDER BY m.round_number DESC) AS db_champion_name "
                 +
                 "FROM tournaments t WHERE t.id = ?";
+        // champion_name and teams_json are fetched via SELECT t.* above
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection();
@@ -119,7 +120,10 @@ public class TournamentDAO {
                     } catch (Exception ignore) {
                     }
                     try {
-                        String champ = rs.getString("db_champion_name");
+                        // Prefer champion_name column (directly persisted), fall back to match-derived subquery
+                        String champDirect = rs.getString("champion_name");
+                        String champSubq = rs.getString("db_champion_name");
+                        String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSubq;
                         if (champ != null && !champ.trim().isEmpty()) {
                             t.setChampionName(champ.trim());
                         }
@@ -143,6 +147,10 @@ public class TournamentDAO {
                     }
                     try {
                         t.setMultiStageConfig(rs.getString("multi_stage_config"));
+                    } catch (Exception ignore) {
+                    }
+                    try {
+                        t.setTeamsJson(rs.getString("teams_json"));
                     } catch (Exception ignore) {
                     }
                     if (id != null) {
@@ -763,4 +771,78 @@ public class TournamentDAO {
         }
         return null;
     }
+
+    public boolean updateTournamentStatus(String tournamentId, String status) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String sql = "UPDATE tournaments SET status = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setString(2, tournamentId.trim());
+            boolean ok = ps.executeUpdate() > 0;
+            TOURNAMENT_BY_ID_CACHE.remove(tournamentId.trim());
+            return ok;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateTournamentChampion(String tournamentId, String championName) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String sql = "UPDATE tournaments SET champion_name = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (championName != null && !championName.trim().isEmpty()) {
+                ps.setString(1, championName.trim());
+            } else {
+                ps.setNull(1, java.sql.Types.NVARCHAR);
+            }
+            ps.setString(2, tournamentId.trim());
+            ps.executeUpdate();
+        } catch (Exception e) {
+            // Column may not exist yet — log but don't crash
+            System.err.println("[TournamentDAO] updateTournamentChampion failed for " + tournamentId + ": " + e.getMessage());
+        }
+        TOURNAMENT_BY_ID_CACHE.remove(tournamentId.trim());
+        return true;
+    }
+
+    /**
+     * Persist the full team name list (JSON array) for a tournament.
+     * Stored in the teams_json column so rolling standings can read it without localStorage.
+     */
+    public boolean saveTeamsJson(String tournamentId, String teamsJson) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String sql = "UPDATE tournaments SET teams_json = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, teamsJson);
+            ps.setString(2, tournamentId.trim());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            System.err.println("[TournamentDAO] saveTeamsJson failed: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public String getTeamsJson(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return null;
+        String sql = "SELECT teams_json FROM tournaments WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString("teams_json");
+            }
+        } catch (Exception e) {
+            System.err.println("[TournamentDAO] getTeamsJson failed: " + e.getMessage());
+        }
+        return null;
+    }
 }
+

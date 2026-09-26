@@ -141,15 +141,19 @@
                                 <i class="fa-solid fa-clock-rotate-left"></i> Tính đến:
                             </label>
                             <select id="milestoneSelect" class="form-control" onchange="onMilestoneChange(this.value)" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; border-radius: 8px; background: rgba(15, 18, 26, 0.9); color: #ffffff; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; max-width: 260px;">
-                                <option value="LATEST">Giải mới nhất <%= (tournamentsList != null && !tournamentsList.isEmpty()) ? ("(#" + ((tournamentsList.get(tournamentsList.size() - 1).getTournamentIndexInSeries() > 0) ? tournamentsList.get(tournamentsList.size() - 1).getTournamentIndexInSeries() : tournamentsList.size()) + " - " + tournamentsList.get(tournamentsList.size() - 1).getName() + ")") : "" %></option>
-                                <% if (tournamentsList != null && tournamentsList.size() > 1) { 
-                                    for (int idx = tournamentsList.size() - 1; idx >= 0; idx--) {
-                                        Tournament t = tournamentsList.get(idx);
-                                        int displayNum = (t.getTournamentIndexInSeries() > 0) ? t.getTournamentIndexInSeries() : (idx + 1);
+                                <% if (tournamentsList != null && !tournamentsList.isEmpty()) { 
+                                    int totalTourneys = tournamentsList.size();
+                                    Tournament latestTourney = tournamentsList.get(totalTourneys - 1);
                                 %>
-                                    <option value="<%= idx %>">Giải #<%= displayNum %>: <%= t.getName() %></option>
-                                <%  }
-                                } %>
+                                    <option value="LATEST">Giải mới nhất (#<%= totalTourneys %> - <%= latestTourney.getName() %>)</option>
+                                    <% for (int idx = totalTourneys - 2; idx >= 0; idx--) {
+                                        Tournament t = tournamentsList.get(idx);
+                                    %>
+                                        <option value="<%= idx %>">Giải #<%= (idx + 1) %>: <%= t.getName() %></option>
+                                    <% } 
+                                } else { %>
+                                    <option value="LATEST">Giải mới nhất</option>
+                                <% } %>
                             </select>
                         </div>
 
@@ -323,7 +327,8 @@
                         stage2Format: "<%= (s2Fmt != null) ? s2Fmt.toUpperCase() : "" %>",
                         championName: "<%= (t != null && t.getChampionName() != null) ? t.getChampionName().replace("\\", "\\\\").replace("\"", "\\\"") : "" %>",
                         tierName: "<%= tTier %>",
-                        pointsConfig: <%= cfgJson %>
+                        pointsConfig: <%= cfgJson %>,
+                        teamsJson: <%= (t != null && t.getTeamsJson() != null && !t.getTeamsJson().trim().isEmpty()) ? t.getTeamsJson() : "null" %>
                     }<%= (i < tournamentsList.size() - 1) ? "," : "" %>
                 <%  }
                 } %>
