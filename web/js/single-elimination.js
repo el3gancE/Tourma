@@ -1683,7 +1683,13 @@
             // Sync bracket state immediately to ensure all winner propagations are saved
             this.syncBracketToDB(true);
 
-            fetch('single-elimination', {
+            var contextPath = window.TourmaContextPath || '';
+            if (!contextPath && window.location.pathname.indexOf('/', 1) > 0) {
+                var firstSeg = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+                if (firstSeg !== '/common') contextPath = firstSeg;
+            }
+
+            fetch(contextPath + '/single-elimination', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'

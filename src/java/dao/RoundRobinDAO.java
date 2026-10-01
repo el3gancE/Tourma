@@ -182,16 +182,219 @@ public class RoundRobinDAO extends DBContext {
         List<Object> list = JsonParser.parseList(matchesJson);
         if (list == null || list.isEmpty()) return false;
 
-        List<Map<String, Object>> mapList = new ArrayList<>();
-        for (Object item : list) {
-            if (item instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> m = (Map<String, Object>) item;
-                mapList.add(m);
+        // Step 1: Resolve or create the stage_id for this tournament + stageOrder
+        String stageId = resolveOrCreateStageId(tournamentId, stageOrder);
+        if (stageId == null) {
+            // Fallback: pure UPDATE path via MatchPersistenceService
+            List<Map<String, Object>> mapList = new ArrayList<>();
+            for (Object item : list) {
+                if (item instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> m = (Map<String, Object>) item;
+                    mapList.add(m);
+                }
+            }
+            return MatchPersistenceService.getInstance().syncMatchesList(tournamentId, mapList) > 0;
+        }
+
+        // Step 2: Resolve team name → DB id lookup
+        ParticipantDAO pDao = new ParticipantDAO();
+        List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
+        Map<String, String> teamLookup = new HashMap<>();
+        if (teams != null) {
+            for (Team tm : teams) {
+                if (tm.getId() != null) teamLookup.put(tm.getId().toLowerCase().trim(), tm.getId());
+                if (tm.getRawName() != null) teamLookup.put(tm.getRawName().toLowerCase().trim(), tm.getId());
+                if (tm.getNormalizedName() != null) teamLookup.put(tm.getNormalizedName().toLowerCase().trim(), tm.getId());
             }
         }
-        return MatchPersistenceService.getInstance().syncMatchesList(tournamentId, mapList) > 0;
+
+        // Step 3: UPSERT each match using MERGE (T-SQL)
+        // match_code pattern for RR: "RR_<tournamentId>_S<stageOrder>_M<matchId>"
+        String mergeSql =
+            "MERGE matches AS tgt " +
+            "USING (SELECT ? AS tournament_id, ? AS stage_id, ? AS match_code, ? AS round_number) AS src " +
+            "    ON tgt.tournament_id = src.tournament_id AND tgt.match_code = src.match_code " +
+            "WHEN MATCHED THEN " +
+            "    UPDATE SET tgt.team1_id = COALESCE(?, tgt.team1_id), " +
+            "               tgt.team2_id = COALESCE(?, tgt.team2_id), " +
+            "               tgt.score1 = ?, tgt.score2 = ?, tgt.winner_id = ?, " +
+            "               tgt.status = ? " +
+            "WHEN NOT MATCHED THEN " +
+            "    INSERT (id, tournament_id, stage_id, round_number, match_code, bracket_type, " +
+            "            team1_id, team2_id, score1, score2, winner_id, is_bye, status) " +
+            "    VALUES (?, src.tournament_id, src.stage_id, src.round_number, src.match_code, 'MAIN', " +
+            "            ?, ?, ?, ?, ?, 0, ?);";
+
+        int count = 0;
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(mergeSql)) {
+                for (Object item : list) {
+                    if (!(item instanceof Map)) continue;
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> m = (Map<String, Object>) item;
+
+                    Object rawId = m.get("matchId");
+                    if (rawId == null) rawId = m.get("id");
+                    if (rawId == null) continue;
+                    String matchIdStr = String.valueOf(rawId).trim();
+
+                    int roundNumber = 1;
+                    Object rn = m.get("roundNumber");
+                    if (rn == null) rn = m.get("round");
+                    if (rn != null) {
+                        try { roundNumber = Integer.parseInt(String.valueOf(rn).trim()); } catch (Exception ignored) {}
+                    }
+
+                    String matchCode = "RR_" + tournamentId + "_S" + stageOrder + "_M" + matchIdStr;
+                    String newId = matchCode;
+
+                    // Resolve team names
+                    String t1Name = getNestedString(m, "team1", "name");
+                    if (t1Name == null) t1Name = getString(m, "team1Name");
+                    String t2Name = getNestedString(m, "team2", "name");
+                    if (t2Name == null) t2Name = getString(m, "team2Name");
+
+                    String t1Id = (t1Name != null) ? teamLookup.get(t1Name.toLowerCase().trim()) : null;
+                    String t2Id = (t2Name != null) ? teamLookup.get(t2Name.toLowerCase().trim()) : null;
+
+                    // Resolve scores
+                    Integer s1 = getNestedInt(m, "team1", "score");
+                    if (s1 == null) s1 = getIntObj(m, "team1Score");
+                    Integer s2 = getNestedInt(m, "team2", "score");
+                    if (s2 == null) s2 = getIntObj(m, "team2Score");
+
+                    // Resolve winner
+                    String winnerSlot = getString(m, "winnerId");
+                    String winnerId = null;
+                    if ("team1".equalsIgnoreCase(winnerSlot) && t1Id != null) winnerId = t1Id;
+                    else if ("team2".equalsIgnoreCase(winnerSlot) && t2Id != null) winnerId = t2Id;
+                    else if (s1 != null && s2 != null) {
+                        if (s1 > s2 && t1Id != null) winnerId = t1Id;
+                        else if (s2 > s1 && t2Id != null) winnerId = t2Id;
+                    }
+
+                    String status = (s1 != null && s2 != null) ? "FINISHED" : "PENDING";
+
+                    // MERGE params: USING clause
+                    ps.setString(1, tournamentId);
+                    ps.setString(2, stageId);
+                    ps.setString(3, matchCode);
+                    ps.setInt(4, roundNumber);
+                    // WHEN MATCHED UPDATE params
+                    if (t1Id != null) ps.setString(5, t1Id); else ps.setNull(5, Types.VARCHAR);
+                    if (t2Id != null) ps.setString(6, t2Id); else ps.setNull(6, Types.VARCHAR);
+                    if (s1 != null) ps.setInt(7, s1); else ps.setNull(7, Types.INTEGER);
+                    if (s2 != null) ps.setInt(8, s2); else ps.setNull(8, Types.INTEGER);
+                    if (winnerId != null) ps.setString(9, winnerId); else ps.setNull(9, Types.VARCHAR);
+                    ps.setString(10, status);
+                    // WHEN NOT MATCHED INSERT params
+                    ps.setString(11, newId);
+                    if (t1Id != null) ps.setString(12, t1Id); else ps.setNull(12, Types.VARCHAR);
+                    if (t2Id != null) ps.setString(13, t2Id); else ps.setNull(13, Types.VARCHAR);
+                    if (s1 != null) ps.setInt(14, s1); else ps.setNull(14, Types.INTEGER);
+                    if (s2 != null) ps.setInt(15, s2); else ps.setNull(15, Types.INTEGER);
+                    if (winnerId != null) ps.setString(16, winnerId); else ps.setNull(16, Types.VARCHAR);
+                    ps.setString(17, status);
+
+                    ps.addBatch();
+                    count++;
+                }
+                ps.executeBatch();
+            }
+            conn.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return count > 0;
     }
+
+    /**
+     * Look up the stage_id for the given tournament + stageOrder from tournament_stages.
+     * If none exists, creates a new ROUND_ROBIN stage entry and returns its id.
+     */
+    private String resolveOrCreateStageId(String tournamentId, int stageOrder) {
+        if (tournamentId == null) return null;
+        // Try to find existing stage
+        String selectSql = "SELECT TOP 1 id FROM tournament_stages WHERE tournament_id = ? AND stage_order = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(selectSql)) {
+            ps.setString(1, tournamentId);
+            ps.setInt(2, stageOrder);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("id");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // No stage found → create one
+        String newStageId = tournamentId + "_S" + stageOrder + "_RR";
+        String stageName = (stageOrder == 1) ? "Stage 1: Round Robin" : ("Stage " + stageOrder + ": Round Robin");
+        String insertSql = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format, status) " +
+                           "VALUES (?, ?, ?, ?, 'ROUND_ROBIN', 'ONGOING')";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(insertSql)) {
+            ps.setString(1, newStageId);
+            ps.setString(2, tournamentId);
+            ps.setInt(3, stageOrder);
+            ps.setString(4, stageName);
+            ps.executeUpdate();
+            return newStageId;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private String getString(Map<String, Object> m, String key) {
+        if (m == null || !m.containsKey(key)) return null;
+        Object v = m.get(key);
+        return (v != null) ? String.valueOf(v).trim() : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String getNestedString(Map<String, Object> m, String outerKey, String innerKey) {
+        if (m == null) return null;
+        Object outer = m.get(outerKey);
+        if (outer instanceof Map) {
+            Object inner = ((Map<String, Object>) outer).get(innerKey);
+            return (inner != null) ? String.valueOf(inner).trim() : null;
+        }
+        return null;
+    }
+
+    private Integer getIntObj(Map<String, Object> m, String key) {
+        if (m == null || !m.containsKey(key)) return null;
+        Object v = m.get(key);
+        if (v == null) return null;
+        try {
+            if (v instanceof Number) return ((Number) v).intValue();
+            String s = String.valueOf(v).trim();
+            return s.isEmpty() ? null : Integer.parseInt(s);
+        } catch (Exception e) { return null; }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Integer getNestedInt(Map<String, Object> m, String outerKey, String innerKey) {
+        if (m == null) return null;
+        Object outer = m.get(outerKey);
+        if (outer instanceof Map) {
+            Object inner = ((Map<String, Object>) outer).get(innerKey);
+            if (inner == null) return null;
+            try {
+                if (inner instanceof Number) return ((Number) inner).intValue();
+                String s = String.valueOf(inner).trim();
+                return s.isEmpty() ? null : Integer.parseInt(s);
+            } catch (Exception e) { return null; }
+        }
+        return null;
+    }
+
 
     public boolean updateMatchScore(String tournamentId, int stageOrder, String matchId, Integer score1, Integer score2, String winnerFlag, String team1Name, String team2Name) {
         ParticipantDAO pDao = new ParticipantDAO();
@@ -224,7 +427,7 @@ public class RoundRobinDAO extends DBContext {
 
     public boolean resetRoundRobinMatches(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.winner_id = NULL, m.status = 'SCHEDULED' "
+        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.winner_id = NULL, m.status = 'PENDING' "
                 + "FROM matches m "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '_%')";

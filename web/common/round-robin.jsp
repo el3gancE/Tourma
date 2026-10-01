@@ -11,6 +11,7 @@
     String tourneyName = "Giải Đấu Vòng Tròn Tính Điểm";
     String teamsJson = "[]";
     String dbMatchesJson = "[]";
+    String dbTournamentStatus = "DRAFT";
     String stageParam = request.getParameter("stage");
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
     String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
@@ -26,6 +27,9 @@
                 if (t != null) {
                     if (t.getName() != null && !t.getName().trim().isEmpty()) {
                         tourneyName = t.getName();
+                    }
+                    if (t.getStatus() != null && !t.getStatus().trim().isEmpty()) {
+                        dbTournamentStatus = t.getStatus().trim();
                     }
                     if (t.getTournamentType() != null && !t.getTournamentType().trim().isEmpty()) {
                         tournamentType = t.getTournamentType();
@@ -229,6 +233,11 @@
         <script>
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
+                var dbTournamentStatus = "<%= dbTournamentStatus %>";
+                // Sync DB status to localStorage so FinalStagePopup reads correct state
+                if (dbTournamentStatus === 'COMPLETED') {
+                    try { localStorage.setItem('tourma_final_locked_' + tourneyId, 'true'); } catch(e) {}
+                }
                 var tType = "<%= tournamentType %>";
                 try { localStorage.setItem('tourma_type_' + tourneyId, tType); } catch(e) {}
                 var preloadedTeams = <%= teamsJson %>;

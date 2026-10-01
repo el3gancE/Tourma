@@ -338,6 +338,11 @@
 
             this.isLocked = true;
 
+            // Persist lock state to localStorage so it survives page refresh/reload
+            try {
+                localStorage.setItem('tourma_final_locked_' + this.tournamentId, 'true');
+            } catch (e) {}
+
             if (typeof this.onLockCallback === 'function') {
                 this.onLockCallback(true);
             }

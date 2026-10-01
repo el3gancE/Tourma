@@ -253,7 +253,7 @@ public class SingleEliminationDAO extends DBContext {
 
     public boolean resetBracketMatches(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.winner_id = NULL, m.status = 'SCHEDULED' "
+        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.winner_id = NULL, m.status = 'PENDING' "
                 + "FROM matches m "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '_%')";
@@ -293,7 +293,7 @@ public class SingleEliminationDAO extends DBContext {
                     if (m.getNextMatchId() != null && m.getNextMatchId() > 0) ps.setString(12, "M_" + m.getTournamentId() + "_" + m.getNextMatchId()); else ps.setNull(12, Types.VARCHAR);
                     ps.setString(13, m.getNextMatchSlot() == 2 ? "SLOT_2" : "SLOT_1");
                     ps.setBoolean(14, false);
-                    ps.setString(15, m.getStatus() != null ? m.getStatus() : "SCHEDULED");
+                    ps.setString(15, m.getStatus() != null ? m.getStatus() : "PENDING");
                     ps.addBatch();
                 }
                 ps.executeBatch();

@@ -16,6 +16,7 @@
     String tourneyName = "Giải Đấu Swiss";
     List<Team> dbTeamsList = null;
     String dbMatchesJson = "[]";
+    String dbTournamentStatus = "DRAFT";
 
     if (!safeTourneyId.isEmpty()) {
         try {
@@ -23,6 +24,9 @@
             Tournament t = tDao.getTournamentById(safeTourneyId);
             if (t != null && t.getName() != null && !t.getName().trim().isEmpty()) {
                 tourneyName = t.getName();
+                if (t.getStatus() != null && !t.getStatus().trim().isEmpty()) {
+                    dbTournamentStatus = t.getStatus().trim();
+                }
             }
             ParticipantDAO pDao = new ParticipantDAO();
             dbTeamsList = pDao.getTeamsByTournamentId(safeTourneyId);
@@ -212,6 +216,14 @@
             window.swissTournamentId = "${not empty tournament.id ? tournament.id : param.id}";
             window.swissContextPath = "${pageContext.request.contextPath}";
             window.swissCurrentStage = <%= currentStage %>;
+            window.swissTournamentStatus = '<%= dbTournamentStatus %>';
+            // Sync DB tournament status to localStorage for FinalStagePopup
+            (function() {
+                var tid = window.swissTournamentId;
+                if (window.swissTournamentStatus === 'COMPLETED' && tid) {
+                    try { localStorage.setItem('tourma_final_locked_' + tid, 'true'); } catch(e) {}
+                }
+            })();
             window.dbSwissMatches = <%= dbMatchesJson %>;
             window.serverTeams = [
                 <% if (dbTeamsList != null && !dbTeamsList.isEmpty()) { 

@@ -221,7 +221,7 @@ public class GroupStageDAO extends DBContext {
 
     public boolean resetGroupMatches(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.winner_id = NULL, m.status = 'SCHEDULED' "
+        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.winner_id = NULL, m.status = 'PENDING' "
                 + "FROM matches m "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '_%')";

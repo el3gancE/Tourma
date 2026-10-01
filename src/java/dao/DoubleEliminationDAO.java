@@ -198,9 +198,9 @@ public class DoubleEliminationDAO extends DBContext {
                     String nextSlot = rs.getString("next_slot");
                     int nextSlotNum = "SLOT_2".equalsIgnoreCase(nextSlot) ? 2 : 1;
 
-                    String dropIdStr = rs.getString("drop_to_match_id");
+                    String dropIdStr = rs.getString("loser_next_match_id");
                     Integer dropMatchId = (dropIdStr != null && !dropIdStr.isEmpty()) ? parseNumericMatchId(dropIdStr, 0) : null;
-                    String dropSlot = rs.getString("drop_to_slot");
+                    String dropSlot = rs.getString("loser_next_slot");
                     int dropSlotNum = "SLOT_2".equalsIgnoreCase(dropSlot) ? 2 : 1;
 
                     boolean isBye = rs.getBoolean("is_bye");
@@ -288,7 +288,7 @@ public class DoubleEliminationDAO extends DBContext {
 
     public boolean resetBracketMatches(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.winner_id = NULL, m.status = 'SCHEDULED' "
+        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.winner_id = NULL, m.status = 'PENDING' "
                 + "FROM matches m "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '_%')";

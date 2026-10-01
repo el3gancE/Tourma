@@ -65,6 +65,7 @@ public class SingleEliminationServlet extends HttpServlet {
             throws ServletException, IOException {
         
         request.setCharacterEncoding("UTF-8");
+        response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
 

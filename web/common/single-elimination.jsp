@@ -11,6 +11,7 @@
     String tourneyName = "Giải Đấu Single Elimination";
     String teamsJson = "[]";
     String dbMatchesJson = "[]";
+    String dbTournamentStatus = "DRAFT";
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
     String stageParam = request.getParameter("stage");
@@ -39,6 +40,9 @@
                 }
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
+                }
+                if (t.getStatus() != null && !t.getStatus().trim().isEmpty()) {
+                    dbTournamentStatus = t.getStatus().trim();
                 }
                 if (t.getTournamentType() != null) {
                     tournamentType = t.getTournamentType();
@@ -287,6 +291,10 @@
             window.TourmaContextPath = '${pageContext.request.contextPath}';
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
+                var dbTournamentStatus = "<%= dbTournamentStatus %>";
+                if (dbTournamentStatus === 'COMPLETED') {
+                    try { localStorage.setItem('tourma_final_locked_' + tourneyId, 'true'); } catch(e) {}
+                }
                 window.TourmaContextPathTourneyId = tourneyId;
                 var preloadedTeams = <%= teamsJson %>;
                 var cutTarget = <%= cutTarget %>; // from DB

@@ -817,7 +817,12 @@
             rParams.append('action', 'reset');
             rParams.append('tournamentId', this.tournamentId);
             rParams.append('stage', this.currentStage || 1);
-            fetch('round-robin', {
+            var contextPath = window.TourmaContextPath || '';
+            if (!contextPath && window.location.pathname.indexOf('/', 1) > 0) {
+                var firstSeg = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+                if (firstSeg !== '/common') contextPath = firstSeg;
+            }
+            fetch(contextPath + '/round-robin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
                 body: rParams.toString()
@@ -910,7 +915,13 @@
             params.append('team1Name', t1Name);
             params.append('team2Name', t2Name);
 
-            fetch('round-robin', {
+            var contextPath = window.TourmaContextPath || '';
+            if (!contextPath && window.location.pathname.indexOf('/', 1) > 0) {
+                var firstSeg = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+                if (firstSeg !== '/common') contextPath = firstSeg;
+            }
+
+            fetch(contextPath + '/round-robin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
@@ -947,13 +958,19 @@
             }
             if (list.length === 0) return;
 
+            var contextPath = window.TourmaContextPath || '';
+            if (!contextPath && window.location.pathname.indexOf('/', 1) > 0) {
+                var firstSeg = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+                if (firstSeg !== '/common') contextPath = firstSeg;
+            }
+
             var params = new URLSearchParams();
             params.append('action', 'batchSync');
             params.append('tournamentId', this.tournamentId);
             params.append('stage', this.currentStage || 1);
             params.append('matchesJson', JSON.stringify(list));
 
-            fetch('round-robin', {
+            fetch(contextPath + '/round-robin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
                 body: params.toString()
