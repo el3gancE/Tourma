@@ -122,6 +122,11 @@ public class Tournament {
 
     public String getTeamsJson() { return teamsJson; }
     public void setTeamsJson(String teamsJson) { this.teamsJson = teamsJson; }
+
+    private int teamCount;
+
+    public int getTeamCount() { return teamCount; }
+    public void setTeamCount(int teamCount) { this.teamCount = teamCount; }
 }
 
 

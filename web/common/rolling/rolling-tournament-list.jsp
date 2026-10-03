@@ -303,14 +303,11 @@
                                 <input type="text" id="cloneNewTourneyName" name="newName" class="form-control" required style="width: 100%; font-size: 0.88rem; font-weight: 600; border-radius: 8px; box-sizing: border-box;" placeholder="Nhập tên giải mới...">
                             </div>
 
-                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem;">
-                                <label style="display: flex; align-items: center; gap: 0.55rem; cursor: pointer; user-select: none; font-size: 0.84rem; color: #f8fafc; font-weight: 600;">
-                                    <input type="checkbox" name="copyTeams" value="true" checked style="width: 17px; height: 17px; accent-color: #2dd4bf; cursor: pointer;">
-                                    <span>Sao chép cả danh sách đội tham gia</span>
-                                </label>
-                                <p style="margin: 0.35rem 0 0 1.65rem; font-size: 0.75rem; color: #94a3b8;">
-                                    Nếu bỏ tích, giải mới sẽ có cấu hình tương tự nhưng danh sách đội trống để bạn nhập hoặc chọn lại từ danh sách Partner.
-                                </p>
+                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.75rem 0.85rem; margin-bottom: 0.5rem; display: flex; align-items: flex-start; gap: 0.6rem;">
+                                 <i class="fa-solid fa-users text-mint" style="margin-top: 0.15rem; font-size: 0.9rem;"></i>
+                                 <div style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.45;">
+                                     <strong>Ràng buộc số lượng:</strong> Danh sách đội sẽ để trống để bạn nhập hoặc chọn từ Partner ở bước tiếp theo, và <strong>bắt buộc phải khớp đúng số lượng đội</strong> của giải gốc.
+                                 </div>
                             </div>
                         </div>
 

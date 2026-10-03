@@ -17,7 +17,8 @@ public class TournamentDAO {
     public List<Tournament> getAllTournaments() {
         List<Tournament> list = new ArrayList<>();
         String sql = "SELECT t.*, " +
-                "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format " +
+                "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
+                "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count " +
                 "FROM tournaments t ORDER BY t.created_at DESC";
         DBContext db = new DBContext();
 
@@ -40,6 +41,10 @@ public class TournamentDAO {
                         rs.getString("linked_qualifier_tournament_id"),
                         rs.getString("status"),
                         rs.getTimestamp("created_at"));
+                try {
+                    t.setTeamCount(rs.getInt("team_count"));
+                } catch (Exception ignore) {
+                }
                 try {
                     String fmt = rs.getString("stage_format");
                     if (fmt != null && !fmt.trim().isEmpty()) {
@@ -86,6 +91,8 @@ public class TournamentDAO {
         String sql = "SELECT t.*, " +
                 "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, "
                 +
+                "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count, "
+                +
                 "(SELECT TOP 1 tm.raw_name FROM matches m JOIN teams tm ON m.winner_id = tm.id WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL ORDER BY m.round_number DESC) AS db_champion_name "
                 +
                 "FROM tournaments t WHERE t.id = ?";
@@ -112,6 +119,10 @@ public class TournamentDAO {
                             rs.getString("linked_qualifier_tournament_id"),
                             rs.getString("status"),
                             rs.getTimestamp("created_at"));
+                    try {
+                        t.setTeamCount(rs.getInt("team_count"));
+                    } catch (Exception ignore) {
+                    }
                     try {
                         String fmt = rs.getString("stage_format");
                         if (fmt != null && !fmt.trim().isEmpty()) {
@@ -173,7 +184,8 @@ public class TournamentDAO {
         List<Tournament> list = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return list;
         String sql = "SELECT t.*, " +
-                     "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format " +
+                     "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
+                     "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count " +
                      "FROM tournaments t WHERE t.series_id = ? ORDER BY t.tournament_index_in_series ASC, t.created_at ASC";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
@@ -196,6 +208,9 @@ public class TournamentDAO {
                         rs.getString("status"),
                         rs.getTimestamp("created_at")
                     );
+                    try {
+                        t.setTeamCount(rs.getInt("team_count"));
+                    } catch (Exception ignore) {}
                     try {
                         String fmt = rs.getString("stage_format");
                         if (fmt != null && !fmt.trim().isEmpty()) t.setFormat(fmt.trim());
@@ -500,6 +515,53 @@ public class TournamentDAO {
             ps.setString(2, pointsConfigJson);
             ps.setString(3, tournamentId.trim());
             return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean copyPointsConfigFromTournament(String sourceTournamentId, String targetTournamentId) {
+        if (sourceTournamentId == null || targetTournamentId == null) return false;
+        Tournament src = getTournamentById(sourceTournamentId.trim());
+        if (src == null) return false;
+        String sql = "UPDATE tournaments SET series_reward_points = ?, series_points_config = ?, multi_stage_config = COALESCE(?, multi_stage_config) WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (src.getSeriesRewardPoints() != null) {
+                ps.setInt(1, src.getSeriesRewardPoints());
+            } else {
+                ps.setNull(1, java.sql.Types.INTEGER);
+            }
+            ps.setString(2, src.getSeriesPointsConfig());
+            ps.setString(3, src.getMultiStageConfig());
+            ps.setString(4, targetTournamentId.trim());
+            ps.executeUpdate();
+
+            // Clone custom placement points if any
+            String delSql = "DELETE FROM tournament_placement_points WHERE tournament_id = ?";
+            try (PreparedStatement psDel = conn.prepareStatement(delSql)) {
+                psDel.setString(1, targetTournamentId.trim());
+                psDel.executeUpdate();
+            }
+            String selSql = "SELECT rank_position, points_awarded, elo_weight FROM tournament_placement_points WHERE tournament_id = ?";
+            String insSql = "INSERT INTO tournament_placement_points (id, tournament_id, rank_position, points_awarded, elo_weight) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement psSel = conn.prepareStatement(selSql);
+                 PreparedStatement psIns = conn.prepareStatement(insSql)) {
+                psSel.setString(1, sourceTournamentId.trim());
+                try (ResultSet rs = psSel.executeQuery()) {
+                    while (rs.next()) {
+                        psIns.setString(1, "tpp_" + java.util.UUID.randomUUID().toString().substring(0, 8));
+                        psIns.setString(2, targetTournamentId.trim());
+                        psIns.setInt(3, rs.getInt("rank_position"));
+                        psIns.setInt(4, rs.getInt("points_awarded"));
+                        psIns.setDouble(5, rs.getDouble("elo_weight"));
+                        psIns.executeUpdate();
+                    }
+                }
+            }
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
         }

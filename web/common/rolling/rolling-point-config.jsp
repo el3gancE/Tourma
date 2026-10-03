@@ -589,6 +589,17 @@
                     posItems.push({ key: "2", label: "Nhì Bảng / Á Quân" });
                     posItems.push({ key: "3-4", label: "Hạng 3-4" });
                     posItems.push({ key: "stage1_eliminated", label: "Vòng bảng" });
+                } else if (fmt === 'SINGLE_ELIMINATION' || !isMulti) {
+                    posItems.push({ key: "1", label: "Champion", isChamp: true });
+                    if (nTeams >= 2) posItems.push({ key: "2", label: "Runner-up" });
+                    var curLim = 4;
+                    while (curLim <= nTeams) {
+                        var sR = Math.floor(curLim / 2) + 1;
+                        var eR = curLim;
+                        var label = (curLim === 4) ? "Semi-final" : ((curLim === 8) ? "Quarter-final" : ("Round of " + curLim));
+                        posItems.push({ key: sR + "-" + eR, label: label });
+                        curLim *= 2;
+                    }
                 }
 
                 if (posItems.length > 0) {

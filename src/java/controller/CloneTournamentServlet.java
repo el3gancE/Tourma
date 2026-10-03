@@ -37,12 +37,8 @@ public class CloneTournamentServlet extends HttpServlet {
         }
 
         String newName = request.getParameter("newName");
-        String copyTeamsParam = request.getParameter("copyTeams");
-        boolean copyTeams = "true".equalsIgnoreCase(copyTeamsParam) || "on".equalsIgnoreCase(copyTeamsParam);
-        String redirectContext = request.getParameter("redirectContext");
-
-        boolean isAjax = "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"))
-                || "json".equalsIgnoreCase(request.getParameter("format"));
+        String requestedWith = request.getHeader("X-Requested-With");
+        boolean isAjax = "XMLHttpRequest".equalsIgnoreCase(requestedWith) || "true".equalsIgnoreCase(request.getParameter("ajax"));
 
         if (sourceTournamentId == null || sourceTournamentId.trim().isEmpty()) {
             if (isAjax) {
@@ -50,26 +46,42 @@ public class CloneTournamentServlet extends HttpServlet {
                 try (PrintWriter out = response.getWriter()) {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu mã giải đấu nguồn!\"}");
                 }
+                return;
             } else {
                 response.sendRedirect(request.getContextPath() + "/my-tournaments?error=missing_id");
+                return;
             }
-            return;
         }
+
+        Tournament srcTourney = tournamentDAO.getTournamentById(sourceTournamentId.trim());
+        int targetTeamCount = (srcTourney != null) ? srcTourney.getTeamCount() : 0;
+        String srcName = (srcTourney != null && srcTourney.getName() != null) ? srcTourney.getName() : "";
+
+        // Enforce no copying of team rosters as required
+        boolean copyTeams = false;
 
         Tournament cloned = tournamentDAO.cloneTournament(sourceTournamentId.trim(), newName, copyTeams);
 
         if (cloned != null) {
             String redirectUrl;
-            if ("series".equalsIgnoreCase(redirectContext) && cloned.getSeriesId() != null && !cloned.getSeriesId().trim().isEmpty()) {
-                redirectUrl = request.getContextPath() + "/rolling/tournament-list?id=" + cloned.getSeriesId().trim();
-            } else {
-                redirectUrl = request.getContextPath() + "/my-tournaments";
+            StringBuilder sb = new StringBuilder(request.getContextPath()).append("/common/configure-tournament-format.jsp");
+            sb.append("?id=").append(cloned.getId());
+            if (cloned.getSeriesId() != null && !cloned.getSeriesId().trim().isEmpty()) {
+                sb.append("&seriesId=").append(cloned.getSeriesId().trim());
             }
+            if (targetTeamCount > 0) {
+                sb.append("&targetTeamCount=").append(targetTeamCount);
+            }
+            sb.append("&copiedFrom=").append(java.net.URLEncoder.encode(sourceTournamentId.trim(), "UTF-8"));
+            if (!srcName.isEmpty()) {
+                sb.append("&copiedSourceTourneyName=").append(java.net.URLEncoder.encode(srcName, "UTF-8"));
+            }
+            redirectUrl = sb.toString();
 
             if (isAjax) {
                 response.setContentType("application/json;charset=UTF-8");
                 try (PrintWriter out = response.getWriter()) {
-                    out.print("{\"status\":\"success\",\"newTournamentId\":\"" + cloned.getId() + "\",\"redirectUrl\":\"" + redirectUrl + "\"}");
+                    out.print("{\"status\":\"success\",\"newTournamentId\":\"" + cloned.getId() + "\",\"targetTeamCount\":" + targetTeamCount + ",\"redirectUrl\":\"" + redirectUrl + "\"}");
                 }
             } else {
                 response.sendRedirect(redirectUrl);

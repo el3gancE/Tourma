@@ -63,6 +63,11 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             updateTournamentFormatAndTypeSafe(tournamentId.trim(), fmt, tType, s1F, s2F, advSeats);
         }
 
+        String copiedFromParam = request.getParameter("copiedFrom");
+        if (copiedFromParam != null && !copiedFromParam.trim().isEmpty() && tournamentId != null && !tournamentId.trim().isEmpty()) {
+            new TournamentDAO().copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim());
+        }
+
         Tournament tournament = null;
         if (tournamentId != null && !tournamentId.trim().isEmpty()) {
             tournament = getTournamentByIdSafe(tournamentId.trim());

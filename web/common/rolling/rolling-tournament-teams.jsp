@@ -28,7 +28,20 @@
     int partnerCount = (partnerList != null) ? partnerList.size() : 0;
     int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
 
+    String targetTeamCountParam = request.getParameter("targetTeamCount");
+    String copiedSourceTourneyNameParam = request.getParameter("copiedSourceTourneyName");
+    int targetTeamCountVal = 0;
+    if (targetTeamCountParam != null && !targetTeamCountParam.trim().isEmpty()) {
+        try { targetTeamCountVal = Integer.parseInt(targetTeamCountParam.trim()); } catch (Exception ignore) {}
+    }
+
     String nextStepUrl = request.getContextPath() + "/rolling/point-config?id=" + tourneyId + "&seriesId=" + seriesIdVal;
+    if (targetTeamCountVal > 0) {
+        nextStepUrl += "&targetTeamCount=" + targetTeamCountVal;
+    }
+    if (copiedSourceTourneyNameParam != null && !copiedSourceTourneyNameParam.trim().isEmpty()) {
+        nextStepUrl += "&copiedSourceTourneyName=" + java.net.URLEncoder.encode(copiedSourceTourneyNameParam, "UTF-8");
+    }
     String nextStepLabel = "Tiếp theo";
 
     // Order partnerList by Series Rolling Standings rank (Rank 1, 2, 3...)
@@ -135,6 +148,32 @@
             <h1 class="page-main-title" style="margin-top: 0;">
                 Quản lý danh sách đội
             </h1>
+
+            <% if (targetTeamCountVal > 0) { %>
+            <!-- TARGET TEAM COUNT CONSTRAINT BANNER (COPIED CONFIG) -->
+            <div id="targetTeamConstraintBanner" style="background: linear-gradient(135deg, rgba(20, 184, 166, 0.12), rgba(6, 182, 212, 0.08)); border: 1px solid rgba(20, 184, 166, 0.4); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);">
+                <div style="display: flex; align-items: center; gap: 0.85rem;">
+                    <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(20, 184, 166, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #2dd4bf; flex-shrink: 0;">
+                        <i class="fa-solid fa-copy"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.95rem; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <span>Cấu hình sao chép từ:</span>
+                            <span style="color: #2dd4bf; background: rgba(45, 212, 191, 0.15); padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.85rem;"><%= (copiedSourceTourneyNameParam != null && !copiedSourceTourneyNameParam.trim().isEmpty()) ? copiedSourceTourneyNameParam : "Giải Gốc" %></span>
+                        </div>
+                        <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 0.2rem;">
+                            Ràng buộc số lượng: Giải đấu mới bắt buộc phải có đúng <strong><%= targetTeamCountVal %> đội</strong> tham gia.
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div id="targetCountStatusBadge" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.85rem; border-radius: 8px; background: <%= (teamCount == targetTeamCountVal) ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.15)" %>; color: <%= (teamCount == targetTeamCountVal) ? "#4ade80" : "#f87171" %>; border: 1px solid <%= (teamCount == targetTeamCountVal) ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)" %>;">
+                        <i class="fa-solid <%= (teamCount == targetTeamCountVal) ? "fa-circle-check" : "fa-triangle-exclamation" %>"></i>
+                        <span><%= (teamCount == targetTeamCountVal) ? ("✓ Đủ " + teamCount + "/" + targetTeamCountVal + " đội") : (teamCount < targetTeamCountVal ? ("Thiếu " + (targetTeamCountVal - teamCount) + " đội (" + teamCount + "/" + targetTeamCountVal + ")") : ("Thừa " + (teamCount - targetTeamCountVal) + " đội (" + teamCount + "/" + targetTeamCountVal + ")")) %></span>
+                    </div>
+                </div>
+            </div>
+            <% } %>
 
             <!-- TWO-COLUMN WORKSPACE GRID (MATCHING STANDALONE TOURNAMENT PERFECTLY) -->
             <div class="team-mgmt-grid">
@@ -320,7 +359,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
                         <div style="display: flex; align-items: center; gap: 0.4rem;">
                             <span style="font-size: 0.78rem; font-weight: 700; color: #cbd5e1;">Số đội chọn:</span>
-                            <input type="number" id="quickSelectNum" value="<%= Math.min(partnerCount, 4) %>" min="2" max="<%= partnerCount %>" class="form-control" style="width: 65px; font-size: 0.82rem; font-weight: 800; text-align: center; padding: 0.2rem 0.4rem; border-radius: 6px;">
+                            <input type="number" id="quickSelectNum" value="<%= (targetTeamCountVal > 0) ? Math.min(partnerCount, targetTeamCountVal) : Math.min(partnerCount, 4) %>" min="2" max="<%= partnerCount %>" class="form-control" style="width: 65px; font-size: 0.82rem; font-weight: 800; text-align: center; padding: 0.2rem 0.4rem; border-radius: 6px;">
                         </div>
                         <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                             <button type="button" onclick="quickSelectTeams('TOP')" class="btn btn-mint" style="font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 6px;">
@@ -401,6 +440,8 @@
             window.currentSubTourneyId = "<%= tourneyId %>";
             window.seriesIdVal = "<%= seriesIdVal %>";
             window.appContextPath = "${pageContext.request.contextPath}";
+            window.targetTeamCount = <%= targetTeamCountVal %>;
+            window.copiedSourceTourneyName = "<%= (copiedSourceTourneyNameParam != null) ? copiedSourceTourneyNameParam.replace("\\", "\\\\").replace("\"", "\\\"") : "" %>";
             window.seriesSubTournaments = [
                 <% if (tournamentsList != null) {
                     for (int i = 0; i < tournamentsList.size(); i++) {
