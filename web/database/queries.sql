@@ -345,13 +345,15 @@ GO
 -- PHẦN 4: TRUY VẤN SERIES (ROLLING WINDOW, FIFA ELO & LEAGUE SYSTEM)
 -- ============================================================================
 
--- 4.1 Bảng xếp hạng Series Rolling Window (Cửa sổ trượt W=10 giải gần nhất)
+-- 4.1 Bảng xếp hạng Series Rolling Window (Đọc từ bảng series_standings đã đồng bộ)
 SELECT 
     s.name AS [Tên Series],
+    s.phase_size AS [Cửa Sổ Trượt W],
     ss.phase_number AS [Phase],
     ss.rank_overall AS [Hạng Toàn Cục],
     ss.normalized_team_name AS [Đội / VĐV],
-    ss.total_rolling_points AS [Điểm Rolling (10 Giải Gần Nhất)],
+    ss.total_rolling_points AS [Điểm Rolling Tích Lũy],
+    ss.matches_played AS [Số Giải Trong Cửa Sổ W],
     ss.current_elo AS [Điểm Elo],
     ss.updated_at AS [Cập Nhật Lúc]
 FROM series_standings ss
@@ -360,22 +362,73 @@ WHERE s.ranking_model = 'ROLLING_WINDOW'
 ORDER BY s.id, ss.phase_number DESC, ss.rank_overall ASC;
 GO
 
+-- 4.1.1 Bảng xếp hạng Series Rolling Window ĐỘNG (Tính trực tiếp từ W giải gần nhất của Series)
+WITH RankedTournaments AS (
+    SELECT 
+        t.id AS tournament_id,
+        t.series_id,
+        t.name AS tournament_name,
+        t.tournament_index_in_series,
+        ROW_NUMBER() OVER (
+            PARTITION BY t.series_id 
+            ORDER BY t.tournament_index_in_series DESC, t.created_at DESC
+        ) AS tourney_recency_rank
+    FROM tournaments t
+    WHERE t.series_id IS NOT NULL AND t.status = 'COMPLETED'
+)
+SELECT 
+    s.name AS [Tên Series],
+    s.phase_size AS [Cửa Sổ W],
+    sth.normalized_team_name AS [Tên Đội / VĐV],
+    COUNT(DISTINCT sth.tournament_id) AS [Số Giải Đã Đấu Trong W],
+    SUM(ISNULL(sth.points_earned, 0)) AS [Tổng Điểm Rolling (W Giải Gần Nhất)],
+    DENSE_RANK() OVER (
+        PARTITION BY s.id 
+        ORDER BY SUM(ISNULL(sth.points_earned, 0)) DESC
+    ) AS [Hạng Rolling Động]
+FROM series s
+JOIN RankedTournaments rt ON s.id = rt.series_id AND rt.tourney_recency_rank <= s.phase_size
+JOIN series_tournament_history sth ON rt.tournament_id = sth.tournament_id AND s.id = sth.series_id
+WHERE s.ranking_model = 'ROLLING_WINDOW'
+GROUP BY s.id, s.name, s.phase_size, sth.normalized_team_name
+ORDER BY s.id, [Tổng Điểm Rolling (W Giải Gần Nhất)] DESC;
+GO
+
 -- 4.2 Lịch sử Điểm cộng (+) và Điểm trừ trượt (-) từng giải trong Rolling Series
+-- Có đánh dấu giải nào ĐANG TRONG CỬA SỔ W vs ĐÃ HẾT HẠN (NGOÀI CỬA SỔ W)
+WITH TourneyWindowStatus AS (
+    SELECT 
+        t.id AS tournament_id,
+        t.series_id,
+        t.tournament_index_in_series,
+        t.name AS tournament_name,
+        t.tier_name,
+        s.phase_size,
+        ROW_NUMBER() OVER (
+            PARTITION BY t.series_id 
+            ORDER BY t.tournament_index_in_series DESC, t.created_at DESC
+        ) AS tourney_recency_rank
+    FROM tournaments t
+    JOIN series s ON t.series_id = s.id
+    WHERE t.status = 'COMPLETED'
+)
 SELECT 
     s.name AS [Series],
-    t.tournament_index_in_series AS [Giải Thứ #],
-    t.name AS [Tên Giải Đấu],
-    t.tier_name AS [Tier],
+    tws.tournament_index_in_series AS [Giải Thứ #],
+    tws.tournament_name AS [Tên Giải Đấu],
+    tws.tier_name AS [Tier],
     sth.normalized_team_name AS [Tên Đội],
     sth.tournament_rank AS [Thứ Hạng Đạt Được],
     sth.points_earned AS [Điểm Cộng (+) Giải Này],
-    sth.points_deducted AS [Điểm Trừ (-) Cửa Sổ Trượt],
-    sth.elo_change AS [Biến Động Elo (+/-)],
+    CASE 
+        WHEN tws.tourney_recency_rank <= tws.phase_size THEN N'✅ Trong Cửa Sổ W'
+        ELSE N'❌ Đã Hết Hạn (Ngoài Cửa Sổ W)'
+    END AS [Trạng Thái Cửa Sổ Trượt],
     sth.completed_at AS [Ngày Hoàn Thành]
 FROM series_tournament_history sth
 JOIN series s ON sth.series_id = s.id
-JOIN tournaments t ON sth.tournament_id = t.id
-ORDER BY s.id, t.tournament_index_in_series DESC, sth.tournament_rank ASC;
+JOIN TourneyWindowStatus tws ON sth.tournament_id = tws.tournament_id
+ORDER BY s.id, tws.tournament_index_in_series DESC, sth.tournament_rank ASC;
 GO
 
 -- 4.3 Bảng xếp hạng FIFA Elo Ranking (Phân nhóm Partner & Điểm Elo)
@@ -418,18 +471,46 @@ WHERE s.ranking_model = 'LEAGUE_SYSTEM'
 ORDER BY ss.division_level ASC, ss.rank_overall ASC;
 GO
 
--- 4.5 Bảng Vàng Thành Tích (Hall of Fame) - Thống kê Cúp Vô Địch & Danh hiệu toàn thời gian
+-- 4.5 Bảng Vàng Thành Tích (Hall of Fame) - Thống kê Cúp Vô Địch & Danh hiệu TOÀN THỜI GIAN (All-time)
 SELECT 
     sth.normalized_team_name AS [Tên Đội / VĐV],
     COUNT(DISTINCT sth.series_id) AS [Số Series Tham Gia],
-    COUNT(DISTINCT sth.tournament_id) AS [Tổng Số Giải Đấu],
+    COUNT(DISTINCT sth.tournament_id) AS [Tổng Số Giải Đấu Đã Tham Gia],
     SUM(CASE WHEN sth.tournament_rank = 1 THEN 1 ELSE 0 END) AS [Số Cúp Vô Địch],
     SUM(CASE WHEN sth.tournament_rank = 2 THEN 1 ELSE 0 END) AS [Số Lần Á Quân],
     SUM(CASE WHEN sth.tournament_rank IN (3, 4) THEN 1 ELSE 0 END) AS [Số Lần Top 4],
-    SUM(ISNULL(sth.points_earned, 0)) AS [Tổng Điểm Thưởng Tích Lũy]
+    SUM(ISNULL(sth.points_earned, 0)) AS [Tổng Điểm Thưởng Toàn Sự Nghiệp (All-Time)]
 FROM series_tournament_history sth
 GROUP BY sth.normalized_team_name
-ORDER BY [Số Cúp Vô Địch] DESC, [Số Lần Á Quân] DESC, [Tổng Điểm Thưởng Tích Lũy] DESC;
+ORDER BY [Số Cúp Vô Địch] DESC, [Số Lần Á Quân] DESC, [Tổng Điểm Thưởng Toàn Sự Nghiệp (All-Time)] DESC;
+GO
+
+-- 4.5.1 Thống kê thành tích CÓ FILTER THEO CỬA SỔ TRƯỢT W GIẢI GẦN NHẤT
+WITH WindowTourneys AS (
+    SELECT 
+        t.id AS tournament_id,
+        t.series_id,
+        s.phase_size,
+        ROW_NUMBER() OVER (
+            PARTITION BY t.series_id 
+            ORDER BY t.tournament_index_in_series DESC, t.created_at DESC
+        ) AS rnk
+    FROM tournaments t
+    JOIN series s ON t.series_id = s.id
+    WHERE t.status = 'COMPLETED'
+)
+SELECT 
+    sth.normalized_team_name AS [Tên Đội / VĐV],
+    COUNT(DISTINCT wt.tournament_id) AS [Số Giải Trong Cửa Sổ W],
+    SUM(CASE WHEN sth.tournament_rank = 1 THEN 1 ELSE 0 END) AS [Cúp Vô Địch (Trong W)],
+    SUM(CASE WHEN sth.tournament_rank = 2 THEN 1 ELSE 0 END) AS [Á Quân (Trong W)],
+    SUM(CASE WHEN sth.tournament_rank IN (3, 4) THEN 1 ELSE 0 END) AS [Top 4 (Trong W)],
+    SUM(ISNULL(sth.points_earned, 0)) AS [Tổng Điểm Tích Lũy (Trong W)]
+FROM series_tournament_history sth
+JOIN WindowTourneys wt ON sth.tournament_id = wt.tournament_id AND sth.series_id = wt.series_id
+WHERE wt.rnk <= wt.phase_size
+GROUP BY sth.normalized_team_name
+ORDER BY [Tổng Điểm Tích Lũy (Trong W)] DESC, [Cúp Vô Địch (Trong W)] DESC;
 GO
 
 -- 4.6 Hồ sơ Đội bóng (Team Profile / Match History) - Tra cứu toàn bộ lịch sử thi đấu của 1 đội

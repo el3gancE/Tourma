@@ -30,7 +30,7 @@ CREATE TABLE series (
     name NVARCHAR(255) NOT NULL,
     ranking_model VARCHAR(50) NOT NULL DEFAULT 'ROLLING_WINDOW' 
         CHECK (ranking_model IN ('ROLLING_WINDOW', 'FIFA_ELO', 'LEAGUE_SYSTEM')),
-    phase_size INT DEFAULT 10,              -- Độ rộng cửa sổ trượt W (Ví dụ: W = 10 giải; 1-10 là Phase 1, 11-20 là Phase 2)
+    phase_size INT DEFAULT 27,              -- Độ rộng cửa sổ trượt W (Ví dụ: W = 27 giải; 1-27 là Phase 1, 28-54 là Phase 2)
     current_phase INT DEFAULT 1,            -- Phase hiện tại của Series
     initial_points INT DEFAULT 0,           -- Điểm khởi đầu cho Rolling Window (0 điểm)
     initial_elo FLOAT DEFAULT 1000.0,       -- Điểm Elo khởi điểm cho FIFA Elo (1000 điểm)
@@ -366,8 +366,8 @@ GO
 -- 1. Thêm Series mẫu (Rolling Window & FIFA Elo)
 INSERT INTO series (id, name, ranking_model, phase_size, current_phase, initial_points, initial_elo, status)
 VALUES 
-('SERIES_ROLLING_2026', N'Vietnam Pro Tour 2026 (Rolling Window W=10)', 'ROLLING_WINDOW', 10, 1, 0, 1000.0, 'ACTIVE'),
-('SERIES_ELO_2026', N'National Elo Circuit 2026 (FIFA Elo)', 'FIFA_ELO', 10, 1, 0, 1200.0, 'ACTIVE');
+('SERIES_ROLLING_2026', N'Vietnam Pro Tour 2026 (Rolling Window W=27)', 'ROLLING_WINDOW', 27, 1, 0, 1000.0, 'ACTIVE'),
+('SERIES_ELO_2026', N'National Elo Circuit 2026 (FIFA Elo)', 'FIFA_ELO', 27, 1, 0, 1200.0, 'ACTIVE');
 
 -- 2. Thêm Thành viên / Đội Partner mẫu
 INSERT INTO partner_participants (id, series_id, name, group_name)
