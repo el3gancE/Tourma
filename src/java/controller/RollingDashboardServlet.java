@@ -90,7 +90,7 @@ public class RollingDashboardServlet extends HttpServlet {
             String name = request.getParameter("name");
             String phaseSizeStr = request.getParameter("phaseSize");
             String status = request.getParameter("status");
-            int phaseSize = 3;
+            int phaseSize = 27;
             try {
                 if (phaseSizeStr != null && !phaseSizeStr.trim().isEmpty()) {
                     phaseSize = Integer.parseInt(phaseSizeStr.trim());

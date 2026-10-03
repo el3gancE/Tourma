@@ -183,7 +183,7 @@ public class RollingWindowPointService {
         Series series = seriesDAO.getSeriesById(sKey);
         if (series == null) return resultList;
 
-        int windowSize = (series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
+        int windowSize = (series.getPhaseSize() > 0) ? series.getPhaseSize() : 27;
 
         // 1. Fetch official partner participants for this series
         List<PartnerParticipant> partners = seriesDAO.getPartnerParticipantsBySeriesId(sKey);
@@ -225,6 +225,9 @@ public class RollingWindowPointService {
         List<Map<String, Integer>> allTourneyPointsList = new ArrayList<>();
         List<Map<String, Boolean>> allTourneyPartList = new ArrayList<>();
 
+        Map<String, Map<String, Integer>> existingHistPts = loadExistingHistoryPoints(sKey);
+        Map<String, Map<String, Integer>> existingHistRanks = loadExistingHistoryRanks(sKey);
+
         // 3. Process each sub-tournament and apply window vs expiry logic
         for (int tIdx = 0; tIdx < totalCount; tIdx++) {
             Tournament t = allTourneys.get(tIdx);
@@ -243,16 +246,20 @@ public class RollingWindowPointService {
 
             Map<String, Integer> tourneyPtsMap = new HashMap<>();
             Map<String, Boolean> tourneyPartMap = new HashMap<>();
+            java.util.Set<String> processedKeys = new java.util.HashSet<>();
 
             if (tourneyTeams != null) {
                 for (int idx = 0; idx < tourneyTeams.size(); idx++) {
                     Team team = tourneyTeams.get(idx);
                     if (team.getRawName() == null) continue;
                     String teamKey = team.getRawName().trim().toLowerCase();
+                    processedKeys.add(teamKey);
 
                     tourneyPartMap.put(teamKey, true);
                     if (team.getNormalizedName() != null) {
-                        tourneyPartMap.put(team.getNormalizedName().trim().toLowerCase(), true);
+                        String normKey = team.getNormalizedName().trim().toLowerCase();
+                        tourneyPartMap.put(normKey, true);
+                        processedKeys.add(normKey);
                     }
 
                     Integer matchPos = matchPlacements.get(team.getId());
@@ -261,6 +268,9 @@ public class RollingWindowPointService {
                     }
                     if (matchPos == null && team.getNormalizedName() != null) {
                         matchPos = matchPlacements.get(team.getNormalizedName().trim().toLowerCase());
+                    }
+                    if (matchPos == null && existingHistRanks != null && existingHistRanks.containsKey(t.getId())) {
+                        matchPos = existingHistRanks.get(t.getId()).get(teamKey);
                     }
                     if (matchPos == null && t.getChampionName() != null && !t.getChampionName().trim().isEmpty() && "COMPLETED".equalsIgnoreCase(t.getStatus())) {
                         String cName = t.getChampionName().trim().toLowerCase();
@@ -274,6 +284,12 @@ public class RollingWindowPointService {
 
                     int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
                     int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
+                    if (pts == 0 && existingHistPts != null && existingHistPts.containsKey(t.getId())) {
+                        Integer hPts = existingHistPts.get(t.getId()).get(teamKey);
+                        if (hPts != null && hPts > 0) {
+                            pts = hPts;
+                        }
+                    }
 
                     tourneyPtsMap.put(teamKey, pts);
 
@@ -294,6 +310,35 @@ public class RollingWindowPointService {
 
                         if (isLatestTourney) {
                             dto.setLastTourneyPoints(pts);
+                        }
+                    }
+                }
+            }
+
+            // Include any additional teams from existingHistPts not found in tourneyTeams
+            if (existingHistPts != null && existingHistPts.containsKey(t.getId())) {
+                for (Map.Entry<String, Integer> hEntry : existingHistPts.get(t.getId()).entrySet()) {
+                    String hKey = hEntry.getKey();
+                    if (!processedKeys.contains(hKey)) {
+                        processedKeys.add(hKey);
+                        int pts = (hEntry.getValue() != null) ? hEntry.getValue() : 0;
+                        tourneyPartMap.put(hKey, true);
+                        tourneyPtsMap.put(hKey, pts);
+
+                        if (dtoMap.containsKey(hKey)) {
+                            RollingStandingDTO dto = dtoMap.get(hKey);
+                            if (isActiveWindow) {
+                                dto.setActiveTourneysCount(dto.getActiveTourneysCount() + 1);
+                                dto.setTotalActivePoints(dto.getTotalActivePoints() + pts);
+                            } else {
+                                dto.setExpiredPoints(dto.getExpiredPoints() + pts);
+                            }
+                            if (isDroppedTourney) {
+                                dto.setDroppedTourneyPoints(pts);
+                            }
+                            if (isLatestTourney) {
+                                dto.setLastTourneyPoints(pts);
+                            }
                         }
                     }
                 }
@@ -398,6 +443,9 @@ public class RollingWindowPointService {
         Series series = seriesDAO.getSeriesById(seriesId.trim());
         if (series == null) return false;
 
+        Map<String, Map<String, Integer>> existingHistPts = loadExistingHistoryPoints(seriesId.trim());
+        Map<String, Map<String, Integer>> existingHistRanks = loadExistingHistoryRanks(seriesId.trim());
+
         List<RollingStandingDTO> standings = calculateSeriesStandingsWithExpiry(seriesId.trim());
         List<Tournament> allTourneys = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
 
@@ -451,16 +499,26 @@ public class RollingWindowPointService {
                         Map<String, Integer> posPtsMap = parsePointsConfigJson(tCfgRaw);
                         Map<String, Integer> placements = TournamentPlacementService.getInstance().getTournamentPlacements(t.getId());
                         List<Team> tourneyTeams = pDao.getTeamsByTournamentId(t.getId());
+                        java.util.Set<String> processedKeys = new java.util.HashSet<>();
 
                         if (tourneyTeams != null) {
                             for (Team tm : tourneyTeams) {
                                 if (tm.getRawName() == null) continue;
+                                String tmKey = tm.getRawName().trim().toLowerCase();
+                                processedKeys.add(tmKey);
+                                if (tm.getNormalizedName() != null) {
+                                    processedKeys.add(tm.getNormalizedName().trim().toLowerCase());
+                                }
+
                                 Integer matchPos = placements.get(tm.getId());
                                 if (matchPos == null) {
                                     matchPos = placements.get(tm.getRawName().trim().toLowerCase());
                                 }
                                 if (matchPos == null && tm.getNormalizedName() != null) {
                                     matchPos = placements.get(tm.getNormalizedName().trim().toLowerCase());
+                                }
+                                if (matchPos == null && existingHistRanks != null && existingHistRanks.containsKey(t.getId())) {
+                                    matchPos = existingHistRanks.get(t.getId()).get(tmKey);
                                 }
                                 if (matchPos == null && t.getChampionName() != null && !t.getChampionName().trim().isEmpty() && "COMPLETED".equalsIgnoreCase(t.getStatus())) {
                                     String cName = t.getChampionName().trim().toLowerCase();
@@ -474,6 +532,19 @@ public class RollingWindowPointService {
                                 int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;
                                 int pts = (pos > 0) ? resolvePointsForPosition(pos, posPtsMap) : 0;
 
+                                if (pts == 0 && existingHistPts != null && existingHistPts.containsKey(t.getId())) {
+                                    Integer hPts = existingHistPts.get(t.getId()).get(tmKey);
+                                    if (hPts != null && hPts > 0) {
+                                        pts = hPts;
+                                    }
+                                }
+                                if (pos == 0 && existingHistRanks != null && existingHistRanks.containsKey(t.getId())) {
+                                    Integer hRank = existingHistRanks.get(t.getId()).get(tmKey);
+                                    if (hRank != null && hRank > 0) {
+                                        pos = hRank;
+                                    }
+                                }
+
                                 String histId = "H_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
                                 psH.setString(1, histId);
                                 psH.setString(2, seriesId.trim());
@@ -483,6 +554,33 @@ public class RollingWindowPointService {
                                 psH.setInt(6, pts);
                                 psH.setTimestamp(7, t.getCreatedAt() != null ? t.getCreatedAt() : new java.sql.Timestamp(System.currentTimeMillis()));
                                 psH.addBatch();
+                            }
+                        }
+
+                        // Also preserve any history records that existed before for teams not in tourneyTeams
+                        if (existingHistPts != null && existingHistPts.containsKey(t.getId())) {
+                            for (Map.Entry<String, Integer> hEntry : existingHistPts.get(t.getId()).entrySet()) {
+                                String hKey = hEntry.getKey();
+                                if (!processedKeys.contains(hKey)) {
+                                    processedKeys.add(hKey);
+                                    int pts = (hEntry.getValue() != null) ? hEntry.getValue() : 0;
+                                    int pos = 0;
+                                    if (existingHistRanks != null && existingHistRanks.containsKey(t.getId())) {
+                                        Integer r = existingHistRanks.get(t.getId()).get(hKey);
+                                        if (r != null) pos = r;
+                                    }
+                                    if (pts > 0 || pos > 0) {
+                                        String histId = "H_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+                                        psH.setString(1, histId);
+                                        psH.setString(2, seriesId.trim());
+                                        psH.setString(3, t.getId());
+                                        psH.setString(4, hKey);
+                                        psH.setInt(5, pos);
+                                        psH.setInt(6, pts);
+                                        psH.setTimestamp(7, t.getCreatedAt() != null ? t.getCreatedAt() : new java.sql.Timestamp(System.currentTimeMillis()));
+                                        psH.addBatch();
+                                    }
+                                }
                             }
                         }
                     }
@@ -692,7 +790,7 @@ public class RollingWindowPointService {
         Series series = seriesDAO.getSeriesById(seriesId.trim());
         if (series == null) return new HighestRankDTO(0, "", "");
 
-        int windowSize = (series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
+        int windowSize = (series.getPhaseSize() > 0) ? series.getPhaseSize() : 27;
 
         List<PartnerParticipant> partners = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
         if (partners == null || partners.isEmpty()) return new HighestRankDTO(0, "", "");
@@ -850,5 +948,61 @@ public class RollingWindowPointService {
             return 0;
         }
         return 0;
+    }
+
+    /**
+     * Loads previously stored points per tournament and team from `series_tournament_history`.
+     * Key: tournament_id -> (normalized_team_name (lowercase) -> points_earned)
+     */
+    public Map<String, Map<String, Integer>> loadExistingHistoryPoints(String seriesId) {
+        Map<String, Map<String, Integer>> res = new HashMap<>();
+        if (seriesId == null || seriesId.trim().isEmpty()) return res;
+        DBContext db = new DBContext();
+        String sql = "SELECT tournament_id, normalized_team_name, points_earned FROM series_tournament_history WHERE series_id = ?";
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, seriesId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String tId = rs.getString("tournament_id");
+                    String tName = rs.getString("normalized_team_name");
+                    int pts = rs.getInt("points_earned");
+                    if (tId != null && tName != null) {
+                        res.computeIfAbsent(tId.trim(), k -> new HashMap<>()).put(tName.trim().toLowerCase(), pts);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
+     * Loads previously stored tournament ranks per tournament and team from `series_tournament_history`.
+     * Key: tournament_id -> (normalized_team_name (lowercase) -> tournament_rank)
+     */
+    public Map<String, Map<String, Integer>> loadExistingHistoryRanks(String seriesId) {
+        Map<String, Map<String, Integer>> res = new HashMap<>();
+        if (seriesId == null || seriesId.trim().isEmpty()) return res;
+        DBContext db = new DBContext();
+        String sql = "SELECT tournament_id, normalized_team_name, tournament_rank FROM series_tournament_history WHERE series_id = ?";
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, seriesId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String tId = rs.getString("tournament_id");
+                    String tName = rs.getString("normalized_team_name");
+                    int rank = rs.getInt("tournament_rank");
+                    if (tId != null && tName != null) {
+                        res.computeIfAbsent(tId.trim(), k -> new HashMap<>()).put(tName.trim().toLowerCase(), rank);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return res;
     }
 }

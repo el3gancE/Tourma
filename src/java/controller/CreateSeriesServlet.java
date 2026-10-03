@@ -50,7 +50,7 @@ public class CreateSeriesServlet extends HttpServlet {
                 rankingModel = "ROLLING_WINDOW";
             }
 
-            int phaseSize = 10;
+            int phaseSize = 27;
             if (phaseSizeStr != null && !phaseSizeStr.trim().isEmpty()) {
                 try { phaseSize = Integer.parseInt(phaseSizeStr); } catch (Exception ignored) {}
             }

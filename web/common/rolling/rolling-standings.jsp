@@ -59,7 +59,7 @@
     }
 
     String seriesName = (series != null) ? series.getName() : "Series Circuit";
-    int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
+    int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 27;
     int tourneyCount = (tournamentsList != null) ? tournamentsList.size() : 0;
 %>
 <!DOCTYPE html>

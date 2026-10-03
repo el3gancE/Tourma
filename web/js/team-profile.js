@@ -28,7 +28,7 @@
       seriesId: window.seriesIdVal,
       partners: window.seriesPartners || [],
       subTourneys: window.seriesSubTournaments || [],
-      phaseSize: window.seriesPhaseSize || 26,
+      phaseSize: window.seriesPhaseSize || 27,
       serverTourneyPoints: window.serverTourneyPoints || [],
       serverTourneyParticipation: window.serverTourneyParticipation || []
     });
@@ -174,7 +174,7 @@
         highestRank: prof.highestRank,
         totalAccumulatedPoints: prof.totalAccumulatedPoints,
         phaseBadges: prof.phaseBadges || [],
-        phaseSize: window.seriesPhaseSize || 3
+        phaseSize: window.seriesPhaseSize || 27
       });
     }
 

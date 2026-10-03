@@ -1552,7 +1552,7 @@
    * options:
    *   - subTourneys: array of tournament objects [{ id, name, index, format, tournamentType, isMultiStage, pointsConfig }, ...]
    *   - partners: array of partner objects [{ id, name }, ...]
-   *   - phaseSize: integer (window size W, default 26 or 3)
+   *   - phaseSize: integer (window size W, default 27)
    *   - serverTourneyPoints: array of maps [{ teamName: pts }, ...]
    *   - serverTourneyParticipation: array of maps [{ teamName: true }, ...]
    *   - milestoneVal: 'LATEST' or integer milestone index
@@ -1594,7 +1594,7 @@
     });
 
     var totalTourneys = subTourneys.length;
-    var phaseSize = options.phaseSize || window.seriesPhaseSize || 26;
+    var phaseSize = options.phaseSize || window.seriesPhaseSize || 27;
 
     if (totalTourneys === 0) {
       var emptyArray = Object.keys(teamDataMap).map(function (k) { return teamDataMap[k]; });
@@ -1623,54 +1623,54 @@
       var localRes = parseTournamentResults(t, teamDataMap);
       parsedResultsPerTourney[tIdx] = localRes;
 
-      // Check if server actually has scored points (> 0) for this tournament
-      var serverHasScores = false;
-      if (serverPts && Object.keys(serverPts).length > 0) {
-        var sKeys = Object.keys(serverPts);
-        for (var sk = 0; sk < sKeys.length; sk++) {
-          if (serverPts[sKeys[sk]] > 0) {
-            serverHasScores = true;
-            break;
+      // Safely merge server-persisted points (DB) and client browser results (localStorage)
+      var mergedPts = Object.assign({}, serverPts || {});
+      var mergedPart = Object.assign({}, serverPart || {});
+
+      if (localRes && localRes.pointsMap) {
+        Object.keys(localRes.pointsMap).forEach(function (k) {
+          var lp = localRes.pointsMap[k];
+          if (lp > 0) {
+            mergedPts[k] = lp;
+            mergedPart[k] = true;
           }
-        }
+        });
       }
 
-      var localHasScores = false;
-      if (localRes && localRes.pointsMap && Object.keys(localRes.pointsMap).length > 0) {
-        var lKeys = Object.keys(localRes.pointsMap);
-        for (var lk = 0; lk < lKeys.length; lk++) {
-          if (localRes.pointsMap[lKeys[lk]] > 0) {
-            localHasScores = true;
-            break;
+      if (localRes && localRes.participatedMap) {
+        Object.keys(localRes.participatedMap).forEach(function (k) {
+          if (localRes.participatedMap[k]) {
+            mergedPart[k] = true;
           }
-        }
+        });
       }
 
-      var mergedPts = {};
-      var mergedPart = {};
+      // Enrich localRes with any server points so team profile calculations remain complete
+      if (localRes) {
+        if (!localRes.pointsMap) localRes.pointsMap = {};
+        if (!localRes.participatedMap) localRes.participatedMap = {};
+        if (!localRes.positionsMap) localRes.positionsMap = {};
+        if (!localRes.achievementsMap) localRes.achievementsMap = {};
 
-      if (localHasScores) {
-        // User's active browser localStorage has real played results for this tournament
-        mergedPts = Object.assign({}, localRes.pointsMap);
-        mergedPart = Object.assign({}, localRes.participatedMap || {});
+        if (serverPts) {
+          Object.keys(serverPts).forEach(function (k) {
+            var sPts = serverPts[k];
+            if (sPts > 0 && (!localRes.pointsMap[k] || localRes.pointsMap[k] === 0)) {
+              localRes.pointsMap[k] = sPts;
+              localRes.participatedMap[k] = true;
+              if (!localRes.achievementsMap[k]) {
+                var isMulti = t.isMultiStage || t.tournamentType === 'MULTI_STAGE';
+                var s1F = t.stage1Format || t.format || 'SINGLE_ELIMINATION';
+                var isDe = (t.format && t.format.indexOf('DOUBLE') !== -1) || (s1F && s1F.indexOf('DOUBLE') !== -1);
+                localRes.achievementsMap[k] = resolveAchievementFromPoints(sPts, t.pointsConfig || {}, isMulti, s1F, isDe, null);
+              }
+            }
+          });
+        }
         if (serverPart) {
-          Object.keys(serverPart).forEach(function (k) { mergedPart[k] = true; });
-        }
-      } else if (serverHasScores) {
-        // Database has scored points from DB matches
-        mergedPts = Object.assign({}, serverPts);
-        mergedPart = Object.assign({}, serverPart);
-        if (localRes && localRes.participatedMap) {
-          Object.keys(localRes.participatedMap).forEach(function (k) { mergedPart[k] = true; });
-        }
-      } else {
-        if (localRes && localRes.pointsMap) {
-          mergedPts = Object.assign({}, localRes.pointsMap);
-        }
-        if (localRes && localRes.participatedMap) {
-          mergedPart = Object.assign({}, serverPart || {}, localRes.participatedMap || {});
-        } else if (serverPart) {
-          mergedPart = Object.assign({}, serverPart);
+          Object.keys(serverPart).forEach(function (k) {
+            if (serverPart[k]) localRes.participatedMap[k] = true;
+          });
         }
       }
 
@@ -1974,8 +1974,23 @@
             qCount++;
           }
 
-          var fmtLbl = getFormatShortCode(s1F);
-          if (isMulti) fmtLbl = getFormatShortCode(s1F) + " ➔ " + getFormatShortCode(s2F);
+          var calcRank = 0;
+          if (res.positionsMap && res.positionsMap[k]) {
+            var pNum = parseInt(res.positionsMap[k], 10);
+            if (!isNaN(pNum) && pNum > 0) calcRank = pNum;
+          }
+          if (!calcRank) {
+            if (isChamp) calcRank = 1;
+            else if (ach === "Á Quân" || ach === "Runner-Up") calcRank = 2;
+            else if (ach === "Bán Kết" || ach === "Semi-Finals" || ach === "Semi-Final" || (ach && ach.indexOf("3-4") !== -1)) calcRank = 3;
+            else if (ach === "Tứ Kết" || ach === "Quarter-Finals" || ach === "Quarter-Final" || (ach && ach.indexOf("5-8") !== -1)) calcRank = 5;
+            else if (ach && ach.indexOf("9-16") !== -1) calcRank = 9;
+            else if (ach && ach.indexOf("17-32") !== -1) calcRank = 17;
+            else if (ach && ach.indexOf("33-64") !== -1) calcRank = 33;
+            else if (ach && (ach.indexOf("LQ") !== -1 || ach.indexOf("Loser") !== -1)) calcRank = 65;
+            else if (ach && ach.indexOf("LR1") !== -1) calcRank = 97;
+            else if (pts > 0) calcRank = 100;
+          }
 
           allTourneyPerformances[k].push({
             stt: playedCount,
@@ -1987,6 +2002,7 @@
             format: fmtLbl,
             achievement: ach,
             pointsEarned: pts,
+            rank: calcRank,
             finalStageUrl: tourneyUrl
           });
         }

@@ -26,7 +26,7 @@
     String tourneyFormat = (tournament != null && tournament.getFormat() != null) ? tournament.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
     int teamCount = (currentTeams != null) ? currentTeams.size() : 0;
     int partnerCount = (partnerList != null) ? partnerList.size() : 0;
-    int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
+    int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 27;
 
     String targetTeamCountParam = request.getParameter("targetTeamCount");
     String copiedSourceTourneyNameParam = request.getParameter("copiedSourceTourneyName");

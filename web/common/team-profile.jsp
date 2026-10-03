@@ -231,7 +231,7 @@
                             <i class="fa-solid fa-chart-line text-mint"></i> Biến Động Thứ Hạng Qua Các Mốc Giải Đấu
                         </h3>
                         <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
-                            Thứ hạng trên BXH Series sau từng giải đấu (Điểm tích lũy trong cửa sổ trượt W = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>)
+                            Thứ hạng trên BXH Series sau từng giải đấu (Điểm tích lũy trong cửa sổ trượt W = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 27 %>)
                         </p>
                     </div>
                     <div class="rank-chart-legend">
@@ -321,7 +321,7 @@
             window.appContextPath = "${pageContext.request.contextPath}";
             window.seriesIdVal = "<%= seriesIdVal %>";
             window.profileTeamName = "<%= teamName.replace("\\", "\\\\").replace("\"", "\\\"") %>";
-            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 26 %>;
+            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 27 %>;
             window.hasServerProfile = true;
             window.seriesPartners = [
                 <% 
@@ -450,7 +450,7 @@
                 <%  }
                 } %>
             ];
-            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
+            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 27 %>;
             window.seriesIdVal = "<%= (series != null && series.getId() != null) ? series.getId() : "" %>";
         </script>
         <!-- Rolling Standings Engine, Modular Team Badge Engine & Unified Profile Stats Script -->

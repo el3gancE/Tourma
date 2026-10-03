@@ -1,4 +1,4 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -93,8 +93,8 @@
                     <div id="rollingOptionsPanel" style="background: var(--bg-dark-obsidian); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem;">
                         <div class="form-group" style="margin-bottom: 0.75rem;">
                             <label class="form-label" for="phaseSize">Số Giải Tích Lũy Trong 1 Phase (*)</label>
-                            <input type="number" id="phaseSize" name="phaseSize" class="form-control" value="10" min="1" max="100">
-                            <p class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">Ví dụ: Nhập 10 thì Giải 1-10 là Phase 1, 11-20 là Phase 2.</p>
+                            <input type="number" id="phaseSize" name="phaseSize" class="form-control" value="27" min="1" max="100">
+                            <p class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">Ví dụ: Nhập 27 thì Giải 1-27 là Phase 1, 28-54 là Phase 2.</p>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
                             <label class="form-label" for="initialPoints">Điểm Khởi Đầu (Initial Points)</label>
