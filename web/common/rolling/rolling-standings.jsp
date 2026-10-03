@@ -32,6 +32,16 @@
     if (tournamentsList == null && series != null) {
         tournamentsList = seriesDAO.getTournamentsBySeriesId(series.getId());
     }
+    if (tournamentsList != null && tournamentsList.size() > 1) {
+        tournamentsList = new java.util.ArrayList<>(tournamentsList);
+        tournamentsList.sort((a, b) -> {
+            int idxA = a.getTournamentIndexInSeries();
+            int idxB = b.getTournamentIndexInSeries();
+            if (idxA != idxB) return Integer.compare(idxA, idxB);
+            if (a.getCreatedAt() != null && b.getCreatedAt() != null) return a.getCreatedAt().compareTo(b.getCreatedAt());
+            return 0;
+        });
+    }
 
     List<PartnerParticipant> partnerList = (List<PartnerParticipant>) request.getAttribute("partnerList");
     if (partnerList == null && series != null) {
@@ -131,14 +141,19 @@
                                 <i class="fa-solid fa-clock-rotate-left"></i> Tính đến:
                             </label>
                             <select id="milestoneSelect" class="form-control" onchange="onMilestoneChange(this.value)" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; border-radius: 8px; background: rgba(15, 18, 26, 0.9); color: #ffffff; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; max-width: 260px;">
-                                <option value="LATEST">Giải mới nhất <%= (tournamentsList != null && !tournamentsList.isEmpty()) ? ("(#" + tournamentsList.size() + " - " + tournamentsList.get(tournamentsList.size() - 1).getName() + ")") : "" %></option>
-                                <% if (tournamentsList != null && tournamentsList.size() > 1) { 
-                                    for (int idx = tournamentsList.size() - 1; idx >= 0; idx--) {
-                                        Tournament t = tournamentsList.get(idx);
+                                <% if (tournamentsList != null && !tournamentsList.isEmpty()) { 
+                                    int totalTourneys = tournamentsList.size();
+                                    Tournament latestTourney = tournamentsList.get(totalTourneys - 1);
                                 %>
-                                    <option value="<%= idx %>">Giải #<%= (idx + 1) %>: <%= t.getName() %></option>
-                                <%  }
-                                } %>
+                                    <option value="LATEST">Giải mới nhất (#<%= totalTourneys %> - <%= latestTourney.getName() %>)</option>
+                                    <% for (int idx = totalTourneys - 2; idx >= 0; idx--) {
+                                        Tournament t = tournamentsList.get(idx);
+                                    %>
+                                        <option value="<%= idx %>">Giải #<%= (idx + 1) %>: <%= t.getName() %></option>
+                                    <% } 
+                                } else { %>
+                                    <option value="LATEST">Giải mới nhất</option>
+                                <% } %>
                             </select>
                         </div>
 
@@ -286,16 +301,9 @@
                     for (int i = 0; i < tournamentsList.size(); i++) {
                         Tournament t = tournamentsList.get(i);
                         String rawCfg = (t != null) ? t.getSeriesPointsConfig() : null;
-                        String cfgJson;
+                        String cfgJson = "{}";
                         if (rawCfg != null && rawCfg.trim().startsWith("{") && rawCfg.trim().endsWith("}")) {
                             cfgJson = rawCfg.trim();
-                        } else {
-                            int champPts = (t != null && t.getSeriesRewardPoints() != null && t.getSeriesRewardPoints() > 0) ? t.getSeriesRewardPoints() : 100;
-                            int runnerUpPts = (int) Math.round(champPts * 0.70);
-                            int semiPts = (int) Math.round(champPts * 0.40);
-                            int quarterPts = (int) Math.round(champPts * 0.20);
-                            int r16Pts = (int) Math.round(champPts * 0.10);
-                            cfgJson = "{\"1\":" + champPts + ",\"2\":" + runnerUpPts + ",\"3-4\":" + semiPts + ",\"5-8\":" + quarterPts + ",\"9-16\":" + r16Pts + "}";
                         }
                         String safeName = (t != null && t.getName() != null) ? t.getName().replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
                         String safeId = (t != null && t.getId() != null) ? t.getId() : "";
@@ -319,7 +327,8 @@
                         stage2Format: "<%= (s2Fmt != null) ? s2Fmt.toUpperCase() : "" %>",
                         championName: "<%= (t != null && t.getChampionName() != null) ? t.getChampionName().replace("\\", "\\\\").replace("\"", "\\\"") : "" %>",
                         tierName: "<%= tTier %>",
-                        pointsConfig: <%= cfgJson %>
+                        pointsConfig: <%= cfgJson %>,
+                        teamsJson: <%= (t != null && t.getTeamsJson() != null && !t.getTeamsJson().trim().isEmpty()) ? t.getTeamsJson() : "null" %>
                     }<%= (i < tournamentsList.size() - 1) ? "," : "" %>
                 <%  }
                 } %>

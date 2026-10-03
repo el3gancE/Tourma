@@ -43,6 +43,12 @@
         isStage1Locked: function (tournamentId) {
             if (!tournamentId) return false;
             try {
+                // PRIMARY: read from DB-injected value (set by JSP from tournament.stage1_status)
+                if (window.TourmaDbStage1Status && window.TourmaDbStage1Status[tournamentId]) {
+                    var s = window.TourmaDbStage1Status[tournamentId];
+                    return (s === 'LOCKED' || s === 'COMPLETED');
+                }
+                // FALLBACK: localStorage (backward compat while old data exists)
                 return localStorage.getItem('tourma_stage1_locked_' + tournamentId) === 'true';
             } catch (e) {
                 return false;
@@ -385,6 +391,23 @@
             }
         },
 
+        showTransitionLoader: function (msg) {
+            var loader = document.getElementById('stageEndTransitionOverlay');
+            if (!loader) {
+                loader = document.createElement('div');
+                loader.id = 'stageEndTransitionOverlay';
+                loader.style.cssText = 'position: fixed; inset: 0; z-index: 99999; background: rgba(10, 15, 29, 0.75); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #fff; font-family: Lexend, sans-serif;';
+                loader.innerHTML = '<div style="width: 44px; height: 44px; border: 4px solid rgba(45, 212, 191, 0.2); border-top-color: #2dd4bf; border-radius: 50%; animation: stageSpin 0.7s linear infinite;"></div>' +
+                                   '<div id="stageEndTransitionMsg" style="font-size: 1.05rem; font-weight: 600; color: #f1f5f9; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">' + (msg || 'Đang chuyển sang Vòng 2...') + '</div>' +
+                                   '<style>@keyframes stageSpin { to { transform: rotate(360deg); } }</style>';
+                document.body.appendChild(loader);
+            } else {
+                var msgEl = document.getElementById('stageEndTransitionMsg');
+                if (msgEl) msgEl.textContent = msg || 'Đang chuyển sang Vòng 2...';
+                loader.style.display = 'flex';
+            }
+        },
+
         /**
          * Handle Confirm End Stage: Lock and immediately transition to Stage 2
          */
@@ -392,10 +415,27 @@
             var tid = this.tournamentId;
             if (!tid) return;
 
+            // 0. Immediate UI feedback (instant responsiveness)
+            var confirmBtn = document.getElementById('stageEndConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.style.pointerEvents = 'none';
+                confirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang chuyển Vòng 2...';
+            }
+            var modalBtn = document.getElementById('stageEndModalConfirmBtn');
+            if (modalBtn) {
+                modalBtn.disabled = true;
+                modalBtn.style.pointerEvents = 'none';
+                modalBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang chuyển Vòng 2...';
+            }
+            this.showTransitionLoader('Đang xác nhận kết quả và chuyển sang Vòng 2...');
+
             try {
-                // 1. Set Lock flag
-                localStorage.setItem('tourma_stage1_locked_' + tid, 'true');
-                localStorage.setItem('tourma_stage1_completed_' + tid, 'true');
+                // 1. Set Lock flag — BOTH localStorage (compat) AND DB
+                try { localStorage.setItem('tourma_stage1_locked_' + tid, 'true'); } catch (e) {}
+                try { localStorage.setItem('tourma_stage1_completed_' + tid, 'true'); } catch (e) {}
+                // Persist to DB (fire-and-forget, we redirect shortly after)
+                window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'LOCKED');
 
                 // 2. Trigger Stage 2 cut generation across format engines
                 if (window.TourmaGroupStage && typeof window.TourmaGroupStage.checkAndTriggerStage2Cut === 'function') {
@@ -417,7 +457,7 @@
                 // 4. Redirect to Stage 2 (short timeout ensures background AJAX sync to DB flushes)
                 setTimeout(function () {
                     window.location.href = s2Url;
-                }, 150);
+                }, 100);
             } catch (e) {
                 console.error('[StageEndPopup] confirmStageEnd error:', e);
             }
@@ -427,6 +467,12 @@
          * Navigate directly to Stage 2
          */
         goToStage2: function () {
+            var nextBtn = document.getElementById('stageEndNextBtn');
+            if (nextBtn) {
+                nextBtn.disabled = true;
+                nextBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang tải...';
+            }
+            this.showTransitionLoader('Đang chuyển sang Vòng 2...');
             var s2Url = this.resolveStage2Url(this.tournamentId);
             window.location.href = s2Url;
         },
@@ -496,7 +542,9 @@
             if (modal) modal.remove();
 
             try {
-                localStorage.setItem('tourma_stage1_locked_' + this.tournamentId, 'false');
+                // BOTH localStorage (compat) AND DB
+                try { localStorage.setItem('tourma_stage1_locked_' + this.tournamentId, 'false'); } catch (e) {}
+                window.TourmaStageEndPopup_saveStage1StatusToDB(this.tournamentId, 'PENDING');
 
                 var banner = document.getElementById('stageEndPopupBanner');
                 if (banner) {
@@ -573,6 +621,43 @@
             var banner = document.getElementById('stageEndPopupBanner');
             if (banner) banner.style.display = 'none';
         }
+    };
+
+    /**
+     * Helper to persist Stage 1 status (PENDING, LOCKED, COMPLETED) to DB via AJAX
+     */
+    window.TourmaStageEndPopup_saveStage1StatusToDB = function (tournamentId, status) {
+        if (!tournamentId || tournamentId === 'demo') return;
+        var contextPath = window.TourmaContextPath || '';
+        var path = window.location.pathname || '';
+        var endpoint = contextPath + '/single-elimination';
+        if (path.indexOf('/double-elimination') !== -1) {
+            endpoint = contextPath + '/double-elimination';
+        } else if (path.indexOf('/swiss-stage') !== -1) {
+            endpoint = contextPath + '/swiss-stage';
+        } else if (path.indexOf('/group-stage') !== -1) {
+            endpoint = contextPath + '/group-stage';
+        } else if (path.indexOf('/round-robin') !== -1) {
+            endpoint = contextPath + '/round-robin';
+        }
+
+        var params = new URLSearchParams();
+        params.append('action', 'saveStage1Status');
+        params.append('tournamentId', tournamentId);
+        params.append('stage1Status', status || 'PENDING');
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: params.toString()
+        }).then(function (res) { return res.json(); })
+        .then(function (data) {
+            console.log('[STAGE1 STATUS AJAX] Saved status to DB:', status, data);
+            if (!window.TourmaDbStage1Status) window.TourmaDbStage1Status = {};
+            window.TourmaDbStage1Status[tournamentId] = status;
+        }).catch(function (err) {
+            console.warn('[STAGE1 STATUS AJAX] Failed to save stage1 status:', err);
+        });
     };
 
     window.StageEndPopup = StageEndPopup;

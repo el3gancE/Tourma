@@ -62,14 +62,15 @@ public class RollingTournamentListServlet extends HttpServlet {
             seriesId = series.getId();
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
 
+            service.RollingWindowPointService rwps = service.RollingWindowPointService.getInstance();
+            rwps.preloadSeriesData(seriesId);
+            stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(seriesId);
+
             if (tournamentsList != null) {
                 for (Tournament t : tournamentsList) {
-                    List<Team> teams = participantDAO.getTeamsByTournamentId(t.getId());
+                    List<Team> teams = rwps.getCachedTeamsByTournamentId(t.getId());
                     int count = (teams != null) ? teams.size() : 0;
                     teamCountMap.put(t.getId(), count);
-
-                    List<String> formats = getStageFormatsSafe(t.getId());
-                    stageFormatsMap.put(t.getId(), formats);
                 }
             }
         }

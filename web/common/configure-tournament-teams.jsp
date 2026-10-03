@@ -26,6 +26,13 @@
     String tournamentTypeParam = request.getParameter("tournamentType");
     String stage1FormatParam = request.getParameter("stage1Format");
     String stage2FormatParam = request.getParameter("stage2Format");
+    String targetTeamCountParam = request.getParameter("targetTeamCount");
+    String copiedSourceTourneyNameParam = request.getParameter("copiedSourceTourneyName");
+    int targetTeamCountVal = 0;
+    if (targetTeamCountParam != null && !targetTeamCountParam.trim().isEmpty()) {
+        try { targetTeamCountVal = Integer.parseInt(targetTeamCountParam.trim()); } catch(Exception ignore) {}
+    }
+
     List<Team> existingTeams = null;
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
         int advCount = 0;
@@ -38,6 +45,10 @@
                 tDao.updateTournamentFormatAndType(tournamentId, tourneyFormat, tournamentTypeParam, stage1FormatParam, stage2FormatParam, advCount);
             } else if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
                 tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
+            }
+            String copiedFromParam = request.getParameter("copiedFrom");
+            if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()) {
+                tDao.copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim());
             }
         } catch (Exception ignore) {}
         ParticipantDAO pDao = new ParticipantDAO();
@@ -95,9 +106,22 @@
                 Quản lý danh sách đội
             </h1>
 
+            <!-- Active Copied Config Constraint Banner (if targetTeamCount > 0) -->
+            <div id="targetTeamConstraintBanner" style="<%= (targetTeamCountVal > 0) ? "display: flex;" : "display: none;" %> background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem; color: #f8fafc; font-size: 0.88rem;">
+                    <i class="fa-solid fa-lock text-mint"></i>
+                    <span>Ràng buộc sao chép: Giải đấu này yêu cầu chính xác <strong style="color: #2dd4bf;" id="targetCountNumDisplay"><%= (targetTeamCountVal > 0) ? targetTeamCountVal : "" %> đội</strong> <%= (copiedSourceTourneyNameParam != null && !copiedSourceTourneyNameParam.trim().isEmpty()) ? "(Sao chép từ giải: <em>" + copiedSourceTourneyNameParam + "</em>)" : "" %></span>
+                </div>
+                <span id="targetCountMatchBadge" class="count-badge" style="font-size: 0.82rem; font-weight: 800; background: rgba(251, 191, 36, 0.15); color: #fbbf24; border-color: rgba(251, 191, 36, 0.3);">
+                    0 / <%= targetTeamCountVal %> Đội
+                </span>
+            </div>
+
                     <form id="configureTeamsForm" action="${pageContext.request.contextPath}/save-teams" method="POST" onsubmit="return prepareFormSubmission(event)">
                         <input type="hidden" name="id" value="${param.id}">
                         <input type="hidden" name="format" value="<%= (tourneyFormat != null) ? tourneyFormat : "" %>">
+                        <input type="hidden" id="targetTeamCountInput" name="targetTeamCount" value="<%= (targetTeamCountVal > 0) ? targetTeamCountVal : "" %>">
+                        <input type="hidden" id="copiedSourceTourneyNameInput" name="copiedSourceTourneyName" value="<%= (copiedSourceTourneyNameParam != null) ? copiedSourceTourneyNameParam : "" %>">
                         <input type="hidden" id="finalTeamsInput" name="teamListRaw" value="">
 
                         <!-- TWO-COLUMN WORKSPACE GRID (MATCHING FIGMA PERFECTLY) -->
@@ -265,6 +289,50 @@
             var tournamentId = "<%= (tournamentId != null) ? tournamentId : "" %>";
             var tourneyFormatServer = "<%= (tourneyFormat != null) ? tourneyFormat.toUpperCase() : "" %>";
             var localStorageKey = "tourma_teams_" + tournamentId;
+
+            var targetTeamCount = <%= targetTeamCountVal %>;
+            var copiedSourceTourneyName = "<%= (copiedSourceTourneyNameParam != null) ? copiedSourceTourneyNameParam.replace("\"", "\\\"") : "" %>";
+
+            if (!targetTeamCount && tournamentId) {
+                try {
+                    var savedTarget = localStorage.getItem('tourma_target_team_count_' + tournamentId);
+                    if (savedTarget) targetTeamCount = parseInt(savedTarget, 10) || 0;
+                    var savedName = localStorage.getItem('tourma_copied_source_name_' + tournamentId);
+                    if (savedName) copiedSourceTourneyName = savedName;
+                } catch (e) {}
+            }
+
+            function updateTargetCountBadge() {
+                var badge = document.getElementById('targetCountMatchBadge');
+                var banner = document.getElementById('targetTeamConstraintBanner');
+                var numDisplay = document.getElementById('targetCountNumDisplay');
+                if (!targetTeamCount || targetTeamCount <= 0) {
+                    if (banner) banner.style.display = 'none';
+                    return;
+                }
+                if (banner) banner.style.display = 'flex';
+                if (numDisplay) numDisplay.innerText = targetTeamCount + " đội";
+
+                var cur = currentTeamsList.length;
+                if (badge) {
+                    if (cur === targetTeamCount) {
+                        badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                        badge.style.color = '#34d399';
+                        badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                        badge.innerText = '✓ Đủ ' + cur + '/' + targetTeamCount + ' đội';
+                    } else if (cur < targetTeamCount) {
+                        badge.style.background = 'rgba(251, 191, 36, 0.2)';
+                        badge.style.color = '#fbbf24';
+                        badge.style.borderColor = 'rgba(251, 191, 36, 0.4)';
+                        badge.innerText = 'Thiếu ' + (targetTeamCount - cur) + ' đội (' + cur + '/' + targetTeamCount + ')';
+                    } else {
+                        badge.style.background = 'rgba(244, 63, 94, 0.2)';
+                        badge.style.color = '#f43f5e';
+                        badge.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+                        badge.innerText = 'Thừa ' + (cur - targetTeamCount) + ' đội (' + cur + '/' + targetTeamCount + ')';
+                    }
+                }
+            }
 
             // Helper to get effective Stage 1 Format
             function getStage1Format() {
@@ -588,6 +656,10 @@
 
                     tbody.appendChild(tr);
                 }
+
+                if (typeof updateTargetCountBadge === 'function') {
+                    updateTargetCountBadge();
+                }
             };
 
             // Update team name in place
@@ -767,6 +839,15 @@
                     alert('Cần ít nhất 2 đội bóng để sinh sơ đồ thi đấu.');
                     if (e && e.preventDefault) e.preventDefault();
                     return false;
+                }
+
+                // Strict validation for Copied Tournament configuration: Team count MUST match exactly!
+                if (targetTeamCount && targetTeamCount > 0) {
+                    if (currentTeamsList.length !== targetTeamCount) {
+                        alert('⚠️ Ràng buộc số lượng đội:\nSố lượng đội của giải đấu mới (' + currentTeamsList.length + ' đội) phải KHỚP CHÍNH XÁC với số đội ở giải được sao chép (' + targetTeamCount + ' đội)!\n\nVui lòng chỉnh sửa danh sách để có đúng ' + targetTeamCount + ' đội trước khi tiếp tục.');
+                        if (e && e.preventDefault) e.preventDefault();
+                        return false;
+                    }
                 }
 
                 // Swiss System validation: MUST have EXACTLY 16 teams!

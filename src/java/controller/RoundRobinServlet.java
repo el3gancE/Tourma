@@ -54,6 +54,7 @@ public class RoundRobinServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
+        response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
 
@@ -92,6 +93,17 @@ public class RoundRobinServlet extends HttpServlet {
                     out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu cấu hình Multi-Stage vào CSDL!" : "Lỗi lưu cấu hình!") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc multiConfig!\"}");
+                }
+                return;
+            }
+
+            if ("saveStage1Status".equalsIgnoreCase(action)) {
+                String s1Status = request.getParameter("stage1Status");
+                if (tournamentId != null && s1Status != null) {
+                    boolean ok = tournamentDAO.saveStage1Status(tournamentId, s1Status);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"stage1Status\":\"" + s1Status + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc stage1Status!\"}");
                 }
                 return;
             }
@@ -177,12 +189,14 @@ public class RoundRobinServlet extends HttpServlet {
 
     private void tryRecalculateSeriesStandings(String tournamentId) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return;
-        try {
-            dao.TournamentDAO tDao = new dao.TournamentDAO();
-            model.Tournament t = tDao.getTournamentById(tournamentId.trim());
-            if (t != null && t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
-                service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(t.getSeriesId().trim());
-            }
-        } catch (Exception ignore) {}
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                dao.TournamentDAO tDao = new dao.TournamentDAO();
+                model.Tournament t = tDao.getTournamentById(tournamentId.trim());
+                if (t != null && t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
+                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(t.getSeriesId().trim());
+                }
+            } catch (Exception ignore) {}
+        });
     }
 }

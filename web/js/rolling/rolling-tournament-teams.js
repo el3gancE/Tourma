@@ -83,6 +83,31 @@
     var managedCountEl = document.getElementById('managedCountDisplay');
     if (managedCountEl) managedCountEl.innerText = rows.length + ' Đội';
 
+    // Update target team count constraint badge if present
+    var targetBadge = document.getElementById('targetCountStatusBadge');
+    if (targetBadge && window.targetTeamCount && window.targetTeamCount > 0) {
+      var currentCount = rows.length;
+      var targetCount = window.targetTeamCount;
+      if (currentCount === targetCount) {
+        targetBadge.style.background = 'rgba(34, 197, 94, 0.15)';
+        targetBadge.style.color = '#4ade80';
+        targetBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+        targetBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> <span>✓ Đủ ' + currentCount + '/' + targetCount + ' đội</span>';
+      } else if (currentCount < targetCount) {
+        var diff = targetCount - currentCount;
+        targetBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+        targetBadge.style.color = '#f87171';
+        targetBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        targetBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span>Thiếu ' + diff + ' đội (' + currentCount + '/' + targetCount + ')</span>';
+      } else {
+        var diff = currentCount - targetCount;
+        targetBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+        targetBadge.style.color = '#f87171';
+        targetBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        targetBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span>Thừa ' + diff + ' đội (' + currentCount + '/' + targetCount + ')</span>';
+      }
+    }
+
     // Persist to localStorage for subsequent steps
     var tid = getTourneyId();
     if (tid && teamNamesList.length > 0) {
@@ -662,6 +687,13 @@
       }
     });
 
+    if (window.targetTeamCount && window.targetTeamCount > 0) {
+      if (teamNames.length !== window.targetTeamCount) {
+        alert('RÀNG BUỘC SỐ LƯỢNG ĐỘI:\nGiải đấu này được thiết lập cấu hình sao chép với đúng ' + window.targetTeamCount + ' đội.\nHiện tại danh sách có ' + teamNames.length + ' đội. Vui lòng thêm hoặc bớt để có đúng ' + window.targetTeamCount + ' đội trước khi tiếp tục sang bước tiếp theo!');
+        return false;
+      }
+    }
+
     var tid = getSubtourneyId();
     if (tid) {
       try {
@@ -695,6 +727,25 @@
   };
 
   document.addEventListener('DOMContentLoaded', function () {
+    var tid = getSubtourneyId();
+    if (tid) {
+      if (window.targetTeamCount && window.targetTeamCount > 0) {
+        try {
+          localStorage.setItem('tourma_target_team_count_' + tid, window.targetTeamCount);
+        } catch (e) {}
+      } else {
+        try {
+          var savedTarget = localStorage.getItem('tourma_target_team_count_' + tid);
+          if (savedTarget) {
+            var parsed = parseInt(savedTarget, 10);
+            if (!isNaN(parsed) && parsed > 0) {
+              window.targetTeamCount = parsed;
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
     window.initSubtourneyDragAndDrop();
     window.initHideSeedConfig();
     window.calculateAndSyncModalStandings();

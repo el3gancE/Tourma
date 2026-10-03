@@ -59,8 +59,25 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         String s1F = request.getParameter("stage1Format");
         String s2F = request.getParameter("stage2Format");
 
+        String tierName = request.getParameter("tierName");
+        if (tierName == null || tierName.trim().isEmpty()) {
+            tierName = request.getParameter("selectedTierName");
+        }
+        if (tierName == null || tierName.trim().isEmpty()) {
+            tierName = request.getParameter("tier");
+        }
+
+        if (tournamentId != null && tierName != null && !tierName.trim().isEmpty()) {
+            new TournamentDAO().updateTournamentTier(tournamentId.trim(), tierName.trim());
+        }
+
         if (tournamentId != null && ((fmt != null && !fmt.trim().isEmpty()) || advSeats > 0)) {
             updateTournamentFormatAndTypeSafe(tournamentId.trim(), fmt, tType, s1F, s2F, advSeats);
+        }
+
+        String copiedFromParam = request.getParameter("copiedFrom");
+        if (copiedFromParam != null && !copiedFromParam.trim().isEmpty() && tournamentId != null && !tournamentId.trim().isEmpty()) {
+            new TournamentDAO().copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim());
         }
 
         Tournament tournament = null;
@@ -149,6 +166,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             String[] selectedTeamNames = request.getParameterValues("selectedTeamNames");
             if (selectedTeamNames != null && selectedTeamNames.length > 0 && tournamentId != null) {
                 participantDAO.addTeamsToTournament(tournamentId, Arrays.asList(selectedTeamNames));
+                refreshTeamsJson(tournamentId, participantDAO);
             }
         } else if ("bulkAdd".equalsIgnoreCase(action)) {
             String bulkText = request.getParameter("teamNamesText");
@@ -162,6 +180,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                 }
                 if (!teamList.isEmpty()) {
                     participantDAO.addTeamsToTournament(tournamentId, teamList);
+                    refreshTeamsJson(tournamentId, participantDAO);
                 }
             }
         } else if ("removeTeam".equalsIgnoreCase(action)) {
@@ -190,6 +209,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                 }
                 if (!teamList.isEmpty()) {
                     participantDAO.saveTournamentTeams(tournamentId, teamList);
+                    refreshTeamsJson(tournamentId, participantDAO);
                 }
             }
             String nextUrl = request.getParameter("nextUrl");
@@ -320,5 +340,29 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             e.printStackTrace();
         }
         return false;
+    }
+
+    /**
+     * Reads the current team list from the teams table and writes a JSON array
+     * to tournaments.teams_json so rolling-standings can fall back to DB
+     * instead of localStorage when quota is exceeded.
+     */
+    private void refreshTeamsJson(String tournamentId, dao.ParticipantDAO pDao) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
+        try {
+            java.util.List<model.Team> teams = pDao.getTeamsByTournamentId(tournamentId.trim());
+            if (teams == null || teams.isEmpty()) return;
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < teams.size(); i++) {
+                if (i > 0) sb.append(",");
+                String name = teams.get(i).getRawName();
+                if (name == null) name = "";
+                sb.append("\"").append(name.replace("\\", "\\\\").replace("\"", "\\\"")).append("\"");
+            }
+            sb.append("]");
+            new dao.TournamentDAO().saveTeamsJson(tournamentId.trim(), sb.toString());
+        } catch (Exception e) {
+            System.err.println("[RollingTournamentTeamsServlet] refreshTeamsJson failed: " + e.getMessage());
+        }
     }
 }

@@ -220,7 +220,7 @@
                         </span>
                     </div>
 
-                    <!-- Showcase of all 9 implemented badges in exact profile format -->
+                    <!-- Showcase of all 13 implemented badges in exact profile format -->
                     <div class="tag-showcase-grid team-profile-badges-top" style="justify-content: flex-start; gap: 0.65rem;">
                         
                         <!-- 1. Defending Champion -->
@@ -357,6 +357,63 @@
                                 </div>
                                 <div class="tourma-badge-tooltip-desc">Đội đã đạt từ 5 lần vô địch các giải đấu Cấp độ D (Tier D) trở lên.</div>
                                 <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Danh hiệu vô địch Tier D</div>
+                            </div>
+                        </div>
+
+                        <!-- 10. Phase 1 #1 (Đứng đầu BXH kết thúc Phase 1) -->
+                        <div class="tourma-badge-pill tourma-badge-phase-1" tabindex="0">
+                            <span class="phase1-shine-fx" aria-hidden="true"></span>
+                            <i class="fa-solid fa-gem badge-icon"></i>
+                            <span class="tourma-badge-name">Phase 1 #1</span>
+                            <div class="tourma-badge-tooltip">
+                                <div class="tourma-badge-tooltip-header">
+                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-gem"></i> Phase 1 #1</span>
+                                    <span class="tourma-badge-tooltip-rarity">Phase 1 #1</span>
+                                </div>
+                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 1.</div>
+                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-gem"></i> Hạng 1 BXH kết thúc Phase 1</div>
+                            </div>
+                        </div>
+
+                        <!-- 11. Runner-Up (Tối thiểu 5 trận chung kết, về nhì nhiều hơn vô địch) -->
+                        <div class="tourma-badge-pill tourma-badge-runner-up" tabindex="0">
+                            <i class="fa-solid fa-medal badge-icon"></i>
+                            <span class="tourma-badge-name">Runner-Up</span>
+                            <div class="tourma-badge-tooltip">
+                                <div class="tourma-badge-tooltip-header">
+                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-medal"></i> Runner-Up</span>
+                                    <span class="tourma-badge-tooltip-rarity">Chuyên Gia</span>
+                                </div>
+                                <div class="tourma-badge-tooltip-desc">Góp mặt trong tối thiểu 5 trận chung kết với số lần đạt Á Quân nhiều hơn Vô Địch.</div>
+                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-medal"></i> Tối thiểu 5 trận Chung Kết (Nhì > Nhất)</div>
+                            </div>
+                        </div>
+
+                        <!-- 12. Veteran (Tối thiểu 7 trận chung kết) -->
+                        <div class="tourma-badge-pill tourma-badge-veteran" tabindex="0">
+                            <i class="fa-solid fa-award badge-icon"></i>
+                            <span class="tourma-badge-name">Veteran</span>
+                            <div class="tourma-badge-tooltip">
+                                <div class="tourma-badge-tooltip-header">
+                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-award"></i> Veteran</span>
+                                    <span class="tourma-badge-tooltip-rarity">Kỳ Cựu</span>
+                                </div>
+                                <div class="tourma-badge-tooltip-desc">Bản lĩnh kỳ cựu dày dặn với tối thiểu 7 lần tiến vào trận chung kết đỉnh cao.</div>
+                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Tối thiểu 7 trận Chung Kết</div>
+                            </div>
+                        </div>
+
+                        <!-- 13. Podium (Tối thiểu 10 lần vào bán kết) -->
+                        <div class="tourma-badge-pill tourma-badge-podium" tabindex="0">
+                            <i class="fa-solid fa-ranking-star badge-icon"></i>
+                            <span class="tourma-badge-name">Podium</span>
+                            <div class="tourma-badge-tooltip">
+                                <div class="tourma-badge-tooltip-header">
+                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-ranking-star"></i> Podium</span>
+                                    <span class="tourma-badge-tooltip-rarity">Ưu Tú</span>
+                                </div>
+                                <div class="tourma-badge-tooltip-desc">Tên tuổi quen thuộc trên bục vinh quang với tối thiểu 10 lần lọt vào vòng Bán Kết.</div>
+                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-ranking-star"></i> Tối thiểu 10 lần vào Bán Kết</div>
                             </div>
                         </div>
 

@@ -346,6 +346,23 @@ body, button, input, select, textarea, .tourney-card-title, .filter-pill-btn {
   box-shadow: 0 0 10px rgba(244, 63, 94, 0.4) !important;
 }
 
+/* Clone Tournament Button */
+.btn-clone-tourney {
+  background: rgba(45, 212, 191, 0.1) !important;
+  color: #2dd4bf !important;
+  border: 1px solid rgba(45, 212, 191, 0.28) !important;
+  min-width: 88px !important;
+  cursor: pointer;
+  gap: 0.35rem;
+}
+
+.btn-clone-tourney:hover {
+  background: rgba(45, 212, 191, 0.22) !important;
+  color: #5eead4 !important;
+  border-color: rgba(45, 212, 191, 0.5) !important;
+  box-shadow: 0 0 12px rgba(45, 212, 191, 0.3) !important;
+}
+
 /* Dedicated "Chi Tiết" Button */
 .btn-details-tourney {
   background: rgba(255, 255, 255, 0.05) !important;

@@ -1,17 +1,21 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="dao.TournamentDAO, model.Tournament"%>
+<%@page import="dao.TournamentDAO, model.Tournament, java.util.List, java.util.ArrayList"%>
 <%
     String tournamentId = request.getParameter("id");
     String currentFormat = request.getParameter("format");
     String currentType = request.getParameter("type"); // SINGLE_STAGE or MULTI_STAGE
     String seriesIdParam = request.getParameter("seriesId");
+    String targetTeamCountParam = request.getParameter("targetTeamCount");
+    String copiedFromParam = request.getParameter("copiedFrom");
+    String copiedSourceTourneyNameParam = request.getParameter("copiedSourceTourneyName");
 
     Tournament currentTournament = null;
     String currentTierVal = "S";
+    List<Tournament> availableTournaments = new ArrayList<>();
 
+    TournamentDAO tDao = new TournamentDAO();
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
         try {
-            TournamentDAO tDao = new TournamentDAO();
             currentTournament = tDao.getTournamentById(tournamentId);
             if (currentTournament != null) {
                 if ((currentFormat == null || currentFormat.trim().isEmpty()) && currentTournament.getFormat() != null) {
@@ -31,6 +35,31 @@
             // Keep empty
         }
     }
+    try {
+        List<Tournament> allTourneys = tDao.getAllTournaments();
+        if (allTourneys != null) {
+            for (Tournament t : allTourneys) {
+                if (tournamentId == null || !tournamentId.trim().equalsIgnoreCase(t.getId())) {
+                    availableTournaments.add(t);
+                }
+            }
+        }
+    } catch (Exception ignore) {}
+
+    if (copiedFromParam != null && !copiedFromParam.trim().isEmpty() && (copiedSourceTourneyNameParam == null || copiedSourceTourneyNameParam.trim().isEmpty())) {
+        try {
+            Tournament srcT = tDao.getTournamentById(copiedFromParam.trim());
+            if (srcT != null) {
+                if (copiedSourceTourneyNameParam == null || copiedSourceTourneyNameParam.trim().isEmpty()) {
+                    copiedSourceTourneyNameParam = srcT.getName();
+                }
+                if ((targetTeamCountParam == null || targetTeamCountParam.trim().isEmpty()) && srcT.getTeamCount() > 0) {
+                    targetTeamCountParam = String.valueOf(srcT.getTeamCount());
+                }
+            }
+        } catch (Exception ignore) {}
+    }
+
     if (currentFormat == null || currentFormat.trim().isEmpty()) {
         currentFormat = "SINGLE_ELIMINATION";
     }
@@ -87,20 +116,39 @@
     <!-- Main Content Container Shifted Right by Sidebar -->
     <main class="container has-sidebar">
 
-        <!-- Top Stage Model Toggle Bar (Single Stage ↔ Multi-Stage) -->
-        <div class="stage-toggle-bar">
-            <button type="button" id="btnToggleSingleStage" class="stage-toggle-btn active"
-                onclick="selectStageType('SINGLE_STAGE', true)">
-                <i class="fa-solid fa-trophy text-mint"></i> Single Stage
-            </button>
-            <button type="button" id="btnToggleMultiStage" class="stage-toggle-btn"
-                onclick="selectStageType('MULTI_STAGE', true)">
-                <i class="fa-solid fa-layer-group"></i> Multi-Stage
+        <!-- Top Stage Model Toggle Bar (Single Stage ↔ Multi-Stage) & Copy Config Button -->
+        <div style="max-width: 580px; margin: 1.25rem auto 0.75rem auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; width: 100%; box-sizing: border-box; padding: 0 0.25rem;">
+            <div class="stage-toggle-bar" style="margin: 0;">
+                <button type="button" id="btnToggleSingleStage" class="stage-toggle-btn active"
+                    onclick="selectStageType('SINGLE_STAGE', true)">
+                    <i class="fa-solid fa-trophy text-mint"></i> Single Stage
+                </button>
+                <button type="button" id="btnToggleMultiStage" class="stage-toggle-btn"
+                    onclick="selectStageType('MULTI_STAGE', true)">
+                    <i class="fa-solid fa-layer-group"></i> Multi-Stage
+                </button>
+            </div>
+
+            <!-- Copy Configuration from Existing Tournament Button -->
+            <button type="button" class="btn btn-secondary" onclick="openCopyConfigModal()"
+                style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 700; background: rgba(45, 212, 191, 0.12); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.35); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+                <i class="fa-solid fa-copy"></i> Sao Chép Cấu Hình Từ Giải Khác
             </button>
         </div>
 
         <!-- Main Config Card Box -->
         <div class="form-container-box" style="margin-top: 0;">
+
+            <!-- Active Copied Config Banner (Shown when a config is cloned / copied) -->
+            <div id="copiedConfigBanner" style="display: none; background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem; color: #f8fafc; font-size: 0.88rem;">
+                    <i class="fa-solid fa-circle-check text-mint" style="font-size: 1.1rem;"></i>
+                    <span>Đang áp dụng cấu hình từ: <strong id="copiedTourneyNameDisplay">...</strong> (Ràng buộc bắt buộc: <strong id="copiedTourneyTeamCountDisplay" style="color: #2dd4bf;">...</strong> đội)</span>
+                </div>
+                <button type="button" onclick="clearCopiedConfig()" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;">
+                    <i class="fa-solid fa-xmark"></i> Bỏ Áp Dụng
+                </button>
+            </div>
 
             <!-- Top Controls Row: Stage Badge & Tier Switcher (Tier only for Rolling Series child tournaments) -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; flex-wrap: wrap; gap: 0.75rem;">
@@ -153,6 +201,11 @@
                 <input type="hidden" id="selectedTierName" name="tierName" value="<%= currentTierVal %>">
                 <% } %>
                 
+                <!-- Target Team Count constraint from copied tournament -->
+                <input type="hidden" id="targetTeamCount" name="targetTeamCount" value="<%= (targetTeamCountParam != null) ? targetTeamCountParam : "" %>">
+                <input type="hidden" id="copiedSourceTourneyName" name="copiedSourceTourneyName" value="<%= (copiedSourceTourneyNameParam != null) ? copiedSourceTourneyNameParam : "" %>">
+                <input type="hidden" id="copiedFrom" name="copiedFrom" value="<%= (copiedFromParam != null) ? copiedFromParam : "" %>">
+
                 <!-- Multi-stage specific hidden values -->
                 <input type="hidden" id="stage1Format" name="stage1Format" value="ROUND_ROBIN">
                 <input type="hidden" id="stage2Format" name="stage2Format" value="SINGLE_ELIMINATION">
@@ -612,7 +665,120 @@
                     </div>
                 </div>
 
+                <!-- COPY CONFIGURATION FROM EXISTING TOURNAMENT MODAL -->
+                <div id="copyConfigModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeCopyConfigModal();">
+                    <div class="tourma-modal-card" style="border-color: rgba(45, 212, 191, 0.4); max-width: 620px;" onclick="event.stopPropagation();">
+                        <div class="modal-header-bar" style="border-bottom: 1px solid rgba(45, 212, 191, 0.2); padding: 1rem 1.25rem;">
+                            <div class="modal-header-title" style="color: #2dd4bf; font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-copy"></i>
+                                <span>Sao Chép Cấu Hình Từ Giải Đấu Khác</span>
+                            </div>
+                            <button type="button" class="modal-close-btn" onclick="closeCopyConfigModal()" title="Đóng">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <div class="modal-body-content" style="padding: 1.25rem; max-height: 65vh; overflow-y: auto;">
+                            <div style="background: rgba(45, 212, 191, 0.08); border: 1px solid rgba(45, 212, 191, 0.2); border-radius: 8px; padding: 0.75rem 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
+                                <i class="fa-solid fa-circle-info text-mint"></i> 
+                                Cấu hình thể thức, điểm số và số lượng đội sẽ được sao chép vào giải này. Danh sách đội cụ thể <strong>không sao chép</strong>; ở bước tiếp theo bạn sẽ tự chọn hoặc nhập danh sách đội với <strong>đúng số lượng đội</strong> của giải được sao chép.
+                            </div>
+
+                            <!-- SEARCH BAR -->
+                            <div style="margin-bottom: 1rem; position: relative;">
+                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 0.85rem;"></i>
+                                <input type="text" id="copyTourneySearchInput" class="form-control" placeholder="Tìm kiếm theo tên giải đấu..."
+                                       oninput="filterCopyTournaments(this.value)"
+                                       style="padding-left: 2.5rem; width: 100%; box-sizing: border-box; font-size: 0.85rem; background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                            </div>
+
+                            <!-- TOURNAMENT LIST -->
+                            <div id="copyTourneyListContainer" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                                <% if (!availableTournaments.isEmpty()) { 
+                                    for (Tournament at : availableTournaments) {
+                                        String tType = (at.getTournamentType() != null) ? at.getTournamentType() : "SINGLE_STAGE";
+                                        boolean isMulti = "MULTI_STAGE".equalsIgnoreCase(tType);
+                                        String fmt = (at.getFormat() != null) ? at.getFormat() : "SINGLE_ELIMINATION";
+                                        int tCount = at.getTeamCount();
+                                        String tTier = at.getTierName() != null ? at.getTierName().toUpperCase() : "";
+                                %>
+                                    <div class="copy-tourney-item-card" data-tourney-id="<%= at.getId() %>" data-tourney-name="<%= at.getName() != null ? at.getName().toLowerCase() : "" %>"
+                                         style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; transition: all 0.2s ease;">
+                                        <div style="flex: 1; min-width: 0;">
+                                            <div style="font-weight: 700; font-size: 0.92rem; color: #ffffff; margin-bottom: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                <%= at.getName() %>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                                <span class="stage-badge" style="font-size: 0.7rem; padding: 0.15rem 0.5rem; background: <%= isMulti ? "rgba(45, 212, 191, 0.15)" : "rgba(251, 191, 36, 0.15)" %>; color: <%= isMulti ? "#2dd4bf" : "#fbbf24" %>; border-color: <%= isMulti ? "rgba(45, 212, 191, 0.3)" : "rgba(251, 191, 36, 0.3)" %>;">
+                                                    <%= isMulti ? "MULTI STAGE" : "SINGLE STAGE" %>
+                                                </span>
+                                                <span class="stage-badge" style="font-size: 0.7rem; padding: 0.15rem 0.5rem; background: rgba(255,255,255,0.06); color: #cbd5e1; border-color: rgba(255,255,255,0.15);">
+                                                    <%= fmt.replace("_", " ") %>
+                                                </span>
+                                                <% if (!tTier.isEmpty()) { %>
+                                                <span class="tier-tag tier-<%= tTier.toLowerCase() %>" style="font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                                                    Tier <%= tTier %>
+                                                </span>
+                                                <% } %>
+                                                <span class="stage-badge" style="font-size: 0.7rem; padding: 0.15rem 0.5rem; background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); font-weight: 700;">
+                                                    <i class="fa-solid fa-users"></i> <%= tCount %> Đội
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-mint" onclick="applyTournamentConfig('<%= at.getId() %>')"
+                                                style="font-size: 0.78rem; font-weight: 700; padding: 0.4rem 0.85rem; border-radius: 6px; white-space: nowrap; cursor: pointer;">
+                                            <i class="fa-solid fa-arrow-down-to-bracket"></i> Áp Dụng
+                                        </button>
+                                    </div>
+                                <%  } 
+                                } else { %>
+                                    <div style="text-align: center; padding: 2rem 1rem; color: #94a3b8; font-size: 0.85rem;">
+                                        Chưa có giải đấu nào khác để sao chép cấu hình.
+                                    </div>
+                                <% } %>
+                            </div>
+                            <div id="noCopyTourneyMatchMsg" style="display: none; text-align: center; padding: 1.5rem 1rem; color: #94a3b8; font-size: 0.85rem;">
+                                Không tìm thấy giải đấu nào phù hợp với từ khóa tìm kiếm.
+                            </div>
+                        </div>
+
+                        <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; padding: 0.75rem 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2);">
+                            <button type="button" class="btn btn-secondary" onclick="closeCopyConfigModal()" style="font-size: 0.8rem; padding: 0.4rem 1rem;">Đóng</button>
+                        </div>
+                    </div>
+                </div>
+
                 <script>
+                    window.availableTournamentsToCopy = [
+                        <% 
+                        for (int i = 0; i < availableTournaments.size(); i++) {
+                            Tournament at = availableTournaments.get(i);
+                            String safeId = (at.getId() != null) ? at.getId() : "";
+                            String safeName = (at.getName() != null) ? at.getName().replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'").replace("\n", " ") : "";
+                            String tType = (at.getTournamentType() != null) ? at.getTournamentType() : "SINGLE_STAGE";
+                            String fmt = (at.getFormat() != null) ? at.getFormat() : "SINGLE_ELIMINATION";
+                            String tTier = (at.getTierName() != null) ? at.getTierName().toUpperCase() : "S";
+                            int tCount = at.getTeamCount();
+                            int advCount = at.getAdvancingSeatsCount();
+                            String rawMCfg = at.getMultiStageConfig();
+                            String mCfgJson = (rawMCfg != null && rawMCfg.trim().startsWith("{") && rawMCfg.trim().endsWith("}")) ? rawMCfg.trim() : "null";
+                            String rawPtsCfg = at.getSeriesPointsConfig();
+                            String ptsCfgJson = (rawPtsCfg != null && rawPtsCfg.trim().startsWith("{") && rawPtsCfg.trim().endsWith("}")) ? rawPtsCfg.trim() : "null";
+                        %>
+                        {
+                            id: "<%= safeId %>",
+                            name: "<%= safeName %>",
+                            tournamentType: "<%= tType %>",
+                            format: "<%= fmt %>",
+                            tierName: "<%= tTier %>",
+                            teamCount: <%= tCount %>,
+                            advancingSeatsCount: <%= advCount %>,
+                            multiStageConfig: <%= mCfgJson %>,
+                            pointsConfig: <%= ptsCfgJson %>
+                        }<%= (i < availableTournaments.size() - 1) ? "," : "" %>
+                        <% } %>
+                    ];
+
                     var isRollingSubTournament = <%= isRollingSubTournament %>;
                     var tournamentId = "<%= (tournamentId != null) ? tournamentId : "" %>";
                     var storageKeyFormat = "tourma_format_" + tournamentId;
@@ -622,6 +788,195 @@
                     var hasOngoingMatches = false;
                     var bypassWarning = false;
                     var initialLegsCount = 1;
+
+                    function openCopyConfigModal() {
+                        var modal = document.getElementById('copyConfigModalBackdrop');
+                        if (modal) {
+                            modal.style.display = 'flex';
+                            modal.classList.add('show');
+                            document.body.style.overflow = 'hidden';
+                            var searchInp = document.getElementById('copyTourneySearchInput');
+                            if (searchInp) {
+                                searchInp.value = '';
+                                filterCopyTournaments('');
+                                setTimeout(function() { searchInp.focus(); }, 150);
+                            }
+                        }
+                    }
+
+                    function closeCopyConfigModal() {
+                        var modal = document.getElementById('copyConfigModalBackdrop');
+                        if (modal) {
+                            modal.style.display = 'none';
+                            modal.classList.remove('show');
+                            document.body.style.overflow = '';
+                        }
+                    }
+
+                    function filterCopyTournaments(query) {
+                        var q = (query || '').trim().toLowerCase();
+                        var cards = document.querySelectorAll('.copy-tourney-item-card');
+                        var visibleCount = 0;
+                        cards.forEach(function(card) {
+                            var name = card.getAttribute('data-tourney-name') || '';
+                            if (!q || name.indexOf(q) !== -1) {
+                                card.style.display = 'flex';
+                                visibleCount++;
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        });
+                        var noMatchMsg = document.getElementById('noCopyTourneyMatchMsg');
+                        if (noMatchMsg) {
+                            noMatchMsg.style.display = (visibleCount === 0 && cards.length > 0) ? 'block' : 'none';
+                        }
+                    }
+
+                    function applyTournamentConfig(sourceTourneyId) {
+                        if (!sourceTourneyId) return;
+                        var tourney = (window.availableTournamentsToCopy || []).find(function(t) { return t.id === sourceTourneyId; });
+                        if (!tourney) return;
+
+                        // 1. Apply Type (SINGLE_STAGE vs MULTI_STAGE)
+                        var type = tourney.tournamentType || 'SINGLE_STAGE';
+                        selectStageType(type, false);
+
+                        // 2. Apply Formats & Configurations
+                        if (type === 'MULTI_STAGE') {
+                            var mCfg = tourney.multiStageConfig || {};
+                            var s1F = mCfg.stage1Format || tourney.format || 'ROUND_ROBIN';
+                            var s2F = mCfg.stage2Format || 'SINGLE_ELIMINATION';
+
+                            selectStage1Format(s1F, false);
+                            selectStage2Format(s2F, false);
+
+                            if (mCfg.stage1Config) {
+                                var s1C = mCfg.stage1Config;
+                                if (s1F === 'ROUND_ROBIN') {
+                                    var advRR = document.getElementById('stage1AdvanceRR');
+                                    var winRR = document.getElementById('stage1WinPointsRR');
+                                    var drawRR = document.getElementById('stage1DrawPointsRR');
+                                    var lossRR = document.getElementById('stage1LossPointsRR');
+                                    var legsRR = document.getElementById('stage1LegsCountRR');
+                                    if (advRR && s1C.advanceCount !== undefined) advRR.value = s1C.advanceCount;
+                                    if (winRR && s1C.winPoints !== undefined) winRR.value = s1C.winPoints;
+                                    if (drawRR && s1C.drawPoints !== undefined) drawRR.value = s1C.drawPoints;
+                                    if (lossRR && s1C.lossPoints !== undefined) lossRR.value = s1C.lossPoints;
+                                    if (legsRR && s1C.legsCount !== undefined) legsRR.value = s1C.legsCount;
+                                } else if (s1F === 'GROUP_STAGE') {
+                                    var advGR = document.getElementById('stage1AdvanceGR');
+                                    var winGR = document.getElementById('stage1WinPointsGR');
+                                    var drawGR = document.getElementById('stage1DrawPointsGR');
+                                    var lossGR = document.getElementById('stage1LossPointsGR');
+                                    var legsGR = document.getElementById('stage1LegsCountGR');
+                                    if (advGR && s1C.totalAdvanceCount !== undefined) advGR.value = s1C.totalAdvanceCount;
+                                    if (winGR && s1C.winPoints !== undefined) winGR.value = s1C.winPoints;
+                                    if (drawGR && s1C.drawPoints !== undefined) drawGR.value = s1C.drawPoints;
+                                    if (lossGR && s1C.lossPoints !== undefined) lossGR.value = s1C.lossPoints;
+                                    if (legsGR && s1C.legsCount !== undefined) legsGR.value = s1C.legsCount;
+                                } else if (s1F === 'SINGLE_ELIMINATION') {
+                                    var advSE = document.getElementById('stage1AdvanceSE');
+                                    if (advSE && s1C.advanceCount !== undefined) advSE.value = s1C.advanceCount;
+                                } else if (s1F === 'DOUBLE_ELIMINATION') {
+                                    var advDE = document.getElementById('stage1AdvanceDE');
+                                    if (advDE && s1C.advanceCount !== undefined) advDE.value = s1C.advanceCount;
+                                }
+                            }
+                            if (mCfg.stage2Config && s2F === 'ROUND_ROBIN') {
+                                var s2C = mCfg.stage2Config;
+                                var win2 = document.getElementById('stage2WinPointsRR');
+                                var draw2 = document.getElementById('stage2DrawPointsRR');
+                                var loss2 = document.getElementById('stage2LossPointsRR');
+                                var legs2 = document.getElementById('stage2LegsCountRR');
+                                if (win2 && s2C.winPoints !== undefined) win2.value = s2C.winPoints;
+                                if (draw2 && s2C.drawPoints !== undefined) draw2.value = s2C.drawPoints;
+                                if (loss2 && s2C.lossPoints !== undefined) loss2.value = s2C.lossPoints;
+                                if (legs2 && s2C.legsCount !== undefined) legs2.value = s2C.legsCount;
+                            }
+                        } else {
+                            var fmt = tourney.format || 'SINGLE_ELIMINATION';
+                            selectFormat(fmt, false);
+                            if (fmt === 'ROUND_ROBIN') {
+                                var winInp = document.querySelector('input[name="winPoints"]');
+                                var drawInp = document.querySelector('input[name="drawPoints"]');
+                                var lossInp = document.querySelector('input[name="lossPoints"]');
+                                var legsInp = document.querySelector('input[name="legsCount"]');
+                                if (tourney.multiStageConfig && tourney.multiStageConfig.stage1Config) {
+                                    var cfg = tourney.multiStageConfig.stage1Config;
+                                    if (winInp && cfg.winPoints !== undefined) winInp.value = cfg.winPoints;
+                                    if (drawInp && cfg.drawPoints !== undefined) drawInp.value = cfg.drawPoints;
+                                    if (lossInp && cfg.lossPoints !== undefined) lossInp.value = cfg.lossPoints;
+                                    if (legsInp && cfg.legsCount !== undefined) legsInp.value = cfg.legsCount;
+                                }
+                            }
+                        }
+
+                        // 3. Apply Tier if Rolling sub-tourney
+                        if (isRollingSubTournament && tourney.tierName) {
+                            changeTournamentTier(tourney.tierName);
+                        }
+
+                        // Copy points configuration
+                        if (tourney.pointsConfig) {
+                            var ptsStr = (typeof tourney.pointsConfig === 'string') ? tourney.pointsConfig : JSON.stringify(tourney.pointsConfig);
+                            if (tournamentId) {
+                                try {
+                                    localStorage.setItem('tourma_points_config_' + tournamentId, ptsStr);
+                                    localStorage.setItem('tourma_series_points_' + tournamentId, ptsStr);
+                                } catch(e) {}
+                            }
+                        }
+
+                        // 4. Capture Target Team Count & Source Name constraint
+                        var requiredTeams = tourney.teamCount || 0;
+                        var inpTarget = document.getElementById('targetTeamCount');
+                        if (inpTarget) inpTarget.value = requiredTeams;
+                        var inpCopiedName = document.getElementById('copiedSourceTourneyName');
+                        if (inpCopiedName) inpCopiedName.value = tourney.name;
+                        var inpCopiedFrom = document.getElementById('copiedFrom');
+                        if (inpCopiedFrom) inpCopiedFrom.value = tourney.id;
+
+                        if (tournamentId) {
+                            localStorage.setItem('tourma_target_team_count_' + tournamentId, requiredTeams);
+                            localStorage.setItem('tourma_copied_source_name_' + tournamentId, tourney.name);
+                            localStorage.setItem('tourma_copied_from_' + tournamentId, tourney.id);
+                        }
+
+                        // 5. Update UI Banner
+                        updateCopiedConfigBanner(tourney.name, requiredTeams);
+
+                        // 6. Close modal
+                        closeCopyConfigModal();
+                    }
+
+                    function updateCopiedConfigBanner(sourceName, teamCount) {
+                        var banner = document.getElementById('copiedConfigBanner');
+                        var nameEl = document.getElementById('copiedTourneyNameDisplay');
+                        var countEl = document.getElementById('copiedTourneyTeamCountDisplay');
+                        if (!banner || !sourceName) return;
+
+                        if (nameEl) nameEl.textContent = sourceName;
+                        if (countEl) countEl.textContent = (teamCount > 0 ? teamCount : '0');
+                        banner.style.display = 'flex';
+                    }
+
+                    function clearCopiedConfig() {
+                        var banner = document.getElementById('copiedConfigBanner');
+                        if (banner) banner.style.display = 'none';
+
+                        var inpTarget = document.getElementById('targetTeamCount');
+                        if (inpTarget) inpTarget.value = '';
+                        var inpCopiedName = document.getElementById('copiedSourceTourneyName');
+                        if (inpCopiedName) inpCopiedName.value = '';
+                        var inpCopiedFrom = document.getElementById('copiedFrom');
+                        if (inpCopiedFrom) inpCopiedFrom.value = '';
+
+                        if (tournamentId) {
+                            localStorage.removeItem('tourma_target_team_count_' + tournamentId);
+                            localStorage.removeItem('tourma_copied_source_name_' + tournamentId);
+                            localStorage.removeItem('tourma_copied_from_' + tournamentId);
+                        }
+                    }
 
                     function changeTournamentTier(tier) {
                         if (!isRollingSubTournament || !tier) return;
@@ -641,8 +996,15 @@
                         });
 
                         // Update sidebar tier badge dynamically if present
-                        var sidebarTierTag = document.querySelector('.sidebar-subtourney-badge .tier-tag');
-                        if (sidebarTierTag) {
+                        var sidebarBadge = document.querySelector('.sidebar-subtourney-badge');
+                        if (sidebarBadge) {
+                            var sidebarTierTag = sidebarBadge.querySelector('.tier-tag');
+                            if (!sidebarTierTag) {
+                                sidebarTierTag = document.createElement('span');
+                                sidebarTierTag.style.marginLeft = '0.55rem';
+                                sidebarTierTag.style.fontWeight = '800';
+                                sidebarBadge.appendChild(sidebarTierTag);
+                            }
                             sidebarTierTag.className = 'tier-tag tier-' + tier.toLowerCase();
                             sidebarTierTag.textContent = '[' + tier + ']';
                         }
@@ -657,10 +1019,12 @@
                             }).then(function (res) {
                                 return res.json();
                             }).then(function (data) {
-                                var ind = document.getElementById('tierSaveIndicator');
-                                if (ind) {
-                                    ind.style.display = 'inline-flex';
-                                    setTimeout(function () { ind.style.display = 'none'; }, 2000);
+                                if (data && data.status === 'success') {
+                                    var ind = document.getElementById('tierSaveIndicator');
+                                    if (ind) {
+                                        ind.style.display = 'inline-flex';
+                                        setTimeout(function () { ind.style.display = 'none'; }, 2000);
+                                    }
                                 }
                             }).catch(function (err) {
                                 console.log("Tier updated locally, will sync on form submit.");
@@ -1250,6 +1614,31 @@
                             if (savedTier && savedTier !== currentTier) {
                                 changeTournamentTier(savedTier);
                             }
+                        }
+
+                        // Restore Copied Config state if present from URL params or localStorage
+                        var paramTargetTeams = "<%= (targetTeamCountParam != null) ? targetTeamCountParam : "" %>";
+                        var paramCopiedName = "<%= (copiedSourceTourneyNameParam != null) ? copiedSourceTourneyNameParam.replace("\"", "\\\"") : "" %>";
+                        var paramCopiedFrom = "<%= (copiedFromParam != null) ? copiedFromParam : "" %>";
+
+                        if (!paramTargetTeams && tournamentId) {
+                            paramTargetTeams = localStorage.getItem('tourma_target_team_count_' + tournamentId) || '';
+                        }
+                        if (!paramCopiedName && tournamentId) {
+                            paramCopiedName = localStorage.getItem('tourma_copied_source_name_' + tournamentId) || '';
+                        }
+                        if (!paramCopiedFrom && tournamentId) {
+                            paramCopiedFrom = localStorage.getItem('tourma_copied_from_' + tournamentId) || '';
+                        }
+
+                        if (paramTargetTeams && Number(paramTargetTeams) > 0) {
+                            var inpT = document.getElementById('targetTeamCount');
+                            if (inpT) inpT.value = paramTargetTeams;
+                            var inpN = document.getElementById('copiedSourceTourneyName');
+                            if (inpN) inpN.value = paramCopiedName;
+                            var inpF = document.getElementById('copiedFrom');
+                            if (inpF) inpF.value = paramCopiedFrom;
+                            updateCopiedConfigBanner(paramCopiedName || 'Giải đấu đã sao chép', Number(paramTargetTeams));
                         }
                     });
                 </script>

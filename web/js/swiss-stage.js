@@ -60,6 +60,7 @@
         m.team2 = { name: 'TBD' };
         m.team1Score = 0;
         m.team2Score = 0;
+        m.winnerId = null;
         m.status = 'PENDING';
       }
     });
@@ -186,75 +187,100 @@
     else renderBracketView();
   }, true);
 
-  // Auto Generate Next Round when all matches in current max round are completed!
+  // Auto Generate Next Round when all matches in current round are completed!
   function checkAndAutoAdvanceRound() {
-    var maxRound = 1;
-    Object.keys(matchesMap).forEach(function (k) {
-      var m = matchesMap[k];
-      if (m && (m.status === 'COMPLETED' || m.status === 'DONE')) {
-        if (m.roundIndex > maxRound) maxRound = m.roundIndex;
-      }
-    });
+    if (!window.TourmaSwissAlgorithm || !teamsList || teamsList.length === 0) return;
 
-    if (maxRound >= 5) return; // Swiss maximum 5 rounds
+    for (var r = 1; r <= 4; r++) {
+      var rMatches = [];
+      Object.keys(matchesMap).forEach(function(k) {
+        var m = matchesMap[k];
+        if (m && m.roundIndex === r) rMatches.push(m);
+      });
+      if (rMatches.length === 0) break;
 
-    var allDone = true;
-    var countInMaxRound = 0;
-    Object.keys(matchesMap).forEach(function (k) {
-      var m = matchesMap[k];
-      if (m && m.roundIndex === maxRound) {
-        countInMaxRound++;
+      var rAllDone = true;
+      var rHasValidTeams = true;
+      for (var i = 0; i < rMatches.length; i++) {
+        var m = rMatches[i];
         var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
         var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
-        if (t1Name !== 'TBD' && t2Name !== 'TBD' && t1Name !== 'BYE' && t2Name !== 'BYE') {
-          if (m.status !== 'COMPLETED' && m.status !== 'DONE') {
-            allDone = false;
-          }
-        } else {
-          allDone = false;
+        if (!t1Name || t1Name === 'TBD' || !t2Name || t2Name === 'TBD' || t1Name === 'BYE' || t2Name === 'BYE') {
+          rHasValidTeams = false;
+          break;
+        }
+        if (m.status !== 'COMPLETED' && m.status !== 'DONE') {
+          rAllDone = false;
+          break;
         }
       }
-    });
 
-    if (countInMaxRound > 0 && allDone) {
-      var nextRoundNumber = maxRound + 1;
-      if (window.TourmaSwissAlgorithm) {
-        var standings = window.TourmaSwissAlgorithm.calculateStandings(teamsList, matchesMap);
-        var newMatches = window.TourmaSwissAlgorithm.generateNextRound(standings, matchesMap, nextRoundNumber);
-        if (newMatches && newMatches.length > 0) {
-          // Group new matches by recordPool
-          var byPool = {};
-          newMatches.forEach(function (nm) {
-            if (!byPool[nm.recordPool]) byPool[nm.recordPool] = [];
-            byPool[nm.recordPool].push(nm);
-          });
+      if (!rHasValidTeams || !rAllDone) {
+        break; // Round r is not yet completed, do not advance further
+      }
 
-          Object.keys(byPool).forEach(function (pKey) {
-            var poolMatches = byPool[pKey];
-            var targetSlots = [];
-            Object.keys(matchesMap).forEach(function (k) {
-              var existing = matchesMap[k];
-              if (existing && existing.roundIndex === nextRoundNumber && 
-                  (existing.recordPool === pKey || (nextRoundNumber === 1 && pKey === '0-0'))) {
-                targetSlots.push(existing);
-              }
-            });
+      var nextRoundNumber = r + 1;
+      var nextRoundMatches = [];
+      Object.keys(matchesMap).forEach(function(k) {
+        var m = matchesMap[k];
+        if (m && m.roundIndex === nextRoundNumber) nextRoundMatches.push(m);
+      });
 
-            // Assign pairings into pre-allocated match slots
-            for (var pIdx = 0; pIdx < poolMatches.length; pIdx++) {
-              var pMatch = poolMatches[pIdx];
-              if (pIdx < targetSlots.length) {
-                targetSlots[pIdx].team1 = pMatch.team1;
-                targetSlots[pIdx].team2 = pMatch.team2;
-                targetSlots[pIdx].team1Score = 0;
-                targetSlots[pIdx].team2Score = 0;
-                targetSlots[pIdx].status = 'READY';
-              } else {
-                matchesMap[pMatch.matchKey] = pMatch;
-              }
+      var nextRoundAlreadyAssigned = (nextRoundMatches.length > 0);
+      for (var j = 0; j < nextRoundMatches.length; j++) {
+        var nm = nextRoundMatches[j];
+        var n1 = nm.team1 ? (nm.team1.name || nm.team1) : 'TBD';
+        var n2 = nm.team2 ? (nm.team2.name || nm.team2) : 'TBD';
+        if (!n1 || n1 === 'TBD' || !n2 || n2 === 'TBD') {
+          nextRoundAlreadyAssigned = false;
+          break;
+        }
+      }
+
+      // If next round is ALREADY populated with valid teams, DO NOT overwrite or shuffle it!
+      if (nextRoundAlreadyAssigned) {
+        continue;
+      }
+
+      var standings = window.TourmaSwissAlgorithm.calculateStandings(teamsList, matchesMap);
+      var newMatches = window.TourmaSwissAlgorithm.generateNextRound(standings, matchesMap, nextRoundNumber);
+      if (newMatches && newMatches.length > 0) {
+        var byPool = {};
+        newMatches.forEach(function (nm) {
+          var pKey = nm.recordPool || '0-0';
+          if (!byPool[pKey]) byPool[pKey] = [];
+          byPool[pKey].push(nm);
+        });
+
+        Object.keys(byPool).forEach(function (pKey) {
+          var poolMatches = byPool[pKey];
+          var targetSlots = [];
+          Object.keys(matchesMap).forEach(function (k) {
+            var existing = matchesMap[k];
+            if (existing && existing.roundIndex === nextRoundNumber && 
+                (existing.recordPool === pKey || (nextRoundNumber === 1 && pKey === '0-0'))) {
+              targetSlots.push(existing);
             }
           });
-        }
+
+          targetSlots.sort(function (a, b) {
+            return (a.matchNumber || 0) - (b.matchNumber || 0);
+          });
+
+          for (var pIdx = 0; pIdx < poolMatches.length; pIdx++) {
+            var pMatch = poolMatches[pIdx];
+            if (pIdx < targetSlots.length) {
+              targetSlots[pIdx].team1 = pMatch.team1;
+              targetSlots[pIdx].team2 = pMatch.team2;
+              targetSlots[pIdx].team1Score = 0;
+              targetSlots[pIdx].team2Score = 0;
+              targetSlots[pIdx].winnerId = null;
+              targetSlots[pIdx].status = 'READY';
+            } else {
+              matchesMap[pMatch.matchKey] = pMatch;
+            }
+          }
+        });
       }
     }
   }
@@ -410,7 +436,7 @@
     if (!teamsList || teamsList.length === 0) return;
 
     var globalMatchCount = 1;
-    var shuffled = teamsList.slice().sort(function() { return 0.5 - Math.random(); });
+    var orderedTeams = teamsList.slice();
 
     SWISS_STRUCTURE.forEach(function(rStruct) {
       var rNum = rStruct.roundIndex;
@@ -425,12 +451,12 @@
           var t1 = { name: 'TBD' };
           var t2 = { name: 'TBD' };
 
-          // Round 1 matches get the actual 16 teams initially!
+          // Round 1 matches get the actual 16 teams initially in deterministic order!
           if (rNum === 1) {
             var idx1 = (roundMatchCounter - 1) * 2;
             var idx2 = idx1 + 1;
-            var n1 = (typeof shuffled[idx1] === 'object') ? (shuffled[idx1].name || shuffled[idx1].id) : shuffled[idx1];
-            var n2 = shuffled[idx2] ? ((typeof shuffled[idx2] === 'object') ? (shuffled[idx2].name || shuffled[idx2].id) : shuffled[idx2]) : 'BYE';
+            var n1 = (idx1 < orderedTeams.length) ? ((typeof orderedTeams[idx1] === 'object') ? (orderedTeams[idx1].name || orderedTeams[idx1].id) : orderedTeams[idx1]) : 'TBD';
+            var n2 = (idx2 < orderedTeams.length) ? ((typeof orderedTeams[idx2] === 'object') ? (orderedTeams[idx2].name || orderedTeams[idx2].id) : orderedTeams[idx2]) : 'BYE';
             t1 = { name: n1 };
             t2 = { name: n2 };
           }
@@ -451,38 +477,73 @@
         }
       });
     });
-
-    saveSwissMatches();
   }
 
-  // Validate and Repair Matches Map Structure to guarantee 33 unique matches exist
+  // Validate and Repair Matches Map Structure to guarantee 33 unique matches exist without destroying existing results
   function validateAndRepairMatchesMap() {
-    if (!matchesMap || typeof matchesMap !== 'object' || Object.keys(matchesMap).length < 33) {
+    if (!matchesMap || typeof matchesMap !== 'object') {
       initFullSwissMatchesStructure();
       return;
     }
 
-    var isStructureValid = true;
+    var globalMatchCount = 1;
+    var orderedTeams = teamsList ? teamsList.slice() : [];
+
     SWISS_STRUCTURE.forEach(function(rStruct) {
       var rNum = rStruct.roundIndex;
+      var roundMatchCounter = 1;
+
       rStruct.pools.forEach(function(pStruct) {
         var pKey = pStruct.key;
-        var found = 0;
-        Object.keys(matchesMap).forEach(function(k) {
-          var m = matchesMap[k];
-          if (m && m.roundIndex === rNum && (m.recordPool === pKey || (rNum === 1 && pKey === '0-0'))) {
-            found++;
+        var mCount = pStruct.count;
+
+        for (var i = 1; i <= mCount; i++) {
+          var mKey = 'R' + rNum + '_M' + roundMatchCounter;
+          if (!matchesMap[mKey]) {
+            var t1 = { name: 'TBD' };
+            var t2 = { name: 'TBD' };
+
+            if (rNum === 1 && orderedTeams.length > 0) {
+              var idx1 = (roundMatchCounter - 1) * 2;
+              var idx2 = idx1 + 1;
+              var n1 = (idx1 < orderedTeams.length) ? ((typeof orderedTeams[idx1] === 'object') ? (orderedTeams[idx1].name || orderedTeams[idx1].id) : orderedTeams[idx1]) : 'TBD';
+              var n2 = (idx2 < orderedTeams.length) ? ((typeof orderedTeams[idx2] === 'object') ? (orderedTeams[idx2].name || orderedTeams[idx2].id) : orderedTeams[idx2]) : 'BYE';
+              t1 = { name: n1 };
+              t2 = { name: n2 };
+            }
+
+            matchesMap[mKey] = {
+              matchKey: mKey,
+              roundIndex: rNum,
+              matchNumber: globalMatchCount,
+              recordPool: pKey,
+              team1: t1,
+              team2: t2,
+              team1Score: 0,
+              team2Score: 0,
+              status: (rNum === 1) ? 'READY' : 'PENDING'
+            };
           }
-        });
-        if (found < pStruct.count) {
-          isStructureValid = false;
+          globalMatchCount++;
+          roundMatchCounter++;
         }
       });
     });
 
-    if (!isStructureValid) {
-      initFullSwissMatchesStructure();
-    }
+    // Clean up any matches with TBD teams so they don't have residual scores or COMPLETED status
+    Object.keys(matchesMap).forEach(function(k) {
+      var m = matchesMap[k];
+      if (m) {
+        var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
+        var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
+        if (t1Name === 'TBD' || t2Name === 'TBD' || t1Name === 'BYE' || t2Name === 'BYE') {
+          m.team1Score = 0;
+          m.team2Score = 0;
+          m.winnerId = null;
+          m.status = 'PENDING';
+        }
+      }
+    });
   }
 
   // Check Swiss Stage Completion and Trigger Multi-Stage Pipeline or Final Popup
@@ -832,53 +893,36 @@
       }
     }
 
-    // 3. Matches Loading
-    var hasDbMatches = (window.dbSwissMatches && Array.isArray(window.dbSwissMatches) && window.dbSwissMatches.length > 0);
-    if (hasDbMatches) {
-      initFullSwissMatchesStructure();
-      for (var di = 0; di < window.dbSwissMatches.length; di++) {
-        var dm = window.dbSwissMatches[di];
-        var mk = dm.matchKey;
-        if (matchesMap[mk]) {
-          var targetM = matchesMap[mk];
-          if (dm.team1 && dm.team1.name && dm.team1.name !== 'TBD') targetM.team1 = dm.team1;
-          if (dm.team2 && dm.team2.name && dm.team2.name !== 'TBD') targetM.team2 = dm.team2;
-          targetM.team1Score = (dm.team1Score !== undefined && dm.team1Score !== null) ? dm.team1Score : 0;
-          targetM.team2Score = (dm.team2Score !== undefined && dm.team2Score !== null) ? dm.team2Score : 0;
-          targetM.winnerId = dm.winnerId || null;
-          targetM.status = dm.status || 'PENDING';
+    // 3. Matches Loading: Prioritize localStorage first, then DB matches, fallback to full init
+    var loadedMatches = null;
+
+    try {
+      var rawLocal = localStorage.getItem(storageKeyMatches);
+      if (rawLocal) {
+        var parsed = JSON.parse(rawLocal);
+        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+          loadedMatches = parsed;
         }
       }
-      try {
-        var rawLocal = localStorage.getItem(storageKeyMatches);
-        if (rawLocal) {
-          var parsedLocal = JSON.parse(rawLocal);
-          if (parsedLocal && typeof parsedLocal === 'object') {
-            Object.keys(parsedLocal).forEach(function(k) {
-              var pl = parsedLocal[k];
-              var tm = matchesMap[k];
-              if (pl && tm && (pl.status === 'COMPLETED' || pl.winnerId) && (!tm.winnerId || tm.status !== 'COMPLETED')) {
-                tm.team1 = pl.team1;
-                tm.team2 = pl.team2;
-                tm.team1Score = pl.team1Score;
-                tm.team2Score = pl.team2Score;
-                tm.winnerId = pl.winnerId;
-                tm.status = pl.status;
-              }
-            });
-          }
+    } catch (e) {}
+
+    if (!loadedMatches && window.dbSwissMatches && Array.isArray(window.dbSwissMatches) && window.dbSwissMatches.length > 0) {
+      loadedMatches = {};
+      window.dbSwissMatches.forEach(function(dm) {
+        var mk = dm.matchKey;
+        if (mk) {
+          loadedMatches[mk] = dm;
         }
-      } catch (e) {}
+      });
+    }
+
+    if (loadedMatches && Object.keys(loadedMatches).length > 0) {
+      matchesMap = loadedMatches;
+      validateAndRepairMatchesMap();
       saveSwissMatches();
     } else {
-      try {
-        var rawM = localStorage.getItem(storageKeyMatches);
-        if (rawM) {
-          matchesMap = JSON.parse(rawM);
-        }
-      } catch (e) {}
-      validateAndRepairMatchesMap();
-      syncSwissMatchesToDB(false);
+      initFullSwissMatchesStructure();
+      saveSwissMatches();
     }
 
     // Render initial view mode
@@ -1199,7 +1243,7 @@
           if (m.status === 'COMPLETED' || m.status === 'DONE') {
             if (m.team1Score > m.team2Score) winnerId = 'team1';
             else if (m.team2Score > m.team1Score) winnerId = 'team2';
-            else winnerId = 'draw';
+            else if (m.winnerId) winnerId = m.winnerId;
           }
 
           var cardEl = null;
@@ -1207,12 +1251,16 @@
             cardEl = window.TourmaMatchCard.createCardElement({
               matchId: m.matchKey,
               matchNumber: m.matchNumber,
+              roundName: 'Vòng ' + m.roundIndex + ' (' + (m.recordPool || 'Swiss') + ')',
               status: m.status || 'PENDING',
-              team1: { name: t1Name, score: m.team1Score },
-              team2: { name: t2Name, score: m.team2Score },
+              team1: { name: t1Name, score: (m.status === 'COMPLETED' || m.status === 'DONE') ? m.team1Score : '' },
+              team2: { name: t2Name, score: (m.status === 'COMPLETED' || m.status === 'DONE') ? m.team2Score : '' },
               winnerId: winnerId,
               themeColor: themeColor,
-              hideSeeds: true
+              hideSeeds: true,
+              isSwiss: true,
+              allowDraw: false,
+              onClick: function(evt) { handleMatchClick(m, evt); }
             });
           }
 
@@ -1417,7 +1465,7 @@
             if (m.status === 'COMPLETED' || m.status === 'DONE') {
               if (m.team1Score > m.team2Score) winnerId = 'team1';
               else if (m.team2Score > m.team1Score) winnerId = 'team2';
-              else winnerId = 'draw';
+              else if (m.winnerId) winnerId = m.winnerId;
             }
 
             var cardEl = null;
@@ -1425,12 +1473,16 @@
               cardEl = window.TourmaBracketCard.createNodeElement({
                 matchId: m.matchKey,
                 matchNumber: m.matchNumber,
+                roundName: 'Vòng ' + m.roundIndex + ' (' + (m.recordPool || 'Swiss') + ')',
                 status: m.status || 'PENDING',
-                team1: { name: t1Name, score: m.team1Score },
-                team2: { name: t2Name, score: m.team2Score },
+                team1: { name: t1Name, score: (m.status === 'COMPLETED' || m.status === 'DONE') ? m.team1Score : '' },
+                team2: { name: t2Name, score: (m.status === 'COMPLETED' || m.status === 'DONE') ? m.team2Score : '' },
                 winnerId: winnerId,
                 themeColor: themeColor,
-                hideSeeds: true
+                hideSeeds: true,
+                isSwiss: true,
+                allowDraw: false,
+                onClick: function(evt) { handleMatchClick(m, evt); }
               });
             }
 
@@ -1463,6 +1515,9 @@
 
   // Handle Match Card Click (Quick Mode vs Normal Popup Modal)
   function handleMatchClick(m, event) {
+    if (event) {
+      event.stopPropagation();
+    }
     var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
     var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
     if (t1Name === 'TBD' || t2Name === 'TBD' || t1Name === 'BYE' || t2Name === 'BYE') return;
@@ -1516,19 +1571,22 @@
     var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
     if (t1Name === 'TBD' || t2Name === 'TBD' || t1Name === 'BYE' || t2Name === 'BYE') return;
 
+    var isDone = (m.status === 'COMPLETED' || m.status === 'DONE');
     var winnerId = null;
-    if (m.status === 'COMPLETED' || m.status === 'DONE') {
+    if (isDone) {
       if (m.team1Score > m.team2Score) winnerId = 'team1';
       else if (m.team2Score > m.team1Score) winnerId = 'team2';
+      else if (m.winnerId) winnerId = m.winnerId;
     }
 
     var popupData = {
       matchId: m.matchKey,
+      tournamentId: tournamentId,
       roundName: 'Vòng ' + m.roundIndex + ' (' + (m.recordPool || 'Swiss Pool') + ')',
       team1Name: t1Name,
-      team1Score: m.team1Score || 0,
+      team1Score: isDone ? (m.team1Score !== undefined ? m.team1Score : '') : '',
       team2Name: t2Name,
-      team2Score: m.team2Score || 0,
+      team2Score: isDone ? (m.team2Score !== undefined ? m.team2Score : '') : '',
       winnerId: winnerId,
       status: m.status || 'READY',
       allowDraw: false // STRICTLY NO DRAWS IN SWISS SYSTEM!
@@ -1536,16 +1594,19 @@
 
     window.TourmaScoreModal.open(popupData, function (res) {
       if (!res) return;
-      var s1 = parseInt(res.score1, 10) || 0;
-      var s2 = parseInt(res.score2, 10) || 0;
+      var s1 = parseInt((res.team1Score !== undefined && res.team1Score !== '') ? res.team1Score : (res.score1 || 0), 10) || 0;
+      var s2 = parseInt((res.team2Score !== undefined && res.team2Score !== '') ? res.team2Score : (res.score2 || 0), 10) || 0;
 
-      if (s1 === s2) {
+      if (s1 === s2 && !res.winner) {
         alert('⚠️ Thể thức Swiss bắt buộc phải có 1 đội thắng (không chấp nhận tỷ số hòa)! Vui lòng chọn đội thắng.');
         return;
       }
 
+      var winSide = res.winner || ((s1 > s2) ? 'team1' : ((s2 > s1) ? 'team2' : 'team1'));
+
       m.team1Score = s1;
       m.team2Score = s2;
+      m.winnerId = winSide;
       m.status = 'COMPLETED';
 
       // CASCADING RESET: Invalidate all future rounds beyond this match's round!
@@ -1569,7 +1630,7 @@
         p.append('status', 'FINISHED');
         p.append('team1Name', t1Name);
         p.append('team2Name', t2Name);
-        p.append('winner', (s1 > s2) ? 'team1' : 'team2');
+        p.append('winner', winSide);
 
         fetch((window.swissContextPath || '') + "/common/swiss-stage", {
           method: 'POST',
@@ -1586,9 +1647,11 @@
     if (!detail || !detail.matchId) return;
     var m = matchesMap[detail.matchId];
     if (m) {
-      m.team1Score = (detail.team1Score !== undefined) ? detail.team1Score : m.team1Score;
-      m.team2Score = (detail.team2Score !== undefined) ? detail.team2Score : m.team2Score;
-      m.winnerId = detail.winner || null;
+      var s1 = (detail.team1Score !== undefined && detail.team1Score !== '') ? parseInt(detail.team1Score, 10) : m.team1Score;
+      var s2 = (detail.team2Score !== undefined && detail.team2Score !== '') ? parseInt(detail.team2Score, 10) : m.team2Score;
+      m.team1Score = s1;
+      m.team2Score = s2;
+      m.winnerId = detail.winner || ((s1 > s2) ? 'team1' : (s2 > s1 ? 'team2' : m.winnerId));
       m.status = detail.status || 'COMPLETED';
       invalidateFutureRounds(m.roundIndex);
       saveSwissMatches();

@@ -11,6 +11,7 @@
     String tourneyName = "Giải Đấu Single Elimination";
     String teamsJson = "[]";
     String dbMatchesJson = "[]";
+    String dbTournamentStatus = "DRAFT";
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
     String stageParam = request.getParameter("stage");
@@ -20,6 +21,7 @@
     String seriesIdVal = request.getParameter("seriesId");
     if (seriesIdVal == null) seriesIdVal = "";
 
+    String dbStage1Status = "PENDING";
     String dbStage2Teams = null;
     String dbMultiStageConfig = null;
     if (request.getAttribute("dbStage2Teams") != null) {
@@ -39,6 +41,12 @@
                 }
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
+                }
+                if (t.getStatus() != null && !t.getStatus().trim().isEmpty()) {
+                    dbTournamentStatus = t.getStatus().trim();
+                }
+                if (t.getStage1Status() != null && !t.getStage1Status().trim().isEmpty()) {
+                    dbStage1Status = t.getStage1Status().trim();
                 }
                 if (t.getTournamentType() != null) {
                     tournamentType = t.getTournamentType();
@@ -285,8 +293,14 @@
 
         <script>
             window.TourmaContextPath = '${pageContext.request.contextPath}';
+            window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
+            window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
+                var dbTournamentStatus = "<%= dbTournamentStatus %>";
+                if (dbTournamentStatus === 'COMPLETED') {
+                    try { localStorage.setItem('tourma_final_locked_' + tourneyId, 'true'); } catch(e) {}
+                }
                 window.TourmaContextPathTourneyId = tourneyId;
                 var preloadedTeams = <%= teamsJson %>;
                 var cutTarget = <%= cutTarget %>; // from DB
@@ -312,10 +326,11 @@
                         } catch (e) { }
                     }
 
-                    // Stage 2 SE: Load qualified teams from DB first, then fallback to LocalStorage
-                    var s2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
+                    // Stage 2 SE: Load qualified teams from LocalStorage first (authoritative user state), then fallback to DB
+                    var s2TeamsRaw = null;
+                    try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch (e) { }
                     if (!s2TeamsRaw || s2TeamsRaw.length === 0) {
-                        try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch (e) { }
+                        s2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
                     }
                     if (s2TeamsRaw && s2TeamsRaw.length > 0) {
                         preloadedTeams = s2TeamsRaw;

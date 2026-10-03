@@ -292,8 +292,25 @@
       }
     } catch (e) {}
 
-    // Priority: DB pointsConfig first, fallback to localPtsCfg
-    var ptsCfg = Object.assign({}, localPtsCfg || {}, t.pointsConfig || {});
+    // Dynamic points config resolution:
+    // 1. Base from database (t.pointsConfig)
+    // 2. User's custom configuration from browser (localPtsCfg) takes precedence/enriches
+    // 3. If completely empty, apply dynamic proportional fallback
+    var ptsCfg = {};
+    if (t.pointsConfig && typeof t.pointsConfig === 'object') {
+      Object.assign(ptsCfg, t.pointsConfig);
+    }
+    if (localPtsCfg && typeof localPtsCfg === 'object' && Object.keys(localPtsCfg).length > 0) {
+      Object.assign(ptsCfg, localPtsCfg);
+    }
+    if (Object.keys(ptsCfg).length === 0) {
+      var champPts = (t.seriesRewardPoints && t.seriesRewardPoints > 0) ? t.seriesRewardPoints : 100;
+      ptsCfg["1"] = champPts;
+      ptsCfg["2"] = Math.round(champPts * 0.70);
+      ptsCfg["3-4"] = Math.round(champPts * 0.40);
+      ptsCfg["5-8"] = Math.round(champPts * 0.20);
+      ptsCfg["9-16"] = Math.round(champPts * 0.10);
+    }
     var teamPointsAwarded = {}; // teamKey -> max points
     var teamParticipated = {};  // teamKey -> true
 
@@ -338,9 +355,13 @@
       }
     }
 
-    // Check registered team list
+    // Check registered team list — localStorage first, then DB fallback (t.teamsJson from tournaments.teams_json)
     try {
       var rawTList = getStorageData(['tourma_teams_'], t.id);
+      // DB fallback: if localStorage evicted this entry (quota exceeded), use server-persisted value
+      if (!rawTList && t.teamsJson) {
+        rawTList = typeof t.teamsJson === 'string' ? t.teamsJson : JSON.stringify(t.teamsJson);
+      }
       if (rawTList) {
         var tArr = JSON.parse(rawTList);
         if (Array.isArray(tArr)) {
@@ -601,9 +622,9 @@
                 if (!isMultiStage) {
                   grpList.forEach(function (st, rIdx) {
                     var rNum = rIdx + 1;
-                    if (rNum === 1) awardTeamPoints(st.name, "1", "group_rank_1");
-                    else if (rNum === 2) awardTeamPoints(st.name, "2", "group_rank_2");
-                    else if (rNum === 3 || rNum === 4) awardTeamPoints(st.name, "3-4", "group_rank_" + rNum);
+                    if (rNum === 1) awardTeamPoints(st.name, "group_rank_1", "1");
+                    else if (rNum === 2) awardTeamPoints(st.name, "group_rank_2", "2");
+                    else if (rNum === 3 || rNum === 4) awardTeamPoints(st.name, "group_rank_" + rNum, "3-4");
                     else awardTeamPoints(st.name, "stage1_eliminated", "group_rank_" + rNum);
                   });
                 } else {
@@ -660,7 +681,7 @@
                   if (mRes.loser) {
                     awardTeamPoints(mRes.loser, posKey, "stage1_eliminated");
                   }
-                  if (mRes.winner && distFromFinal === 0 && !isMultiStage) {
+                  if (mRes.winner && distFromFinal === 0 && !isMultiStage && totalRounds >= 1) {
                     awardTeamPoints(mRes.winner, "1");
                   }
                 }
@@ -668,19 +689,32 @@
             }
           } else if (matchesMap && typeof matchesMap === 'object') {
             var mKeys = Object.keys(matchesMap);
+            var maxRoundInMap = 0;
+            mKeys.forEach(function (mk) {
+              var mObj = matchesMap[mk];
+              if (mObj) {
+                var r = mObj.roundNumber || mObj.round || 1;
+                if (r > maxRoundInMap && !mObj.isThirdPlace) maxRoundInMap = r;
+              }
+            });
+
             var totalTeams = 0;
             try {
               var sTeams = JSON.parse(getStorageData(['tourma_teams_'], t.id));
               if (Array.isArray(sTeams) && sTeams.length > 0) totalTeams = sTeams.length;
             } catch (e) {}
             if (!totalTeams || totalTeams < 2) totalTeams = 16;
-            var totalFullRounds = Math.round(Math.log2(totalTeams));
+            var expectedRounds = (totalTeams >= 2) ? Math.ceil(Math.log2(totalTeams)) : 1;
+            var totalFullRounds = Math.max(maxRoundInMap, expectedRounds);
 
             var finalMatchKey = null;
             mKeys.forEach(function (mk) {
               var m = matchesMap[mk];
-              if (m && (!m.nextMatchId || m.nextMatchId === 'null' || m.nextMatchId === '') && ((m.roundNumber || m.round) === totalFullRounds || totalFullRounds === 1 || !finalMatchKey)) {
-                finalMatchKey = mk;
+              if (m && (!m.nextMatchId || m.nextMatchId === 'null' || m.nextMatchId === '') && !m.isThirdPlace) {
+                var r = m.roundNumber || m.round || 1;
+                if (r === maxRoundInMap || m.isFinalMatch || m.isGrandFinal) {
+                  finalMatchKey = mk;
+                }
               }
             });
 
@@ -711,16 +745,16 @@
 
               if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
                 var mRes = resolveWinnerAndLoser(m);
+                var rNum = m.roundNumber || m.round || 1;
                 var roundDiff = 0;
                 if (matchDistToFinal[mk] !== undefined) {
                   roundDiff = matchDistToFinal[mk];
                 } else {
-                  var rNum = m.roundNumber || m.round || 1;
                   roundDiff = Math.max(0, totalFullRounds - rNum);
                 }
 
                 var posKey2 = "";
-                if (roundDiff === 0) {
+                if (roundDiff === 0 && rNum === totalFullRounds) {
                   posKey2 = "2";
                 } else if (roundDiff === 1) {
                   posKey2 = "3-4";
@@ -736,7 +770,7 @@
                 if (mRes.loser) {
                   awardTeamPoints(mRes.loser, posKey2, "stage1_eliminated");
                 }
-                if (mRes.winner && roundDiff === 0 && !isMultiStage) {
+                if (mRes.winner && roundDiff === 0 && rNum === totalFullRounds && !isMultiStage && totalFullRounds >= 1 && (mk === finalMatchKey || m.isFinalMatch)) {
                   awardTeamPoints(mRes.winner, "1");
                 }
               }
@@ -1024,7 +1058,7 @@
 
                   if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
                     var resS2 = resolveWinnerAndLoser(m);
-                    if (distS2 === 0 && resS2.winner) {
+                    if (distS2 === 0 && resS2.winner && totalRoundsS2 >= 1) {
                       awardTeamPoints(resS2.winner, "1");
                     }
                     if (resS2.loser) {
@@ -1035,19 +1069,32 @@
               }
             } else if (matchesMapS2 && typeof matchesMapS2 === 'object') {
               var mKeysS2 = Object.keys(matchesMapS2);
+              var maxRoundInS2Map = 0;
+              mKeysS2.forEach(function (mk) {
+                var mObj = matchesMapS2[mk];
+                if (mObj) {
+                  var r = mObj.roundNumber || mObj.round || 1;
+                  if (r > maxRoundInS2Map && !mObj.isThirdPlace) maxRoundInS2Map = r;
+                }
+              });
+
               var s2TeamsCount = 0;
               try {
                 var st2 = JSON.parse(getStorageData(['tourma_stage2_teams_'], t.id));
                 if (Array.isArray(st2) && st2.length > 0) s2TeamsCount = st2.length;
               } catch (e) {}
               if (!s2TeamsCount || s2TeamsCount < 2) s2TeamsCount = 4;
-              var totalS2FullRounds = Math.round(Math.log2(s2TeamsCount));
+              var expectedS2Rounds = (s2TeamsCount >= 2) ? Math.ceil(Math.log2(s2TeamsCount)) : 1;
+              var totalS2FullRounds = Math.max(maxRoundInS2Map, expectedS2Rounds);
 
               var finalMatchKeyS2 = null;
               mKeysS2.forEach(function (mk) {
                 var m = matchesMapS2[mk];
-                if (m && (!m.nextMatchId || m.nextMatchId === 'null' || m.nextMatchId === '') && ((m.roundNumber || m.round) === totalS2FullRounds || totalS2FullRounds === 1 || !finalMatchKeyS2)) {
-                  finalMatchKeyS2 = mk;
+                if (m && (!m.nextMatchId || m.nextMatchId === 'null' || m.nextMatchId === '') && !m.isThirdPlace) {
+                  var r = m.roundNumber || m.round || 1;
+                  if (r === maxRoundInS2Map || m.isFinalMatch || m.isGrandFinal) {
+                    finalMatchKeyS2 = mk;
+                  }
                 }
               });
 
@@ -1078,16 +1125,16 @@
 
                 if (m.winnerId || m.winner || m.status === 'COMPLETED' || m.status === 'DONE') {
                   var resS2 = resolveWinnerAndLoser(m);
+                  var rNumS2 = m.roundNumber || m.round || 1;
                   var roundDiffS2 = 0;
                   if (matchDistToFinalS2[mk] !== undefined) {
                     roundDiffS2 = matchDistToFinalS2[mk];
                   } else {
-                    var rNumS2 = m.roundNumber || m.round || 1;
                     roundDiffS2 = Math.max(0, totalS2FullRounds - rNumS2);
                   }
 
                   var posKeyS2_2 = "";
-                  if (roundDiffS2 === 0) {
+                  if (roundDiffS2 === 0 && rNumS2 === totalS2FullRounds) {
                     posKeyS2_2 = "2";
                   } else if (roundDiffS2 === 1) {
                     posKeyS2_2 = "3-4";
@@ -1100,7 +1147,7 @@
                     posKeyS2_2 = sPos + "-" + ePos;
                   }
 
-                  if (roundDiffS2 === 0 && resS2.winner) {
+                  if (roundDiffS2 === 0 && rNumS2 === totalS2FullRounds && resS2.winner && totalS2FullRounds >= 1 && (mk === finalMatchKeyS2 || m.isFinalMatch)) {
                     awardTeamPoints(resS2.winner, "1");
                   }
                   if (resS2.loser) {
@@ -1119,7 +1166,7 @@
     if (rawChamp) {
       try {
         var cName = extractName(rawChamp) || (typeof rawChamp === 'string' ? rawChamp.trim() : null);
-        if (cName) {
+        if (cName && cName !== 'BYE' && cName !== 'TBD' && !cName.startsWith('W #') && !cName.startsWith('L #')) {
           awardTeamPoints(cName, "1");
         }
       } catch (e) {}
@@ -1295,10 +1342,13 @@
         var postData = 'action=syncClientStandings&seriesId=' + encodeURIComponent(seriesId) +
                        '&standingsJson=' + encodeURIComponent(JSON.stringify(payloadStandings)) +
                        '&historyJson=' + encodeURIComponent(JSON.stringify(payloadHistory));
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', ctx + '/rolling/standings', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-        xhr.send(postData);
+        if (window._lastSyncedPostData !== postData) {
+          window._lastSyncedPostData = postData;
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', ctx + '/rolling/standings', true);
+          xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+          xhr.send(postData);
+        }
       } catch (e) {}
     }
   }
@@ -1322,11 +1372,15 @@
     computeStandingsForMilestone(curVal);
   };
 
-  // Automatically compute and sync on page load and lifecycle events so standings are always 100% up-to-date
+  // Automatically compute and sync on page load and lifecycle events with debounce
+  var autoUpdateTimer = null;
   function triggerAutoUpdate() {
-    var milestoneSelect = document.getElementById('milestoneSelect');
-    var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
-    computeStandingsForMilestone(curVal);
+    if (autoUpdateTimer) clearTimeout(autoUpdateTimer);
+    autoUpdateTimer = setTimeout(function() {
+      var milestoneSelect = document.getElementById('milestoneSelect');
+      var curVal = milestoneSelect ? milestoneSelect.value : 'LATEST';
+      computeStandingsForMilestone(curVal);
+    }, 100);
   }
 
   if (document.readyState === 'loading') {

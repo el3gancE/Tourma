@@ -46,6 +46,44 @@ public class ParticipantDAO {
         return list;
     }
 
+    public Map<String, List<Team>> getTeamsBySeriesId(String seriesId) {
+        Map<String, List<Team>> resultMap = new HashMap<>();
+        if (seriesId == null || seriesId.trim().isEmpty()) return resultMap;
+        String sid = seriesId.trim();
+
+        String sql = "SELECT tm.* FROM teams tm " +
+                     "JOIN tournaments t ON tm.tournament_id = t.id " +
+                     "WHERE t.series_id = ? " +
+                     "ORDER BY tm.tournament_id, tm.original_seed ASC";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sid);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Team t = new Team(
+                        rs.getString("id"),
+                        rs.getString("tournament_id"),
+                        rs.getString("partner_participant_id"),
+                        rs.getString("raw_name"),
+                        rs.getString("normalized_name"),
+                        rs.getInt("original_seed"),
+                        rs.getString("current_stage_id"),
+                        rs.getString("status"),
+                        rs.getTimestamp("created_at")
+                    );
+                    String tid = t.getTournamentId();
+                    if (tid != null) {
+                        resultMap.computeIfAbsent(tid.trim(), k -> new ArrayList<>()).add(t);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return resultMap;
+    }
+
     public List<Team> getTeamsByTournamentId(int tournamentId) {
         return getTeamsByTournamentId(String.valueOf(tournamentId));
     }

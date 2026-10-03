@@ -118,6 +118,9 @@ public class RollingPointConfigServlet extends HttpServlet {
 
         saveTournamentPointsConfigSafe(tournamentId, champPoints, json.toString());
 
+        dao.SeriesDAO.clearSeriesCaches();
+        service.RollingWindowPointService.clearAllCaches();
+
         if (seriesId != null && !seriesId.trim().isEmpty()) {
             SeriesDAO seriesDAO = new SeriesDAO();
             seriesDAO.recalculateSeriesStandings(seriesId.trim());

@@ -57,6 +57,9 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=<%= System.currentTimeMillis() %>">
+        
+        <!-- Chart.js for Rank Progression Chart -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body>
         <!-- Shared Navigation Header Component -->
@@ -220,6 +223,35 @@
 
             </div>
 
+            <!-- Rank Progression Chart Card -->
+            <div class="team-performance-card rank-chart-card" id="rankProgressionCard">
+                <div class="team-performance-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <h3 class="team-performance-title" style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-chart-line text-mint"></i> Biến Động Thứ Hạng Qua Các Mốc Giải Đấu
+                        </h3>
+                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
+                            Thứ hạng trên BXH Series sau từng giải đấu (Điểm tích lũy trong cửa sổ trượt W = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>)
+                        </p>
+                    </div>
+                    <div class="rank-chart-legend">
+                        <span class="rank-chart-legend-item">
+                            <span class="rank-chart-dot-gold"></span> Hạng #1 BXH
+                        </span>
+                        <span class="rank-chart-legend-item">
+                            <span class="rank-chart-dot-mint"></span> Có tham gia
+                        </span>
+                        <span class="rank-chart-legend-item">
+                            <span class="rank-chart-dot-muted"></span> Không tham gia
+                        </span>
+                    </div>
+                </div>
+
+                <div class="rank-chart-wrapper">
+                    <canvas id="teamRankChart"></canvas>
+                </div>
+            </div>
+
             <!-- Tournament Performance Table Card -->
             <div class="team-performance-card">
                 <div class="team-performance-header">
@@ -247,6 +279,8 @@
                                 else if ("Á Quân".equalsIgnoreCase(perf.getAchievement())) achClass = "runner-up";
                                 else if ("Bán Kết".equalsIgnoreCase(perf.getAchievement())) achClass = "semi";
                                 else if ("Tứ Kết".equalsIgnoreCase(perf.getAchievement())) achClass = "quarter";
+                                else if (perf.getAchievement() != null && (perf.getAchievement().equals("3-0") || perf.getAchievement().equals("3-1") || perf.getAchievement().equals("3-2") || perf.getAchievement().contains("Đi tiếp"))) achClass = "advance";
+                                else if (perf.getAchievement() != null && (perf.getAchievement().equals("2-3") || perf.getAchievement().equals("1-3") || perf.getAchievement().equals("0-3") || perf.getAchievement().contains("Bị loại"))) achClass = "eliminated";
                                 String pTier = (perf.getTierName() != null && !perf.getTierName().isEmpty()) ? perf.getTierName().toUpperCase() : "A";
                         %>
                             <tr>
@@ -308,20 +342,23 @@
                 <% 
                 List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
                 Map<String, List<String>> stageFormatsMap = (Map<String, List<String>>) request.getAttribute("stageFormatsMap");
+                if (tournamentsList != null && tournamentsList.size() > 1) {
+                    tournamentsList = new java.util.ArrayList<>(tournamentsList);
+                    tournamentsList.sort((a, b) -> {
+                        int idxA = a.getTournamentIndexInSeries();
+                        int idxB = b.getTournamentIndexInSeries();
+                        if (idxA != idxB) return Integer.compare(idxA, idxB);
+                        if (a.getCreatedAt() != null && b.getCreatedAt() != null) return a.getCreatedAt().compareTo(b.getCreatedAt());
+                        return 0;
+                    });
+                }
                 if (tournamentsList != null) {
                     for (int i = 0; i < tournamentsList.size(); i++) {
                         Tournament t = tournamentsList.get(i);
                         String rawCfg = (t != null) ? t.getSeriesPointsConfig() : null;
-                        String cfgJson;
+                        String cfgJson = "{}";
                         if (rawCfg != null && rawCfg.trim().startsWith("{") && rawCfg.trim().endsWith("}")) {
                             cfgJson = rawCfg.trim();
-                        } else {
-                            int champPts = (t != null && t.getSeriesRewardPoints() != null && t.getSeriesRewardPoints() > 0) ? t.getSeriesRewardPoints() : 100;
-                            int runnerUpPts = (int) Math.round(champPts * 0.70);
-                            int semiPts = (int) Math.round(champPts * 0.40);
-                            int quarterPts = (int) Math.round(champPts * 0.20);
-                            int r16Pts = (int) Math.round(champPts * 0.10);
-                            cfgJson = "{\"1\":" + champPts + ",\"2\":" + runnerUpPts + ",\"3-4\":" + semiPts + ",\"5-8\":" + quarterPts + ",\"9-16\":" + r16Pts + "}";
                         }
                         String safeName = (t != null && t.getName() != null) ? t.getName().replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
                         String safeId = (t != null && t.getId() != null) ? t.getId() : "";
@@ -390,6 +427,31 @@
                 <%  }
                 } %>
             ];
+            <%
+                List<controller.TeamProfileServlet.RankProgressionDTO> rankProgressionList = (List<controller.TeamProfileServlet.RankProgressionDTO>) request.getAttribute("rankProgressionList");
+            %>
+            window.teamRankProgression = [
+                <% if (rankProgressionList != null) {
+                    for (int i = 0; i < rankProgressionList.size(); i++) {
+                        controller.TeamProfileServlet.RankProgressionDTO rp = rankProgressionList.get(i);
+                        String safeTName = (rp.getTournamentName() != null) ? rp.getTournamentName().replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
+                        String safeAch = (rp.getAchievement() != null) ? rp.getAchievement().replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                %>
+                    {
+                        tournamentId: "<%= rp.getTournamentId() %>",
+                        tournamentName: "<%= safeTName %>",
+                        tournamentIndex: <%= rp.getTournamentIndex() %>,
+                        rank: <%= rp.getRank() %>,
+                        totalActivePoints: <%= rp.getTotalActivePoints() %>,
+                        pointsEarned: <%= rp.getPointsEarned() %>,
+                        achievement: "<%= safeAch %>",
+                        participated: <%= rp.isParticipated() %>
+                    }<%= (i < rankProgressionList.size() - 1) ? "," : "" %>
+                <%  }
+                } %>
+            ];
+            window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
+            window.seriesIdVal = "<%= (series != null && series.getId() != null) ? series.getId() : "" %>";
         </script>
         <!-- Rolling Standings Engine, Modular Team Badge Engine & Unified Profile Stats Script -->
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>

@@ -90,6 +90,41 @@ public class TeamProfileServlet extends HttpServlet {
         public void setFinalStageUrl(String finalStageUrl) { this.finalStageUrl = finalStageUrl; }
     }
 
+    public static class RankProgressionDTO {
+        private String tournamentId;
+        private String tournamentName;
+        private int tournamentIndex;
+        private int rank;
+        private int totalActivePoints;
+        private int pointsEarned;
+        private String achievement;
+        private boolean participated;
+
+        public String getTournamentId() { return tournamentId; }
+        public void setTournamentId(String tournamentId) { this.tournamentId = tournamentId; }
+
+        public String getTournamentName() { return tournamentName; }
+        public void setTournamentName(String tournamentName) { this.tournamentName = tournamentName; }
+
+        public int getTournamentIndex() { return tournamentIndex; }
+        public void setTournamentIndex(int tournamentIndex) { this.tournamentIndex = tournamentIndex; }
+
+        public int getRank() { return rank; }
+        public void setRank(int rank) { this.rank = rank; }
+
+        public int getTotalActivePoints() { return totalActivePoints; }
+        public void setTotalActivePoints(int totalActivePoints) { this.totalActivePoints = totalActivePoints; }
+
+        public int getPointsEarned() { return pointsEarned; }
+        public void setPointsEarned(int pointsEarned) { this.pointsEarned = pointsEarned; }
+
+        public String getAchievement() { return achievement; }
+        public void setAchievement(String achievement) { this.achievement = achievement; }
+
+        public boolean isParticipated() { return participated; }
+        public void setParticipated(boolean participated) { this.participated = participated; }
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -129,9 +164,16 @@ public class TeamProfileServlet extends HttpServlet {
 
         PartnerParticipant partner = null;
         String teamName = (teamNameParam != null) ? teamNameParam.trim() : "";
+        List<PartnerParticipant> partners = null;
+        List<Tournament> tourneys = null;
+        Map<String, List<String>> stageFormatsMap = new HashMap<>();
 
         if (series != null) {
-            List<PartnerParticipant> partners = seriesDAO.getPartnerParticipantsBySeriesId(series.getId());
+            RollingWindowPointService.getInstance().preloadSeriesData(series.getId());
+            partners = seriesDAO.getPartnerParticipantsBySeriesId(series.getId());
+            tourneys = seriesDAO.getTournamentsBySeriesId(series.getId());
+            stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(series.getId());
+
             if (partners != null) {
                 for (PartnerParticipant p : partners) {
                     if (partnerIdParam != null && partnerIdParam.trim().equalsIgnoreCase(p.getId())) {
@@ -169,7 +211,6 @@ public class TeamProfileServlet extends HttpServlet {
 
         List<ChampionTournamentDTO> championTourneys = new ArrayList<>();
         List<TourneyPerformanceDTO> performanceList = new ArrayList<>();
-        Map<String, List<String>> stageFormatsMap = new HashMap<>();
 
         if (series != null && !teamName.isEmpty()) {
             // Standings for current rank & active points
@@ -184,27 +225,27 @@ public class TeamProfileServlet extends HttpServlet {
                 }
             }
 
-            // Fetch all tournaments in series
-            List<Tournament> tourneys = seriesDAO.getTournamentsBySeriesId(series.getId());
-
             if (tourneys != null) {
                 DBContext db = new DBContext();
                 try (Connection conn = db.getConnection()) {
-                    // Pre-fetch all matches for this specific team across the series in 1 single fast query
+                    // Pre-fetch all matches for this specific team across the series in 1 fast indexed query
                     Map<String, List<Map<String, Object>>> teamMatchesByTourney = new HashMap<>();
-                    String teamMatchSql = "SELECT m.tournament_id, m.team1_id, m.team2_id, m.winner_id, m.score1, m.score2, "
+                    String teamMatchSql = "SELECT m.tournament_id, m.bracket_type, m.team1_id, m.team2_id, m.winner_id, m.score1, m.score2, "
                         + "t1.raw_name AS team1_name, t2.raw_name AS team2_name "
                         + "FROM matches m "
                         + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                         + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                        + "WHERE (t1.raw_name = ? OR t2.raw_name = ?) AND m.is_bye = 0";
+                        + "WHERE (t1.raw_name = ? OR t2.raw_name = ?) AND m.is_bye = 0 "
+                        + "AND m.tournament_id IN (SELECT id FROM tournaments WHERE series_id = ?)";
                     try (PreparedStatement psTeamM = conn.prepareStatement(teamMatchSql)) {
                         psTeamM.setString(1, teamName);
                         psTeamM.setString(2, teamName);
+                        psTeamM.setString(3, series.getId());
                         try (ResultSet rs = psTeamM.executeQuery()) {
                             while (rs.next()) {
                                 String tid = rs.getString("tournament_id");
                                 Map<String, Object> mData = new HashMap<>();
+                                mData.put("bracket_type", rs.getString("bracket_type"));
                                 mData.put("team1_id", rs.getString("team1_id"));
                                 mData.put("team2_id", rs.getString("team2_id"));
                                 mData.put("winner_id", rs.getString("winner_id"));
@@ -220,8 +261,7 @@ public class TeamProfileServlet extends HttpServlet {
                     RollingWindowPointService rwps = RollingWindowPointService.getInstance();
                     for (int tIdx = 0; tIdx < tourneys.size(); tIdx++) {
                         Tournament t = tourneys.get(tIdx);
-                        List<String> stgFormats = tournamentDAO.getStageFormats(t.getId());
-                        stageFormatsMap.put(t.getId(), stgFormats);
+                        List<String> stgFormats = stageFormatsMap.get(t.getId());
 
                         List<Team> teams = rwps.getCachedTeamsByTournamentId(t.getId());
                         Team teamInTourney = null;
@@ -308,33 +348,102 @@ public class TeamProfileServlet extends HttpServlet {
 
                             // Determine achievement & rank using cached bracket placement
                             Map<String, Integer> matchPlacements = rwps.getCachedTournamentPlacements(t.getId());
-                                Integer mPos = (teamInTourney != null) ? matchPlacements.get(teamInTourney.getId()) : null;
-                                if (mPos == null && teamInTourney != null && teamInTourney.getRawName() != null) {
-                                    mPos = matchPlacements.get(teamInTourney.getRawName().trim().toLowerCase());
+                            Integer mPos = (teamInTourney != null) ? matchPlacements.get(teamInTourney.getId()) : null;
+                            if (mPos == null && teamInTourney != null && teamInTourney.getRawName() != null) {
+                                mPos = matchPlacements.get(teamInTourney.getRawName().trim().toLowerCase());
+                            }
+                            if (mPos == null) {
+                                mPos = matchPlacements.get(teamName.trim().toLowerCase());
+                            }
+                            if (mPos == null && t.getChampionName() != null) {
+                                String cName = t.getChampionName().trim().toLowerCase();
+                                if (teamName.trim().toLowerCase().equals(cName)
+                                        || (teamInTourney != null && teamInTourney.getRawName() != null && teamInTourney.getRawName().trim().toLowerCase().equals(cName))) {
+                                    mPos = 1;
                                 }
-                                if (mPos == null) {
-                                    mPos = matchPlacements.get(teamName.trim().toLowerCase());
-                                }
-                                if (mPos == null && t.getChampionName() != null) {
-                                    String cName = t.getChampionName().trim().toLowerCase();
-                                    if (teamName.trim().toLowerCase().equals(cName)
-                                            || (teamInTourney != null && teamInTourney.getRawName() != null && teamInTourney.getRawName().trim().toLowerCase().equals(cName))) {
-                                        mPos = 1;
+                            }
+
+                            int tourneyRank = (mPos != null && mPos > 0) ? mPos : 16;
+
+                            // Format display name (abbreviated: SE, DE, SW, RR, GS, or S1 ➔ S2)
+                            boolean isMulti = "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType());
+                            String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : (t.getFormat() != null ? t.getFormat() : "SINGLE_ELIMINATION");
+                            String s2Fmt = (stgFormats != null && stgFormats.size() > 1) ? stgFormats.get(1) : "SINGLE_ELIMINATION";
+
+                            boolean isDe = (s1Fmt != null && s1Fmt.toUpperCase().contains("DOUBLE")) || (t.getFormat() != null && t.getFormat().toUpperCase().contains("DOUBLE"));
+                            boolean isSwiss = (s1Fmt != null && (s1Fmt.toUpperCase().contains("SWISS") || s1Fmt.toUpperCase().contains("SW"))) || (t.getFormat() != null && (t.getFormat().toUpperCase().contains("SWISS") || t.getFormat().toUpperCase().contains("SW")));
+                            if (!isSwiss && tMatches != null) {
+                                for (Map<String, Object> m : tMatches) {
+                                    String bType = (String) m.get("bracket_type");
+                                    if (bType != null && bType.toUpperCase().contains("SWISS")) {
+                                        isSwiss = true;
+                                        break;
                                     }
                                 }
+                            }
 
-                                int tourneyRank = (mPos != null && mPos > 0) ? mPos : 16;
+                            String achievement = "Round of 16";
+                            boolean isChamp = false;
 
-                                // Format display name (abbreviated: SE, DE, SW, RR, GS, or S1 ➔ S2)
-                                boolean isMulti = "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType());
-                                String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : (t.getFormat() != null ? t.getFormat() : "SINGLE_ELIMINATION");
-                                String s2Fmt = (stgFormats != null && stgFormats.size() > 1) ? stgFormats.get(1) : "SINGLE_ELIMINATION";
-
-                                boolean isDe = (s1Fmt != null && s1Fmt.contains("DOUBLE")) || (t.getFormat() != null && t.getFormat().contains("DOUBLE"));
-
-                                String achievement = "Round of 16";
-                                boolean isChamp = false;
-
+                            if (isSwiss) {
+                                if (isMulti && tourneyRank <= 8) {
+                                    String champName = t.getChampionName();
+                                    if (champName != null && champName.trim().equalsIgnoreCase(teamName)) {
+                                        achievement = "Vô Địch";
+                                        tourneyRank = 1;
+                                        isChamp = true;
+                                    } else if (tourneyRank == 1) {
+                                        achievement = "Vô Địch";
+                                        isChamp = true;
+                                    } else if (tourneyRank == 2) {
+                                        achievement = "Á Quân";
+                                    } else if (tourneyRank <= 4) {
+                                        achievement = "Bán Kết";
+                                    } else if (tourneyRank <= 8) {
+                                        achievement = "Tứ Kết";
+                                    }
+                                } else if (tWins + tLosses > 0) {
+                                    if (tWins >= 3) {
+                                        if (isMulti) {
+                                            achievement = "Tứ Kết";
+                                        } else {
+                                            if (tLosses == 0) {
+                                                achievement = "3-0";
+                                                if (tourneyRank == 1) isChamp = true;
+                                            } else if (tLosses == 1) {
+                                                achievement = "3-1";
+                                            } else {
+                                                achievement = "3-2";
+                                            }
+                                        }
+                                    } else if (tLosses >= 3) {
+                                        if (tWins == 2) {
+                                            achievement = "2-3";
+                                        } else if (tWins == 1) {
+                                            achievement = "1-3";
+                                        } else {
+                                            achievement = "0-3";
+                                        }
+                                    } else {
+                                        achievement = tWins + "-" + tLosses;
+                                    }
+                                } else {
+                                    if (tourneyRank <= 2) {
+                                        achievement = isMulti ? "Tứ Kết" : "3-0";
+                                        if (tourneyRank == 1 && !isMulti) isChamp = true;
+                                    } else if (tourneyRank <= 5) {
+                                        achievement = isMulti ? "Tứ Kết" : "3-1";
+                                    } else if (tourneyRank <= 8) {
+                                        achievement = isMulti ? "Tứ Kết" : "3-2";
+                                    } else if (tourneyRank <= 11) {
+                                        achievement = "2-3";
+                                    } else if (tourneyRank <= 14) {
+                                        achievement = "1-3";
+                                    } else {
+                                        achievement = "0-3";
+                                    }
+                                }
+                            } else {
                                 String champName = t.getChampionName();
                                 if (champName != null && champName.trim().equalsIgnoreCase(teamName)) {
                                     achievement = "Vô Địch";
@@ -342,6 +451,7 @@ public class TeamProfileServlet extends HttpServlet {
                                     isChamp = true;
                                 } else if (tourneyRank == 1) {
                                     achievement = "Vô Địch";
+                                    tourneyRank = 1;
                                     isChamp = true;
                                 } else if (tourneyRank == 2) {
                                     achievement = "Á Quân";
@@ -362,80 +472,204 @@ public class TeamProfileServlet extends HttpServlet {
                                 } else {
                                     achievement = (isDe && !isMulti) ? "Loser's Round 1" : "Vòng Bảng";
                                 }
-
-                                String fmtLabel = getFormatShortCode(s1Fmt);
-                                if (isMulti) {
-                                    fmtLabel = getFormatShortCode(s1Fmt) + " ➔ " + getFormatShortCode(s2Fmt);
-                                }
-
-                                if (tWins == 0 && tLosses == 0) {
-                                    int[] wl = deduceMatchStats(achievement, fmtLabel);
-                                    tWins = wl[0];
-                                    tLosses = wl[1];
-                                }
-                                totalWins += tWins;
-                                totalLosses += tLosses;
-
-                                String finalUrl = getTournamentFinalStageUrl(request.getContextPath(), t.getId(), series.getId(), isMulti, s1Fmt, s2Fmt);
-
-                                // Points calculation for this tournament
-                                int ptsEarned = 0;
-                                try {
-                                    ptsEarned = calculatePointsForTournament(t, tourneyRank);
-                                } catch (Exception ignore) {}
-                                totalAccumulatedPoints += ptsEarned;
-
-                                if (isChamp) {
-                                    champCount++;
-                                    semiCount++;
-                                    quarterCount++;
-                                    String tier = (t.getTierName() != null && !t.getTierName().isEmpty()) ? t.getTierName().toUpperCase() : "A";
-                                    championTourneys.add(new ChampionTournamentDTO(t.getId(), t.getName(), tier, finalUrl));
-                                } else if ("Á Quân".equals(achievement)) {
-                                    runnerUpCount++;
-                                    semiCount++;
-                                    quarterCount++;
-                                } else if ("Bán Kết".equals(achievement)) {
-                                    semiCount++;
-                                    quarterCount++;
-                                } else if ("Tứ Kết".equals(achievement)) {
-                                    quarterCount++;
-                                }
-
-                                TourneyPerformanceDTO perf = new TourneyPerformanceDTO();
-                                perf.setTournamentId(t.getId());
-                                perf.setTournamentName(t.getName());
-                                perf.setTierName((t.getTierName() != null) ? t.getTierName().toUpperCase() : "A");
-                                perf.setFormatLabel(fmtLabel);
-                                perf.setAchievement(achievement);
-                                perf.setRank(tourneyRank);
-                                perf.setPointsEarned(ptsEarned);
-                                perf.setStt(totalTourneysPlayed);
-                                perf.setFinalStageUrl(finalUrl);
-
-                                performanceList.add(perf);
                             }
+
+                            String fmtLabel = getFormatShortCode(s1Fmt);
+                            if (isMulti) {
+                                fmtLabel = getFormatShortCode(s1Fmt) + " ➔ " + getFormatShortCode(s2Fmt);
+                            }
+
+                            if (tWins == 0 && tLosses == 0) {
+                                int[] wl = deduceMatchStats(achievement, fmtLabel);
+                                tWins = wl[0];
+                                tLosses = wl[1];
+                            }
+                            totalWins += tWins;
+                            totalLosses += tLosses;
+
+                            String finalUrl = getTournamentFinalStageUrl(request.getContextPath(), t.getId(), series.getId(), isMulti, s1Fmt, s2Fmt);
+
+                            // Points calculation for this tournament
+                            int ptsEarned = 0;
+                            try {
+                                ptsEarned = calculatePointsForTournament(t, tourneyRank);
+                            } catch (Exception ignore) {}
+                            totalAccumulatedPoints += ptsEarned;
+
+                            if (isChamp) {
+                                champCount++;
+                                semiCount++;
+                                quarterCount++;
+                                String tier = (t.getTierName() != null && !t.getTierName().isEmpty()) ? t.getTierName().toUpperCase() : "A";
+                                championTourneys.add(new ChampionTournamentDTO(t.getId(), t.getName(), tier, finalUrl));
+                            } else if ("Á Quân".equals(achievement)) {
+                                runnerUpCount++;
+                                semiCount++;
+                                quarterCount++;
+                            } else if ("Bán Kết".equals(achievement)) {
+                                semiCount++;
+                                quarterCount++;
+                            } else if ("Tứ Kết".equals(achievement)) {
+                                quarterCount++;
+                            }
+
+                            TourneyPerformanceDTO perf = new TourneyPerformanceDTO();
+                            perf.setTournamentId(t.getId());
+                            perf.setTournamentName(t.getName());
+                            perf.setTierName((t.getTierName() != null) ? t.getTierName().toUpperCase() : "A");
+                            perf.setFormatLabel(fmtLabel);
+                            perf.setAchievement(achievement);
+                            perf.setRank(tourneyRank);
+                            perf.setPointsEarned(ptsEarned);
+                            perf.setStt(totalTourneysPlayed);
+                            perf.setFinalStageUrl(finalUrl);
+
+                            performanceList.add(perf);
                         }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
 
-            // Calculate exact highest rank and the first milestone tournament where it was reached
-            RollingWindowPointService.HighestRankDTO hDto = RollingWindowPointService.getInstance().calculateHighestRankWithTourneyAcrossHistory(series.getId(), teamName);
-            highestRank = (hDto != null) ? hDto.getHighestRank() : 0;
-            if (hDto != null && hDto.getTournamentId() != null && !hDto.getTournamentId().isEmpty()) {
-                highestRankTourneyName = hDto.getTournamentName();
-                Tournament hTourney = tournamentDAO.getTournamentById(hDto.getTournamentId());
-                if (hTourney != null) {
-                    highestRankTourneyTier = (hTourney.getTierName() != null) ? hTourney.getTierName().toUpperCase() : "A";
-                    boolean isMultiH = "MULTI_STAGE".equalsIgnoreCase(hTourney.getTournamentType());
-                    List<String> stgFormatsH = stageFormatsMap.containsKey(hTourney.getId()) ? stageFormatsMap.get(hTourney.getId()) : tournamentDAO.getStageFormats(hTourney.getId());
-                    String s1FmtH = (stgFormatsH != null && !stgFormatsH.isEmpty()) ? stgFormatsH.get(0) : hTourney.getFormat();
-                    String s2FmtH = (stgFormatsH != null && stgFormatsH.size() > 1) ? stgFormatsH.get(1) : "SINGLE_ELIMINATION";
-                    highestRankTourneyUrl = getTournamentFinalStageUrl(request.getContextPath(), hTourney.getId(), series.getId(), isMultiH, s1FmtH, s2FmtH);
+            // Calculate Rank Progression and track highest rank in a single fast pass
+            List<RankProgressionDTO> rankProgressionList = new ArrayList<>();
+            List<PartnerParticipant> allPartners = (partners != null) ? partners : new ArrayList<>();
+            List<Map<String, Integer>> tourneyPointsList = RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId());
+            List<Map<String, Boolean>> tourneyPartList = RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId());
+            int phaseSize = (series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
+            String targetKey = teamName.trim().toLowerCase();
+
+            Map<String, TourneyPerformanceDTO> perfMap = new HashMap<>();
+            for (TourneyPerformanceDTO p : performanceList) {
+                if (p.getTournamentId() != null) {
+                    perfMap.put(p.getTournamentId(), p);
                 }
             }
+
+            int targetIdx = -1;
+            if (tourneys != null) {
+                for (int ti = tourneys.size() - 1; ti >= 0; ti--) {
+                    if (ti < tourneyPointsList.size()) {
+                        Map<String, Integer> pMap = tourneyPointsList.get(ti);
+                        if (pMap != null && !pMap.isEmpty()) {
+                            for (int v : pMap.values()) {
+                                if (v > 0) { targetIdx = ti; break; }
+                            }
+                        }
+                    }
+                    if (targetIdx != -1) break;
+                }
+                if (targetIdx == -1) targetIdx = tourneys.size() - 1;
+            }
+
+            class MilestoneTeamScore {
+                String key;
+                String name;
+                int totalPts;
+                int lastPts;
+                MilestoneTeamScore(String key, String name, int totalPts, int lastPts) {
+                    this.key = key; this.name = name; this.totalPts = totalPts; this.lastPts = lastPts;
+                }
+            }
+
+            int bestRank = 999;
+            Tournament bestTourney = null;
+
+            if (tourneys != null) {
+                for (int step = 0; step <= targetIdx && step < tourneys.size(); step++) {
+                    Tournament t = tourneys.get(step);
+                    int activeStart = Math.max(0, step - phaseSize + 1);
+
+                    List<MilestoneTeamScore> scoresAtStep = new ArrayList<>();
+                    if (allPartners != null) {
+                        for (PartnerParticipant p : allPartners) {
+                            if (p.getName() == null) continue;
+                            String pk = p.getName().trim().toLowerCase();
+                            int pts = 0;
+                            for (int w = activeStart; w <= step; w++) {
+                                if (w < tourneyPointsList.size()) {
+                                    Integer pVal = tourneyPointsList.get(w).get(pk);
+                                    if (pVal != null) pts += pVal;
+                                }
+                            }
+                            int lastP = 0;
+                            if (step < tourneyPointsList.size()) {
+                                Integer lp = tourneyPointsList.get(step).get(pk);
+                                if (lp != null) lastP = lp;
+                            }
+                            scoresAtStep.add(new MilestoneTeamScore(pk, p.getName().trim(), pts, lastP));
+                        }
+                    }
+
+                    scoresAtStep.sort((a, b) -> {
+                        if (b.totalPts != a.totalPts) return Integer.compare(b.totalPts, a.totalPts);
+                        if (b.lastPts != a.lastPts) return Integer.compare(b.lastPts, a.lastPts);
+                        return a.name.compareToIgnoreCase(b.name);
+                    });
+
+                    int rankAtStep = 0;
+                    int pointsAtStep = 0;
+                    for (int r = 0; r < scoresAtStep.size(); r++) {
+                        MilestoneTeamScore ms = scoresAtStep.get(r);
+                        if (ms.key.equalsIgnoreCase(targetKey)) {
+                            rankAtStep = r + 1;
+                            pointsAtStep = ms.totalPts;
+                            break;
+                        }
+                    }
+
+                    if (rankAtStep > 0 && pointsAtStep > 0 && rankAtStep < bestRank) {
+                        bestRank = rankAtStep;
+                        bestTourney = t;
+                    }
+
+                    RankProgressionDTO rp = new RankProgressionDTO();
+                    rp.setTournamentId(t.getId());
+                    rp.setTournamentName(t.getName());
+                    rp.setTournamentIndex(t.getTournamentIndexInSeries() > 0 ? t.getTournamentIndexInSeries() : (step + 1));
+                    rp.setRank(rankAtStep);
+                    rp.setTotalActivePoints(pointsAtStep);
+
+                    int ptsEarned = 0;
+                    if (step < tourneyPointsList.size()) {
+                        Integer pe = tourneyPointsList.get(step).get(targetKey);
+                        if (pe != null) ptsEarned = pe;
+                    }
+                    rp.setPointsEarned(ptsEarned);
+
+                    boolean participated = false;
+                    if (step < tourneyPartList.size()) {
+                        Boolean part = tourneyPartList.get(step).get(targetKey);
+                        participated = (part != null && part);
+                    }
+                    rp.setParticipated(participated);
+
+                    TourneyPerformanceDTO perf = perfMap.get(t.getId());
+                    if (perf != null && perf.getAchievement() != null && !perf.getAchievement().isEmpty()) {
+                        rp.setAchievement(perf.getAchievement());
+                    } else if (participated) {
+                        rp.setAchievement("+" + ptsEarned + " pts");
+                    } else {
+                        rp.setAchievement("Không tham gia");
+                    }
+
+                    rankProgressionList.add(rp);
+                }
+            }
+
+            highestRank = (bestRank < 999) ? bestRank : 0;
+            if (bestTourney != null) {
+                highestRankTourneyName = bestTourney.getName();
+                highestRankTourneyTier = (bestTourney.getTierName() != null) ? bestTourney.getTierName().toUpperCase() : "A";
+                boolean isMultiH = "MULTI_STAGE".equalsIgnoreCase(bestTourney.getTournamentType());
+                List<String> stgFormatsH = stageFormatsMap.get(bestTourney.getId());
+                String s1FmtH = (stgFormatsH != null && !stgFormatsH.isEmpty()) ? stgFormatsH.get(0) : bestTourney.getFormat();
+                String s2FmtH = (stgFormatsH != null && stgFormatsH.size() > 1) ? stgFormatsH.get(1) : "SINGLE_ELIMINATION";
+                highestRankTourneyUrl = getTournamentFinalStageUrl(request.getContextPath(), bestTourney.getId(), series.getId(), isMultiH, s1FmtH, s2FmtH);
+            }
+
+            request.setAttribute("rankProgressionList", rankProgressionList);
 
             java.util.Collections.reverse(performanceList);
             java.util.Collections.reverse(championTourneys);
@@ -455,8 +689,7 @@ public class TeamProfileServlet extends HttpServlet {
         }
         if (!performanceList.isEmpty()) {
             totalAccumulatedPoints = sumTablePoints;
-            int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
-            if (performanceList.size() <= phaseSize) {
+            if (currentPoints == 0 && currentRank == 0) {
                 currentPoints = sumTablePoints;
             }
         }
@@ -488,8 +721,8 @@ public class TeamProfileServlet extends HttpServlet {
         request.setAttribute("championTourneys", championTourneys);
         request.setAttribute("performanceList", performanceList);
 
-        List<Tournament> tournamentsList = (series != null) ? seriesDAO.getTournamentsBySeriesId(series.getId()) : new ArrayList<>();
-        List<PartnerParticipant> partnersList = (series != null) ? seriesDAO.getPartnerParticipantsBySeriesId(series.getId()) : new ArrayList<>();
+        List<Tournament> tournamentsList = (tourneys != null) ? tourneys : ((series != null) ? seriesDAO.getTournamentsBySeriesId(series.getId()) : new ArrayList<>());
+        List<PartnerParticipant> partnersList = (partners != null) ? partners : ((series != null) ? seriesDAO.getPartnerParticipantsBySeriesId(series.getId()) : new ArrayList<>());
         
         request.setAttribute("tournamentsList", tournamentsList);
         request.setAttribute("partnersList", partnersList);
@@ -561,7 +794,19 @@ public class TeamProfileServlet extends HttpServlet {
 
     public static int[] deduceMatchStats(String achievement, String formatLabel) {
         String a = (achievement != null) ? achievement.trim() : "";
-        if ("Vô Địch".equalsIgnoreCase(a) || "Champion".equalsIgnoreCase(a)) {
+        if (a.contains("3-0")) {
+            return new int[]{3, 0};
+        } else if (a.contains("3-1")) {
+            return new int[]{3, 1};
+        } else if (a.contains("3-2")) {
+            return new int[]{3, 2};
+        } else if (a.contains("2-3")) {
+            return new int[]{2, 3};
+        } else if (a.contains("1-3")) {
+            return new int[]{1, 3};
+        } else if (a.contains("0-3")) {
+            return new int[]{0, 3};
+        } else if ("Vô Địch".equalsIgnoreCase(a) || "Champion".equalsIgnoreCase(a)) {
             return new int[]{6, 0};
         } else if ("Á Quân".equalsIgnoreCase(a) || "Runner-Up".equalsIgnoreCase(a)) {
             return new int[]{5, 1};
