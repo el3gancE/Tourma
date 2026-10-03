@@ -25,7 +25,7 @@ CREATE TABLE series (
     id VARCHAR(50) PRIMARY KEY,
     name NVARCHAR(255) NOT NULL,
     ranking_model VARCHAR(50) NOT NULL DEFAULT 'ROLLING_WINDOW' CHECK (ranking_model IN ('ROLLING_WINDOW', 'FIFA_ELO', 'LEAGUE_SYSTEM')),
-    phase_size INT DEFAULT 10, -- Độ rộng cửa sổ trượt W (Ví dụ: W = 10 giải; 1-10 là Phase 1, 11-20 là Phase 2)
+    phase_size INT DEFAULT 27, -- Độ rộng cửa sổ trượt W (Ví dụ: W = 27 giải; 1-27 là Phase 1, 28-54 là Phase 2)
     current_phase INT DEFAULT 1, -- Phase hiện tại của Series
     initial_points INT DEFAULT 0, -- Điểm khởi đầu cho Rolling Window (0 điểm)
     initial_elo FLOAT DEFAULT 1000.0, -- Điểm Elo khởi điểm cho FIFA Elo (1000 điểm)

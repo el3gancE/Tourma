@@ -107,7 +107,7 @@
                                                 <i class="fa-solid fa-trash-can"></i> Xóa
                                             </button>
                                         </form>
-                                        <button type="button" class="btn" onclick="openEditSeriesPopup({ id: '${s.id}', name: '${s.name.replace('\'', '\\\'')}', phaseSize: ${s.phaseSize > 0 ? s.phaseSize : 10}, status: '${s.status}', actionUrl: '${pageContext.request.contextPath}/my-series' })" title="Chỉnh sửa cấu hình & số giải tích lũy W" style="background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.25); padding: 0.45rem 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                        <button type="button" class="btn" onclick="openEditSeriesPopup({ id: '${s.id}', name: '${s.name.replace('\'', '\\\'')}', phaseSize: ${s.phaseSize > 0 ? s.phaseSize : 27}, status: '${s.status}', actionUrl: '${pageContext.request.contextPath}/my-series' })" title="Chỉnh sửa cấu hình & số giải tích lũy W" style="background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.25); padding: 0.45rem 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
                                             <i class="fa-solid fa-sliders"></i> Sửa (W = ${s.phaseSize})
                                         </button>
                                     </div>

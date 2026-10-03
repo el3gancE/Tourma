@@ -1206,7 +1206,7 @@
     var teamDataArray = result.teamDataArray;
     var targetIdx = result.targetIdx;
     var subTourneys = window.seriesSubTournaments || [];
-    var phaseSize = window.seriesPhaseSize || 3;
+    var phaseSize = window.seriesPhaseSize || 27;
     var targetTourney = (targetIdx >= 0 && targetIdx < subTourneys.length) ? subTourneys[targetIdx] : null;
 
     // Update Header Title & Milestone Label

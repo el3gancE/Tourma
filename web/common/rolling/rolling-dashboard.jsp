@@ -9,7 +9,7 @@
 
     String seriesIdVal = (series != null && series.getId() != null) ? series.getId() : "";
     String seriesName = (series != null) ? series.getName() : "Series Circuit";
-    int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 10;
+    int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 27;
     String status = (series != null && series.getStatus() != null) ? series.getStatus() : "ACTIVE";
 
     int tourneyCount = (tournamentsList != null) ? tournamentsList.size() : 0;

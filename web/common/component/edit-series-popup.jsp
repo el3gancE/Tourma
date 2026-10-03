@@ -7,7 +7,7 @@
         sId = (currentSeriesForModal != null && currentSeriesForModal.getId() != null) ? currentSeriesForModal.getId() : "";
     }
     String sName = (currentSeriesForModal != null && currentSeriesForModal.getName() != null) ? currentSeriesForModal.getName() : "";
-    int sPhaseSize = (currentSeriesForModal != null && currentSeriesForModal.getPhaseSize() > 0) ? currentSeriesForModal.getPhaseSize() : 10;
+    int sPhaseSize = (currentSeriesForModal != null && currentSeriesForModal.getPhaseSize() > 0) ? currentSeriesForModal.getPhaseSize() : 27;
     String sStatus = (currentSeriesForModal != null && currentSeriesForModal.getStatus() != null) ? currentSeriesForModal.getStatus() : "ACTIVE";
     String formActionUrl = request.getParameter("formActionUrl");
     if (formActionUrl == null || formActionUrl.trim().isEmpty()) {
@@ -62,10 +62,10 @@
                 <!-- PRESET QUICK BUTTONS -->
                 <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.65rem;">
                     <span style="font-size: 0.75rem; color: #94a3b8; align-self: center; margin-right: 0.25rem;">Gợi ý:</span>
-                    <button type="button" onclick="setPresetPhaseSize(3)" class="btn" style="font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 6px; background: rgba(255,255,255,0.06); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1);">3 giải</button>
                     <button type="button" onclick="setPresetPhaseSize(5)" class="btn" style="font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 6px; background: rgba(255,255,255,0.06); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1);">5 giải</button>
                     <button type="button" onclick="setPresetPhaseSize(10)" class="btn" style="font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 6px; background: rgba(255,255,255,0.06); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1);">10 giải</button>
                     <button type="button" onclick="setPresetPhaseSize(26)" class="btn" style="font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 6px; background: rgba(255,255,255,0.06); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1);">26 giải</button>
+                    <button type="button" onclick="setPresetPhaseSize(27)" class="btn" style="font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 6px; background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.35);">27 giải</button>
                 </div>
 
                 <p style="font-size: 0.78rem; color: #cbd5e1; margin-top: 0.75rem; margin-bottom: 0; line-height: 1.45;">

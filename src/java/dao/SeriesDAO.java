@@ -125,7 +125,7 @@ public class SeriesDAO {
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, (name != null && !name.trim().isEmpty()) ? name.trim() : "Series");
-            ps.setInt(2, phaseSize > 0 ? phaseSize : 3);
+            ps.setInt(2, phaseSize > 0 ? phaseSize : 27);
             ps.setString(3, (status != null && !status.trim().isEmpty()) ? status.trim().toUpperCase() : "ACTIVE");
             ps.setString(4, seriesId.trim());
             int rows = ps.executeUpdate();
