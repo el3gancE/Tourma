@@ -639,3 +639,22 @@ DELETE FROM series;
 PRINT N'Đã dọn dẹp toàn bộ dữ liệu kiểm thử!';
 */
 GO
+
+-- ============================================================================
+-- 12. MIGRATION: THÊM CỘT stage1_status VÀO BẢNG tournaments
+-- Giúp lưu trạng thái khoá/kết thúc vòng 1 vào CSDL (chống mất dữ liệu khi localStorage bị tràn)
+-- ============================================================================
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns 
+    WHERE object_id = OBJECT_ID('tournaments') AND name = 'stage1_status'
+)
+BEGIN
+    ALTER TABLE tournaments ADD stage1_status VARCHAR(20) DEFAULT 'PENDING';
+    PRINT N'Đã thêm cột stage1_status vào bảng tournaments!';
+END
+ELSE
+BEGIN
+    PRINT N'Cột stage1_status đã tồn tại trong bảng tournaments.';
+END
+GO
+

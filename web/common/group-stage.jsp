@@ -14,6 +14,7 @@
     Tournament tourney = tDao.getTournamentById(tournamentId);
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
     String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
+    String dbStage1Status = (tourney != null && tourney.getStage1Status() != null) ? tourney.getStage1Status() : "PENDING";
 
     ParticipantDAO pDao = new ParticipantDAO();
     List<Team> dbTeamsList = null;
@@ -129,6 +130,9 @@
 
     <!-- JS SCRIPTS -->
     <script>
+        window.TourmaContextPath = "${pageContext.request.contextPath}";
+        window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
+        window.TourmaDbStage1Status["<%= tournamentId %>"] = "<%= dbStage1Status %>";
         window.groupTournamentId = "<%= tournamentId %>";
         window.dbGroupMatches = <%= dbMatchesJson %>;
         window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;

@@ -144,10 +144,10 @@
     }
 
     // 3b. Check tournament object championName (from DB or engine)
-    if (t.championName) {
+    if (t.championName && (t.status === 'COMPLETED' || t.status === 'DONE')) {
       try {
         var dbChamp = extractName(t.championName) || (typeof t.championName === 'string' ? t.championName.trim() : null);
-        if (dbChamp && isTeamSelf(dbChamp, teamName)) {
+        if (dbChamp && dbChamp !== 'BYE' && dbChamp !== 'TBD' && !dbChamp.startsWith('W #') && isTeamSelf(dbChamp, teamName)) {
           champOfTourneyCache[memoKey] = true;
           return true;
         }

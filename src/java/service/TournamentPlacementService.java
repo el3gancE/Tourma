@@ -349,7 +349,7 @@ public class TournamentPlacementService {
 
                 if (maxLbRoundStage2 > 0) {
                     // Stage 2 is Double Elimination
-                    if (isGrandFinal(r.bracketType) || (r.roundNumber == maxRoundStage2 && !isLoserBracket(r.bracketType))) {
+                    if (isGrandFinal(r.bracketType) || (r.roundNumber == maxRoundStage2 && !isLoserBracket(r.bracketType) && maxLbRoundStage2 > 0 && maxRoundStage2 > maxLbRoundStage2)) {
                         assignPlacement(map, r.winnerId, r.winnerName, 1);
                         assignPlacement(map, loserId, loserName, 2);
                     } else if (isLoserBracket(r.bracketType)) {
@@ -365,7 +365,7 @@ public class TournamentPlacementService {
                 } else {
                     // Stage 2 is Single Elimination
                     int diff = Math.max(0, totalS2Rounds - r.roundNumber);
-                    if (diff == 0 && r.roundNumber == totalS2Rounds) {
+                    if (diff == 0 && r.roundNumber == totalS2Rounds && totalS2Rounds >= 1) {
                         assignPlacement(map, r.winnerId, r.winnerName, 1);
                         assignPlacement(map, loserId, loserName, 2);
                     } else {
@@ -532,7 +532,7 @@ public class TournamentPlacementService {
             String loserId = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.team2Id : r.team1Id;
             String loserName = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.t2Name : r.t1Name;
 
-            if (isGrandFinal(r.bracketType) || (r.roundNumber == maxRound && !isLoserBracket(r.bracketType))) {
+            if (isGrandFinal(r.bracketType) || (r.roundNumber == maxRound && !isLoserBracket(r.bracketType) && maxLbRound > 0 && maxRound > maxLbRound)) {
                 assignPlacement(map, r.winnerId, r.winnerName, 1);
                 assignPlacement(map, loserId, loserName, 2);
             } else if (isLoserBracket(r.bracketType)) {
@@ -553,8 +553,15 @@ public class TournamentPlacementService {
      */
     private void processSingleStageElimination(List<MatchRow> rows, int distinctTeamCount, Map<String, Integer> map) {
         int maxRound = 0;
+        int finalRoundMatches = 0;
         for (MatchRow r : rows) {
             if (r.roundNumber > maxRound) maxRound = r.roundNumber;
+        }
+
+        for (MatchRow r : rows) {
+            if (r.roundNumber == maxRound) {
+                finalRoundMatches++;
+            }
         }
 
         int expectedRounds = (distinctTeamCount >= 2) ? (int) Math.ceil(Math.log(distinctTeamCount) / Math.log(2)) : 1;
@@ -566,7 +573,8 @@ public class TournamentPlacementService {
             String loserName = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.t2Name : r.t1Name;
 
             int diff = Math.max(0, totalRounds - r.roundNumber);
-            if (diff == 0 && r.roundNumber == totalRounds) {
+            if (diff == 0 && r.roundNumber == totalRounds && finalRoundMatches == 1) {
+                // Genuine final match
                 assignPlacement(map, r.winnerId, r.winnerName, 1);
                 assignPlacement(map, loserId, loserName, 2);
             } else {
@@ -589,8 +597,11 @@ public class TournamentPlacementService {
             int losses = 0;
             int gf = 0;
             int ga = 0;
+            int matchesPlayed = 0;
         }
         Map<String, RRTeamStat> stats = new HashMap<>();
+        int totalMatchesPlayed = 0;
+
         for (MatchRow r : rows) {
             if (r.t1Name != null && !r.t1Name.isEmpty() && !"BYE".equalsIgnoreCase(r.t1Name)) {
                 String k = r.team1Id != null ? r.team1Id : r.t1Name.trim().toLowerCase();
@@ -618,6 +629,9 @@ public class TournamentPlacementService {
                 RRTeamStat s2 = (k2 != null) ? stats.get(k2) : null;
 
                 if (s1 != null && s2 != null) {
+                    totalMatchesPlayed++;
+                    s1.matchesPlayed++;
+                    s2.matchesPlayed++;
                     s1.gf += r.score1;
                     s1.ga += r.score2;
                     s2.gf += r.score2;
@@ -640,6 +654,8 @@ public class TournamentPlacementService {
                 }
             }
         }
+
+        if (totalMatchesPlayed == 0) return; // Do not prematurely award placements for unplayed tournament
 
         List<RRTeamStat> list = new ArrayList<>(stats.values());
         list.sort((a, b) -> {
@@ -714,20 +730,24 @@ public class TournamentPlacementService {
             int[] rec = entry.getValue();
             int wins = rec[0];
             int losses = rec[1];
-            int pos;
+            int pos = 0;
+
             if (wins >= 3) {
                 if (losses == 0) pos = 1;       // 3-0
                 else if (losses == 1) pos = 3;  // 3-1
                 else pos = 6;                   // 3-2
-            } else {
+            } else if (losses >= 3) {
                 if (wins == 2) pos = 9;         // 2-3
                 else if (wins == 1) pos = 12;   // 1-3
                 else pos = 15;                  // 0-3
             }
-            String tName = teamIdToName.get(tKey);
-            assignPlacement(map, tKey, tName, pos);
-            if (tName != null) {
-                assignPlacement(map, null, tName, pos);
+
+            if (pos > 0) {
+                String tName = teamIdToName.get(tKey);
+                assignPlacement(map, tKey, tName, pos);
+                if (tName != null) {
+                    assignPlacement(map, null, tName, pos);
+                }
             }
         }
     }
@@ -736,7 +756,7 @@ public class TournamentPlacementService {
      * Process Single-Stage Group Stage Tournament (Query group_teams standings)
      */
     private void processSingleStageGroupStage(Connection conn, String tournamentId, List<MatchRow> rows, Map<String, Integer> map) {
-        String gtSql = "SELECT gt.team_id, t.raw_name, gt.rank_in_group, gt.points, gt.goal_difference, gt.goals_scored "
+        String gtSql = "SELECT gt.team_id, t.raw_name, gt.rank_in_group, gt.points, gt.goal_difference, gt.goals_scored, g.group_name "
                 + "FROM group_teams gt "
                 + "JOIN groups g ON gt.group_id = g.id "
                 + "JOIN tournament_stages s ON g.stage_id = s.id "
@@ -746,11 +766,33 @@ public class TournamentPlacementService {
         try (PreparedStatement ps = conn.prepareStatement(gtSql)) {
             ps.setString(1, tournamentId);
             try (ResultSet rs = ps.executeQuery()) {
-                int overallRank = 1;
+                java.util.Set<String> distinctGroups = new java.util.HashSet<>();
+                List<Object[]> teamGroupRows = new ArrayList<>();
                 while (rs.next()) {
                     String tId = rs.getString("team_id");
                     String tName = rs.getString("raw_name");
-                    assignPlacement(map, tId, tName, overallRank++);
+                    int rankInGrp = rs.getInt("rank_in_group");
+                    String gName = rs.getString("group_name");
+                    if (gName != null) distinctGroups.add(gName.trim());
+                    teamGroupRows.add(new Object[]{tId, tName, rankInGrp});
+                }
+                int countGroups = distinctGroups.size();
+                for (Object[] row : teamGroupRows) {
+                    String tId = (String) row[0];
+                    String tName = (String) row[1];
+                    int rankInGrp = (Integer) row[2];
+                    int pos = 0;
+                    if (countGroups <= 1) {
+                        pos = rankInGrp;
+                    } else {
+                        if (rankInGrp == 1) pos = 1;
+                        else if (rankInGrp == 2) pos = 5;
+                        else if (rankInGrp == 3) pos = 9;
+                        else pos = 17;
+                    }
+                    if (pos > 0) {
+                        assignPlacement(map, tId, tName, pos);
+                    }
                 }
             }
         } catch (Exception e) {

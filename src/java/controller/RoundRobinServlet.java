@@ -97,6 +97,17 @@ public class RoundRobinServlet extends HttpServlet {
                 return;
             }
 
+            if ("saveStage1Status".equalsIgnoreCase(action)) {
+                String s1Status = request.getParameter("stage1Status");
+                if (tournamentId != null && s1Status != null) {
+                    boolean ok = tournamentDAO.saveStage1Status(tournamentId, s1Status);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"stage1Status\":\"" + s1Status + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc stage1Status!\"}");
+                }
+                return;
+            }
+
             if ("batchSync".equalsIgnoreCase(action)) {
                 String matchesJson = request.getParameter("matchesJson");
                 if (matchesJson == null || matchesJson.trim().isEmpty()) {

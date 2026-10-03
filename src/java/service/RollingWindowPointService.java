@@ -262,11 +262,13 @@ public class RollingWindowPointService {
                     if (matchPos == null && team.getNormalizedName() != null) {
                         matchPos = matchPlacements.get(team.getNormalizedName().trim().toLowerCase());
                     }
-                    if (matchPos == null && t.getChampionName() != null) {
+                    if (matchPos == null && t.getChampionName() != null && !t.getChampionName().trim().isEmpty() && "COMPLETED".equalsIgnoreCase(t.getStatus())) {
                         String cName = t.getChampionName().trim().toLowerCase();
-                        if ((team.getRawName() != null && team.getRawName().trim().toLowerCase().equals(cName))
-                                || (team.getNormalizedName() != null && team.getNormalizedName().trim().toLowerCase().equals(cName))) {
-                            matchPos = 1;
+                        if (!"bye".equals(cName) && !"tbd".equals(cName)) {
+                            if ((team.getRawName() != null && team.getRawName().trim().toLowerCase().equals(cName))
+                                    || (team.getNormalizedName() != null && team.getNormalizedName().trim().toLowerCase().equals(cName))) {
+                                matchPos = 1;
+                            }
                         }
                     }
 
@@ -460,11 +462,13 @@ public class RollingWindowPointService {
                                 if (matchPos == null && tm.getNormalizedName() != null) {
                                     matchPos = placements.get(tm.getNormalizedName().trim().toLowerCase());
                                 }
-                                if (matchPos == null && t.getChampionName() != null) {
+                                if (matchPos == null && t.getChampionName() != null && !t.getChampionName().trim().isEmpty() && "COMPLETED".equalsIgnoreCase(t.getStatus())) {
                                     String cName = t.getChampionName().trim().toLowerCase();
-                                    if ((tm.getRawName() != null && tm.getRawName().trim().toLowerCase().equals(cName))
-                                            || (tm.getNormalizedName() != null && tm.getNormalizedName().trim().toLowerCase().equals(cName))) {
-                                        matchPos = 1;
+                                    if (!"bye".equals(cName) && !"tbd".equals(cName)) {
+                                        if ((tm.getRawName() != null && tm.getRawName().trim().toLowerCase().equals(cName))
+                                                || (tm.getNormalizedName() != null && tm.getNormalizedName().trim().toLowerCase().equals(cName))) {
+                                            matchPos = 1;
+                                        }
                                     }
                                 }
                                 int pos = (matchPos != null && matchPos > 0) ? matchPos : 0;

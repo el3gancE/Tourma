@@ -17,6 +17,7 @@
     String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
+    String dbStage1Status = "PENDING";
     String dbStage2Teams = null;
     String dbMultiStageConfig = null;
 
@@ -30,6 +31,9 @@
                     }
                     if (t.getStatus() != null && !t.getStatus().trim().isEmpty()) {
                         dbTournamentStatus = t.getStatus().trim();
+                    }
+                    if (t.getStage1Status() != null && !t.getStage1Status().trim().isEmpty()) {
+                        dbStage1Status = t.getStage1Status().trim();
                     }
                     if (t.getTournamentType() != null && !t.getTournamentType().trim().isEmpty()) {
                         tournamentType = t.getTournamentType();
@@ -231,6 +235,9 @@
         <script src="${pageContext.request.contextPath}/js/round-robin.js"></script>
 
         <script>
+            window.TourmaContextPath = '${pageContext.request.contextPath}';
+            window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
+            window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var dbTournamentStatus = "<%= dbTournamentStatus %>";

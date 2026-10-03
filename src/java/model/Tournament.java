@@ -100,10 +100,16 @@ public class Tournament {
     public String getChampionName() { return championName; }
     public void setChampionName(String championName) { this.championName = championName; }
 
+    private String stage1Status; // PENDING, LOCKED, COMPLETED
     private String groupAssignments;
     private String stage2Teams;
     private String multiStageConfig;
     private String teamsJson;
+
+    public String getStage1Status() { return stage1Status; }
+    public void setStage1Status(String stage1Status) { this.stage1Status = stage1Status; }
+    /** Returns true if stage 1 is locked (cannot edit scores) */
+    public boolean isStage1Locked() { return "LOCKED".equals(stage1Status) || "COMPLETED".equals(stage1Status); }
 
     public String getGroupAssignments() { return groupAssignments; }
     public void setGroupAssignments(String groupAssignments) { this.groupAssignments = groupAssignments; }
@@ -117,5 +123,8 @@ public class Tournament {
     public String getTeamsJson() { return teamsJson; }
     public void setTeamsJson(String teamsJson) { this.teamsJson = teamsJson; }
 }
+
+
+
 
 

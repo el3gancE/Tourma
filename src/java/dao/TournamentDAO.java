@@ -150,6 +150,10 @@ public class TournamentDAO {
                     } catch (Exception ignore) {
                     }
                     try {
+                        t.setStage1Status(rs.getString("stage1_status"));
+                    } catch (Exception ignore) {
+                    }
+                    try {
                         t.setTeamsJson(rs.getString("teams_json"));
                     } catch (Exception ignore) {
                     }
@@ -843,6 +847,198 @@ public class TournamentDAO {
             System.err.println("[TournamentDAO] getTeamsJson failed: " + e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Persist Stage 1 lock/completion state to DB (replaces localStorage tourma_stage1_locked_).
+     * status: 'PENDING' (in progress), 'LOCKED' (confirmed end, going to stage2), 'COMPLETED' (stage2 done)
+     */
+    public boolean saveStage1Status(String tournamentId, String status) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        // Validate allowed values
+        if (!"PENDING".equals(status) && !"LOCKED".equals(status) && !"COMPLETED".equals(status)) return false;
+        String sql = "UPDATE tournaments SET stage1_status = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setString(2, tournamentId.trim());
+            boolean ok = ps.executeUpdate() > 0;
+            TOURNAMENT_BY_ID_CACHE.remove(tournamentId.trim());
+            return ok;
+        } catch (Exception e) {
+            System.err.println("[TournamentDAO] saveStage1Status failed for " + tournamentId + ": " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Clones an existing tournament's configuration (format, stages, multi-stage config, group settings, points rule)
+     * and creates a brand-new DRAFT tournament in the database.
+     * 
+     * @param sourceTournamentId ID of the tournament to copy from
+     * @param newName Custom name for the cloned tournament (optional)
+     * @param copyTeams If true, copies the registered teams from the source tournament with fresh IDs; if false, leaves teams empty
+     * @return The newly cloned Tournament object with its new ID, or null on failure
+     */
+    public Tournament cloneTournament(String sourceTournamentId, String newName, boolean copyTeams) {
+        if (sourceTournamentId == null || sourceTournamentId.trim().isEmpty()) {
+            return null;
+        }
+        Tournament src = getTournamentById(sourceTournamentId.trim());
+        if (src == null) return null;
+
+        String newId = "t_" + System.currentTimeMillis() + "_" + ((int)(Math.random() * 900) + 100);
+        String finalName = (newName != null && !newName.trim().isEmpty()) 
+                ? newName.trim() 
+                : (src.getName() + " (Bản sao)");
+
+        DBContext db = new DBContext();
+        String insertTournamentSql = "INSERT INTO tournaments (" +
+                "id, series_id, name, tournament_type, series_event_type, " +
+                "tier_name, series_reward_points, tournament_index_in_series, " +
+                "phase_number, max_teams_per_group, advancing_seats_count, status, stage1_status, " +
+                "series_points_config, group_assignments, multi_stage_config, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', 'PENDING', ?, ?, ?, GETDATE())";
+
+        try (Connection conn = db.getConnection()) {
+            conn.setAutoCommit(false);
+
+            int nextIndex = src.getTournamentIndexInSeries();
+            if (src.getSeriesId() != null && !src.getSeriesId().trim().isEmpty()) {
+                nextIndex = getNextTournamentIndexInSeries(conn, src.getSeriesId().trim());
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(insertTournamentSql)) {
+                ps.setString(1, newId);
+                ps.setString(2, src.getSeriesId());
+                ps.setString(3, finalName);
+                ps.setString(4, src.getTournamentType() != null ? src.getTournamentType() : "SINGLE_STAGE");
+                ps.setString(5, src.getSeriesEventType() != null ? src.getSeriesEventType() : "NONE");
+                ps.setString(6, src.getTierName());
+                if (src.getSeriesRewardPoints() != null) {
+                    ps.setInt(7, src.getSeriesRewardPoints());
+                } else {
+                    ps.setNull(7, java.sql.Types.INTEGER);
+                }
+                ps.setInt(8, nextIndex);
+                ps.setInt(9, src.getPhaseNumber() > 0 ? src.getPhaseNumber() : 1);
+                ps.setInt(10, src.getMaxTeamsPerGroup() > 0 ? src.getMaxTeamsPerGroup() : 4);
+                ps.setInt(11, src.getAdvancingSeatsCount() > 0 ? src.getAdvancingSeatsCount() : 16);
+                ps.setString(12, src.getSeriesPointsConfig());
+                ps.setString(13, src.getGroupAssignments());
+                ps.setString(14, src.getMultiStageConfig());
+
+                ps.executeUpdate();
+            }
+
+            // Clone tournament_stages
+            String selectStagesSql = "SELECT stage_order, stage_name, format, target_wins FROM tournament_stages WHERE tournament_id = ? ORDER BY stage_order ASC";
+            String insertStageSql = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format, target_wins, status) VALUES (?, ?, ?, ?, ?, ?, 'PENDING')";
+
+            List<Object[]> stages = new ArrayList<>();
+            try (PreparedStatement psStages = conn.prepareStatement(selectStagesSql)) {
+                psStages.setString(1, sourceTournamentId.trim());
+                try (ResultSet rs = psStages.executeQuery()) {
+                    while (rs.next()) {
+                        stages.add(new Object[]{
+                            rs.getInt("stage_order"),
+                            rs.getString("stage_name"),
+                            rs.getString("format"),
+                            rs.getInt("target_wins")
+                        });
+                    }
+                }
+            }
+
+            if (stages.isEmpty()) {
+                String fmt = src.getFormat() != null ? src.getFormat() : "SINGLE_ELIMINATION";
+                try (PreparedStatement psStage = conn.prepareStatement(insertStageSql)) {
+                    psStage.setString(1, "stg_" + java.util.UUID.randomUUID().toString().substring(0, 8));
+                    psStage.setString(2, newId);
+                    psStage.setInt(3, 1);
+                    psStage.setString(4, "Stage 1");
+                    psStage.setString(5, fmt);
+                    psStage.setInt(6, 3);
+                    psStage.executeUpdate();
+                }
+            } else {
+                try (PreparedStatement psStage = conn.prepareStatement(insertStageSql)) {
+                    for (Object[] st : stages) {
+                        psStage.setString(1, "stg_" + java.util.UUID.randomUUID().toString().substring(0, 8));
+                        psStage.setString(2, newId);
+                        psStage.setInt(3, (Integer) st[0]);
+                        psStage.setString(4, (String) st[1]);
+                        psStage.setString(5, (String) st[2]);
+                        psStage.setInt(6, (Integer) st[3]);
+                        psStage.executeUpdate();
+                    }
+                }
+            }
+
+            // Clone custom placement points if any
+            String selectPointsSql = "SELECT rank_position, points_awarded, elo_weight FROM tournament_placement_points WHERE tournament_id = ?";
+            String insertPointsSql = "INSERT INTO tournament_placement_points (id, tournament_id, rank_position, points_awarded, elo_weight) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement psPts = conn.prepareStatement(selectPointsSql)) {
+                psPts.setString(1, sourceTournamentId.trim());
+                try (ResultSet rs = psPts.executeQuery()) {
+                    try (PreparedStatement psIns = conn.prepareStatement(insertPointsSql)) {
+                        while (rs.next()) {
+                            psIns.setString(1, "tpp_" + java.util.UUID.randomUUID().toString().substring(0, 8));
+                            psIns.setString(2, newId);
+                            psIns.setInt(3, rs.getInt("rank_position"));
+                            psIns.setInt(4, rs.getInt("points_awarded"));
+                            psIns.setDouble(5, rs.getDouble("elo_weight"));
+                            psIns.executeUpdate();
+                        }
+                    }
+                }
+            } catch (Exception ignore) {}
+
+            // Copy teams if requested
+            if (copyTeams) {
+                String selectTeamsSql = "SELECT raw_name, normalized_name, original_seed FROM teams WHERE tournament_id = ? ORDER BY original_seed ASC";
+                String insertTeamSql = "INSERT INTO teams (id, tournament_id, raw_name, normalized_name, original_seed, status) VALUES (?, ?, ?, ?, ?, 'ACTIVE')";
+                try (PreparedStatement psTeams = conn.prepareStatement(selectTeamsSql)) {
+                    psTeams.setString(1, sourceTournamentId.trim());
+                    try (ResultSet rs = psTeams.executeQuery()) {
+                        try (PreparedStatement psInsTeam = conn.prepareStatement(insertTeamSql)) {
+                            while (rs.next()) {
+                                String tId = "TM_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+                                psInsTeam.setString(1, tId);
+                                psInsTeam.setString(2, newId);
+                                psInsTeam.setString(3, rs.getString("raw_name"));
+                                psInsTeam.setString(4, rs.getString("normalized_name"));
+                                psInsTeam.setInt(5, rs.getInt("original_seed"));
+                                psInsTeam.executeUpdate();
+                            }
+                        }
+                    }
+                }
+            }
+
+            conn.commit();
+            TOURNAMENT_BY_ID_CACHE.clear();
+
+            return getTournamentById(newId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("[TournamentDAO] cloneTournament failed from " + sourceTournamentId + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    private int getNextTournamentIndexInSeries(Connection conn, String seriesId) {
+        String sql = "SELECT ISNULL(MAX(tournament_index_in_series), 0) + 1 AS next_idx FROM tournaments WHERE series_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, seriesId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("next_idx");
+                }
+            }
+        } catch (Exception ignore) {}
+        return 1;
     }
 }
 

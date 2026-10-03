@@ -43,6 +43,12 @@
         isStage1Locked: function (tournamentId) {
             if (!tournamentId) return false;
             try {
+                // PRIMARY: read from DB-injected value (set by JSP from tournament.stage1_status)
+                if (window.TourmaDbStage1Status && window.TourmaDbStage1Status[tournamentId]) {
+                    var s = window.TourmaDbStage1Status[tournamentId];
+                    return (s === 'LOCKED' || s === 'COMPLETED');
+                }
+                // FALLBACK: localStorage (backward compat while old data exists)
                 return localStorage.getItem('tourma_stage1_locked_' + tournamentId) === 'true';
             } catch (e) {
                 return false;
@@ -425,9 +431,11 @@
             this.showTransitionLoader('Đang xác nhận kết quả và chuyển sang Vòng 2...');
 
             try {
-                // 1. Set Lock flag
-                localStorage.setItem('tourma_stage1_locked_' + tid, 'true');
-                localStorage.setItem('tourma_stage1_completed_' + tid, 'true');
+                // 1. Set Lock flag — BOTH localStorage (compat) AND DB
+                try { localStorage.setItem('tourma_stage1_locked_' + tid, 'true'); } catch (e) {}
+                try { localStorage.setItem('tourma_stage1_completed_' + tid, 'true'); } catch (e) {}
+                // Persist to DB (fire-and-forget, we redirect shortly after)
+                window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'LOCKED');
 
                 // 2. Trigger Stage 2 cut generation across format engines
                 if (window.TourmaGroupStage && typeof window.TourmaGroupStage.checkAndTriggerStage2Cut === 'function') {
@@ -534,7 +542,9 @@
             if (modal) modal.remove();
 
             try {
-                localStorage.setItem('tourma_stage1_locked_' + this.tournamentId, 'false');
+                // BOTH localStorage (compat) AND DB
+                try { localStorage.setItem('tourma_stage1_locked_' + this.tournamentId, 'false'); } catch (e) {}
+                window.TourmaStageEndPopup_saveStage1StatusToDB(this.tournamentId, 'PENDING');
 
                 var banner = document.getElementById('stageEndPopupBanner');
                 if (banner) {
@@ -611,6 +621,43 @@
             var banner = document.getElementById('stageEndPopupBanner');
             if (banner) banner.style.display = 'none';
         }
+    };
+
+    /**
+     * Helper to persist Stage 1 status (PENDING, LOCKED, COMPLETED) to DB via AJAX
+     */
+    window.TourmaStageEndPopup_saveStage1StatusToDB = function (tournamentId, status) {
+        if (!tournamentId || tournamentId === 'demo') return;
+        var contextPath = window.TourmaContextPath || '';
+        var path = window.location.pathname || '';
+        var endpoint = contextPath + '/single-elimination';
+        if (path.indexOf('/double-elimination') !== -1) {
+            endpoint = contextPath + '/double-elimination';
+        } else if (path.indexOf('/swiss-stage') !== -1) {
+            endpoint = contextPath + '/swiss-stage';
+        } else if (path.indexOf('/group-stage') !== -1) {
+            endpoint = contextPath + '/group-stage';
+        } else if (path.indexOf('/round-robin') !== -1) {
+            endpoint = contextPath + '/round-robin';
+        }
+
+        var params = new URLSearchParams();
+        params.append('action', 'saveStage1Status');
+        params.append('tournamentId', tournamentId);
+        params.append('stage1Status', status || 'PENDING');
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: params.toString()
+        }).then(function (res) { return res.json(); })
+        .then(function (data) {
+            console.log('[STAGE1 STATUS AJAX] Saved status to DB:', status, data);
+            if (!window.TourmaDbStage1Status) window.TourmaDbStage1Status = {};
+            window.TourmaDbStage1Status[tournamentId] = status;
+        }).catch(function (err) {
+            console.warn('[STAGE1 STATUS AJAX] Failed to save stage1 status:', err);
+        });
     };
 
     window.StageEndPopup = StageEndPopup;

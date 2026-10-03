@@ -618,7 +618,7 @@
       var newWeight = getPosRankWeight(positionKey);
       var prevWeight = prevPos ? getPosRankWeight(prevPos) : 999;
 
-      if (newWeight < prevWeight || teamPointsAwarded[key] === undefined || positionKey === "1" || (newWeight === prevWeight && pts > prevPts)) {
+      if (newWeight < prevWeight || teamPointsAwarded[key] === undefined || (newWeight === prevWeight && pts > prevPts)) {
         teamPointsAwarded[key] = pts;
         teamPositionsAwarded[key] = positionKey;
         teamAchievementsAwarded[key] = customAchievement || resolveAchievementFromPos(positionKey);
@@ -944,9 +944,9 @@
                 if (!isMultiStage) {
                   grpList.forEach(function (st, rIdx) {
                     var rNum = rIdx + 1;
-                    if (rNum === 1) awardTeamPoints(st.name, "1", "group_rank_1");
-                    else if (rNum === 2) awardTeamPoints(st.name, "2", "group_rank_2");
-                    else if (rNum === 3 || rNum === 4) awardTeamPoints(st.name, "3-4", "group_rank_" + rNum);
+                    if (rNum === 1) awardTeamPoints(st.name, "group_rank_1", "1");
+                    else if (rNum === 2) awardTeamPoints(st.name, "group_rank_2", "2");
+                    else if (rNum === 3 || rNum === 4) awardTeamPoints(st.name, "group_rank_" + rNum, "3-4");
                     else awardTeamPoints(st.name, "stage1_eliminated", "group_rank_" + rNum);
                   });
                 } else {
@@ -1004,7 +1004,7 @@
                   if (mRes.loser) {
                     awardTeamPoints(mRes.loser, posKey, "stage1_eliminated");
                   }
-                  if (mRes.winner && distFromFinal === 0 && !isMultiStage) {
+                  if (mRes.winner && distFromFinal === 0 && !isMultiStage && totalRounds >= 1) {
                     awardTeamPoints(mRes.winner, "1");
                   }
                 }
@@ -1012,12 +1012,12 @@
             }
           } else if (matchesMap && typeof matchesMap === 'object') {
             var mKeys = Object.keys(matchesMap);
-            var maxRoundInMap = 1;
+            var maxRoundInMap = 0;
             mKeys.forEach(function (mk) {
               var mObj = matchesMap[mk];
               if (mObj) {
                 var r = mObj.roundNumber || mObj.round || 1;
-                if (r > maxRoundInMap) maxRoundInMap = r;
+                if (r > maxRoundInMap && !mObj.isThirdPlace) maxRoundInMap = r;
               }
             });
 
@@ -1033,8 +1033,11 @@
             var finalMatchKey = null;
             mKeys.forEach(function (mk) {
               var m = matchesMap[mk];
-              if (m && (!m.nextMatchId || m.nextMatchId === 'null' || m.nextMatchId === '') && ((m.roundNumber || m.round) === totalFullRounds || totalFullRounds === 1 || !finalMatchKey)) {
-                finalMatchKey = mk;
+              if (m && (!m.nextMatchId || m.nextMatchId === 'null' || m.nextMatchId === '') && !m.isThirdPlace) {
+                var r = m.roundNumber || m.round || 1;
+                if (r === maxRoundInMap || m.isFinalMatch || m.isGrandFinal) {
+                  finalMatchKey = mk;
+                }
               }
             });
 
@@ -1091,7 +1094,7 @@
                 if (mRes.loser) {
                   awardTeamPoints(mRes.loser, posKey2, "stage1_eliminated");
                 }
-                if (mRes.winner && roundDiff === 0 && rNum === totalFullRounds && !isMultiStage) {
+                if (mRes.winner && roundDiff === 0 && rNum === totalFullRounds && !isMultiStage && totalFullRounds >= 1 && (mk === finalMatchKey || m.isFinalMatch)) {
                   awardTeamPoints(mRes.winner, "1");
                 }
               }
@@ -1412,12 +1415,12 @@
               }
             } else if (matchesMapS2 && typeof matchesMapS2 === 'object') {
               var mKeysS2 = Object.keys(matchesMapS2);
-              var maxRoundInS2Map = 1;
+              var maxRoundInS2Map = 0;
               mKeysS2.forEach(function (mk) {
                 var mObj = matchesMapS2[mk];
                 if (mObj) {
                   var r = mObj.roundNumber || mObj.round || 1;
-                  if (r > maxRoundInS2Map) maxRoundInS2Map = r;
+                  if (r > maxRoundInS2Map && !mObj.isThirdPlace) maxRoundInS2Map = r;
                 }
               });
 
@@ -1433,8 +1436,11 @@
               var finalMatchKeyS2 = null;
               mKeysS2.forEach(function (mk) {
                 var m = matchesMapS2[mk];
-                if (m && (!m.nextMatchId || m.nextMatchId === 'null' || m.nextMatchId === '') && ((m.roundNumber || m.round) === totalS2FullRounds || totalS2FullRounds === 1 || !finalMatchKeyS2)) {
-                  finalMatchKeyS2 = mk;
+                if (m && (!m.nextMatchId || m.nextMatchId === 'null' || m.nextMatchId === '') && !m.isThirdPlace) {
+                  var r = m.roundNumber || m.round || 1;
+                  if (r === maxRoundInS2Map || m.isFinalMatch || m.isGrandFinal) {
+                    finalMatchKeyS2 = mk;
+                  }
                 }
               });
 
@@ -1488,7 +1494,7 @@
                     posKeyS2_2 = sPos + "-" + ePos;
                   }
 
-                  if (roundDiffS2 === 0 && rNumS2 === totalS2FullRounds && resS2.winner) {
+                  if (roundDiffS2 === 0 && rNumS2 === totalS2FullRounds && resS2.winner && totalS2FullRounds >= 1 && (mk === finalMatchKeyS2 || m.isFinalMatch)) {
                     awardTeamPoints(resS2.winner, "1");
                   }
                   if (resS2.loser) {
@@ -1510,10 +1516,10 @@
         champName = extractName(rawChamp) || (typeof rawChamp === 'string' ? rawChamp.trim() : null);
       } catch (e) {}
     }
-    if (!champName && t.championName) {
+    if (!champName && t.championName && (t.status === 'COMPLETED' || t.status === 'DONE')) {
       champName = extractName(t.championName) || t.championName.trim();
     }
-    if (champName) {
+    if (champName && champName !== 'BYE' && champName !== 'TBD' && !champName.startsWith('W #') && !champName.startsWith('L #')) {
       awardTeamPoints(champName, "1", null, "Vô Địch");
     }
 

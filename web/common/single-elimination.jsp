@@ -21,6 +21,7 @@
     String seriesIdVal = request.getParameter("seriesId");
     if (seriesIdVal == null) seriesIdVal = "";
 
+    String dbStage1Status = "PENDING";
     String dbStage2Teams = null;
     String dbMultiStageConfig = null;
     if (request.getAttribute("dbStage2Teams") != null) {
@@ -43,6 +44,9 @@
                 }
                 if (t.getStatus() != null && !t.getStatus().trim().isEmpty()) {
                     dbTournamentStatus = t.getStatus().trim();
+                }
+                if (t.getStage1Status() != null && !t.getStage1Status().trim().isEmpty()) {
+                    dbStage1Status = t.getStage1Status().trim();
                 }
                 if (t.getTournamentType() != null) {
                     tournamentType = t.getTournamentType();
@@ -289,6 +293,8 @@
 
         <script>
             window.TourmaContextPath = '${pageContext.request.contextPath}';
+            window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
+            window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var dbTournamentStatus = "<%= dbTournamentStatus %>";

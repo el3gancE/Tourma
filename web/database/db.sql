@@ -99,6 +99,8 @@ CREATE TABLE tournaments (
     linked_qualifier_tournament_id VARCHAR(50) NULL, -- Khóa ngoại liên kết giải vòng loại ("Giải trong Giải")
     status VARCHAR(20) DEFAULT 'DRAFT' 
         CHECK (status IN ('DRAFT', 'ONGOING', 'COMPLETED')),
+    stage1_status VARCHAR(20) DEFAULT 'PENDING'
+        CHECK (stage1_status IN ('PENDING', 'LOCKED', 'COMPLETED')),
     -- Cột tương thích ngược hỗ trợ dữ liệu legacy:
     series_points_config NVARCHAR(MAX) NULL, -- JSON cấu hình điểm thưởng tùy biến
     group_assignments NVARCHAR(MAX) NULL,    -- JSON cấu hình phân bảng (legacy backup)

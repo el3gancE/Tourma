@@ -17,6 +17,7 @@
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
 
+    String dbStage1Status = "PENDING";
     String dbStage2Teams = null;
     String dbMultiStageConfig = null;
     if (request.getAttribute("dbStage2Teams") != null) {
@@ -40,6 +41,9 @@
                 }
                 if (t.getStatus() != null && !t.getStatus().trim().isEmpty()) {
                     dbTournamentStatus = t.getStatus().trim();
+                }
+                if (t.getStage1Status() != null && !t.getStage1Status().trim().isEmpty()) {
+                    dbStage1Status = t.getStage1Status().trim();
                 }
                 if (t.getTournamentType() != null) {
                     tournamentType = t.getTournamentType();
@@ -310,6 +314,8 @@
         <!-- Context Path Injection for AJAX Operations -->
         <script>
             window.TourmaContextPath = '${pageContext.request.contextPath}';
+            window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
+            window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
         </script>
 
         <!-- Engine Scripts -->

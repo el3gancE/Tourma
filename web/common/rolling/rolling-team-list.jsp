@@ -60,19 +60,29 @@
                         </p>
                     </div>
 
-                    <button type="button" onclick="openAddTeamPopup()" class="btn btn-mint" style="font-weight: 700; padding: 0.5rem 1.1rem; border-radius: 8px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-user-plus"></i> + Đăng Ký Đội Mới
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                        <button type="button" onclick="openBulkViewModal()" class="btn" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.16); color: #f1f5f9; font-weight: 700; padding: 0.5rem 1.1rem; border-radius: 8px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; transition: all 0.2s ease;">
+                            <i class="fa-solid fa-align-left text-mint"></i> View as Bulk
+                        </button>
+                        <button type="button" onclick="openAddTeamPopup()" class="btn btn-mint" style="font-weight: 700; padding: 0.5rem 1.1rem; border-radius: 8px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                            <i class="fa-solid fa-user-plus"></i> + Đăng Ký Đội Mới
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Main Partner Team List Table Card -->
             <div class="team-list-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
                     <h3 style="font-size: 1.1rem; font-weight: 800; color: #ffffff; margin: 0;">
                         Danh Sách Đội Partner (<%= partnerCount %> Đội)
                     </h3>
-                    <input type="text" class="form-control" placeholder="Tìm kiếm tên đội..." onkeyup="filterPartnerTeams(this.value)" style="max-width: 250px; font-size: 0.82rem; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="text" class="form-control" placeholder="Tìm kiếm tên đội..." onkeyup="filterPartnerTeams(this.value)" style="max-width: 230px; font-size: 0.82rem; border-radius: 8px;">
+                        <button type="button" onclick="openBulkViewModal()" class="btn" title="Xem danh sách dạng văn bản / Bulk" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #cbd5e1; font-size: 0.82rem; font-weight: 700; padding: 0.45rem 0.85rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <i class="fa-solid fa-align-left text-mint"></i> Bulk View
+                        </button>
+                    </div>
                 </div>
 
                 <table class="team-list-table" id="partnerTeamTable">
@@ -136,6 +146,68 @@
             </div>
 
         </main>
+
+        <!-- MODAL: BULK VIEW PARTNER TEAMS (VIEW AS BULK) -->
+        <div id="modalBulkView" class="team-modal-overlay" style="display: none;">
+            <div class="team-modal-card" style="max-width: 560px;">
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                        <div style="width: 38px; height: 38px; border-radius: 9px; background: rgba(45, 212, 191, 0.15); display: flex; align-items: center; justify-content: center; color: #2dd4bf; font-size: 1.15rem;">
+                            <i class="fa-solid fa-align-left"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin: 0;">
+                                Danh Sách Đội Đối Tác (Bulk View)
+                            </h3>
+                            <span style="font-size: 0.78rem; color: #94a3b8;">
+                                Dạng văn bản thô (mỗi đội một dòng)
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeBulkViewModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer; padding: 0.25rem; transition: color 0.15s ease;" onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='#94a3b8'">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Info Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <span style="font-size: 0.82rem; color: #cbd5e1; font-weight: 600;">
+                        Tổng số: <strong style="color: #2dd4bf;"><%= partnerCount %> Đội</strong>
+                    </span>
+                    <span id="bulkCopyToast" style="font-size: 0.78rem; color: #2dd4bf; font-weight: 700; opacity: 0; transition: opacity 0.25s ease;">
+                        <i class="fa-solid fa-circle-check"></i> Đã sao chép vào Clipboard!
+                    </span>
+                </div>
+
+                <!-- Bulk Textarea -->
+                <textarea id="bulkPartnerTextarea" readonly class="form-control" style="width: 100%; height: 280px; font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.88rem; line-height: 1.65; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; color: #f8fafc; padding: 0.85rem 1rem; resize: vertical; outline: none; box-sizing: border-box;"><%
+                    if (partnerList != null && !partnerList.isEmpty()) {
+                        for (int i = 0; i < partnerList.size(); i++) {
+                            PartnerParticipant p = partnerList.get(i);
+                            if (p != null && p.getName() != null) {
+                                out.print(p.getName().trim() + (i < partnerList.size() - 1 ? "\n" : ""));
+                            }
+                        }
+                    }
+                %></textarea>
+
+                <!-- Actions Footer -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; gap: 0.75rem; flex-wrap: wrap;">
+                    <button type="button" onclick="selectAllBulkText()" class="btn" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); color: #cbd5e1; font-weight: 600; font-size: 0.82rem; padding: 0.45rem 0.9rem; border-radius: 8px; cursor: pointer;">
+                        <i class="fa-solid fa-object-group"></i> Chọn Tất Cả
+                    </button>
+                    <div style="display: flex; gap: 0.65rem;">
+                        <button type="button" onclick="copyBulkPartnerTeams()" class="btn btn-mint" style="font-weight: 700; font-size: 0.85rem; padding: 0.5rem 1.25rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.45rem;">
+                            <i class="fa-regular fa-copy"></i> Sao Chép Toàn Bộ
+                        </button>
+                        <button type="button" onclick="closeBulkViewModal()" class="btn" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #94a3b8; font-weight: 600; font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">
+                            Đóng
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Generic Reusable Add Team Popup Component (Bulk Add) -->
         <jsp:include page="/common/component/add-team-popup.jsp">

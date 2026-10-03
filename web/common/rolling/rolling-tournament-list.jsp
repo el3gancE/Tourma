@@ -212,6 +212,9 @@
                                 <button type="button" class="btn-delete-tourney" title="Xóa" onclick="openDeleteTourneyModal('<%= t.getId() %>', '<%= (t.getName() != null) ? t.getName().replace("'", "\\'").replace("\"", "&quot;") : "" %>')">
                                     <i class="fa-solid fa-trash-can"></i> Xóa
                                 </button>
+                                <button type="button" class="btn-clone-tourney" title="Sao chép cấu hình giải đấu" onclick="openCloneTourneyModal('<%= t.getId() %>', '<%= (t.getName() != null) ? t.getName().replace("'", "\\'").replace("\"", "&quot;") : "" %>')">
+                                    <i class="fa-regular fa-copy"></i> Sao Chép
+                                </button>
                                 <a href="${pageContext.request.contextPath}/rolling/tournament-teams?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Quản lý đội">
                                     <i class="fa-solid fa-users-gear"></i> QL Đội
                                 </a>
@@ -267,6 +270,57 @@
                             <i class="fa-solid fa-trash-can"></i> Xác Nhận Xóa
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- CLONE SUB-TOURNAMENT CONFIRMATION MODAL -->
+            <div id="cloneTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeCloneTourneyModal();">
+                <div class="tourma-modal-card" style="border-color: rgba(45, 212, 191, 0.4); max-width: 490px;" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar" style="border-bottom: 1px solid rgba(45, 212, 191, 0.2);">
+                        <div class="modal-header-title" style="color: #2dd4bf; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-copy"></i>
+                            <span>Sao Chép Cấu Hình Giải Con</span>
+                        </div>
+                        <button type="button" class="modal-close-btn" onclick="closeCloneTourneyModal()" title="Đóng">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <form id="cloneTourneyForm" method="POST" action="${pageContext.request.contextPath}/clone-tournament">
+                        <input type="hidden" name="sourceTournamentId" id="cloneSourceTournamentId" value="">
+                        <input type="hidden" name="redirectContext" id="cloneRedirectContext" value="series">
+
+                        <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+                            <div style="background: rgba(45, 212, 191, 0.08); border: 1px solid rgba(45, 212, 191, 0.2); border-radius: 8px; padding: 0.75rem 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
+                                <i class="fa-solid fa-circle-info text-mint"></i> 
+                                Hệ thống sẽ tạo một giải đấu con mới trong Series này ở trạng thái <strong>DRAFT</strong> với toàn bộ cấu hình thể thức, phân bảng, multi-stage từ giải gốc.
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #cbd5e1; margin-bottom: 0.35rem;">
+                                    Tên giải đấu mới:
+                                </label>
+                                <input type="text" id="cloneNewTourneyName" name="newName" class="form-control" required style="width: 100%; font-size: 0.88rem; font-weight: 600; border-radius: 8px; box-sizing: border-box;" placeholder="Nhập tên giải mới...">
+                            </div>
+
+                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem;">
+                                <label style="display: flex; align-items: center; gap: 0.55rem; cursor: pointer; user-select: none; font-size: 0.84rem; color: #f8fafc; font-weight: 600;">
+                                    <input type="checkbox" name="copyTeams" value="true" checked style="width: 17px; height: 17px; accent-color: #2dd4bf; cursor: pointer;">
+                                    <span>Sao chép cả danh sách đội tham gia</span>
+                                </label>
+                                <p style="margin: 0.35rem 0 0 1.65rem; font-size: 0.75rem; color: #94a3b8;">
+                                    Nếu bỏ tích, giải mới sẽ có cấu hình tương tự nhưng danh sách đội trống để bạn nhập hoặc chọn lại từ danh sách Partner.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.85rem 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2);">
+                            <button type="button" class="btn btn-secondary" onclick="closeCloneTourneyModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
+                            <button type="submit" class="btn btn-mint" style="font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                <i class="fa-solid fa-copy"></i> Tạo Bản Sao
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -367,10 +421,16 @@
                 var tid = card.getAttribute('data-id');
                 var dbChamp = card.getAttribute('data-db-champion');
                 var saved = localStorage.getItem("tourma_champion_" + tid) || localStorage.getItem("tourma_final_champion_" + tid);
-                if (saved && saved.trim() !== "") return saved;
-                if (dbChamp && dbChamp.trim() !== "") return dbChamp;
+                if (saved && saved.trim() !== "" && saved.trim() !== "BYE" && saved.trim() !== "TBD") return saved;
+                if (dbChamp && dbChamp.trim() !== "" && dbChamp.trim() !== "BYE" && dbChamp.trim() !== "TBD") return dbChamp;
 
-                var keys = ["tourma_bracket_", "tourma_bracket_stage2_", "tourma_de_matches_", "tourma_matches_", "tourma_rr_matches_"];
+                var isRealTeam = function(n) {
+                    if (!n) return false;
+                    var s = String(n).trim();
+                    return s !== "" && s !== "BYE" && s !== "TBD" && !s.startsWith("W #") && !s.startsWith("L #") && !s.startsWith("Winner ") && !s.startsWith("Loser ");
+                };
+
+                var keys = ["tourma_bracket_stage2_", "tourma_de_matches_", "tourma_bracket_", "tourma_matches_"];
                 for (var i = 0; i < keys.length; i++) {
                     try {
                         var raw = localStorage.getItem(keys[i] + tid);
@@ -384,23 +444,35 @@
                             var wObj = (gfMatch.winnerId === 'team1') ? gfMatch.team1 : ((gfMatch.winnerId === 'team2') ? gfMatch.team2 : null);
                             if (wObj) {
                                 var cName = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                                if (cName) return cName;
+                                if (isRealTeam(cName)) return cName;
                             }
                         }
 
                         var matchKeys = Object.keys(matchesMap);
-                        var maxRound = -1;
+                        var maxRound = 0;
+                        matchKeys.forEach(function(k) {
+                            var m = matchesMap[k];
+                            if (m && m.roundNumber !== undefined && m.roundNumber > maxRound && !m.isThirdPlace) {
+                                maxRound = m.roundNumber;
+                            }
+                        });
+
                         var finalWinner = null;
                         matchKeys.forEach(function(k) {
                             var m = matchesMap[k];
                             if (m) {
                                 if (m.isFinalMatch && m.winnerId) {
                                     var wObj = (m.winnerId === 'team1') ? m.team1 : ((m.winnerId === 'team2') ? m.team2 : null);
-                                    if (wObj) finalWinner = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                                } else if (m.roundNumber !== undefined && m.roundNumber > maxRound && m.winnerId) {
-                                    maxRound = m.roundNumber;
+                                    if (wObj) {
+                                        var n = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
+                                        if (isRealTeam(n)) finalWinner = n;
+                                    }
+                                } else if (maxRound > 0 && m.roundNumber === maxRound && m.winnerId && !m.isThirdPlace) {
                                     var wObj = (m.winnerId === 'team1') ? m.team1 : ((m.winnerId === 'team2') ? m.team2 : null);
-                                    if (wObj) finalWinner = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
+                                    if (wObj) {
+                                        var n = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
+                                        if (isRealTeam(n)) finalWinner = n;
+                                    }
                                 }
                             }
                         });
@@ -529,6 +601,38 @@
                     }
                 });
             }
+
+            function openCloneTourneyModal(id, currentName) {
+                var srcInput = document.getElementById('cloneSourceTournamentId');
+                var nameInput = document.getElementById('cloneNewTourneyName');
+                var modal = document.getElementById('cloneTourneyModalBackdrop');
+                if (srcInput) srcInput.value = id;
+                if (nameInput) {
+                    nameInput.value = (currentName ? currentName : 'Giải Con') + ' (Bản sao)';
+                }
+                if (modal) {
+                    modal.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                    if (nameInput) {
+                        setTimeout(function() { nameInput.focus(); nameInput.select(); }, 50);
+                    }
+                }
+            }
+
+            function closeCloneTourneyModal() {
+                var modal = document.getElementById('cloneTourneyModalBackdrop');
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeDeleteTourneyModal();
+                    closeCloneTourneyModal();
+                }
+            });
 
             document.addEventListener('DOMContentLoaded', updateCardStatuses);
         </script>

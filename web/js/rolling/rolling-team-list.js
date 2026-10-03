@@ -135,6 +135,88 @@
     updateSortIcons(col, dir);
   }
 
+  // ==========================================
+  // BULK VIEW MODAL HANDLERS
+  // ==========================================
+  window.openBulkViewModal = function () {
+    var modal = document.getElementById('modalBulkView');
+    if (modal) {
+      modal.style.display = 'flex';
+      var textarea = document.getElementById('bulkPartnerTextarea');
+      if (textarea) {
+        textarea.focus();
+        textarea.select();
+      }
+    }
+  };
+
+  window.closeBulkViewModal = function () {
+    var modal = document.getElementById('modalBulkView');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  };
+
+  window.selectAllBulkText = function () {
+    var textarea = document.getElementById('bulkPartnerTextarea');
+    if (textarea) {
+      textarea.focus();
+      textarea.select();
+    }
+  };
+
+  window.copyBulkPartnerTeams = function () {
+    var textarea = document.getElementById('bulkPartnerTextarea');
+    if (!textarea) return;
+
+    var text = textarea.value;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(showCopyToast).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+
+    function fallbackCopy() {
+      textarea.focus();
+      textarea.select();
+      try {
+        var successful = document.execCommand('copy');
+        if (successful) showCopyToast();
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+      }
+    }
+
+    function showCopyToast() {
+      var toast = document.getElementById('bulkCopyToast');
+      if (toast) {
+        toast.style.opacity = '1';
+        setTimeout(function () {
+          toast.style.opacity = '0';
+        }, 2200);
+      }
+    }
+  };
+
+  // Keyboard shortcut & outside click handler
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      window.closeBulkViewModal();
+      window.closeAddPartnerModal();
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    var bulkModal = document.getElementById('modalBulkView');
+    if (bulkModal && e.target === bulkModal) {
+      window.closeBulkViewModal();
+    }
+    var addModal = document.getElementById('modalAddPartner') || document.getElementById('modalAddTeamPopup');
+    if (addModal && e.target === addModal) {
+      window.closeAddPartnerModal();
+    }
+  });
+
   function initTeamList() {
     applySorting('name', 'asc'); // Default A-Z sort
   }
