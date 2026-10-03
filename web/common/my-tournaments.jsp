@@ -73,6 +73,7 @@
                                  data-id="${t.id}"
                                  data-db-status="${t.status}"
                                  data-db-champion="${t.championName}"
+                                 data-stage-type="${t.tournamentType}"
                                  data-context="${empty t.seriesId ? 'STANDALONE' : 'SERIES'}"
                                  data-status="${t.status == 'COMPLETED' ? 'COMPLETED' : (t.status == 'ONGOING' ? 'IN_PROGRESS' : 'INCOMING')}"
                                  data-name="${t.name}">
@@ -134,11 +135,6 @@
                                                 onclick="openDeleteTourneyModal('${t.id}', '${t.name}')" 
                                                 title="Xóa giải đấu">
                                             <i class="fa-solid fa-trash-can"></i> Xóa
-                                        </button>
-                                        <button type="button" class="btn-clone-tourney" 
-                                                onclick="openCloneTourneyModal('${t.id}', '${t.name}')" 
-                                                title="Sao chép cấu hình giải đấu">
-                                            <i class="fa-regular fa-copy"></i> Sao Chép
                                         </button>
                                         <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${t.id}" class="btn-details-tourney" title="Cấu hình & Chi tiết giải đấu">
                                             <i class="fa-solid fa-sliders"></i> Chi Tiết
@@ -279,12 +275,60 @@
         <script>
             let pendingDeleteId = null;
 
+            function extractWinnerFromMatchesMap(matchesMap, isRealTeam) {
+                if (!matchesMap || typeof matchesMap !== 'object') return null;
+
+                // 1. Check Grand Final Reset / Grand Final
+                var gfReset = matchesMap['GF_RESET'];
+                if (gfReset) {
+                    var wObj = gfReset.winner || ((gfReset.winnerId === 'team1') ? gfReset.team1 : ((gfReset.winnerId === 'team2') ? gfReset.team2 : null));
+                    var cName = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
+                    if (isRealTeam(cName)) return String(cName).trim();
+                }
+
+                var gf = matchesMap['GF'];
+                if (gf) {
+                    var wObj = gf.winner || ((gf.winnerId === 'team1') ? gf.team1 : ((gf.winnerId === 'team2') ? gf.team2 : null));
+                    var cName = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
+                    if (isRealTeam(cName)) return String(cName).trim();
+                }
+
+                // 2. Scan matches for highest round / final match
+                var matchKeys = Object.keys(matchesMap);
+                var maxRound = 0;
+                matchKeys.forEach(function(k) {
+                    var m = matchesMap[k];
+                    if (m && !m.isThirdPlace) {
+                        var r = (m.roundNumber !== undefined) ? Number(m.roundNumber) : ((m.roundIndex !== undefined) ? Number(m.roundIndex) + 1 : 0);
+                        if (r > maxRound) maxRound = r;
+                    }
+                });
+
+                var finalWinner = null;
+                matchKeys.forEach(function(k) {
+                    var m = matchesMap[k];
+                    if (m && !m.isThirdPlace) {
+                        var r = (m.roundNumber !== undefined) ? Number(m.roundNumber) : ((m.roundIndex !== undefined) ? Number(m.roundIndex) + 1 : 0);
+                        if (m.isFinalMatch && (m.winner || m.winnerId)) {
+                            var wObj = m.winner || ((m.winnerId === 'team1') ? m.team1 : ((m.winnerId === 'team2') ? m.team2 : null));
+                            var n = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
+                            if (isRealTeam(n)) finalWinner = String(n).trim();
+                        } else if (maxRound > 0 && r === maxRound && (m.winner || m.winnerId)) {
+                            var wObj = m.winner || ((m.winnerId === 'team1') ? m.team1 : ((m.winnerId === 'team2') ? m.team2 : null));
+                            var n = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
+                            if (isRealTeam(n)) finalWinner = String(n).trim();
+                        }
+                    }
+                });
+                return finalWinner;
+            }
+
             function findChampionName(card) {
                 var tid = card.getAttribute('data-id');
                 var dbChamp = card.getAttribute('data-db-champion');
                 var saved = localStorage.getItem("tourma_champion_" + tid) || localStorage.getItem("tourma_final_champion_" + tid);
-                if (saved && saved.trim() !== "" && saved.trim() !== "BYE" && saved.trim() !== "TBD") return saved;
-                if (dbChamp && dbChamp.trim() !== "" && dbChamp.trim() !== "BYE" && dbChamp.trim() !== "TBD") return dbChamp;
+                if (saved && saved.trim() !== "" && saved.trim() !== "BYE" && saved.trim() !== "TBD") return saved.trim();
+                if (dbChamp && dbChamp.trim() !== "" && dbChamp.trim() !== "BYE" && dbChamp.trim() !== "TBD") return dbChamp.trim();
 
                 var isRealTeam = function(n) {
                     if (!n) return false;
@@ -292,51 +336,39 @@
                     return s !== "" && s !== "BYE" && s !== "TBD" && !s.startsWith("W #") && !s.startsWith("L #") && !s.startsWith("Winner ") && !s.startsWith("Loser ");
                 };
 
-                var keys = ["tourma_bracket_stage2_", "tourma_de_matches_", "tourma_matches_"];
-                for (var i = 0; i < keys.length; i++) {
+                // 1. Stage 2 (Final Stage) match keys for multi-stage tournaments
+                var stage2Keys = ["tourma_stage2_matches_", "tourma_matches_stage2_", "tourma_bracket_stage2_", "tourma_final_matches_"];
+                for (var s = 0; s < stage2Keys.length; s++) {
                     try {
-                        var raw = localStorage.getItem(keys[i] + tid);
+                        var raw2 = localStorage.getItem(stage2Keys[s] + tid);
+                        if (!raw2) continue;
+                        var d2 = JSON.parse(raw2);
+                        var mMap2 = d2.matchesMap || d2;
+                        if (!mMap2 || typeof mMap2 !== 'object') continue;
+                        var c2 = extractWinnerFromMatchesMap(mMap2, isRealTeam);
+                        if (c2) return c2;
+                    } catch(e) {}
+                }
+
+                // 2. If tournament is MULTI_STAGE, NEVER read Stage 1 matches to determine tournament champion!
+                var stageType = card.getAttribute('data-stage-type') || '';
+                var localType = localStorage.getItem("tourma_type_" + tid);
+                var multiConfigRaw = localStorage.getItem("tourma_multi_config_" + tid);
+                if (stageType === 'MULTI_STAGE' || localType === 'MULTI_STAGE' || multiConfigRaw !== null) {
+                    return "";
+                }
+
+                // 3. Single-stage tournament match keys
+                var singleKeys = ["tourma_de_matches_", "tourma_matches_", "tourma_rr_matches_", "tourma_group_matches_", "tourma_swiss_matches_"];
+                for (var i = 0; i < singleKeys.length; i++) {
+                    try {
+                        var raw = localStorage.getItem(singleKeys[i] + tid);
                         if (!raw) continue;
                         var data = JSON.parse(raw);
                         var matchesMap = data.matchesMap || data;
                         if (!matchesMap || typeof matchesMap !== 'object') continue;
-
-                        if (matchesMap['GF_RESET'] && matchesMap['GF_RESET'].winner) {
-                            var wObj = matchesMap['GF_RESET'].winner;
-                            var cName = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                            if (isRealTeam(cName)) return cName;
-                        }
-                        if (matchesMap['GF'] && matchesMap['GF'].winner) {
-                            var wObj = matchesMap['GF'].winner;
-                            var cName = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                            if (isRealTeam(cName)) return cName;
-                        }
-
-                        var matchKeys = Object.keys(matchesMap);
-                        var maxRound = 0;
-                        matchKeys.forEach(function(k) {
-                            var m = matchesMap[k];
-                            var r = m ? (m.roundNumber !== undefined ? m.roundNumber : (m.roundIndex !== undefined ? m.roundIndex + 1 : 0)) : 0;
-                            if (r > maxRound && !m.isThirdPlace) maxRound = r;
-                        });
-
-                        var finalWinner = null;
-                        matchKeys.forEach(function(k) {
-                            var m = matchesMap[k];
-                            if (m) {
-                                var r = m.roundNumber !== undefined ? m.roundNumber : (m.roundIndex !== undefined ? m.roundIndex + 1 : 0);
-                                if (m.isFinalMatch && (m.winner || m.winnerId)) {
-                                    var wObj = m.winner || ((m.winnerId === 'team1') ? m.team1 : m.team2);
-                                    var n = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                                    if (isRealTeam(n)) finalWinner = n;
-                                } else if (maxRound > 0 && r === maxRound && (m.winner || m.winnerId) && !m.isThirdPlace) {
-                                    var wObj = m.winner || ((m.winnerId === 'team1') ? m.team1 : m.team2);
-                                    var n = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                                    if (isRealTeam(n)) finalWinner = n;
-                                }
-                            }
-                        });
-                        if (finalWinner) return finalWinner;
+                        var c = extractWinnerFromMatchesMap(matchesMap, isRealTeam);
+                        if (c) return c;
                     } catch(e) {}
                 }
                 return "";
@@ -413,8 +445,11 @@
                     if (!tid) return;
 
                     var dbStatus = card.getAttribute('data-db-status');
-                    var isLocked = localStorage.getItem("tourma_final_locked_" + tid) === "true" || dbStatus === 'COMPLETED';
                     var championName = findChampionName(card);
+                    var isLocked = localStorage.getItem("tourma_final_locked_" + tid) === "true" || 
+                                   localStorage.getItem("tourma_stage2_locked_" + tid) === "true" ||
+                                   dbStatus === 'COMPLETED' || 
+                                   (championName && championName.trim() !== "");
 
                     // --- 1. UPDATE TEAMS COUNT ---
                     var teamsCount = getTournamentTeamsCount(tid);
@@ -534,10 +569,15 @@
                         } catch(e) {}
                     };
 
+                    checkMatches("tourma_matches_stage2_" + tid);
+                    checkMatches("tourma_stage2_matches_" + tid);
+                    checkMatches("tourma_bracket_stage2_" + tid);
+                    checkMatches("tourma_final_matches_" + tid);
                     checkMatches("tourma_matches_" + tid);
                     checkMatches("tourma_de_matches_" + tid);
                     checkMatches("tourma_rr_matches_" + tid);
                     checkMatches("tourma_group_matches_" + tid);
+                    checkMatches("tourma_swiss_matches_" + tid);
 
                     var statusPill = card.querySelector('.status-pill');
                     var championMeta = card.querySelector('.tourney-champion-meta');

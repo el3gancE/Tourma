@@ -59,6 +59,18 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         String s1F = request.getParameter("stage1Format");
         String s2F = request.getParameter("stage2Format");
 
+        String tierName = request.getParameter("tierName");
+        if (tierName == null || tierName.trim().isEmpty()) {
+            tierName = request.getParameter("selectedTierName");
+        }
+        if (tierName == null || tierName.trim().isEmpty()) {
+            tierName = request.getParameter("tier");
+        }
+
+        if (tournamentId != null && tierName != null && !tierName.trim().isEmpty()) {
+            new TournamentDAO().updateTournamentTier(tournamentId.trim(), tierName.trim());
+        }
+
         if (tournamentId != null && ((fmt != null && !fmt.trim().isEmpty()) || advSeats > 0)) {
             updateTournamentFormatAndTypeSafe(tournamentId.trim(), fmt, tType, s1F, s2F, advSeats);
         }

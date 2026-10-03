@@ -996,8 +996,15 @@
                         });
 
                         // Update sidebar tier badge dynamically if present
-                        var sidebarTierTag = document.querySelector('.sidebar-subtourney-badge .tier-tag');
-                        if (sidebarTierTag) {
+                        var sidebarBadge = document.querySelector('.sidebar-subtourney-badge');
+                        if (sidebarBadge) {
+                            var sidebarTierTag = sidebarBadge.querySelector('.tier-tag');
+                            if (!sidebarTierTag) {
+                                sidebarTierTag = document.createElement('span');
+                                sidebarTierTag.style.marginLeft = '0.55rem';
+                                sidebarTierTag.style.fontWeight = '800';
+                                sidebarBadge.appendChild(sidebarTierTag);
+                            }
                             sidebarTierTag.className = 'tier-tag tier-' + tier.toLowerCase();
                             sidebarTierTag.textContent = '[' + tier + ']';
                         }
@@ -1012,10 +1019,12 @@
                             }).then(function (res) {
                                 return res.json();
                             }).then(function (data) {
-                                var ind = document.getElementById('tierSaveIndicator');
-                                if (ind) {
-                                    ind.style.display = 'inline-flex';
-                                    setTimeout(function () { ind.style.display = 'none'; }, 2000);
+                                if (data && data.status === 'success') {
+                                    var ind = document.getElementById('tierSaveIndicator');
+                                    if (ind) {
+                                        ind.style.display = 'inline-flex';
+                                        setTimeout(function () { ind.style.display = 'none'; }, 2000);
+                                    }
                                 }
                             }).catch(function (err) {
                                 console.log("Tier updated locally, will sync on form submit.");

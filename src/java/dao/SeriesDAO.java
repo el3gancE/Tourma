@@ -281,6 +281,12 @@ public class SeriesDAO {
                     try {
                         t.setSeriesPointsConfig(rs.getString("series_points_config"));
                     } catch (Exception ignore) {}
+                    try {
+                        String champDirect = rs.getString("champion_name");
+                        if (champDirect != null && !champDirect.trim().isEmpty()) {
+                            t.setChampionName(champDirect.trim());
+                        }
+                    } catch (Exception ignore) {}
                     list.add(t);
                 }
             }
@@ -312,9 +318,11 @@ public class SeriesDAO {
             } catch (Exception ignore) {}
 
             for (Tournament t : list) {
-                String c = champMap.get(t.getId());
-                if (c != null && !c.trim().isEmpty()) {
-                    t.setChampionName(c.trim());
+                if (t.getChampionName() == null || t.getChampionName().trim().isEmpty()) {
+                    String c = champMap.get(t.getId());
+                    if (c != null && !c.trim().isEmpty()) {
+                        t.setChampionName(c.trim());
+                    }
                 }
             }
         }

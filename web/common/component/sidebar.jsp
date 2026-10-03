@@ -162,8 +162,9 @@
     <div class="sidebar-subtourney-badge">
         <i class="fa-solid fa-trophy text-mint"></i>
         <span><%= tournamentName %></span>
-        <% if (hasSeries && currentTournament != null && currentTournament.getTierName() != null && !currentTournament.getTierName().trim().isEmpty()) { 
-             String tTier = currentTournament.getTierName().toUpperCase();
+        <% if (hasSeries) { 
+             String tTier = (currentTournament != null && currentTournament.getTierName() != null && !currentTournament.getTierName().trim().isEmpty()) 
+                 ? currentTournament.getTierName().toUpperCase() : "S";
         %>
             <span class="tier-tag tier-<%= tTier.toLowerCase() %>" style="margin-left: 0.55rem; font-weight: 800;">[<%= tTier %>]</span>
         <% } %>

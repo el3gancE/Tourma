@@ -18,7 +18,12 @@ public class TournamentDAO {
         List<Tournament> list = new ArrayList<>();
         String sql = "SELECT t.*, " +
                 "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
-                "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count " +
+                "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count, " +
+                "(SELECT TOP 1 tm.raw_name FROM matches m " +
+                " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
+                " JOIN teams tm ON m.winner_id = tm.id " +
+                " WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL " +
+                " ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) AS db_champion_name " +
                 "FROM tournaments t ORDER BY t.created_at DESC";
         DBContext db = new DBContext();
 
@@ -53,10 +58,16 @@ public class TournamentDAO {
                 } catch (Exception ignore) {
                 }
                 try {
-                    String champ = rs.getString("db_champion_name");
+                    String champDirect = rs.getString("champion_name");
+                    String champSubq = rs.getString("db_champion_name");
+                    String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSubq;
                     if (champ != null && !champ.trim().isEmpty()) {
                         t.setChampionName(champ.trim());
                     }
+                } catch (Exception ignore) {
+                }
+                try {
+                    t.setSeriesRewardPoints(rs.getInt("series_reward_points"));
                 } catch (Exception ignore) {
                 }
                 try {
@@ -93,7 +104,11 @@ public class TournamentDAO {
                 +
                 "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count, "
                 +
-                "(SELECT TOP 1 tm.raw_name FROM matches m JOIN teams tm ON m.winner_id = tm.id WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL ORDER BY m.round_number DESC) AS db_champion_name "
+                "(SELECT TOP 1 tm.raw_name FROM matches m "
+                + " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id "
+                + " JOIN teams tm ON m.winner_id = tm.id "
+                + " WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL "
+                + " ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) AS db_champion_name "
                 +
                 "FROM tournaments t WHERE t.id = ?";
         // champion_name and teams_json are fetched via SELECT t.* above
@@ -230,6 +245,12 @@ public class TournamentDAO {
                     try {
                         t.setMultiStageConfig(rs.getString("multi_stage_config"));
                     } catch (Exception ignore) {}
+                    try {
+                        String champDirect = rs.getString("champion_name");
+                        if (champDirect != null && !champDirect.trim().isEmpty()) {
+                            t.setChampionName(champDirect.trim());
+                        }
+                    } catch (Exception ignore) {}
                     list.add(t);
                 }
             }
@@ -261,9 +282,11 @@ public class TournamentDAO {
             } catch (Exception ignore) {}
 
             for (Tournament t : list) {
-                String c = champMap.get(t.getId());
-                if (c != null && !c.trim().isEmpty()) {
-                    t.setChampionName(c.trim());
+                if (t.getChampionName() == null || t.getChampionName().trim().isEmpty()) {
+                    String c = champMap.get(t.getId());
+                    if (c != null && !c.trim().isEmpty()) {
+                        t.setChampionName(c.trim());
+                    }
                 }
             }
         }
@@ -836,6 +859,29 @@ public class TournamentDAO {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public boolean updateTournamentTier(String tournamentId, String tierName) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        if (tierName == null || tierName.trim().isEmpty()) return false;
+        String cleanTier = tierName.replace("Tier ", "").trim().toUpperCase();
+        if (!cleanTier.equals("S") && !cleanTier.equals("A") && !cleanTier.equals("B") && !cleanTier.equals("C") && !cleanTier.equals("D")) {
+            cleanTier = "S";
+        }
+        String sql = "UPDATE tournaments SET tier_name = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cleanTier);
+            ps.setString(2, tournamentId.trim());
+            boolean ok = ps.executeUpdate() > 0;
+            TOURNAMENT_BY_ID_CACHE.remove(tournamentId.trim());
+            return ok;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("[TournamentDAO] updateTournamentTier failed for " + tournamentId + ": " + e.getMessage());
+        }
+        return false;
     }
 
     public boolean updateTournamentStatus(String tournamentId, String status) {
