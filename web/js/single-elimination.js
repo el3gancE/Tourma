@@ -244,12 +244,84 @@
             }
         },
 
+        bindControls: function () {
+            var self = this;
+
+            // 1. Restore View Mode from localStorage
+            var savedView = null;
+            try {
+                savedView = localStorage.getItem('tourma_view_mode_' + this.tournamentId);
+            } catch (e) { }
+            if (savedView) {
+                this.currentViewMode = (savedView.toUpperCase() === 'LIST') ? 'LIST' : 'BRACKET';
+            }
+
+            // 2. Restore Quick Mode from localStorage
+            var savedQuick = null;
+            try {
+                savedQuick = localStorage.getItem('tourma_quick_mode_' + this.tournamentId);
+            } catch (e) { }
+            if (savedQuick === 'true') {
+                this.isQuickMode = true;
+                window.TourmaQuickMode = true;
+                var btn = document.getElementById('singleBtnQuickMode');
+                var statusText = btn ? btn.querySelector('.quick-mode-status-text') : null;
+                if (btn) btn.classList.add('active');
+                if (statusText) statusText.textContent = 'ON';
+            } else {
+                this.isQuickMode = false;
+                window.TourmaQuickMode = false;
+                var btn = document.getElementById('singleBtnQuickMode');
+                var statusText = btn ? btn.querySelector('.quick-mode-status-text') : null;
+                if (btn) btn.classList.remove('active');
+                if (statusText) statusText.textContent = 'OFF';
+            }
+
+            // 3. Search Box Filtering
+            var searchInput = document.getElementById('bracketSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    var query = (this.value || '').trim().toLowerCase();
+                    self.filterMatches(query);
+                });
+            }
+
+            // 4. Redraw on window resize
+            window.addEventListener('resize', function () {
+                if (self.currentViewMode === 'BRACKET') {
+                    self.drawSvgConnectors();
+                }
+            });
+        },
+
         /**
          * Render both Bracket and List Views based on current state
          */
         render: function () {
             this.renderBracketView();
             this.renderListView();
+
+            // Apply active view mode visibility
+            if (this.currentViewMode === 'LIST') {
+                var btnBracketView = document.getElementById('btnViewBracket');
+                var btnListView = document.getElementById('btnViewList');
+                var bracketFrame = document.getElementById('bracketViewportFrame');
+                var listContainer = document.getElementById('singleListViewContainer');
+                if (btnListView) btnListView.classList.add('active');
+                if (btnBracketView) btnBracketView.classList.remove('active');
+                if (bracketFrame) bracketFrame.style.display = 'none';
+                if (listContainer) listContainer.style.display = 'block';
+            } else {
+                var btnBracketView = document.getElementById('btnViewBracket');
+                var btnListView = document.getElementById('btnViewList');
+                var bracketFrame = document.getElementById('bracketViewportFrame');
+                var listContainer = document.getElementById('singleListViewContainer');
+                if (btnBracketView) btnBracketView.classList.add('active');
+                if (btnListView) btnListView.classList.remove('active');
+                if (bracketFrame) bracketFrame.style.display = 'block';
+                if (listContainer) listContainer.style.display = 'none';
+            }
+
             this.updateRoundRandomButtons();
             this.checkTournamentCompletion();
         },
@@ -495,20 +567,26 @@
          * Handle 1-click Quick Winner selection
          */
         handleQuickWinner: function (matchId, winnerSlotNum, customScore) {
+            if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
+                window.TourmaRoundControls.handleQuickWinner(this, matchId, winnerSlotNum, customScore);
+                return;
+            }
+
             var m = this.findMatch(matchId);
             if (!m) return;
             var t1Name = (m.team1 && m.team1.name) ? m.team1.name : '';
             var t2Name = (m.team2 && m.team2.name) ? m.team2.name : '';
             if (this.isPlaceholder(t1Name) || this.isPlaceholder(t2Name) || m.isBye) return;
 
-            var winScore = customScore ? parseInt(customScore, 10) : 2;
-            var loseScore = customScore ? Math.max(0, winScore - 1) : 0;
+            var scoreRes = (window.TourmaRandomService && typeof window.TourmaRandomService.generateScoreForWinner === 'function')
+                ? window.TourmaRandomService.generateScoreForWinner(winnerSlotNum, customScore)
+                : {
+                    score1: (winnerSlotNum === 1) ? (customScore || 2) : 0,
+                    score2: (winnerSlotNum === 1) ? 0 : (customScore || 2),
+                    winner: (winnerSlotNum === 1) ? 'team1' : 'team2'
+                };
 
-            var score1 = (winnerSlotNum === 1) ? winScore : loseScore;
-            var score2 = (winnerSlotNum === 1) ? loseScore : winScore;
-            var winnerFlag = (winnerSlotNum === 1) ? 'team1' : 'team2';
-
-            this.saveMatchScore(m.matchId, score1, score2, null, null, winnerFlag);
+            this.saveMatchScore(m.matchId, scoreRes.score1, scoreRes.score2, null, null, scoreRes.winner);
         },
 
         /**
@@ -673,75 +751,16 @@
                     this.matchesMap,
                     this.teamsList,
                     { isCutStage: false, cutTarget: 0 },
-                    null
+                    function (isLocked) {
+                        if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                            window.TourmaRoundControls.updateButtonsState(self);
+                        }
+                    }
                 );
             }
         },
 
-        /**
-         * Bind UI Controls (View Mode, Zoom, Random Buttons, Search Filter)
-         */
-        bindControls: function () {
-            var self = this;
 
-            // View Mode Toggle (Bracket vs List)
-            var btnBracketView = document.getElementById('btnBracketView');
-            var btnListView = document.getElementById('btnListView');
-            var bracketContainer = document.getElementById('singleBracketViewContainer');
-            var listContainer = document.getElementById('singleListViewContainer');
-
-            if (btnBracketView && btnListView) {
-                btnBracketView.addEventListener('click', function () {
-                    self.currentViewMode = 'BRACKET';
-                    btnBracketView.classList.add('active');
-                    btnListView.classList.remove('active');
-                    if (bracketContainer) bracketContainer.style.display = 'block';
-                    if (listContainer) listContainer.style.display = 'none';
-                    self.renderBracketView();
-                });
-
-                btnListView.addEventListener('click', function () {
-                    self.currentViewMode = 'LIST';
-                    btnListView.classList.add('active');
-                    btnBracketView.classList.remove('active');
-                    if (bracketContainer) bracketContainer.style.display = 'none';
-                    if (listContainer) listContainer.style.display = 'block';
-                    self.renderListView();
-                });
-            }
-
-            // Redraw SVG connectors on window resize
-            window.addEventListener('resize', function () {
-                if (self.currentViewMode === 'BRACKET') {
-                    self.drawSvgConnectors();
-                }
-            });
-
-            // Random All Button
-            var btnRandomAll = document.getElementById('btnRandomAllMatches');
-            if (btnRandomAll) {
-                btnRandomAll.addEventListener('click', function () {
-                    self.executeRandomAll();
-                });
-            }
-
-            // Reset Bracket Button
-            var btnReset = document.getElementById('btnResetBracket');
-            if (btnReset) {
-                btnReset.addEventListener('click', function () {
-                    self.resetBracket();
-                });
-            }
-
-            // Search Box Filtering
-            var searchInput = document.getElementById('bracketSearchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', function () {
-                    var query = (this.value || '').trim().toLowerCase();
-                    self.filterMatches(query);
-                });
-            }
-        },
 
         /**
          * Search filter highlighting matching team names
@@ -787,6 +806,9 @@
         toggleQuickMode: function () {
             this.isQuickMode = !this.isQuickMode;
             window.TourmaQuickMode = this.isQuickMode;
+            try {
+                localStorage.setItem('tourma_quick_mode_' + this.tournamentId, this.isQuickMode ? 'true' : 'false');
+            } catch (e) { }
             var btn = document.getElementById('singleBtnQuickMode');
             var statusText = btn ? btn.querySelector('.quick-mode-status-text') : null;
             if (this.isQuickMode) {
@@ -804,7 +826,12 @@
             var bracketFrame = document.getElementById('bracketViewportFrame');
             var listContainer = document.getElementById('singleListViewContainer');
 
-            if (mode === 'bracket') {
+            var normMode = (mode || 'bracket').toLowerCase();
+            try {
+                localStorage.setItem('tourma_view_mode_' + this.tournamentId, normMode);
+            } catch (e) { }
+
+            if (normMode === 'bracket') {
                 this.currentViewMode = 'BRACKET';
                 if (btnBracketView) btnBracketView.classList.add('active');
                 if (btnListView) btnListView.classList.remove('active');

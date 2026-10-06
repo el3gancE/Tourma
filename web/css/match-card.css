@@ -350,3 +350,184 @@
     color: #0b0d12;
     box-shadow: 0 0 14px rgba(45, 212, 191, 0.35);
 }
+
+/* ============================================================================
+   LIST VIEW ROUND HEADER & CONTROLS BAR (Shared for SE, DE, Swiss, RR, GS)
+   ============================================================================ */
+.list-round-section {
+    margin-bottom: 2.25rem;
+    width: 100%;
+}
+
+.list-round-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0.25rem;
+    margin-top: 1rem;
+    margin-bottom: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.list-round-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.list-round-title {
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.list-round-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.list-round-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.list-round-actions .round-random-input {
+    width: 48px;
+    height: 32px;
+    background: #0e121a;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 6px;
+    color: #fbbf24;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-align: center;
+    outline: none;
+    transition: all 0.18s ease;
+    padding: 0;
+}
+
+.list-round-actions .round-random-input:focus {
+    border-color: #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+    background: #141a26;
+}
+
+.list-round-actions .round-random-input::-webkit-inner-spin-button,
+.list-round-actions .round-random-input::-webkit-outer-spin-button {
+    opacity: 0.6;
+    cursor: pointer;
+    filter: invert(0.8) hue-rotate(40deg) brightness(1.6);
+}
+
+.btn-random-round {
+    height: 30px;
+    padding: 0 0.8rem;
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    border-radius: 6px;
+    color: #fbbf24 !important;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+    box-shadow: none;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+.btn-random-round:hover {
+    background: rgba(251, 191, 36, 0.22);
+    border-color: #fbbf24;
+    color: #fde047 !important;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.25);
+    transform: translateY(-1px);
+}
+
+.btn-random-round:active {
+    transform: translateY(0);
+}
+
+.btn-random-round:disabled,
+.btn-random-round.disabled {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    transform: none !important;
+    background: rgba(251, 191, 36, 0.05) !important;
+    color: rgba(251, 191, 36, 0.5) !important;
+    border-color: rgba(251, 191, 36, 0.2) !important;
+}
+
+.btn-reset-round {
+    height: 30px;
+    padding: 0 0.8rem;
+    background: rgba(244, 63, 94, 0.12);
+    border: 1px solid rgba(244, 63, 94, 0.45);
+    border-radius: 6px;
+    color: #f43f5e !important;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+    box-shadow: none;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+.btn-reset-round:hover {
+    background: rgba(244, 63, 94, 0.22);
+    border-color: #f43f5e;
+    color: #ff6b81 !important;
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.25);
+    transform: translateY(-1px);
+}
+
+.btn-reset-round:active {
+    transform: translateY(0);
+}
+
+.btn-reset-round:disabled,
+.btn-reset-round.disabled {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    transform: none !important;
+    background: rgba(244, 63, 94, 0.05) !important;
+    color: rgba(244, 63, 94, 0.5) !important;
+    border-color: rgba(244, 63, 94, 0.2) !important;
+}
+
+.list-matches-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}

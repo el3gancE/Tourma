@@ -61,10 +61,12 @@
             }
 
             // Otherwise (Single Stage or Stage 2): Check Final Champion Lock
+            if (window.FinalStagePopup) {
+                return window.FinalStagePopup.isLocked === true;
+            }
             try {
                 if (localStorage.getItem('tourma_final_locked_' + tid) === 'true') return true;
             } catch (e) {}
-            if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
 
             return false;
         },
@@ -79,6 +81,9 @@
 
             // Check lock directly from localStorage & memory for guaranteed correctness
             if (this.isLocked(matchData.tournamentId)) {
+                if (window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                    window.FinalStagePopup.promptUnlock();
+                }
                 return;
             }
 

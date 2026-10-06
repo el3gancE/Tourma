@@ -20,6 +20,39 @@
         customScores: {},
 
         /**
+         * Retrieve persisted custom score for a round from cache or localStorage
+         */
+        getCustomScoreForRound: function (roundNumber, tid) {
+            var rNum = String(roundNumber || 1);
+            if (this.customScores && this.customScores[rNum] !== undefined && this.customScores[rNum] !== null && this.customScores[rNum] !== '') {
+                return this.customScores[rNum];
+            }
+            var targetTid = tid || (window.SingleEliminationEngine ? window.SingleEliminationEngine.tournamentId : null) || window.TourmaTournamentId || 'demo';
+            try {
+                var stored = JSON.parse(localStorage.getItem('tourma_custom_scores_' + targetTid) || '{}');
+                if (stored && stored[rNum] !== undefined && stored[rNum] !== null && stored[rNum] !== '') {
+                    this.customScores[rNum] = stored[rNum];
+                    return stored[rNum];
+                }
+            } catch (e) { }
+            return '';
+        },
+
+        /**
+         * Save custom score for a round to in-memory cache and localStorage
+         */
+        saveCustomScoreForRound: function (roundNumber, val, tid) {
+            var rNum = String(roundNumber || 1);
+            this.customScores[rNum] = val;
+            var targetTid = tid || (window.SingleEliminationEngine ? window.SingleEliminationEngine.tournamentId : null) || window.TourmaTournamentId || 'demo';
+            try {
+                var stored = JSON.parse(localStorage.getItem('tourma_custom_scores_' + targetTid) || '{}');
+                stored[rNum] = val;
+                localStorage.setItem('tourma_custom_scores_' + targetTid, JSON.stringify(stored));
+            } catch (e) { }
+        },
+
+        /**
          * Resolve active tournament engine safely
          */
         resolveEngine: function (engine) {
@@ -39,7 +72,7 @@
         renderHeaderControlsHtml: function (roundNumber, roundTitle) {
             var rNum = roundNumber || 1;
             var rTitle = roundTitle || ('Vòng ' + rNum);
-            var savedVal = (this.customScores && this.customScores[rNum] !== undefined) ? this.customScores[rNum] : '';
+            var savedVal = this.getCustomScoreForRound(rNum);
             return '<div class="round-header-random-controls" data-round="' + rNum + '">'
                 + '<input type="number" id="round_random_score_bracket_' + rNum + '" name="round_random_score_bracket_' + rNum + '" class="round-random-input" data-round="' + rNum + '" min="1" max="99" value="' + savedVal + '" autocomplete="off" title="Nhập điểm thắng tùy chỉnh" />'
                 + '<button type="button" class="btn-round-random" data-round="' + rNum + '" title="Tạo tỉ số ngẫu nhiên cho ' + rTitle + '">'
@@ -56,7 +89,7 @@
          */
         renderListHeaderControlsHtml: function (roundNumber, roundTitle) {
             var rNum = roundNumber || 1;
-            var savedVal = (this.customScores && this.customScores[rNum] !== undefined) ? this.customScores[rNum] : '';
+            var savedVal = this.getCustomScoreForRound(rNum);
             return '<div class="list-round-actions" data-round="' + rNum + '">'
                 + '<input type="number" id="round_random_score_list_' + rNum + '" name="round_random_score_list_' + rNum + '" class="round-random-input" data-round="' + rNum + '" min="1" max="99" value="' + savedVal + '" autocomplete="off" title="Nhập điểm thắng tùy chỉnh" />'
                 + '<button type="button" class="btn-random-round" data-round="' + rNum + '" title="Tạo tỉ số ngẫu nhiên cho Vòng ' + rNum + '">'
@@ -72,7 +105,7 @@
          * Extract custom win score from the nearest input or round input
          */
         getCustomWinScore: function (cardOrElement, fallback) {
-            var def = (fallback !== undefined && fallback !== null) ? fallback : 2;
+            var def = (fallback !== undefined && fallback !== null) ? fallback : null;
             if (!cardOrElement) return def;
 
             var parentContainer = cardOrElement.closest ? cardOrElement.closest('.single-round-column, .de-round-column, .de-column, .swiss-round-column, .list-round-section, [data-round]') : null;
@@ -82,17 +115,96 @@
             }
 
             var rNumAttr = parentContainer ? parentContainer.getAttribute('data-round') : null;
-            if (rNumAttr && this.customScores[rNumAttr]) {
-                return parseInt(this.customScores[rNumAttr], 10);
+            if (rNumAttr) {
+                var val = this.getCustomScoreForRound(rNumAttr);
+                if (val && parseInt(val, 10) > 0) return parseInt(val, 10);
             }
 
             return def;
         },
 
         /**
+         * Unified Realistic Score Generator for predetermined winner (Quick Mode / 1-Click Winner)
+         * - If customScore is specified (> 0), winner gets customScore.
+         * - If customScore is blank / null, winner gets realistic score: 75% for [2, 5], 25% for [6, 9].
+         * - Loser score is strictly random from 0 to (winScore - 1).
+         */
+        generateQuickWinnerScore: function (winnerSlotNum, customScore) {
+            var isT1 = (winnerSlotNum === 1 || winnerSlotNum === '1' || winnerSlotNum === 'team1');
+            var parsed = null;
+            if (customScore !== undefined && customScore !== null && String(customScore).trim() !== '') {
+                var num = parseInt(String(customScore).trim(), 10);
+                if (!isNaN(num) && num > 0) parsed = num;
+            }
+
+            var winScore;
+            if (parsed !== null) {
+                winScore = parsed;
+            } else {
+                winScore = (Math.random() < 0.75) ? (Math.floor(Math.random() * 4) + 2) : (Math.floor(Math.random() * 4) + 6);
+            }
+
+            var loseScore = (winScore > 0) ? Math.floor(Math.random() * winScore) : 0;
+
+            return {
+                score1: isT1 ? winScore : loseScore,
+                score2: isT1 ? loseScore : winScore,
+                winner: isT1 ? 'team1' : 'team2',
+                isT1Winner: isT1
+            };
+        },
+
+        isLocked: function (engine, shouldPrompt) {
+            if (window.FinalStagePopup) {
+                if (window.FinalStagePopup.isLocked) {
+                    if (shouldPrompt && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                        window.FinalStagePopup.promptUnlock();
+                    }
+                    return true;
+                }
+                return false;
+            }
+            var activeEngine = this.resolveEngine(engine);
+            var tid = (activeEngine && activeEngine.tournamentId) ? activeEngine.tournamentId : (window.TourmaTournamentId || 'demo');
+            if (tid) {
+                try {
+                    if (localStorage.getItem('tourma_final_locked_' + tid) === 'true') {
+                        return true;
+                    }
+                } catch (e) { }
+            }
+            return false;
+        },
+
+        /**
+         * Centralized Quick Winner Handler for ALL tournament engines
+         */
+        handleQuickWinner: function (engine, matchId, winnerSlotNum, customScore) {
+            if (this.isLocked(engine, true)) return;
+            var activeEngine = this.resolveEngine(engine);
+            if (!activeEngine) return;
+
+            var m = (typeof activeEngine.findMatch === 'function') ? activeEngine.findMatch(matchId) : ((activeEngine.matchesMap) ? activeEngine.matchesMap[matchId] : null);
+            if (!m) return;
+
+            var t1Name = (m.team1 && m.team1.name) ? m.team1.name : '';
+            var t2Name = (m.team2 && m.team2.name) ? m.team2.name : '';
+            var isP1 = (typeof activeEngine.isPlaceholder === 'function') ? activeEngine.isPlaceholder(t1Name) : (!t1Name || t1Name === 'TBD' || t1Name === 'BYE');
+            var isP2 = (typeof activeEngine.isPlaceholder === 'function') ? activeEngine.isPlaceholder(t2Name) : (!t2Name || t2Name === 'TBD' || t2Name === 'BYE');
+            if (isP1 || isP2 || m.isBye) return;
+
+            var scoreRes = this.generateQuickWinnerScore(winnerSlotNum, customScore);
+
+            if (typeof activeEngine.saveMatchScore === 'function') {
+                activeEngine.saveMatchScore(m.matchId || matchId, scoreRes.score1, scoreRes.score2, null, null, scoreRes.winner);
+            }
+        },
+
+        /**
          * Execute high-speed deadlock-free batch random for a single round
          */
         executeRandomRound: function (engine, roundNumber) {
+            if (this.isLocked(engine, true)) return;
             var activeEngine = this.resolveEngine(engine);
             var self = this;
             var contextPath = (activeEngine && activeEngine.contextPath) ? activeEngine.contextPath : (window.TourmaContextPath || '');
@@ -176,6 +288,7 @@
          * Execute reset for a single round
          */
         executeResetRound: function (engine, roundNumber) {
+            if (this.isLocked(engine, true)) return;
             var activeEngine = this.resolveEngine(engine);
             var self = this;
             var contextPath = (activeEngine && activeEngine.contextPath) ? activeEngine.contextPath : (window.TourmaContextPath || '');
@@ -241,6 +354,7 @@
          * Execute batch random for all playable matches across the entire tournament
          */
         executeRandomAll: function (engine) {
+            if (this.isLocked(engine, true)) return;
             var activeEngine = this.resolveEngine(engine);
             var self = this;
             var contextPath = (activeEngine && activeEngine.contextPath) ? activeEngine.contextPath : (window.TourmaContextPath || '');
@@ -346,81 +460,30 @@
          */
         updateButtonsState: function (engine) {
             var activeEngine = this.resolveEngine(engine);
-            if (!activeEngine || !Array.isArray(activeEngine.roundsList)) return;
+            var locked = this.isLocked(activeEngine, false);
+            var allBtns = document.querySelectorAll('.btn-round-random, .btn-random-round, .btn-round-reset, .btn-reset-round');
+            var scoreInputs = document.querySelectorAll('.round-random-input');
 
-            // 1. Update Random Round Buttons Visual State
-            var randomBtns = document.querySelectorAll('.btn-round-random, .btn-random-round');
-            randomBtns.forEach(function (btn) {
-                var rNum = parseInt(btn.getAttribute('data-round'), 10);
-                var isReady = false;
-
-                for (var i = 0; i < activeEngine.roundsList.length; i++) {
-                    if (activeEngine.roundsList[i].roundNumber === rNum) {
-                        var matches = activeEngine.roundsList[i].matches;
-                        if (Array.isArray(matches)) {
-                            for (var j = 0; j < matches.length; j++) {
-                                var m = (activeEngine.matchesMap && activeEngine.matchesMap[matches[j].matchId]) ? activeEngine.matchesMap[matches[j].matchId] : matches[j];
-                                var t1 = (m.team1 && m.team1.name) ? m.team1.name : '';
-                                var t2 = (m.team2 && m.team2.name) ? m.team2.name : '';
-                                var isP1 = (typeof activeEngine.isPlaceholder === 'function') ? activeEngine.isPlaceholder(t1) : (!t1 || t1 === 'TBD' || t1 === 'BYE');
-                                var isP2 = (typeof activeEngine.isPlaceholder === 'function') ? activeEngine.isPlaceholder(t2) : (!t2 || t2 === 'TBD' || t2 === 'BYE');
-                                var isByeMatch = m.isBye === true || m.isBye === 'true' || m.isBye === 1 || m.isBye === '1';
-
-                                if (!isP1 && !isP2 && !isByeMatch) {
-                                    isReady = true;
-                                    break;
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                if (!isReady) {
+            if (locked) {
+                allBtns.forEach(function (btn) {
                     btn.classList.add('disabled');
-                    btn.style.opacity = '0.45';
-                } else {
+                    btn.removeAttribute('disabled');
+                });
+                scoreInputs.forEach(function (inp) {
+                    inp.disabled = true;
+                });
+            } else {
+                allBtns.forEach(function (btn) {
                     btn.classList.remove('disabled');
-                    btn.style.opacity = '1';
-                }
-            });
-
-            // 2. Update Reset Round Buttons Visual State
-            var resetBtns = document.querySelectorAll('.btn-round-reset, .btn-reset-round');
-            resetBtns.forEach(function (btn) {
-                var rNum = parseInt(btn.getAttribute('data-round'), 10);
-                var hasPlayed = false;
-
-                for (var i = 0; i < activeEngine.roundsList.length; i++) {
-                    if (activeEngine.roundsList[i].roundNumber === rNum) {
-                        var matches = activeEngine.roundsList[i].matches;
-                        if (Array.isArray(matches)) {
-                            for (var j = 0; j < matches.length; j++) {
-                                var m = (activeEngine.matchesMap && activeEngine.matchesMap[matches[j].matchId]) ? activeEngine.matchesMap[matches[j].matchId] : matches[j];
-                                var isByeMatch = m.isBye === true || m.isBye === 'true' || m.isBye === 1 || m.isBye === '1';
-
-                                if (!isByeMatch) {
-                                    var s1 = (m.team1 && m.team1.score !== undefined && m.team1.score !== null && m.team1.score !== '') ? String(m.team1.score).trim() : '';
-                                    var s2 = (m.team2 && m.team2.score !== undefined && m.team2.score !== null && m.team2.score !== '') ? String(m.team2.score).trim() : '';
-                                    if (m.status === 'COMPLETED' || m.status === 'FINISHED' || m.winnerId || s1 !== '' || s2 !== '') {
-                                        hasPlayed = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                if (!hasPlayed) {
-                    btn.classList.add('disabled');
-                    btn.style.opacity = '0.45';
-                } else {
-                    btn.classList.remove('disabled');
-                    btn.style.opacity = '1';
-                }
-            });
+                    btn.removeAttribute('disabled');
+                    btn.style.opacity = '';
+                    btn.style.cursor = '';
+                    btn.style.pointerEvents = '';
+                });
+                scoreInputs.forEach(function (inp) {
+                    inp.disabled = false;
+                });
+            }
         }
     };
 
@@ -454,13 +517,13 @@
         }
     }, true);
 
-    // Score Input Bi-Directional Sync across all round headers
+    // Score Input Bi-Directional Sync & LocalStorage persistence across all round headers
     document.addEventListener('input', function (e) {
         if (e.target && e.target.classList && e.target.classList.contains('round-random-input')) {
             var rNum = e.target.getAttribute('data-round');
             var val = e.target.value;
             if (rNum) {
-                TourmaRoundControls.customScores[rNum] = val;
+                TourmaRoundControls.saveCustomScoreForRound(rNum, val);
                 var siblings = document.querySelectorAll('.round-random-input[data-round="' + rNum + '"]');
                 siblings.forEach(function (other) {
                     if (other !== e.target) {
@@ -476,7 +539,7 @@
             var rNum = e.target.getAttribute('data-round');
             var val = e.target.value;
             if (rNum) {
-                TourmaRoundControls.customScores[rNum] = val;
+                TourmaRoundControls.saveCustomScoreForRound(rNum, val);
                 var siblings = document.querySelectorAll('.round-random-input[data-round="' + rNum + '"]');
                 siblings.forEach(function (other) {
                     if (other !== e.target) {
@@ -486,6 +549,18 @@
             }
         }
     }, true);
+
+    // Auto-update button states & populate inputs on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            TourmaRoundControls.updateButtonsState(null);
+        });
+    } else {
+        TourmaRoundControls.updateButtonsState(null);
+    }
+    window.addEventListener('load', function () {
+        TourmaRoundControls.updateButtonsState(null);
+    });
 
     window.TourmaRoundControls = TourmaRoundControls;
 

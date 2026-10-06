@@ -334,10 +334,16 @@
                     if (typeof this.onLockCallback === 'function') {
                         this.onLockCallback(false);
                     }
+                    if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                        window.TourmaRoundControls.updateButtonsState(null);
+                    }
                     banner.style.display = 'none';
                 } else {
                     if (typeof this.onLockCallback === 'function') {
                         this.onLockCallback(true);
+                    }
+                    if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                        window.TourmaRoundControls.updateButtonsState(null);
                     }
                     textEl.innerHTML = 
                         '<div class="final-stage-title-line">Giải đấu đã kết thúc</div>' +
@@ -351,6 +357,10 @@
             }
 
             // Tournament is NOT locked yet
+            if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                window.TourmaRoundControls.updateButtonsState(null);
+            }
+
             if (this.championName) {
                 // Step 1: Prompt for locking confirmation
                 textEl.innerHTML = '<div class="final-stage-title-line">Khi bạn xác nhận hoàn thành giải đấu, bạn sẽ không thể chỉnh sửa kết quả</div>';
@@ -388,6 +398,9 @@
 
             if (typeof this.onLockCallback === 'function') {
                 this.onLockCallback(true);
+            }
+            if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                window.TourmaRoundControls.updateButtonsState(null);
             }
 
             var textEl = document.getElementById('finalStagePopupText');
@@ -434,6 +447,9 @@
             if (typeof this.onLockCallback === 'function') {
                 this.onLockCallback(false);
             }
+            if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                window.TourmaRoundControls.updateButtonsState(null);
+            }
 
             var textEl = document.getElementById('finalStagePopupText');
             var confirmBtn = document.getElementById('finalStageConfirmBtn');
@@ -459,6 +475,45 @@
             if (banner) {
                 banner.style.display = 'none';
             }
+        },
+
+        /**
+         * Prompt user when attempting to edit a locked tournament
+         */
+        promptUnlock: function () {
+            var banner = document.getElementById('finalStagePopupBanner');
+            if (banner) {
+                banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // 2. Remove any existing toast
+            var oldToast = document.getElementById('tourmaLockToast');
+            if (oldToast) oldToast.remove();
+
+            // 3. Create interactive sleek Toast
+            var toast = document.createElement('div');
+            toast.id = 'tourmaLockToast';
+            toast.className = 'tourma-lock-toast';
+            toast.innerHTML = 
+                '<i class="fa-solid fa-lock tourma-lock-toast-icon"></i>' +
+                '<div class="tourma-lock-toast-body">' +
+                    '<div class="tourma-lock-toast-title">Giải đấu đã kết thúc & đang khóa</div>' +
+                    '<div class="tourma-lock-toast-desc">Bấm "Mở khóa" trên banner để chỉnh sửa lại tỉ số.</div>' +
+                '</div>' +
+                '<button type="button" class="tourma-lock-toast-btn" onclick="if(window.FinalStagePopup){window.FinalStagePopup.unlockTournament();}var t=document.getElementById(\'tourmaLockToast\');if(t)t.remove();">Mở khóa</button>';
+
+            document.body.appendChild(toast);
+
+            // Auto dismiss after 4.5 seconds
+            setTimeout(function () {
+                if (toast && toast.parentNode) {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s ease';
+                    setTimeout(function () {
+                        if (toast && toast.parentNode) toast.remove();
+                    }, 300);
+                }
+            }, 4500);
         }
     };
 
