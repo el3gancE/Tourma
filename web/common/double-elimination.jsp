@@ -122,17 +122,17 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         
         <!-- Main Stylesheets -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/double-elimination.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/double-elimination.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css?v=<%= System.currentTimeMillis() %>">
     </head>
     <body>
         <!-- Empty Team Alert Component -->
@@ -329,6 +329,7 @@
         <script src="${pageContext.request.contextPath}/js/popup.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/round-control-helper.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination.js?v=<%= System.currentTimeMillis() %>"></script>
 
         <!-- Page Bootstrap Execution -->

@@ -58,11 +58,14 @@ public class TournamentDAO {
                 } catch (Exception ignore) {
                 }
                 try {
-                    String champDirect = rs.getString("champion_name");
-                    String champSubq = rs.getString("db_champion_name");
-                    String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSubq;
-                    if (champ != null && !champ.trim().isEmpty()) {
-                        t.setChampionName(champ.trim());
+                    String st = rs.getString("status");
+                    if ("COMPLETED".equalsIgnoreCase(st)) {
+                        String champDirect = rs.getString("champion_name");
+                        String champSubq = rs.getString("db_champion_name");
+                        String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSubq;
+                        if (champ != null && !champ.trim().isEmpty()) {
+                            t.setChampionName(champ.trim());
+                        }
                     }
                 } catch (Exception ignore) {
                 }
@@ -146,12 +149,15 @@ public class TournamentDAO {
                     } catch (Exception ignore) {
                     }
                     try {
-                        // Prefer champion_name column (directly persisted), fall back to match-derived subquery
-                        String champDirect = rs.getString("champion_name");
-                        String champSubq = rs.getString("db_champion_name");
-                        String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSubq;
-                        if (champ != null && !champ.trim().isEmpty()) {
-                            t.setChampionName(champ.trim());
+                        String st = rs.getString("status");
+                        if ("COMPLETED".equalsIgnoreCase(st)) {
+                            // Prefer champion_name column (directly persisted), fall back to match-derived subquery
+                            String champDirect = rs.getString("champion_name");
+                            String champSubq = rs.getString("db_champion_name");
+                            String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSubq;
+                            if (champ != null && !champ.trim().isEmpty()) {
+                                t.setChampionName(champ.trim());
+                            }
                         }
                     } catch (Exception ignore) {
                     }
@@ -282,11 +288,15 @@ public class TournamentDAO {
             } catch (Exception ignore) {}
 
             for (Tournament t : list) {
-                if (t.getChampionName() == null || t.getChampionName().trim().isEmpty()) {
-                    String c = champMap.get(t.getId());
-                    if (c != null && !c.trim().isEmpty()) {
-                        t.setChampionName(c.trim());
+                if ("COMPLETED".equalsIgnoreCase(t.getStatus())) {
+                    if (t.getChampionName() == null || t.getChampionName().trim().isEmpty()) {
+                        String c = champMap.get(t.getId());
+                        if (c != null && !c.trim().isEmpty()) {
+                            t.setChampionName(c.trim());
+                        }
                     }
+                } else {
+                    t.setChampionName(null);
                 }
             }
         }
@@ -742,6 +752,21 @@ public class TournamentDAO {
         }
         STAGE_FORMATS_CACHE.put(tid, list);
         return list;
+    }
+
+    public boolean updateTournamentStage1Status(String tournamentId, String stage1Status) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String sql = "UPDATE tournaments SET stage1_status = ? WHERE id = ?";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, stage1Status);
+            ps.setString(2, tournamentId.trim());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public boolean saveGroupAssignments(String tournamentId, String groupAssignmentsJson) {

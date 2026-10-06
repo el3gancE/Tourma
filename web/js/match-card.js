@@ -20,7 +20,7 @@
             var t1 = data.team1 || {};
             var t2 = data.team2 || {};
 
-            var resolveStrName = function(val) {
+            var resolveStrName = function (val) {
                 if (!val) return '';
                 if (typeof val === 'object') return val.name || val.rawName || '';
                 return String(val);
@@ -72,28 +72,28 @@
                 }
 
                 var tid = (matchData && (matchData.tournamentId || matchData.tourneyId)) ||
-                          (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
-                          (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
-                          (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
-                          (window.TourmaSwissStage && window.TourmaSwissStage.tournamentId) ||
-                          (window.TourmaGroupStage && window.TourmaGroupStage.tournamentId) ||
-                          (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId) ||
-                          window.TourmaContextPathTourneyId;
+                    (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
+                    (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
+                    (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
+                    (window.TourmaSwissStage && window.TourmaSwissStage.tournamentId) ||
+                    (window.TourmaGroupStage && window.TourmaGroupStage.tournamentId) ||
+                    (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId) ||
+                    window.TourmaContextPathTourneyId;
                 if (!tid) {
                     try {
                         var params = new URLSearchParams(window.location.search);
                         tid = params.get('id');
-                    } catch (e) {}
+                    } catch (e) { }
                 }
 
                 // If seed is missing, try looking it up by teamName from memory or localStorage
                 if (isNaN(sNum) && teamName && teamName !== 'BYE' && teamName !== 'TBD' && !teamName.startsWith('W #') && !teamName.startsWith('L #')) {
                     try {
                         var teams = (window.SingleEliminationEngine && window.SingleEliminationEngine.teamsList) ||
-                                    (window.TourmaDoubleElimination && window.TourmaDoubleElimination.teamsList) ||
-                                    (window.TourmaRoundRobin && window.TourmaRoundRobin.teamsList) ||
-                                    (window.TourmaSwissStage && window.TourmaSwissStage.teamsList) ||
-                                    (window.TourmaGroupStage && window.TourmaGroupStage.teamsList);
+                            (window.TourmaDoubleElimination && window.TourmaDoubleElimination.teamsList) ||
+                            (window.TourmaRoundRobin && window.TourmaRoundRobin.teamsList) ||
+                            (window.TourmaSwissStage && window.TourmaSwissStage.teamsList) ||
+                            (window.TourmaGroupStage && window.TourmaGroupStage.teamsList);
                         if ((!teams || !Array.isArray(teams) || teams.length === 0) && tid) {
                             teams = JSON.parse(localStorage.getItem('tourma_teams_' + tid));
                         }
@@ -109,7 +109,7 @@
                                 }
                             }
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
 
                 if (isNaN(sNum)) return '';
@@ -118,12 +118,12 @@
                 if (tid) {
                     try {
                         cfgRaw = localStorage.getItem('tourma_hide_seed_config_' + tid);
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 if (!cfgRaw) {
                     try {
                         cfgRaw = localStorage.getItem('tourma_hide_seed_config_demo');
-                    } catch (e) {}
+                    } catch (e) { }
                 }
 
                 if (cfgRaw) {
@@ -142,7 +142,7 @@
                                 return '';
                             }
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 return String(sNum);
             };
@@ -178,59 +178,64 @@
             var t1Class = 'match-team-side team-left ' + (isT1Winner ? 'winner ' : '') + (isT1Placeholder ? 'placeholder ' : '') + (isT1Bye ? 'bye-team ' : '');
             var t2Class = 'match-team-side team-right ' + (isT2Winner ? 'winner ' : '') + (isT2Placeholder ? 'placeholder ' : '') + (isT2Bye ? 'bye-team ' : '');
 
-            var seed1Html = isT1Placeholder ? '<span class="match-list-seed bye-seed" style="visibility:hidden"></span>' : 
-                            (isT1Bye ? '<span class="match-list-seed bye-seed"></span>' : 
-                            ('<span class="match-list-seed">' + (seed1 || '') + '</span>'));
-            var seed2Html = isT2Placeholder ? '<span class="match-list-seed bye-seed" style="visibility:hidden"></span>' : 
-                            (isT2Bye ? '<span class="match-list-seed bye-seed"></span>' : 
-                            ('<span class="match-list-seed">' + (seed2 || '') + '</span>'));
+            var seed1Html = isT1Placeholder ? '<span class="match-list-seed bye-seed" style="visibility:hidden"></span>' :
+                (isT1Bye ? '<span class="match-list-seed bye-seed"></span>' :
+                    ('<span class="match-list-seed">' + (seed1 || '') + '</span>'));
+            var seed2Html = isT2Placeholder ? '<span class="match-list-seed bye-seed" style="visibility:hidden"></span>' :
+                (isT2Bye ? '<span class="match-list-seed bye-seed"></span>' :
+                    ('<span class="match-list-seed">' + (seed2 || '') + '</span>'));
 
             var accentClass = 'match-card-accent-bar' + bTypeClass;
 
             card.innerHTML =
                 '<div class="match-card-meta">' +
-                    '<div class="' + accentClass + '"' + (hasBye ? ' style="background: #475569; box-shadow: none;"' : '') + '></div>' +
-                    '<span class="match-card-id">' + matchHeaderLabel + '</span>' +
+                '<div class="' + accentClass + '"' + (hasBye ? ' style="background: #475569; box-shadow: none;"' : '') + '></div>' +
+                '<span class="match-card-id">' + matchHeaderLabel + '</span>' +
                 '</div>' +
 
                 '<div class="match-card-versus">' +
-                    seed1Html +
+                seed1Html +
 
-                    '<div class="' + t1Class + '" data-team-name="' + t1Name + '">' +
-                        '<span class="match-list-name" title="' + t1Name + '">' + t1Name + '</span>' +
-                    '</div>' +
+                '<div class="' + t1Class + '" data-team-name="' + t1Name + '">' +
+                '<span class="match-list-name" title="' + t1Name + '">' + t1Name + '</span>' +
+                '</div>' +
 
-                    '<!-- Two Separate Score Boxes -->' +
-                    '<div class="match-score-container">' +
-                        '<span class="match-score-single-box">' + t1ScoreDisp + '</span>' +
-                        '<span class="match-score-dash">-</span>' +
-                        '<span class="match-score-single-box">' + t2ScoreDisp + '</span>' +
-                    '</div>' +
+                '<!-- Two Separate Score Boxes -->' +
+                '<div class="match-score-container">' +
+                '<span class="match-score-single-box">' + t1ScoreDisp + '</span>' +
+                '<span class="match-score-dash">-</span>' +
+                '<span class="match-score-single-box">' + t2ScoreDisp + '</span>' +
+                '</div>' +
 
-                    '<div class="' + t2Class + '" data-team-name="' + t2Name + '">' +
-                        '<span class="match-list-name" title="' + t2Name + '">' + t2Name + '</span>' +
-                    '</div>' +
+                '<div class="' + t2Class + '" data-team-name="' + t2Name + '">' +
+                '<span class="match-list-name" title="' + t2Name + '">' + t2Name + '</span>' +
+                '</div>' +
 
-                    seed2Html +
+                seed2Html +
                 '</div>' +
 
                 '<div class="match-card-actions">' +
-                    (hasBye ? '' : ('<span class="match-list-status ' + statusClass + '">' + statusLabel + '</span>')) +
+                (hasBye ? '' : ('<span class="match-list-status ' + statusClass + '">' + statusLabel + '</span>')) +
                 '</div>';
 
-            var checkCardLocked = function () {
+            var checkCardLocked = function (shouldPrompt) {
                 var tid = (data && (data.tournamentId || data.tourneyId)) || null;
+                var isL = false;
                 // Delegate to TourmaScoreModal.isLocked which properly checks multi-stage guard
                 if (window.TourmaScoreModal && typeof window.TourmaScoreModal.isLocked === 'function') {
-                    return window.TourmaScoreModal.isLocked(tid);
+                    isL = window.TourmaScoreModal.isLocked(tid);
+                } else if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                    isL = true;
+                } else {
+                    var _tid = tid || (window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null);
+                    if (_tid) {
+                        try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') isL = true; } catch (e) { }
+                    }
                 }
-                // Fallback: only check final champion lock
-                if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
-                var _tid = tid || (window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null);
-                if (_tid) {
-                    try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') return true; } catch(e) {}
+                if (isL && shouldPrompt && window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                    window.FinalStagePopup.promptUnlock();
                 }
-                return false;
+                return isL;
             };
 
             // Quick Mode Team Side Click Handlers (No path hover in list mode)
@@ -239,14 +244,22 @@
 
             if (t1Side) {
                 t1Side.addEventListener('click', function (e) {
-                    if (checkCardLocked()) return;
+                    if (checkCardLocked(true)) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
-                        if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
-                            window.SingleEliminationEngine.handleQuickWinner(matchId, 1);
+                        var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
+                            ? window.TourmaRoundControls.getCustomWinScore(card, null)
+                            : null;
+
+                        if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
+                            window.TourmaRoundControls.handleQuickWinner(null, matchId, 1, customScore);
+                        } else if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
+                            window.SingleEliminationEngine.handleQuickWinner(matchId, 1, customScore);
                         } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
-                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 1);
+                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 1, customScore);
+                        } else if (window.TourmaSwiss && typeof window.TourmaSwiss.handleQuickWinner === 'function') {
+                            window.TourmaSwiss.handleQuickWinner(matchId, 1, customScore);
                         }
                     }
                 });
@@ -254,14 +267,22 @@
 
             if (t2Side) {
                 t2Side.addEventListener('click', function (e) {
-                    if (checkCardLocked()) return;
+                    if (checkCardLocked(true)) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
-                        if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
-                            window.SingleEliminationEngine.handleQuickWinner(matchId, 2);
+                        var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
+                            ? window.TourmaRoundControls.getCustomWinScore(card, null)
+                            : null;
+
+                        if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
+                            window.TourmaRoundControls.handleQuickWinner(null, matchId, 2, customScore);
+                        } else if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
+                            window.SingleEliminationEngine.handleQuickWinner(matchId, 2, customScore);
                         } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
-                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 2);
+                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 2, customScore);
+                        } else if (window.TourmaSwiss && typeof window.TourmaSwiss.handleQuickWinner === 'function') {
+                            window.TourmaSwiss.handleQuickWinner(matchId, 2, customScore);
                         }
                     }
                 });
@@ -269,7 +290,7 @@
 
             // Attach Click Handler to Entire Card (Only if playable and NOT Quick Mode)
             card.addEventListener('click', function () {
-                if (checkCardLocked()) return;
+                if (checkCardLocked(true)) return;
 
                 if (!isPlayable) {
                     return; // Prevent clicking unconfirmed / BYE matches

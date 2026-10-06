@@ -1,10 +1,9 @@
 /* ============================================================================
-   TOURMA - SINGLE ELIMINATION BRACKET PAGE STYLESHEET (single-elimination.css)
-   Font: Lexend | High-Density Dark Theme (#181d29 Surface & #0b0d12 Obsidian)
+   TOURMA - REUSABLE TOURNAMENT NAVBAR & TOP CONTROL BAR (tournament-navbar.css)
+   Dark Luxury Theme (#181d29 Surface & #0b0d12 Obsidian) | Lexend Typography
    ============================================================================ */
 
-/* Top View Control Toolbar Bar */
-.single-elimination-control-bar {
+.tournament-navbar-control-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -15,6 +14,8 @@
     margin-bottom: 1.25rem;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     font-family: 'Lexend', sans-serif !important;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .tournament-info-badge-group {
@@ -35,7 +36,18 @@
     font-family: 'Lexend', sans-serif !important;
 }
 
-.format-badge-single {
+.tournament-name-title i.text-gold {
+    color: #fbbf24;
+    font-size: 1.1rem;
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
+}
+
+/* Format Badges */
+.format-badge-single,
+.format-badge-double,
+.format-badge-rr,
+.format-badge-swiss,
+.format-badge-group {
     background: rgba(45, 212, 191, 0.12);
     color: #2dd4bf;
     border: 1px solid rgba(45, 212, 191, 0.3);
@@ -44,9 +56,35 @@
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.03em;
     font-family: 'Lexend', sans-serif !important;
 }
 
+.format-badge-double {
+    background: rgba(168, 85, 247, 0.12);
+    color: #a855f7;
+    border-color: rgba(168, 85, 247, 0.3);
+}
+
+.format-badge-rr {
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.format-badge-swiss {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.format-badge-group {
+    background: rgba(236, 72, 153, 0.12);
+    color: #f472b6;
+    border-color: rgba(236, 72, 153, 0.3);
+}
+
+/* Team Count & Advancing Count Badges */
 .team-count-badge {
     background: rgba(251, 191, 36, 0.12);
     color: #fbbf24;
@@ -58,7 +96,60 @@
     font-family: 'Lexend', sans-serif !important;
 }
 
-/* Standalone Reset Bracket Action Button */
+.advancing-count-badge {
+    background: rgba(45, 212, 191, 0.15);
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.22rem 0.75rem;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+/* Right Control Actions Group */
+.control-actions-right-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* Quick Mode Toggle Button */
+.btn-quick-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(251, 191, 36, 0.08);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 8px;
+    padding: 0.42rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-quick-mode-toggle:hover {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-quick-mode-toggle.active {
+    background: #fbbf24;
+    color: #0b0d12;
+    border-color: #fbbf24;
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.5);
+}
+
+/* Standalone Reset Button */
 .btn-reset-bracket-action {
     display: inline-flex;
     align-items: center;
@@ -83,7 +174,7 @@
     transform: translateY(-1px);
 }
 
-/* View Mode Segmented Toggle Buttons (Bracket View ↔ List View) */
+/* View Mode Segmented Toggle Group */
 .view-mode-toggle-group {
     display: flex;
     background: #0b0d12;
@@ -99,14 +190,14 @@
     border: none;
     border-radius: 6px;
     color: #94a3b8;
-    font-family: 'Lexend', sans-serif !important;
     font-size: 0.78rem;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.18s ease;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    transition: all 0.18s ease-in-out;
+    font-family: 'Lexend', sans-serif !important;
 }
 
 .btn-view-toggle:hover {
@@ -117,93 +208,6 @@
 .btn-view-toggle.active {
     background: #2dd4bf;
     color: #0b0d12;
-    box-shadow: 0 2px 8px rgba(45, 212, 191, 0.3);
-}
-
-/* Bracket Viewport Inner Canvas & SVG Connectors Layer */
-.bracket-viewport-canvas {
-    position: relative;
-    display: inline-block;
-    padding: 3.5rem 1.5rem 2rem 1.5rem;
-    min-width: 100%;
-}
-
-.bracket-svg-connectors {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1;
-    overflow: visible;
-}
-
-/* Bracket Tree Columns Layout */
-.single-bracket-columns-wrapper {
-    position: relative;
-    z-index: 2;
-    display: inline-flex;
-    align-items: stretch;
-    gap: 3.5rem;
-    padding: 0.5rem;
-}
-
-.single-round-column {
-    display: flex;
-    flex-direction: column;
-    width: 220px;
-    flex-shrink: 0;
-}
-
-.single-round-header {
-    background: #181d29;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.78rem;
     font-weight: 800;
-    color: #fbbf24;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    text-align: center;
-    margin-bottom: 1.25rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    font-family: 'Lexend', sans-serif !important;
-}
-
-.single-round-matches-box {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    flex: 1;
-    gap: 1.5rem;
-}
-
-/* List View Container & Prominent Round Headers */
-.single-list-view-container {
-    display: none;
-    width: 100%;
-    max-width: 960px;
-    margin: 0 auto;
-    font-family: 'Lexend', sans-serif !important;
-    padding-bottom: 3rem;
-}
-
-.single-list-view-container.show {
-    display: block;
-}
-
-.match-list-round-header {
-    font-family: 'Lexend', sans-serif !important;
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: #fbbf24;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 1.25rem;
-    margin-bottom: 0.6rem;
-    padding-bottom: 0.35rem;
-    border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+    box-shadow: 0 0 10px rgba(45, 212, 191, 0.35);
 }

@@ -2,6 +2,7 @@
  * ============================================================================
  * TOURMA - FINAL STAGE POPUP CONTROLLER (final-stage-popup.js)
  * Standalone module to manage tournament conclusion confirmation and champion announcement.
+ * Supports Single Elimination (SE), Double Elimination (DE), Round Robin (RR), and Swiss.
  * ============================================================================
  */
 
@@ -37,12 +38,14 @@
                 return true;
             };
 
+            var normFmt = (format || '').toUpperCase().trim();
+
             // 1. SINGLE ELIMINATION
-            if (format === 'SINGLE_ELIMINATION') {
+            if (normFmt === 'SINGLE_ELIMINATION' || normFmt === 'SE' || normFmt === 'SINGLE') {
                 var finalMatch = null;
                 for (var i = 0; i < keys.length; i++) {
                     var m = matchesMap[keys[i]];
-                    if (m && (m.isGrandFinal || m.roundTitle === 'Finals' || m.roundTitle === 'Chung Kết' || m.id === 'M_FINAL')) {
+                    if (m && (m.isGrandFinal || m.roundTitle === 'Finals' || m.roundTitle === 'Final' || m.roundTitle === 'Chung Kết' || m.roundName === 'Final' || m.roundName === 'Chung Kết' || m.id === 'M_FINAL')) {
                         finalMatch = m;
                         break;
                     }
@@ -62,34 +65,38 @@
                 if (finalMatch) {
                     var t1 = finalMatch.team1 || {};
                     var t2 = finalMatch.team2 || {};
-                    var t1Name = t1.name || '';
-                    var t2Name = t2.name || '';
+                    var t1Name = (typeof t1 === 'object' && t1) ? (t1.name || '') : String(t1 || '');
+                    var t2Name = (typeof t2 === 'object' && t2) ? (t2.name || '') : String(t2 || '');
 
-                    // Both finalists must be confirmed real teams!
                     if (!isRealTeam(t1Name) || !isRealTeam(t2Name)) {
                         return null;
                     }
 
-                    var s1 = (t1.score !== '' && t1.score !== null && !isNaN(Number(t1.score))) ? Number(t1.score) : null;
-                    var s2 = (t2.score !== '' && t2.score !== null && !isNaN(Number(t2.score))) ? Number(t2.score) : null;
+                    var s1 = (t1.score !== '' && t1.score !== null && t1.score !== undefined && !isNaN(Number(t1.score))) ? Number(t1.score) : null;
+                    var s2 = (t2.score !== '' && t2.score !== null && t2.score !== undefined && !isNaN(Number(t2.score))) ? Number(t2.score) : null;
 
-                    // Match MUST have valid non-null scores entered!
-                    if (s1 === null || s2 === null || s1 === s2) {
-                        return null;
+                    if (s1 !== null && s2 !== null && s1 !== s2) {
+                        if (s1 > s2) return isRealTeam(t1Name) ? t1Name : null;
+                        if (s2 > s1) return isRealTeam(t2Name) ? t2Name : null;
                     }
 
-                    if (s1 > s2) {
-                        return isRealTeam(t1Name) ? t1Name : null;
+                    if (finalMatch.winnerId) {
+                        var wid = String(finalMatch.winnerId).trim();
+                        if ((wid === 'team1' || wid === '1' || wid === 'SLOT_1') && isRealTeam(t1Name)) return t1Name;
+                        if ((wid === 'team2' || wid === '2' || wid === 'SLOT_2') && isRealTeam(t2Name)) return t2Name;
+                        if (t1.id && wid === String(t1.id) && isRealTeam(t1Name)) return t1Name;
+                        if (t2.id && wid === String(t2.id) && isRealTeam(t2Name)) return t2Name;
                     }
-                    if (s2 > s1) {
-                        return isRealTeam(t2Name) ? t2Name : null;
+
+                    if (finalMatch.winner && finalMatch.winner.name && isRealTeam(finalMatch.winner.name)) {
+                        return finalMatch.winner.name;
                     }
                 }
                 return null;
             }
 
             // 2. DOUBLE ELIMINATION
-            if (format === 'DOUBLE_ELIMINATION') {
+            if (normFmt === 'DOUBLE_ELIMINATION' || normFmt === 'DE' || normFmt === 'DOUBLE') {
                 var gfReset = null;
                 var gfMain = null;
 
@@ -133,7 +140,6 @@
                     var gft1Name = gfT1.name || '';
                     var gft2Name = gfT2.name || '';
 
-                    // Both Grand Finalists must be confirmed real teams!
                     if (!isRealTeam(gft1Name) || !isRealTeam(gft2Name)) {
                         return null;
                     }
@@ -152,10 +158,10 @@
                     // LB Winner (team2) won GF1 -> Triggered Reset match
                     if (gfS2 > gfS1) {
                         if (gfReset && gfReset.isUnlocked) {
-                            return null; // Must wait for reset match!
+                            return null;
                         }
                         if (gfReset) {
-                            return null; // Reset match exists, waiting for reset match
+                            return null;
                         }
                         return gft2Name;
                     }
@@ -164,8 +170,7 @@
             }
 
             // 3. ROUND ROBIN
-            if (format === 'ROUND_ROBIN') {
-                // All matches must be finished / scored (excluding BYE)
+            if (normFmt === 'ROUND_ROBIN' || normFmt === 'RR') {
                 var totalMatchesCount = 0;
                 var completedMatchesCount = 0;
 
@@ -181,13 +186,13 @@
                     var rs1 = (rm.team1 && rm.team1.score !== '' && rm.team1.score !== null && !isNaN(Number(rm.team1.score))) ? Number(rm.team1.score) : null;
                     var rs2 = (rm.team2 && rm.team2.score !== '' && rm.team2.score !== null && !isNaN(Number(rm.team2.score))) ? Number(rm.team2.score) : null;
 
-                    if (rm.status === 'COMPLETED' || rm.status === 'done' || (rs1 !== null && rs2 !== null)) {
+                    if (rm.status === 'COMPLETED' || rm.status === 'FINISHED' || rm.status === 'done' || (rs1 !== null && rs2 !== null)) {
                         completedMatchesCount++;
                     }
                 }
 
                 if (totalMatchesCount > 0 && completedMatchesCount === totalMatchesCount) {
-                    if (window.TourmaRoundRobinAlgorithm) {
+                    if (window.TourmaRoundRobinAlgorithm && typeof window.TourmaRoundRobinAlgorithm.calculateStandings === 'function') {
                         var standings = window.TourmaRoundRobinAlgorithm.calculateStandings(teamsList, matchesMap, config);
                         if (standings && standings.length > 0 && standings[0].team) {
                             return standings[0].team;
@@ -195,6 +200,19 @@
                     }
                 }
                 return null;
+            }
+
+            // 4. SWISS SYSTEM (Single Stage Championship)
+            if (normFmt === 'SWISS' || normFmt === 'SWISS_LITE') {
+                if (window.TourmaSwissAlgorithm && typeof window.TourmaSwissAlgorithm.calculateStandings === 'function') {
+                    var swStandings = window.TourmaSwissAlgorithm.calculateStandings(teamsList, matchesMap);
+                    if (swStandings && swStandings.length > 0) {
+                        var top1 = swStandings[0];
+                        if (top1 && top1.wins >= 3) {
+                            return top1.name;
+                        }
+                    }
+                }
             }
 
             return null;
@@ -214,8 +232,7 @@
 
         /**
          * Ensure banner element exists in DOM.
-         * Inject inside <main> after the control-bar so it appears
-         * between the title/actions row and the round tabs / bracket.
+         * Injected inside <main> after the control bar.
          */
         ensureDOM: function () {
             var banner = document.getElementById('finalStagePopupBanner');
@@ -230,19 +247,15 @@
                         '<div id="finalStagePopupActions" class="final-stage-popup-actions">' +
                             '<button type="button" id="finalStageConfirmBtn" class="final-stage-confirm-btn" onclick="window.FinalStagePopup.confirmConclusion()">Xác nhận</button>' +
                             '<button type="button" id="finalStageUnlockBtn" class="final-stage-unlock-btn" style="display: none;" onclick="window.FinalStagePopup.unlockTournament()">Mở khóa</button>' +
-                            '<button type="button" id="finalStageCloseBtn" class="final-stage-close-btn" style="display: none;" onclick="window.FinalStagePopup.closeBanner()">Đóng</button>' +
                         '</div>' +
                     '</div>';
 
-                // Try to inject after the control bar inside <main>.
-                // Selectors cover all 3 formats (SE, DE, RR).
-                var mainEl = document.querySelector('main.container');
+                var mainEl = document.querySelector('main.container, main.has-sidebar, main');
                 var controlBar = document.querySelector(
-                    '.single-elimination-control-bar, .rr-control-bar, .de-control-bar'
+                    '.tournament-navbar-control-bar, .single-elimination-control-bar, .rr-control-bar, .de-control-bar, .swiss-control-bar, .group-stage-control-bar'
                 );
 
                 if (mainEl && controlBar && controlBar.parentNode === mainEl) {
-                    // Insert right after the control bar
                     var next = controlBar.nextSibling;
                     if (next) {
                         mainEl.insertBefore(div, next);
@@ -250,12 +263,48 @@
                         mainEl.appendChild(div);
                     }
                 } else if (mainEl) {
-                    // Fallback: prepend to main
                     mainEl.insertBefore(div, mainEl.firstChild);
                 } else {
-                    // Ultimate fallback: body prepend
                     document.body.insertBefore(div, document.body.firstChild);
                 }
+            }
+        },
+
+        /**
+         * Direct programmatic display of champion announcement popup
+         */
+        show: function (championName, tournamentId, onLockCallback) {
+            if (!championName) return;
+            this.tournamentId = tournamentId || this.tournamentId || window.TourmaTournamentId || 'demo';
+            this.championName = championName;
+            if (onLockCallback) this.onLockCallback = onLockCallback;
+            this.ensureDOM();
+
+            var banner = document.getElementById('finalStagePopupBanner');
+            var textEl = document.getElementById('finalStagePopupText');
+            var confirmBtn = document.getElementById('finalStageConfirmBtn');
+            var unlockBtn = document.getElementById('finalStageUnlockBtn');
+            if (!banner || !textEl) return;
+
+            this.isLocked = this.isTournamentLocked(this.tournamentId);
+
+            if (this.isLocked) {
+                if (typeof this.onLockCallback === 'function') {
+                    this.onLockCallback(true);
+                }
+                textEl.innerHTML = 
+                    '<div class="final-stage-title-line">Giải đấu đã kết thúc</div>' +
+                    '<div class="final-stage-champion-line">Nhà vô địch: <span class="final-stage-champion-name">' + this.championName + '</span></div>';
+                if (confirmBtn) confirmBtn.style.display = 'none';
+                if (unlockBtn) unlockBtn.style.display = 'inline-block';
+                banner.classList.add('is-locked');
+                banner.style.display = 'flex';
+            } else {
+                textEl.innerHTML = '<div class="final-stage-title-line">Khi bạn xác nhận hoàn thành giải đấu, bạn sẽ không thể chỉnh sửa kết quả</div>';
+                if (confirmBtn) confirmBtn.style.display = 'inline-block';
+                if (unlockBtn) unlockBtn.style.display = 'none';
+                banner.classList.remove('is-locked');
+                banner.style.display = 'flex';
             }
         },
 
@@ -263,7 +312,7 @@
          * Check tournament status and render top banner accordingly
          */
         checkAndRender: function (tournamentId, format, matchesMap, teamsList, config, onLockCallback) {
-            this.tournamentId = tournamentId;
+            this.tournamentId = tournamentId || this.tournamentId || window.TourmaTournamentId || 'demo';
             this.format = format;
             this.onLockCallback = onLockCallback;
             this.ensureDOM();
@@ -272,32 +321,35 @@
             var textEl = document.getElementById('finalStagePopupText');
             var confirmBtn = document.getElementById('finalStageConfirmBtn');
             var unlockBtn = document.getElementById('finalStageUnlockBtn');
-            var closeBtn = document.getElementById('finalStageCloseBtn');
             if (!banner || !textEl) return;
 
             this.championName = this.checkChampion(format, matchesMap, teamsList, config);
-            this.isLocked = this.isTournamentLocked(tournamentId);
+            this.isLocked = this.isTournamentLocked(this.tournamentId);
 
             if (this.isLocked) {
                 if (!this.championName) {
-                    // Stale lock from another stage or reset! Auto-unlock so editing is enabled.
+                    // Stale lock from previous stage or reset -> auto unlock
                     this.isLocked = false;
-                    try { localStorage.removeItem('tourma_final_locked_' + tournamentId); } catch(e) {}
+                    try { localStorage.removeItem('tourma_final_locked_' + this.tournamentId); } catch(e) {}
                     if (typeof this.onLockCallback === 'function') {
                         this.onLockCallback(false);
                     }
+                    if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                        window.TourmaRoundControls.updateButtonsState(null);
+                    }
                     banner.style.display = 'none';
                 } else {
-                    // If tournament is already locked and champion exists, notify caller to disable edit modes
                     if (typeof this.onLockCallback === 'function') {
                         this.onLockCallback(true);
+                    }
+                    if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                        window.TourmaRoundControls.updateButtonsState(null);
                     }
                     textEl.innerHTML = 
                         '<div class="final-stage-title-line">Giải đấu đã kết thúc</div>' +
                         '<div class="final-stage-champion-line">Nhà vô địch: <span class="final-stage-champion-name">' + this.championName + '</span></div>';
                     if (confirmBtn) confirmBtn.style.display = 'none';
                     if (unlockBtn) unlockBtn.style.display = 'inline-block';
-                    if (closeBtn) closeBtn.style.display = 'inline-block';
                     banner.classList.add('is-locked');
                     banner.style.display = 'flex';
                     return;
@@ -305,16 +357,18 @@
             }
 
             // Tournament is NOT locked yet
+            if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                window.TourmaRoundControls.updateButtonsState(null);
+            }
+
             if (this.championName) {
-                // Step 1: Final match completed -> Prompt for locking confirmation
+                // Step 1: Prompt for locking confirmation
                 textEl.innerHTML = '<div class="final-stage-title-line">Khi bạn xác nhận hoàn thành giải đấu, bạn sẽ không thể chỉnh sửa kết quả</div>';
                 if (confirmBtn) confirmBtn.style.display = 'inline-block';
                 if (unlockBtn) unlockBtn.style.display = 'none';
-                if (closeBtn) closeBtn.style.display = 'none';
                 banner.classList.remove('is-locked');
                 banner.style.display = 'flex';
             } else {
-                // Tournament not complete yet -> hide banner
                 banner.style.display = 'none';
             }
         },
@@ -326,19 +380,18 @@
             if (!this.tournamentId) return;
 
             try {
-                var self = this;
                 var rootPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
                 if (!rootPath || rootPath === '/common') rootPath = '';
-                fetch(rootPath + '/api/tournament-finish', {
+                var ctx = window.TourmaContextPath || rootPath || '';
+                fetch(ctx + '/api/match-update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                    body: 'tournamentId=' + encodeURIComponent(this.tournamentId) + '&championName=' + encodeURIComponent(this.championName || '')
+                    body: 'action=finishTournament&tournamentId=' + encodeURIComponent(this.tournamentId) + '&championName=' + encodeURIComponent(this.championName || '')
                 }).catch(function(err) { console.error('Error saving tournament finish to DB:', err); });
             } catch (e) {}
 
             this.isLocked = true;
 
-            // Persist lock state to localStorage so it survives page refresh/reload
             try {
                 localStorage.setItem('tourma_final_locked_' + this.tournamentId, 'true');
             } catch (e) {}
@@ -346,11 +399,13 @@
             if (typeof this.onLockCallback === 'function') {
                 this.onLockCallback(true);
             }
+            if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                window.TourmaRoundControls.updateButtonsState(null);
+            }
 
             var textEl = document.getElementById('finalStagePopupText');
             var confirmBtn = document.getElementById('finalStageConfirmBtn');
             var unlockBtn = document.getElementById('finalStageUnlockBtn');
-            var closeBtn = document.getElementById('finalStageCloseBtn');
 
             if (textEl) {
                 textEl.innerHTML = 
@@ -359,7 +414,6 @@
             }
             if (confirmBtn) confirmBtn.style.display = 'none';
             if (unlockBtn) unlockBtn.style.display = 'inline-block';
-            if (closeBtn) closeBtn.style.display = 'inline-block';
             var bannerEl = document.getElementById('finalStagePopupBanner');
             if (bannerEl) {
                 bannerEl.classList.add('is-locked');
@@ -374,6 +428,17 @@
             if (!this.tournamentId) return;
 
             try {
+                var rootPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+                if (!rootPath || rootPath === '/common') rootPath = '';
+                var ctx = window.TourmaContextPath || rootPath || '';
+                fetch(ctx + '/api/match-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: 'action=unlockTournament&tournamentId=' + encodeURIComponent(this.tournamentId)
+                }).catch(function(err) { console.error('Error unlocking tournament in DB:', err); });
+            } catch (e) {}
+
+            try {
                 localStorage.removeItem('tourma_final_locked_' + this.tournamentId);
             } catch (e) {}
 
@@ -382,18 +447,19 @@
             if (typeof this.onLockCallback === 'function') {
                 this.onLockCallback(false);
             }
+            if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
+                window.TourmaRoundControls.updateButtonsState(null);
+            }
 
             var textEl = document.getElementById('finalStagePopupText');
             var confirmBtn = document.getElementById('finalStageConfirmBtn');
             var unlockBtn = document.getElementById('finalStageUnlockBtn');
-            var closeBtn = document.getElementById('finalStageCloseBtn');
 
             if (textEl) {
                 textEl.innerHTML = '<div class="final-stage-title-line">Khi bạn xác nhận hoàn thành giải đấu, bạn sẽ không thể chỉnh sửa kết quả</div>';
             }
             if (confirmBtn) confirmBtn.style.display = 'inline-block';
             if (unlockBtn) unlockBtn.style.display = 'none';
-            if (closeBtn) closeBtn.style.display = 'none';
             var bannerEl = document.getElementById('finalStagePopupBanner');
             if (bannerEl) {
                 bannerEl.classList.remove('is-locked');
@@ -409,9 +475,49 @@
             if (banner) {
                 banner.style.display = 'none';
             }
+        },
+
+        /**
+         * Prompt user when attempting to edit a locked tournament
+         */
+        promptUnlock: function () {
+            var banner = document.getElementById('finalStagePopupBanner');
+            if (banner) {
+                banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // 2. Remove any existing toast
+            var oldToast = document.getElementById('tourmaLockToast');
+            if (oldToast) oldToast.remove();
+
+            // 3. Create interactive sleek Toast
+            var toast = document.createElement('div');
+            toast.id = 'tourmaLockToast';
+            toast.className = 'tourma-lock-toast';
+            toast.innerHTML = 
+                '<i class="fa-solid fa-lock tourma-lock-toast-icon"></i>' +
+                '<div class="tourma-lock-toast-body">' +
+                    '<div class="tourma-lock-toast-title">Giải đấu đã kết thúc & đang khóa</div>' +
+                    '<div class="tourma-lock-toast-desc">Bấm "Mở khóa" trên banner để chỉnh sửa lại tỉ số.</div>' +
+                '</div>' +
+                '<button type="button" class="tourma-lock-toast-btn" onclick="if(window.FinalStagePopup){window.FinalStagePopup.unlockTournament();}var t=document.getElementById(\'tourmaLockToast\');if(t)t.remove();">Mở khóa</button>';
+
+            document.body.appendChild(toast);
+
+            // Auto dismiss after 4.5 seconds
+            setTimeout(function () {
+                if (toast && toast.parentNode) {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s ease';
+                    setTimeout(function () {
+                        if (toast && toast.parentNode) toast.remove();
+                    }, 300);
+                }
+            }, 4500);
         }
     };
 
     window.FinalStagePopup = FinalStagePopup;
+    window.TourmaFinalStagePopup = FinalStagePopup;
 
 })(window);

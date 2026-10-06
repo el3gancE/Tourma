@@ -61,6 +61,37 @@
         },
 
         /**
+         * Generate realistic match scores given a predetermined winner slot
+         * @param {number|string} winnerSlotNum - 1 or 2 (or 'team1'/'team2')
+         * @param {number|string|null} customScore - Custom winning score (optional)
+         * @returns {{ team1Score: number, team2Score: number, winner: string, isT1Winner: boolean }}
+         */
+        generateScoreForWinner: function (winnerSlotNum, customScore) {
+            var isT1 = (winnerSlotNum === 1 || winnerSlotNum === '1' || winnerSlotNum === 'team1');
+            var parsed = null;
+            if (customScore !== undefined && customScore !== null && String(customScore).trim() !== '') {
+                var num = parseInt(String(customScore).trim(), 10);
+                if (!isNaN(num) && num > 0) parsed = num;
+            }
+
+            var winScore;
+            if (parsed !== null) {
+                winScore = parsed;
+            } else {
+                winScore = (Math.random() < 0.75) ? (Math.floor(Math.random() * 4) + 2) : (Math.floor(Math.random() * 4) + 6);
+            }
+
+            var loseScore = (winScore > 0) ? Math.floor(Math.random() * winScore) : 0;
+
+            return {
+                team1Score: isT1 ? winScore : loseScore,
+                team2Score: isT1 ? loseScore : winScore,
+                winner: isT1 ? 'team1' : 'team2',
+                isT1Winner: isT1
+            };
+        },
+
+        /**
          * Helper: Check if a team name is an unconfirmed placeholder or BYE
          */
         isPlaceholder: function (name) {

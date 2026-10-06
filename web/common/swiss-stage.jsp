@@ -262,6 +262,7 @@
         <script src="${pageContext.request.contextPath}/js/bracket-viewport.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/swiss-stage-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/round-control-helper.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/swiss-stage.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>

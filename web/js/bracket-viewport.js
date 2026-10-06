@@ -48,7 +48,7 @@
 
             // MOUSE DOWN: Start Drag-to-Pan
             container.addEventListener('mousedown', function (e) {
-                if (e.target.closest('.bracket-node-card') || e.target.closest('.btn-zoom') || e.target.closest('.de-zoom-btn') || e.target.closest('button')) {
+                if (e.target.closest('.bracket-node-card, .btn-zoom, .de-zoom-btn, .round-header-random-controls, .list-round-actions, .round-random-input, .btn-round-random, .btn-round-reset, .btn-random-round, .btn-reset-round, button, input, select, textarea, a')) {
                     return;
                 }
                 isMouseDown = true;
@@ -78,6 +78,9 @@
             // TOUCH PANNING
             var touchStartX = 0, touchStartY = 0;
             container.addEventListener('touchstart', function (e) {
+                if (e.target.closest('.bracket-node-card, .btn-zoom, .de-zoom-btn, .round-header-random-controls, .list-round-actions, .round-random-input, .btn-round-random, .btn-round-reset, .btn-random-round, .btn-reset-round, button, input, select, textarea, a')) {
+                    return;
+                }
                 if (e.touches.length === 1) {
                     touchStartX = e.touches[0].pageX - container.offsetLeft;
                     touchStartY = e.touches[0].pageY - container.offsetTop;

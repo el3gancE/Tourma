@@ -257,9 +257,14 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                         }
                     } catch (Exception ignore) {}
                     try {
-                        String champ = rs.getString("db_champion_name");
-                        if (champ != null && !champ.trim().isEmpty()) {
-                            t.setChampionName(champ.trim());
+                        String st = rs.getString("status");
+                        if ("COMPLETED".equalsIgnoreCase(st)) {
+                            String champDirect = rs.getString("champion_name");
+                            String champSub = rs.getString("db_champion_name");
+                            String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSub;
+                            if (champ != null && !champ.trim().isEmpty()) {
+                                t.setChampionName(champ.trim());
+                            }
                         }
                     } catch (Exception ignore) {}
                     try {

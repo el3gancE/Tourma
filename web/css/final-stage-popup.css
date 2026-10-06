@@ -160,3 +160,79 @@
     color: #ffffff;
     border-color: rgba(255, 255, 255, 0.25);
 }
+
+/* ── Sleek Glassmorphism Toast Notification for Locked State ── */
+.tourma-lock-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: rgba(24, 29, 41, 0.95);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    color: #ffffff;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.85rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 16px rgba(245, 158, 11, 0.25);
+    animation: slideInToast 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    max-width: 440px;
+}
+
+@keyframes slideInToast {
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.tourma-lock-toast-icon {
+    font-size: 1.25rem;
+    color: #f59e0b;
+    flex-shrink: 0;
+}
+
+.tourma-lock-toast-body {
+    flex: 1;
+    line-height: 1.45;
+}
+
+.tourma-lock-toast-title {
+    font-weight: 700;
+    color: #f59e0b;
+    margin-bottom: 2px;
+}
+
+.tourma-lock-toast-desc {
+    font-size: 0.78rem;
+    color: #cbd5e1;
+}
+
+.tourma-lock-toast-btn {
+    background: #f59e0b;
+    color: #0b0d12;
+    border: none;
+    border-radius: 6px;
+    padding: 0.38rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    font-family: 'Lexend', sans-serif !important;
+    flex-shrink: 0;
+}
+
+.tourma-lock-toast-btn:hover {
+    background: #fbbf24;
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}

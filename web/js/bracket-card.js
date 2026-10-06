@@ -248,19 +248,24 @@
                     '</div>' +
                 '</div>';
 
-            var checkCardLocked = function () {
+            var checkCardLocked = function (shouldPrompt) {
                 var tid = (data && (data.tournamentId || data.tourneyId)) || null;
+                var isL = false;
                 // Delegate to TourmaScoreModal.isLocked which properly checks multi-stage guard
                 if (window.TourmaScoreModal && typeof window.TourmaScoreModal.isLocked === 'function') {
-                    return window.TourmaScoreModal.isLocked(tid);
+                    isL = window.TourmaScoreModal.isLocked(tid);
+                } else if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
+                    isL = true;
+                } else {
+                    var _tid = tid || (window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null);
+                    if (_tid) {
+                        try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') isL = true; } catch(e) {}
+                    }
                 }
-                // Fallback: only check final champion lock
-                if (window.FinalStagePopup && window.FinalStagePopup.isLocked) return true;
-                var _tid = tid || (window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null);
-                if (_tid) {
-                    try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') return true; } catch(e) {}
+                if (isL && shouldPrompt && window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                    window.FinalStagePopup.promptUnlock();
                 }
-                return false;
+                return isL;
             };
 
             // Attach Quick Mode Row Handlers & Team Path Tracing Hover Events
@@ -274,15 +279,17 @@
                     if (window.TourmaPathTracker) window.TourmaPathTracker.clearHighlight();
                 });
                 rows[0].addEventListener('click', function (e) {
-                    if (checkCardLocked()) return;
+                    if (checkCardLocked(true)) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
-                        var parentCol = card.closest('.single-round-column, .de-round-column, .de-column');
-                        var rInp = parentCol ? parentCol.querySelector('.round-random-input') : null;
-                        var customScore = (rInp && rInp.value && Number(rInp.value) > 0) ? rInp.value.trim() : null;
+                        var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
+                            ? window.TourmaRoundControls.getCustomWinScore(card, null)
+                            : null;
 
-                        if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
+                        if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
+                            window.TourmaRoundControls.handleQuickWinner(null, matchId, 1, customScore);
+                        } else if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
                             window.SingleEliminationEngine.handleQuickWinner(matchId, 1, customScore);
                         } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
                             window.TourmaDoubleElimination.handleQuickWinner(matchId, 1, customScore);
@@ -300,15 +307,17 @@
                     if (window.TourmaPathTracker) window.TourmaPathTracker.clearHighlight();
                 });
                 rows[1].addEventListener('click', function (e) {
-                    if (checkCardLocked()) return;
+                    if (checkCardLocked(true)) return;
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
-                        var parentCol = card.closest('.single-round-column, .de-round-column, .de-column');
-                        var rInp = parentCol ? parentCol.querySelector('.round-random-input') : null;
-                        var customScore = (rInp && rInp.value && Number(rInp.value) > 0) ? rInp.value.trim() : null;
+                        var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
+                            ? window.TourmaRoundControls.getCustomWinScore(card, null)
+                            : null;
 
-                        if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
+                        if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
+                            window.TourmaRoundControls.handleQuickWinner(null, matchId, 2, customScore);
+                        } else if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
                             window.SingleEliminationEngine.handleQuickWinner(matchId, 2, customScore);
                         } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
                             window.TourmaDoubleElimination.handleQuickWinner(matchId, 2, customScore);
@@ -321,7 +330,7 @@
 
             // Attach Click Event to Launch Score Popup ONLY if match is playable and NOT in Quick Mode
             card.addEventListener('click', function (e) {
-                if (checkCardLocked()) return;
+                if (checkCardLocked(true)) return;
 
                 if (!isPlayable) {
                     return; // Disabled from clicking

@@ -1,37 +1,37 @@
 package dao;
 
+import model.Match;
+import model.Team;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import model.Match;
-import model.Team;
-import service.JsonParser;
-import service.MatchPersistenceService;
 
 /**
- * Clean, high-performance DAO for Round Robin Tournament Format.
- * 100% Database-Driven with zero regex overhead and fast query execution.
+ * High-Performance, Database-Driven DAO for Round Robin Tournament Format.
+ * 100% Database-Driven with automatic round robin schedule generator and SQL-based standings.
  */
 public class RoundRobinDAO extends DBContext {
 
-    public static class RRMatchDTO {
-        public int matchId;
-        public int roundNumber;
-        public int matchNumber;
-        public String team1Name;
-        public Integer team1Seed;
-        public Integer team1Score;
-        public String team2Name;
-        public Integer team2Seed;
-        public Integer team2Score;
-        public String winnerId;
-        public boolean isBye;
-        public String status;
+    public static class RRStandingRow {
+        public String teamId;
+        public String teamName;
+        public int seed;
+        public int matchesPlayed;
+        public int wins;
+        public int draws;
+        public int losses;
+        public int goalsScored;
+        public int goalsConceded;
+        public int goalDifference;
+        public int points;
+        public int rank;
     }
 
     public List<Match> getMatchesByTournamentId(String tournamentId) {
@@ -57,7 +57,7 @@ public class RoundRobinDAO extends DBContext {
                 while (rs.next()) {
                     Match m = new Match();
                     String rawId = rs.getString("id");
-                    int numId = parseNumericMatchId(rawId, seq++);
+                    int numId = parseNumericId(rawId, seq++);
                     m.setId(numId);
                     m.setRoundNumber(rs.getInt("round_number"));
                     m.setMatchNumber(numId);
@@ -95,6 +95,8 @@ public class RoundRobinDAO extends DBContext {
     public String getMatchesJsonForFrontend(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return "[]";
 
+        ensureRoundRobinInitialized(tournamentId, stageOrder);
+
         String sql = "SELECT m.*, "
                 + "t1.raw_name AS t1_name, t1.original_seed AS t1_seed, "
                 + "t2.raw_name AS t2_name, t2.original_seed AS t2_seed, "
@@ -104,8 +106,8 @@ public class RoundRobinDAO extends DBContext {
                 + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '_%') "
-                + "ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC";
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
+                + "ORDER BY m.round_number ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
         int count = 0;
@@ -116,6 +118,7 @@ public class RoundRobinDAO extends DBContext {
             ps.setInt(2, stageOrder);
             ps.setInt(3, stageOrder);
             ps.setInt(4, stageOrder);
+            ps.setInt(5, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
                 int seq = 1;
                 while (rs.next()) {
@@ -123,7 +126,8 @@ public class RoundRobinDAO extends DBContext {
                     count++;
 
                     String rawId = rs.getString("id");
-                    int matchId = parseNumericMatchId(rawId, seq++);
+                    int matchOrder = rs.getInt("match_order");
+                    int matchNum = (matchOrder > 0) ? matchOrder : seq++;
                     int roundNumber = rs.getInt("round_number");
 
                     String t1Name = rs.getString("t1_name");
@@ -150,24 +154,25 @@ public class RoundRobinDAO extends DBContext {
                     if ("FINISHED".equalsIgnoreCase(status)) status = "COMPLETED";
 
                     sb.append("{")
-                      .append("\"matchId\":").append(matchId).append(",")
-                      .append("\"id\":").append(matchId).append(",")
-                      .append("\"roundNumber\":").append(roundNumber).append(",")
-                      .append("\"matchNumber\":").append(matchId).append(",")
-                      .append("\"team1\":{")
-                      .append("\"name\":\"").append(escapeJson(t1Name != null ? t1Name : "")).append("\",")
-                      .append("\"seed\":\"").append(escapeJson(t1Seed)).append("\",")
-                      .append("\"score\":\"").append(escapeJson(s1)).append("\"")
-                      .append("},")
-                      .append("\"team2\":{")
-                      .append("\"name\":\"").append(escapeJson(t2Name != null ? t2Name : "")).append("\",")
-                      .append("\"seed\":\"").append(escapeJson(t2Seed)).append("\",")
-                      .append("\"score\":\"").append(escapeJson(s2)).append("\"")
-                      .append("},")
-                      .append("\"winnerId\":").append(winnerSlot.isEmpty() ? "null" : "\"" + winnerSlot + "\"").append(",")
-                      .append("\"isBye\":").append(isBye).append(",")
-                      .append("\"status\":\"").append(escapeJson(status != null ? status : "SCHEDULED")).append("\"")
-                      .append("}");
+                            .append("\"matchId\":\"").append(escapeJson(rawId)).append("\",")
+                            .append("\"id\":\"").append(escapeJson(rawId)).append("\",")
+                            .append("\"rawId\":\"").append(escapeJson(rawId)).append("\",")
+                            .append("\"roundNumber\":").append(roundNumber).append(",")
+                            .append("\"matchNumber\":").append(matchNum).append(",")
+                            .append("\"team1\":{")
+                            .append("\"name\":\"").append(escapeJson(t1Name != null ? t1Name : "")).append("\",")
+                            .append("\"seed\":\"").append(escapeJson(t1Seed)).append("\",")
+                            .append("\"score\":\"").append(escapeJson(s1)).append("\"")
+                            .append("},")
+                            .append("\"team2\":{")
+                            .append("\"name\":\"").append(escapeJson(t2Name != null ? t2Name : "")).append("\",")
+                            .append("\"seed\":\"").append(escapeJson(t2Seed)).append("\",")
+                            .append("\"score\":\"").append(escapeJson(s2)).append("\"")
+                            .append("},")
+                            .append("\"winnerId\":").append(winnerSlot.isEmpty() ? "null" : "\"" + winnerSlot + "\"").append(",")
+                            .append("\"isBye\":").append(isBye).append(",")
+                            .append("\"status\":\"").append(escapeJson(status != null ? status : "SCHEDULED")).append("\"")
+                            .append("}");
                 }
             }
         } catch (Exception e) {
@@ -177,281 +182,240 @@ public class RoundRobinDAO extends DBContext {
         return sb.toString();
     }
 
-    public boolean syncRoundRobinMatches(String tournamentId, int stageOrder, String matchesJson) {
-        if (tournamentId == null || matchesJson == null) return false;
-        List<Object> list = JsonParser.parseList(matchesJson);
-        if (list == null || list.isEmpty()) return false;
+    public synchronized void ensureRoundRobinInitialized(String tournamentId, int stageOrder) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
 
-        // Step 1: Resolve or create the stage_id for this tournament + stageOrder
-        String stageId = resolveOrCreateStageId(tournamentId, stageOrder);
-        if (stageId == null) {
-            // Fallback: pure UPDATE path via MatchPersistenceService
-            List<Map<String, Object>> mapList = new ArrayList<>();
-            for (Object item : list) {
-                if (item instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> m = (Map<String, Object>) item;
-                    mapList.add(m);
+        String checkSql = "SELECT COUNT(*) FROM matches m "
+                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(checkSql)) {
+            ps.setString(1, tournamentId);
+            ps.setInt(2, stageOrder);
+            ps.setInt(3, stageOrder);
+            ps.setInt(4, stageOrder);
+            ps.setInt(5, stageOrder);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return; // Already initialized!
                 }
             }
-            return MatchPersistenceService.getInstance().syncMatchesList(tournamentId, mapList) > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
         }
 
-        // Step 2: Resolve team name → DB id lookup
         ParticipantDAO pDao = new ParticipantDAO();
         List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
-        Map<String, String> teamLookup = new HashMap<>();
-        if (teams != null) {
-            for (Team tm : teams) {
-                if (tm.getId() != null) teamLookup.put(tm.getId().toLowerCase().trim(), tm.getId());
-                if (tm.getRawName() != null) teamLookup.put(tm.getRawName().toLowerCase().trim(), tm.getId());
-                if (tm.getNormalizedName() != null) teamLookup.put(tm.getNormalizedName().toLowerCase().trim(), tm.getId());
-            }
+        if (teams == null || teams.size() < 2) return;
+
+        initializeRoundRobinScheduleInDB(tournamentId, stageOrder, teams);
+    }
+
+    private void initializeRoundRobinScheduleInDB(String tournamentId, int stageOrder, List<Team> teams) {
+        List<Team> teamList = new ArrayList<>(teams);
+        boolean hasDummy = false;
+        if (teamList.size() % 2 != 0) {
+            teamList.add(null); // Dummy team for BYE
+            hasDummy = true;
         }
 
-        // Step 3: UPSERT each match using MERGE (T-SQL)
-        // match_code pattern for RR: "RR_<tournamentId>_S<stageOrder>_M<matchId>"
-        String mergeSql =
-            "MERGE matches AS tgt " +
-            "USING (SELECT ? AS tournament_id, ? AS stage_id, ? AS match_code, ? AS round_number) AS src " +
-            "    ON tgt.tournament_id = src.tournament_id AND tgt.match_code = src.match_code " +
-            "WHEN MATCHED THEN " +
-            "    UPDATE SET tgt.team1_id = COALESCE(?, tgt.team1_id), " +
-            "               tgt.team2_id = COALESCE(?, tgt.team2_id), " +
-            "               tgt.score1 = ?, tgt.score2 = ?, tgt.winner_id = ?, " +
-            "               tgt.status = ? " +
-            "WHEN NOT MATCHED THEN " +
-            "    INSERT (id, tournament_id, stage_id, round_number, match_code, bracket_type, " +
-            "            team1_id, team2_id, score1, score2, winner_id, is_bye, status) " +
-            "    VALUES (?, src.tournament_id, src.stage_id, src.round_number, src.match_code, 'MAIN', " +
-            "            ?, ?, ?, ?, ?, 0, ?);";
+        int numTeams = teamList.size();
+        int numRounds = numTeams - 1;
+        int matchesPerRound = numTeams / 2;
 
-        int count = 0;
+        String stageId = lookupOrCreateStageId(tournamentId, stageOrder);
+        int matchSeq = 1;
+
+        String insertSql = "INSERT INTO matches (id, tournament_id, stage_id, round_number, match_order, match_code, bracket_type, "
+                + "team1_id, team2_id, is_bye, status) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(mergeSql)) {
-                for (Object item : list) {
-                    if (!(item instanceof Map)) continue;
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> m = (Map<String, Object>) item;
+            try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
+                for (int r = 0; r < numRounds; r++) {
+                    int roundNumber = r + 1;
+                    for (int m = 0; m < matchesPerRound; m++) {
+                        Team t1 = teamList.get(m);
+                        Team t2 = teamList.get(numTeams - 1 - m);
 
-                    Object rawId = m.get("matchId");
-                    if (rawId == null) rawId = m.get("id");
-                    if (rawId == null) continue;
-                    String matchIdStr = String.valueOf(rawId).trim();
+                        if (t1 == null || t2 == null) {
+                            continue; // Skip match against BYE dummy
+                        }
 
-                    int roundNumber = 1;
-                    Object rn = m.get("roundNumber");
-                    if (rn == null) rn = m.get("round");
-                    if (rn != null) {
-                        try { roundNumber = Integer.parseInt(String.valueOf(rn).trim()); } catch (Exception ignored) {}
+                        String matchId = "M_" + tournamentId + "_RR_R" + roundNumber + "_" + (m + 1);
+                        ps.setString(1, matchId);
+                        ps.setString(2, tournamentId);
+                        ps.setString(3, stageId);
+                        ps.setInt(4, roundNumber);
+                        ps.setInt(5, matchSeq++);
+                        ps.setString(6, "Vòng " + roundNumber + " - Trận " + (m + 1));
+                        ps.setString(7, "ROUND_ROBIN");
+                        ps.setString(8, t1.getId());
+                        ps.setString(9, t2.getId());
+                        ps.setBoolean(10, false);
+                        ps.setString(11, "READY");
+                        ps.addBatch();
                     }
 
-                    String matchCode = "RR_" + tournamentId + "_S" + stageOrder + "_M" + matchIdStr;
-                    String newId = matchCode;
-
-                    // Resolve team names
-                    String t1Name = getNestedString(m, "team1", "name");
-                    if (t1Name == null) t1Name = getString(m, "team1Name");
-                    String t2Name = getNestedString(m, "team2", "name");
-                    if (t2Name == null) t2Name = getString(m, "team2Name");
-
-                    String t1Id = (t1Name != null) ? teamLookup.get(t1Name.toLowerCase().trim()) : null;
-                    String t2Id = (t2Name != null) ? teamLookup.get(t2Name.toLowerCase().trim()) : null;
-
-                    // Resolve scores
-                    Integer s1 = getNestedInt(m, "team1", "score");
-                    if (s1 == null) s1 = getIntObj(m, "team1Score");
-                    Integer s2 = getNestedInt(m, "team2", "score");
-                    if (s2 == null) s2 = getIntObj(m, "team2Score");
-
-                    // Resolve winner
-                    String winnerSlot = getString(m, "winnerId");
-                    String winnerId = null;
-                    if ("team1".equalsIgnoreCase(winnerSlot) && t1Id != null) winnerId = t1Id;
-                    else if ("team2".equalsIgnoreCase(winnerSlot) && t2Id != null) winnerId = t2Id;
-                    else if (s1 != null && s2 != null) {
-                        if (s1 > s2 && t1Id != null) winnerId = t1Id;
-                        else if (s2 > s1 && t2Id != null) winnerId = t2Id;
-                    }
-
-                    String status = (s1 != null && s2 != null) ? "FINISHED" : "PENDING";
-
-                    // MERGE params: USING clause
-                    ps.setString(1, tournamentId);
-                    ps.setString(2, stageId);
-                    ps.setString(3, matchCode);
-                    ps.setInt(4, roundNumber);
-                    // WHEN MATCHED UPDATE params
-                    if (t1Id != null) ps.setString(5, t1Id); else ps.setNull(5, Types.VARCHAR);
-                    if (t2Id != null) ps.setString(6, t2Id); else ps.setNull(6, Types.VARCHAR);
-                    if (s1 != null) ps.setInt(7, s1); else ps.setNull(7, Types.INTEGER);
-                    if (s2 != null) ps.setInt(8, s2); else ps.setNull(8, Types.INTEGER);
-                    if (winnerId != null) ps.setString(9, winnerId); else ps.setNull(9, Types.VARCHAR);
-                    ps.setString(10, status);
-                    // WHEN NOT MATCHED INSERT params
-                    ps.setString(11, newId);
-                    if (t1Id != null) ps.setString(12, t1Id); else ps.setNull(12, Types.VARCHAR);
-                    if (t2Id != null) ps.setString(13, t2Id); else ps.setNull(13, Types.VARCHAR);
-                    if (s1 != null) ps.setInt(14, s1); else ps.setNull(14, Types.INTEGER);
-                    if (s2 != null) ps.setInt(15, s2); else ps.setNull(15, Types.INTEGER);
-                    if (winnerId != null) ps.setString(16, winnerId); else ps.setNull(16, Types.VARCHAR);
-                    ps.setString(17, status);
-
-                    ps.addBatch();
-                    count++;
+                    // Rotate teams (keep element 0 fixed, rotate others)
+                    Team last = teamList.remove(teamList.size() - 1);
+                    teamList.add(1, last);
                 }
                 ps.executeBatch();
             }
             conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
         }
-        return count > 0;
     }
 
-    /**
-     * Look up the stage_id for the given tournament + stageOrder from tournament_stages.
-     * If none exists, creates a new ROUND_ROBIN stage entry and returns its id.
-     */
-    private String resolveOrCreateStageId(String tournamentId, int stageOrder) {
-        if (tournamentId == null) return null;
-        // Try to find existing stage
+    public List<RRStandingRow> getRoundRobinStandings(String tournamentId, int stageOrder) {
+        List<RRStandingRow> standings = new ArrayList<>();
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return standings;
+
+        String sql = "SELECT t.id AS team_id, t.raw_name AS team_name, t.original_seed, "
+                + "ISNULL(stats.mp, 0) AS matches_played, "
+                + "ISNULL(stats.w, 0) AS wins, "
+                + "ISNULL(stats.d, 0) AS draws, "
+                + "ISNULL(stats.l, 0) AS losses, "
+                + "ISNULL(stats.gf, 0) AS goals_scored, "
+                + "ISNULL(stats.ga, 0) AS goals_conceded, "
+                + "(ISNULL(stats.gf, 0) - ISNULL(stats.ga, 0)) AS goal_difference, "
+                + "ISNULL(stats.pts, 0) AS points "
+                + "FROM teams t "
+                + "LEFT JOIN ("
+                + "  SELECT t_id, "
+                + "         COUNT(*) AS mp, "
+                + "         SUM(CASE WHEN is_win = 1 THEN 1 ELSE 0 END) AS w, "
+                + "         SUM(CASE WHEN is_draw = 1 THEN 1 ELSE 0 END) AS d, "
+                + "         SUM(CASE WHEN is_loss = 1 THEN 1 ELSE 0 END) AS l, "
+                + "         SUM(gf) AS gf, "
+                + "         SUM(ga) AS ga, "
+                + "         SUM(CASE WHEN is_win = 1 THEN 3 WHEN is_draw = 1 THEN 1 ELSE 0 END) AS pts "
+                + "  FROM ("
+                + "    SELECT team1_id AS t_id, score1 AS gf, score2 AS ga, "
+                + "           CASE WHEN score1 > score2 THEN 1 ELSE 0 END AS is_win, "
+                + "           CASE WHEN score1 = score2 THEN 1 ELSE 0 END AS is_draw, "
+                + "           CASE WHEN score1 < score2 THEN 1 ELSE 0 END AS is_loss "
+                + "    FROM matches WHERE tournament_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
+                + "    UNION ALL "
+                + "    SELECT team2_id AS t_id, score2 AS gf, score1 AS ga, "
+                + "           CASE WHEN score2 > score1 THEN 1 ELSE 0 END AS is_win, "
+                + "           CASE WHEN score2 = score1 THEN 1 ELSE 0 END AS is_draw, "
+                + "           CASE WHEN score2 < score1 THEN 1 ELSE 0 END AS is_loss "
+                + "    FROM matches WHERE tournament_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
+                + "  ) sub GROUP BY t_id"
+                + ") stats ON t.id = stats.t_id "
+                + "WHERE t.tournament_id = ? "
+                + "ORDER BY points DESC, goal_difference DESC, goals_scored DESC, t.original_seed ASC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId);
+            ps.setString(2, tournamentId);
+            ps.setString(3, tournamentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                int rk = 1;
+                while (rs.next()) {
+                    RRStandingRow row = new RRStandingRow();
+                    row.teamId = rs.getString("team_id");
+                    row.teamName = rs.getString("team_name");
+                    row.seed = rs.getInt("original_seed");
+                    row.matchesPlayed = rs.getInt("matches_played");
+                    row.wins = rs.getInt("wins");
+                    row.draws = rs.getInt("draws");
+                    row.losses = rs.getInt("losses");
+                    row.goalsScored = rs.getInt("goals_scored");
+                    row.goalsConceded = rs.getInt("goals_conceded");
+                    row.goalDifference = rs.getInt("goal_difference");
+                    row.points = rs.getInt("points");
+                    row.rank = rk++;
+                    standings.add(row);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return standings;
+    }
+
+    private String lookupOrCreateStageId(String tournamentId, int stageOrder) {
         String selectSql = "SELECT TOP 1 id FROM tournament_stages WHERE tournament_id = ? AND stage_order = ?";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(selectSql)) {
             ps.setString(1, tournamentId);
             ps.setInt(2, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("id");
-                }
+                if (rs.next()) return rs.getString("id");
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception ignore) {}
 
-        // No stage found → create one
-        String newStageId = tournamentId + "_S" + stageOrder + "_RR";
-        String stageName = (stageOrder == 1) ? "Stage 1: Round Robin" : ("Stage " + stageOrder + ": Round Robin");
-        String insertSql = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format, status) " +
-                           "VALUES (?, ?, ?, ?, 'ROUND_ROBIN', 'ONGOING')";
+        String newStageId = "STG_" + tournamentId + "_S" + stageOrder;
+        String insertSql = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(insertSql)) {
             ps.setString(1, newStageId);
             ps.setString(2, tournamentId);
             ps.setInt(3, stageOrder);
-            ps.setString(4, stageName);
+            ps.setString(4, "Stage " + stageOrder);
+            ps.setString(5, "ROUND_ROBIN");
             ps.executeUpdate();
             return newStageId;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        } catch (Exception ignore) {}
+
+        return "STAGE_1";
     }
 
-    private String getString(Map<String, Object> m, String key) {
-        if (m == null || !m.containsKey(key)) return null;
-        Object v = m.get(key);
-        return (v != null) ? String.valueOf(v).trim() : null;
-    }
-
-    @SuppressWarnings("unchecked")
-    private String getNestedString(Map<String, Object> m, String outerKey, String innerKey) {
-        if (m == null) return null;
-        Object outer = m.get(outerKey);
-        if (outer instanceof Map) {
-            Object inner = ((Map<String, Object>) outer).get(innerKey);
-            return (inner != null) ? String.valueOf(inner).trim() : null;
-        }
-        return null;
-    }
-
-    private Integer getIntObj(Map<String, Object> m, String key) {
-        if (m == null || !m.containsKey(key)) return null;
-        Object v = m.get(key);
-        if (v == null) return null;
-        try {
-            if (v instanceof Number) return ((Number) v).intValue();
-            String s = String.valueOf(v).trim();
-            return s.isEmpty() ? null : Integer.parseInt(s);
-        } catch (Exception e) { return null; }
-    }
-
-    @SuppressWarnings("unchecked")
-    private Integer getNestedInt(Map<String, Object> m, String outerKey, String innerKey) {
-        if (m == null) return null;
-        Object outer = m.get(outerKey);
-        if (outer instanceof Map) {
-            Object inner = ((Map<String, Object>) outer).get(innerKey);
-            if (inner == null) return null;
-            try {
-                if (inner instanceof Number) return ((Number) inner).intValue();
-                String s = String.valueOf(inner).trim();
-                return s.isEmpty() ? null : Integer.parseInt(s);
-            } catch (Exception e) { return null; }
-        }
-        return null;
-    }
-
-
-    public boolean updateMatchScore(String tournamentId, int stageOrder, String matchId, Integer score1, Integer score2, String winnerFlag, String team1Name, String team2Name) {
-        ParticipantDAO pDao = new ParticipantDAO();
-        List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
-        String winnerId = null;
-        if (teams != null && winnerFlag != null) {
-            String targetName = "team1".equalsIgnoreCase(winnerFlag) ? team1Name : team2Name;
-            if (targetName != null) {
-                for (Team t : teams) {
-                    if (targetName.equalsIgnoreCase(t.getRawName()) || targetName.equalsIgnoreCase(t.getNormalizedName())) {
-                        winnerId = t.getId();
-                        break;
-                    }
-                }
-            }
-        }
-        return MatchPersistenceService.getInstance().updateSingleMatch(tournamentId, matchId, score1, score2, winnerId);
-    }
-
-    public boolean updateMatchScore(String tournamentId, int stageOrder, int matchId, Integer score1, Integer score2, String winnerFlag, String team1Name, String team2Name) {
-        return updateMatchScore(tournamentId, stageOrder, String.valueOf(matchId), score1, score2, winnerFlag, team1Name, team2Name);
-    }
-
-    public boolean updateMatchScore(String matchIdStr, String score1Str, String score2Str, String winner) {
-        Integer s1 = null, s2 = null;
-        try { if (score1Str != null && !score1Str.trim().isEmpty()) s1 = Integer.parseInt(score1Str.trim()); } catch (Exception ignore) {}
-        try { if (score2Str != null && !score2Str.trim().isEmpty()) s2 = Integer.parseInt(score2Str.trim()); } catch (Exception ignore) {}
-        return updateMatchScore(null, 1, matchIdStr, s1, s2, winner, null, null);
-    }
-
-    public boolean resetRoundRobinMatches(String tournamentId, int stageOrder) {
+    public boolean resetBracketMatches(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.winner_id = NULL, m.status = 'PENDING' "
+        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.penalty1 = NULL, m.penalty2 = NULL, "
+                + "m.winner_id = NULL, m.loser_id = NULL, m.status = 'READY' "
                 + "FROM matches m "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '_%')";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tournamentId);
-            ps.setInt(2, stageOrder);
-            ps.setInt(3, stageOrder);
-            ps.setInt(4, stageOrder);
-            return ps.executeUpdate() >= 0;
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
+
+        String resetTourneySql = "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL WHERE id = ?";
+
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, tournamentId);
+                ps.setInt(2, stageOrder);
+                ps.setInt(3, stageOrder);
+                ps.setInt(4, stageOrder);
+                ps.setInt(5, stageOrder);
+                ps.executeUpdate();
+            }
+
+            try (PreparedStatement psT = conn.prepareStatement(resetTourneySql)) {
+                psT.setString(1, tournamentId);
+                psT.executeUpdate();
+            } catch (Exception ignore) {}
+
+            try (PreparedStatement psS1 = conn.prepareStatement("UPDATE tournaments SET stage1_status = 'PENDING' WHERE id = ?")) {
+                psS1.setString(1, tournamentId);
+                psS1.executeUpdate();
+            } catch (Exception ignore) {}
+
+            service.RollingWindowPointService.clearAllCaches();
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    private int parseNumericMatchId(String strId, int defaultSeq) {
+    private int parseNumericId(String strId, int defaultSeq) {
         if (strId == null || strId.trim().isEmpty()) return defaultSeq;
         try {
             return Integer.parseInt(strId.trim());
         } catch (Exception e) {
-            String digits = strId.replaceAll("\\D+", "");
-            if (!digits.isEmpty()) {
-                try { return Integer.parseInt(digits); } catch (Exception ignore) {}
+            int lastUnderscore = strId.lastIndexOf('_');
+            if (lastUnderscore >= 0 && lastUnderscore < strId.length() - 1) {
+                String sub = strId.substring(lastUnderscore + 1);
+                try { return Integer.parseInt(sub); } catch (Exception ignore) {}
             }
         }
         return defaultSeq;
