@@ -13,6 +13,7 @@
     String dbMatchesJson = "[]";
     String dbTournamentStatus = "DRAFT";
     int cutTarget = 0;
+    int dbAdvancingSeats = 0;
     String tournamentType = "SINGLE_STAGE";
     String stageParam = request.getParameter("stage");
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
@@ -51,6 +52,7 @@
                 if (t.getTournamentType() != null) {
                     tournamentType = t.getTournamentType();
                 }
+                dbAdvancingSeats = t.getAdvancingSeatsCount();
                 if ("MULTI_STAGE".equals(tournamentType) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
                 }
@@ -295,11 +297,17 @@
             window.TourmaContextPath = '${pageContext.request.contextPath}';
             window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
             window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
+            window.TourmaDbTournamentStatus = "<%= dbTournamentStatus %>";
+            window.TourmaDbStage2Teams = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var dbTournamentStatus = "<%= dbTournamentStatus %>";
                 if (dbTournamentStatus === 'COMPLETED') {
                     try { localStorage.setItem('tourma_final_locked_' + tourneyId, 'true'); } catch(e) {}
+                }
+                var dbStage1Status = "<%= dbStage1Status %>";
+                if (dbStage1Status === 'LOCKED' || dbStage1Status === 'COMPLETED' || dbTournamentStatus === 'COMPLETED') {
+                    try { localStorage.setItem('tourma_stage1_locked_' + tourneyId, 'true'); } catch(e) {}
                 }
                 window.TourmaContextPathTourneyId = tourneyId;
                 var preloadedTeams = <%= teamsJson %>;
@@ -309,8 +317,8 @@
                 var currentStage = <%= currentStage %>;
 
                 if (currentStage === 2) {
-                    // Resolve advCount / cutTarget for Stage 2
-                    var advCount = <%= cutTarget %>;
+                    // Resolve advCount for Stage 2
+                    var advCount = <%= dbAdvancingSeats %>;
                     if (!advCount || advCount <= 1) {
                         try {
                             var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
@@ -334,8 +342,9 @@
                     }
                     if (s2TeamsRaw && s2TeamsRaw.length > 0) {
                         preloadedTeams = s2TeamsRaw;
-                    } else if (advCount && advCount > 1 && preloadedTeams && preloadedTeams.length > advCount) {
+                    } else if (advCount && advCount > 1 && preloadedTeams && preloadedTeams.length > 0) {
                         preloadedTeams = preloadedTeams.slice(0, advCount);
+                        try { localStorage.setItem('tourma_stage2_teams_' + tourneyId, JSON.stringify(preloadedTeams)); } catch (e) {}
                     }
                     cutTarget = 0; // Stage 2 always plays to find a champion!
                 } else if (!isMultiStage) {

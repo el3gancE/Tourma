@@ -238,12 +238,18 @@
             window.TourmaContextPath = '${pageContext.request.contextPath}';
             window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
             window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
+            window.TourmaDbTournamentStatus = "<%= dbTournamentStatus %>";
+            window.TourmaDbStage2Teams = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var dbTournamentStatus = "<%= dbTournamentStatus %>";
                 // Sync DB status to localStorage so FinalStagePopup reads correct state
                 if (dbTournamentStatus === 'COMPLETED') {
                     try { localStorage.setItem('tourma_final_locked_' + tourneyId, 'true'); } catch(e) {}
+                }
+                var dbStage1Status = "<%= dbStage1Status %>";
+                if (dbStage1Status === 'LOCKED' || dbStage1Status === 'COMPLETED' || dbTournamentStatus === 'COMPLETED') {
+                    try { localStorage.setItem('tourma_stage1_locked_' + tourneyId, 'true'); } catch(e) {}
                 }
                 var tType = "<%= tournamentType %>";
                 try { localStorage.setItem('tourma_type_' + tourneyId, tType); } catch(e) {}

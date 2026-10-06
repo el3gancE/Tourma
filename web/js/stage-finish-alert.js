@@ -33,6 +33,19 @@
                 isLocked = false;
             }
 
+            // Check if DB says Stage 1 is locked or completed, or tournament is completed
+            if (!isLocked) {
+                try {
+                    if (window.TourmaDbStage1Status && (window.TourmaDbStage1Status[tournamentId] === 'LOCKED' || window.TourmaDbStage1Status[tournamentId] === 'COMPLETED')) {
+                        isLocked = true;
+                    } else if (window.TourmaDbTournamentStatus === 'COMPLETED' || window.TourmaDbTournamentStatus === 'FINISHED' || window.swissTournamentStatus === 'COMPLETED') {
+                        isLocked = true;
+                    } else if (window.TourmaDbStage2Teams && Array.isArray(window.TourmaDbStage2Teams) && window.TourmaDbStage2Teams.length > 0) {
+                        isLocked = true;
+                    }
+                } catch (e) {}
+            }
+
             // Also check if Stage 2 already has saved matches or DB preloads
             if (!isLocked) {
                 try {
@@ -90,7 +103,8 @@
             else if (s1Format === 'ROUND_ROBIN') page = 'round-robin.jsp';
             else if (s1Format === 'SWISS' || s1Format === 'SWISS_LITE') page = 'swiss-stage.jsp';
 
-            var targetHref = basePrefix + page + '?id=' + encodeURIComponent(tournamentId) + '&stage=1';
+            var seriesParam = urlParams.get('seriesId');
+            var targetHref = basePrefix + page + '?id=' + encodeURIComponent(tournamentId) + '&stage=1' + (seriesParam ? '&seriesId=' + encodeURIComponent(seriesParam) : '');
 
             var targetNode = (typeof targetContainer === 'string') ? document.getElementById(targetContainer) : targetContainer;
             var wrapperElem = document.getElementById('stageFinishAlertContainer');

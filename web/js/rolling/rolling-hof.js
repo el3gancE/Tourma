@@ -103,6 +103,8 @@
       } else if (t2Name && wId.toLowerCase() === t2Name.toLowerCase()) {
         winnerName = t2Name;
         loserName = t1Name;
+      } else if (wId && wId !== '1' && wId !== '2' && wId !== 'team1' && wId !== 'team2') {
+        winnerName = wId;
       }
     }
     return { winner: winnerName, loser: loserName };
@@ -110,11 +112,15 @@
 
   function getStorageData(prefixList, id) {
     if (!prefixList || prefixList.length === 0 || !id) return null;
+    var rawId = String(id).trim();
+    var cleanId = rawId.replace(/^tournament_/, '');
     for (var i = 0; i < prefixList.length; i++) {
       var p = prefixList[i];
-      var val = localStorage.getItem(p + id);
+      var val = localStorage.getItem(p + rawId);
       if (val) return val;
-      val = localStorage.getItem(p + 'tournament_' + id);
+      val = localStorage.getItem(p + 'tournament_' + cleanId);
+      if (val) return val;
+      val = localStorage.getItem(p + cleanId);
       if (val) return val;
     }
     return null;
@@ -460,6 +466,39 @@
       if (localStorage.getItem(savedChampKey)) {
         champName = extractName(localStorage.getItem(savedChampKey));
       }
+      if (!champName) {
+        var finalChampKey = "tourma_final_champion_" + t.id;
+        if (localStorage.getItem(finalChampKey)) {
+          champName = extractName(localStorage.getItem(finalChampKey));
+        }
+      }
+
+      // Check if TourmaRollingStandingsEngine is available to parse full tournament results (all formats & multi-stage)
+      if (!champName && window.TourmaRollingStandingsEngine && typeof window.TourmaRollingStandingsEngine.parseTournamentResults === 'function') {
+        try {
+          var engineRes = window.TourmaRollingStandingsEngine.parseTournamentResults(t, {});
+          if (engineRes) {
+            if (engineRes.championName) {
+              champName = extractName(engineRes.championName);
+            }
+            if (!champName && engineRes.positionsMap) {
+              Object.keys(engineRes.positionsMap).forEach(function (tmK) {
+                if (String(engineRes.positionsMap[tmK]) === "1") {
+                  champName = extractName(tmK);
+                }
+              });
+            }
+            if (!champName && engineRes.achievementsMap) {
+              Object.keys(engineRes.achievementsMap).forEach(function (tmK) {
+                var ach = engineRes.achievementsMap[tmK];
+                if (ach === "Vô Địch" || ach === "Champion") {
+                  champName = extractName(tmK);
+                }
+              });
+            }
+          }
+        } catch (e) {}
+      }
 
       // Check Multi-Stage config in localStorage
       var rawMultiCfg = getStorageData(['tourma_multi_config_'], t.id);
@@ -468,14 +507,14 @@
         try { multiConfig = JSON.parse(rawMultiCfg); } catch (e) {}
       }
 
-      var isMultiStage = !!(multiConfig && multiConfig.stage2Format) || (t.stageCount > 1) || (t.isMultiStage);
-      var s1Format = (multiConfig && multiConfig.stage1Format) ? multiConfig.stage1Format.toUpperCase() : (t.stage1Format || (t.format || 'SINGLE_ELIMINATION'));
-      var s2Format = (multiConfig && multiConfig.stage2Format) ? multiConfig.stage2Format.toUpperCase() : (t.stage2Format || 'SINGLE_ELIMINATION');
+      var isMultiStage = !!(multiConfig && multiConfig.stage2Format) || (t.stageCount > 1) || (t.isMultiStage === true) || (t.tournamentType === 'MULTI_STAGE');
+      var s1Format = (multiConfig && multiConfig.stage1Format) ? multiConfig.stage1Format.toUpperCase() : (t.stage1Format ? t.stage1Format.toUpperCase() : (t.format || 'SINGLE_ELIMINATION'));
+      var s2Format = (multiConfig && multiConfig.stage2Format) ? multiConfig.stage2Format.toUpperCase() : (t.stage2Format ? t.stage2Format.toUpperCase() : 'SINGLE_ELIMINATION');
 
       // Check Stage 2 if Multi-Stage
       if (!champName && isMultiStage) {
         if (s2Format === 'SINGLE_ELIMINATION') {
-          var rawS2SE = getStorageData(['tourma_bracket_stage2_', 'tourma_stage2_bracket_', 'tourma_bracket_matches_stage2_', 'tourma_matches_stage2_'], t.id);
+          var rawS2SE = getStorageData(['tourma_bracket_stage2_', 'tourma_stage2_bracket_', 'tourma_bracket_matches_stage2_', 'tourma_matches_stage2_', 'tourma_stage2_matches_', 'tourma_bracket_', 'tourma_bracket_matches_', 'tourma_matches_'], t.id);
           if (rawS2SE) {
             try {
               var s2Data = JSON.parse(rawS2SE);
@@ -489,7 +528,7 @@
                     finalMatch = m;
                   }
                 });
-                if (finalMatch && finalMatch.winnerId) {
+                if (finalMatch && (finalMatch.winnerId || finalMatch.winner)) {
                   var res = resolveWinnerAndLoser(finalMatch);
                   if (res.winner) champName = res.winner;
                 }
@@ -497,15 +536,15 @@
             } catch (e) {}
           }
         } else if (s2Format === 'DOUBLE_ELIMINATION') {
-          var rawS2DE = getStorageData(['tourma_de_matches_stage2_'], t.id);
+          var rawS2DE = getStorageData(['tourma_de_matches_stage2_', 'tourma_de_matches_'], t.id);
           if (rawS2DE) {
             try {
               var s2DEData = JSON.parse(rawS2DE);
               var gfRound = s2DEData.grandFinalsRound;
               if (gfRound && gfRound.matches && gfRound.matches.length > 0) {
                 var gfMatches = gfRound.matches;
-                var gfFinal = (gfMatches.length > 1 && gfMatches[1].winnerId) ? gfMatches[1] : gfMatches[0];
-                if (gfFinal && gfFinal.winnerId) {
+                var gfFinal = (gfMatches.length > 1 && (gfMatches[1].winnerId || gfMatches[1].winner)) ? gfMatches[1] : gfMatches[0];
+                if (gfFinal && (gfFinal.winnerId || gfFinal.winner)) {
                   var resGF = resolveWinnerAndLoser(gfFinal);
                   if (resGF.winner) champName = resGF.winner;
                 }
@@ -513,9 +552,9 @@
             } catch (e) {}
           }
         } else if (s2Format === 'ROUND_ROBIN') {
-          var rawS2RR = getStorageData(['tourma_rr_matches_stage2_'], t.id);
+          var rawS2RR = getStorageData(['tourma_rr_matches_stage2_', 'tourma_rr_matches_', 'tourma_matches_stage2_'], t.id);
           var s2Teams = [];
-          try { s2Teams = JSON.parse(getStorageData(['tourma_stage2_teams_'], t.id)) || []; } catch (e) {}
+          try { s2Teams = JSON.parse(getStorageData(['tourma_stage2_teams_', 'tourma_teams_'], t.id)) || []; } catch (e) {}
           if (rawS2RR && s2Teams.length > 0 && window.TourmaRoundRobinAlgorithm) {
             try {
               var rrData = JSON.parse(rawS2RR);
@@ -547,7 +586,7 @@
                     finalMatch = m;
                   }
                 });
-                if (finalMatch && finalMatch.winnerId) {
+                if (finalMatch && (finalMatch.winnerId || finalMatch.winner)) {
                   var res = resolveWinnerAndLoser(finalMatch);
                   if (res.winner) champName = res.winner;
                 }
@@ -562,8 +601,8 @@
               var gfRound = deData.grandFinalsRound;
               if (gfRound && gfRound.matches && gfRound.matches.length > 0) {
                 var gfMatches = gfRound.matches;
-                var gfFinal = (gfMatches.length > 1 && gfMatches[1].winnerId) ? gfMatches[1] : gfMatches[0];
-                if (gfFinal && gfFinal.winnerId) {
+                var gfFinal = (gfMatches.length > 1 && (gfMatches[1].winnerId || gfMatches[1].winner)) ? gfMatches[1] : gfMatches[0];
+                if (gfFinal && (gfFinal.winnerId || gfFinal.winner)) {
                   var resGF = resolveWinnerAndLoser(gfFinal);
                   if (resGF.winner) champName = resGF.winner;
                 }
@@ -586,6 +625,11 @@
             } catch (e) {}
           }
         }
+      }
+
+      // Check DB champion name from subTournament object
+      if (!champName && t.championName && t.championName.trim()) {
+        champName = extractName(t.championName.trim());
       }
 
       // Check Server-rendered DOM row fallback if not found in localStorage

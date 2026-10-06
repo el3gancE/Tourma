@@ -11,11 +11,12 @@ javac -encoding UTF-8 -cp "%CP%" -d build\web\WEB-INF\classes @sources.txt
 set ERR=%ERRORLEVEL%
 if %ERR% EQU 0 (
     javac -encoding UTF-8 -cp "%CP%" -d build\classes @sources.txt
+    xcopy /E /I /Y /Q web build\web >nul 2>&1
 )
 del sources.txt
 
 if %ERR% EQU 0 (
-    echo [BUILD SUCCESS] All Java files compiled cleanly!
+    echo [BUILD SUCCESS] All Java files compiled and web assets synced cleanly!
 ) else (
     echo [BUILD ERROR] Compilation failed with error code %ERR%
 )

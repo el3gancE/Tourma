@@ -196,55 +196,103 @@
                 }
             }
 
-            // Restore if ANY saved bracket data exists
-            var savedValid = !!(savedBracket && savedBracket.matchesMap && Object.keys(savedBracket.matchesMap).length > 0);
-
-            // Safety Check: If savedBracket contains ANY completed match or score, NEVER wipe it!
-            if (!savedValid && savedBracket && savedBracket.matchesMap) {
-                var mKeysCheck = Object.keys(savedBracket.matchesMap);
-                for (var ck = 0; ck < mKeysCheck.length; ck++) {
-                    var matCheck = savedBracket.matchesMap[mKeysCheck[ck]];
-                    if (matCheck && (matCheck.winnerId || (matCheck.team1 && matCheck.team1.score !== undefined && matCheck.team1.score !== '') || (matCheck.team2 && matCheck.team2.score !== undefined && matCheck.team2.score !== '') || matCheck.status === 'COMPLETED')) {
-                        savedValid = true;
-                        break;
-                    }
-                }
-            }
-
             var hasDbMatches = (dbMatches && Array.isArray(dbMatches) && dbMatches.length > 0);
 
-            // Validate dbMatches integrity (reject stale or incomplete DB data)
-            if (hasDbMatches && this.teamsList && this.teamsList.length >= 2) {
-                var expectedMatches = this.teamsList.length - 1;
-                if (dbMatches.length < expectedMatches) {
-                    console.warn('[SE restore] dbMatches has only ' + dbMatches.length + ' matches, expected at least ' + expectedMatches + '. Stale/incomplete DB data ignored!');
-                    hasDbMatches = false;
-                }
+            // Generate mathematically complete baseline tree structure for this.teamsList
+            var fullTree = null;
+            if (this.teamsList && this.teamsList.length >= 2 && window.TourmaBracketAlgorithm) {
+                fullTree = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
             }
 
-            console.log('[SE restore] key=' + bKey + ' | hasSaved=' + savedValid + ' | hasDbMatches=' + hasDbMatches + ' (count=' + (hasDbMatches ? dbMatches.length : 0) + ')');
+            if (fullTree && fullTree.matchesMap && Object.keys(fullTree.matchesMap).length > 0) {
+                this.bracketData = fullTree;
+                this.roundsList = fullTree.roundsList || [];
+                this.matchesMap = fullTree.matchesMap || {};
 
-            if (savedValid && savedBracket && savedBracket.matchesMap && Object.keys(savedBracket.matchesMap).length > 0) {
-                // 1. RESTORE DIRECTLY FROM CLIENT LOCALSTORAGE (Authoritative User Input) & SYNC TO DB
-                console.log('[SE restore] Restoring from localStorage user input and syncing to DB!');
-                this.matchesMap = savedBracket.matchesMap || {};
-                this.roundsList = savedBracket.roundsList || [];
-                this.bracketData = savedBracket;
-
-                if (this.roundsList.length === 0 && Object.keys(this.matchesMap).length > 0) {
-                    this.buildRoundsFromMap();
+                // 1. Merge saved localStorage bracket data onto full tree
+                if (savedBracket && savedBracket.matchesMap) {
+                    var sKeys = Object.keys(savedBracket.matchesMap);
+                    for (var sk = 0; sk < sKeys.length; sk++) {
+                        var sm = savedBracket.matchesMap[sKeys[sk]];
+                        var targetSm = this.matchesMap[sKeys[sk]] || this.matchesMap[Number(sKeys[sk])] || this.matchesMap[String(sKeys[sk])];
+                        if (targetSm && sm) {
+                            if (sm.team1 && sm.team1.score !== undefined && sm.team1.score !== null && sm.team1.score !== '') {
+                                targetSm.team1.score = sm.team1.score;
+                            }
+                            if (sm.team2 && sm.team2.score !== undefined && sm.team2.score !== null && sm.team2.score !== '') {
+                                targetSm.team2.score = sm.team2.score;
+                            }
+                            if (sm.winnerId) {
+                                targetSm.winnerId = sm.winnerId;
+                            } else if (targetSm.team1 && targetSm.team2 && targetSm.team1.score !== '' && targetSm.team2.score !== '') {
+                                var ssc1 = Number(targetSm.team1.score);
+                                var ssc2 = Number(targetSm.team2.score);
+                                if (!isNaN(ssc1) && !isNaN(ssc2)) {
+                                    if (ssc1 > ssc2) targetSm.winnerId = 'team1';
+                                    else if (ssc2 > ssc1) targetSm.winnerId = 'team2';
+                                }
+                            }
+                            if (sm.status === 'COMPLETED' || sm.status === 'FINISHED' || sm.status === 'DONE' || targetSm.winnerId) targetSm.status = 'COMPLETED';
+                            if (sm.team1 && sm.team1.name && !sm.team1.name.startsWith('W #') && !sm.team1.name.startsWith('L #') && sm.team1.name !== 'TBD') {
+                                targetSm.team1.name = sm.team1.name;
+                                if (sm.team1.seed !== undefined) targetSm.team1.seed = sm.team1.seed;
+                            }
+                            if (sm.team2 && sm.team2.name && !sm.team2.name.startsWith('W #') && !sm.team2.name.startsWith('L #') && sm.team2.name !== 'TBD') {
+                                targetSm.team2.name = sm.team2.name;
+                                if (sm.team2.seed !== undefined) targetSm.team2.seed = sm.team2.seed;
+                            }
+                        }
+                    }
                 }
 
-                if (savedBracket.teamsList && savedBracket.teamsList.length > 0) {
-                    this.teamsList = savedBracket.teamsList;
+                // 2. Merge DB matches onto full tree
+                if (hasDbMatches) {
+                    for (var di = 0; di < dbMatches.length; di++) {
+                        var dm = dbMatches[di];
+                        var dmId = dm.matchId !== undefined ? dm.matchId : dm.id;
+                        var targetDm = this.matchesMap[dmId] || this.matchesMap[Number(dmId)] || this.matchesMap[String(dmId)];
+                        if (targetDm && dm) {
+                            if (dm.team1 && (dm.team1.score !== undefined && dm.team1.score !== null && dm.team1.score !== '')) {
+                                targetDm.team1.score = dm.team1.score;
+                            }
+                            if (dm.team2 && (dm.team2.score !== undefined && dm.team2.score !== null && dm.team2.score !== '')) {
+                                targetDm.team2.score = dm.team2.score;
+                            }
+                            if (dm.winnerId) {
+                                targetDm.winnerId = dm.winnerId;
+                            } else if (targetDm.team1 && targetDm.team2 && targetDm.team1.score !== '' && targetDm.team2.score !== '') {
+                                var dsc1 = Number(targetDm.team1.score);
+                                var dsc2 = Number(targetDm.team2.score);
+                                if (!isNaN(dsc1) && !isNaN(dsc2)) {
+                                    if (dsc1 > dsc2) targetDm.winnerId = 'team1';
+                                    else if (dsc2 > dsc1) targetDm.winnerId = 'team2';
+                                }
+                            }
+                            if (dm.status === 'COMPLETED' || dm.status === 'FINISHED' || dm.status === 'DONE' || targetDm.winnerId) targetDm.status = 'COMPLETED';
+                            if (dm.team1 && dm.team1.name && !dm.team1.name.startsWith('W #') && !dm.team1.name.startsWith('L #') && dm.team1.name !== 'TBD') {
+                                targetDm.team1.name = dm.team1.name;
+                                if (dm.team1.seed !== undefined) targetDm.team1.seed = dm.team1.seed;
+                            }
+                            if (dm.team2 && dm.team2.name && !dm.team2.name.startsWith('W #') && !dm.team2.name.startsWith('L #') && dm.team2.name !== 'TBD') {
+                                targetDm.team2.name = dm.team2.name;
+                                if (dm.team2.seed !== undefined) targetDm.team2.seed = dm.team2.seed;
+                            }
+                        }
+                    }
                 }
 
-                // Sync bracket to SQL Server in background without blocking initial rendering
-                this.syncBracketToDB(false);
+                // 3. Propagate winners forward through the full tree so subsequent round teams are shown!
+                if (window.TourmaBracketAlgorithm && typeof window.TourmaBracketAlgorithm.renumberMatchesContiguously === 'function') {
+                    window.TourmaBracketAlgorithm.renumberMatchesContiguously(this.roundsList, this.matchesMap);
+                }
+
+                this.persistMatches();
             } else if (hasDbMatches) {
-                // 2. RESTORE DIRECTLY FROM DATABASE (When localStorage has no saved state)
+                // 2. RESTORE DIRECTLY FROM DATABASE MATCHES
                 console.log('[SE restore] Restoring directly from DATABASE matches!');
                 this.buildMapFromList(dbMatches);
+                this.bracketData = { matchesMap: this.matchesMap, roundsList: this.roundsList, teamsList: this.teamsList };
+                this.persistMatches();
             } else if (this.teamsList && this.teamsList.length > 0 && window.TourmaBracketAlgorithm) {
                 // 3. GENERATE FRESH BRACKET
                 var generated = window.TourmaBracketAlgorithm.generateSingleElimination(this.teamsList, this.cutTarget);
@@ -1561,11 +1609,13 @@
                 } else if (s2Format === 'DOUBLE_ELIMINATION' && window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.generateDoubleElimination === 'function') {
                     var deBracket = window.TourmaDoubleElimAlgorithm.generateDoubleElimination(shuffledStage2Teams);
                     if (deBracket) {
+                        safeSetLocal('tourma_de_matches_stage2_' + this.tournamentId, deBracket);
                         safeSetLocal('tourma_de_matches_' + this.tournamentId, deBracket);
                     }
                 } else if (s2Format === 'ROUND_ROBIN' && window.TourmaRoundRobinAlgorithm && typeof window.TourmaRoundRobinAlgorithm.generateRoundRobin === 'function') {
                     var rrBracket = window.TourmaRoundRobinAlgorithm.generateRoundRobin(shuffledStage2Teams, multiCfg ? multiCfg.stage2Config : null);
                     if (rrBracket) {
+                        safeSetLocal('tourma_rr_matches_stage2_' + this.tournamentId, rrBracket);
                         safeSetLocal('tourma_rr_matches_' + this.tournamentId, rrBracket);
                     }
                 }
@@ -1635,6 +1685,17 @@
             this.roundsList = [];
 
             var self = this;
+            var totalEstimatedRounds = rKeys.length;
+            if (self.teamsList && self.teamsList.length >= 2) {
+                var p2 = Math.pow(2, Math.ceil(Math.log2(self.teamsList.length)));
+                var expTotal = Math.ceil(Math.log2(p2));
+                if (self.cutTarget && self.cutTarget > 1) {
+                    var cutRounds = Math.ceil(Math.log2(self.cutTarget));
+                    expTotal = Math.max(1, expTotal - cutRounds);
+                }
+                totalEstimatedRounds = Math.max(rKeys.length, expTotal);
+            }
+
             for (var j = 0; j < rKeys.length; j++) {
                 var rNum = rKeys[j];
                 var matchesInRound = roundGroup[rNum] || [];
@@ -1646,7 +1707,7 @@
                 });
 
                 var title = (window.TourmaBracketAlgorithm) ?
-                    window.TourmaBracketAlgorithm.getRoundTitle(rNum, rKeys.length, (self.cutTarget && self.cutTarget > 1)) : ('Round ' + rNum);
+                    window.TourmaBracketAlgorithm.getRoundTitle(rNum, totalEstimatedRounds, (self.cutTarget && self.cutTarget > 1)) : ('Round ' + rNum);
 
                 this.roundsList.push({
                     roundNumber: rNum,

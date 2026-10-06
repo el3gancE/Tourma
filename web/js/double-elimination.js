@@ -316,6 +316,25 @@
                     this.teamsList = savedBracket.teamsList;
                 }
 
+                // Overlay DB match scores if available
+                if (hasDbMatches) {
+                    for (var d = 0; d < this.dbMatches.length; d++) {
+                        var dm = this.dbMatches[d];
+                        var mid = dm.matchId !== undefined ? dm.matchId : dm.id;
+                        var target = this.matchesMap[mid] || (mid !== undefined ? this.matchesMap[String(mid)] : null) || (mid !== undefined ? this.matchesMap[Number(mid)] : null);
+                        if (target) {
+                            if (dm.team1 && (dm.team1.score !== undefined && dm.team1.score !== null && dm.team1.score !== '')) {
+                                target.team1 = Object.assign({}, target.team1 || {}, dm.team1);
+                            }
+                            if (dm.team2 && (dm.team2.score !== undefined && dm.team2.score !== null && dm.team2.score !== '')) {
+                                target.team2 = Object.assign({}, target.team2 || {}, dm.team2);
+                            }
+                            if (dm.winnerId) target.winnerId = dm.winnerId;
+                            if (dm.status === 'COMPLETED' || dm.status === 'FINISHED' || dm.status === 'DONE') target.status = 'COMPLETED';
+                        }
+                    }
+                }
+
                 window.TourmaDoubleElimAlgorithm.renumberDoubleEliminationContiguously(this.bracketData);
                 this.persistLocal();
                 this.syncBracketToDB(true);

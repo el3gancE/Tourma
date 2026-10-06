@@ -15,6 +15,7 @@
     String dbMatchesJson = "[]";
     String dbTournamentStatus = "DRAFT";
     int cutTarget = 0;
+    int dbAdvancingSeats = 0;
     String tournamentType = "SINGLE_STAGE";
 
     String dbStage1Status = "PENDING";
@@ -48,6 +49,7 @@
                 if (t.getTournamentType() != null) {
                     tournamentType = t.getTournamentType();
                 }
+                dbAdvancingSeats = t.getAdvancingSeatsCount();
                 if ("MULTI_STAGE".equals(tournamentType) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
                     if (cutTarget >= totalTeamsCount || cutTarget <= 1) {
@@ -316,6 +318,8 @@
             window.TourmaContextPath = '${pageContext.request.contextPath}';
             window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
             window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
+            window.TourmaDbTournamentStatus = "<%= dbTournamentStatus %>";
+            window.TourmaDbStage2Teams = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
         </script>
 
         <!-- Engine Scripts -->
@@ -400,7 +404,7 @@
 
                 // For Stage 2: enforce advanceCount
                 if (currentStage === 2) {
-                    var advCount = <%= cutTarget %>;
+                    var advCount = <%= dbAdvancingSeats %>;
                     if (advCount && advCount > 1 && finalTeams.length > advCount) {
                         finalTeams = finalTeams.slice(0, advCount);
                     }

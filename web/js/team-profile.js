@@ -225,17 +225,19 @@
   var currentChartInstance = null;
 
   function renderRankProgressionChart() {
+    var card = document.getElementById('rankProgressionCard');
+    var wrapper = card ? card.querySelector('.rank-chart-wrapper') : null;
     var canvas = document.getElementById('teamRankChart');
+    if (!canvas && wrapper) {
+      wrapper.innerHTML = '<canvas id="teamRankChart"></canvas>';
+      canvas = document.getElementById('teamRankChart');
+    }
     if (!canvas) return;
 
     var data = window.teamRankProgression || [];
     if (!data || data.length === 0) {
-      var card = document.getElementById('rankProgressionCard');
-      if (card) {
-        var wrapper = card.querySelector('.rank-chart-wrapper');
-        if (wrapper) {
-          wrapper.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.9rem;">Chưa có dữ liệu biến động thứ hạng cho đội này.</div>';
-        }
+      if (wrapper) {
+        wrapper.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.9rem;">Chưa có dữ liệu biến động thứ hạng cho đội này.</div>';
       }
       return;
     }

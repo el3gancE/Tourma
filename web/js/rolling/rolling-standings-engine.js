@@ -331,7 +331,10 @@
   }
 
   function resolveAchievementFromPoints(pts, tPtsCfg, isMulti, s1Format, isDe, posKey) {
-    var isSw = (s1Format && s1Format.indexOf('SWISS') !== -1);
+    var isSw = (s1Format && (s1Format.indexOf('SWISS') !== -1 || s1Format.indexOf('SW') !== -1));
+    var isGroup = (s1Format && (s1Format.indexOf('GROUP') !== -1 || s1Format.indexOf('ROUND') !== -1 || s1Format.indexOf('GS') !== -1 || s1Format.indexOf('RR') !== -1));
+    var isDeFormat = isDe || (s1Format && (s1Format.indexOf('DOUBLE') !== -1 || s1Format.indexOf('DE') !== -1));
+
     if (posKey) {
       var s = String(posKey).trim();
       if (s === "1") return "Vô Địch";
@@ -350,20 +353,23 @@
         return rec;
       }
       if (s === "s1_lb_cut" || s === "Loser's Qualification") return "Loser's Qualification";
-      if (s === "9-16") return isSw ? "2-3" : "Round of 16";
-      if (s === "17-32") return isSw ? "1-3" : "Round of 32";
-      if (s === "33-64") return isSw ? "0-3" : ((isDe && !isMulti) ? "Loser's Qualification" : "Round of 64");
-      if (s === "65-96") return "Loser's Qualification";
-      if (s === "65-128") return (isDe && !isMulti) ? "Loser's Qualification" : "Round of 128";
       if (s === "s1_lb_r2") return "Loser's Qualification";
-      if (s === "s1_lb_r1") return "Loser's Round 1";
+      if (s === "s1_lb_r1" || s === "Loser's Round 1") return "Loser's Round 1";
       if (s.startsWith("s1_lb_r")) return "Loser's Qualification";
-      if (s === "stage1_eliminated") return isSw ? "2-3" : (isMulti ? "Vòng Bảng" : "Round of 128");
+      if (s === "9-16") return isSw ? "2-3" : (isDeFormat ? "Loser's Qualification" : "Round of 16");
+      if (s === "17-32") return isSw ? "1-3" : (isDeFormat ? "Loser's Qualification" : "Round of 32");
+      if (s === "33-64") return isSw ? "0-3" : (isDeFormat ? "Loser's Qualification" : "Round of 64");
+      if (s === "65-96" || s === "65") return isDeFormat ? "Loser's Qualification" : (isSw ? "2-3" : (isGroup ? "Vòng Bảng" : "Round of 64"));
+      if (s === "65-128") return isDeFormat ? "Loser's Qualification" : (isSw ? "1-3" : (isGroup ? "Vòng Bảng" : "Round of 128"));
+      if (s === "97-128" || s === "97") return isDeFormat ? "Loser's Round 1" : (isSw ? "0-3" : (isGroup ? "Vòng Bảng" : "Round of 128"));
+      if (s === "stage1_eliminated") return isSw ? "2-3" : (isDeFormat ? "Loser's Qualification" : (isGroup ? "Vòng Bảng" : (isMulti ? "Vòng Bảng" : "Round of 128")));
     }
 
     if (!pts || pts <= 0) {
       if (isSw) return "0-3";
-      return (isDe && !isMulti) ? "Loser's Round 1" : (isMulti ? "Vòng Bảng" : "Round of 128");
+      if (isDeFormat) return "Loser's Round 1";
+      if (isGroup) return "Vòng Bảng";
+      return isMulti ? "Vòng Bảng" : "Round of 128";
     }
 
     var cfg = tPtsCfg || {};
@@ -388,11 +394,11 @@
     if (pSw23 > 0 && pts === pSw23) return "2-3";
     if (pSw13 > 0 && pts === pSw13) return "1-3";
     if (pSw03 > 0 && pts === pSw03) return "0-3";
-    if (p916 > 0 && pts === p916) return isSw ? "2-3" : "Round of 16";
-    if (p1732 > 0 && pts === p1732) return isSw ? "1-3" : "Round of 32";
-    if (p3364 > 0 && pts === p3364) return isSw ? "0-3" : ((isDe && !isMulti) ? "Loser's Qualification" : "Round of 64");
     if (pLbCut > 0 && pts === pLbCut) return "Loser's Qualification";
     if (pLbR1 > 0 && pts === pLbR1) return "Loser's Round 1";
+    if (p916 > 0 && pts === p916) return isSw ? "2-3" : (isDeFormat ? "Loser's Qualification" : "Round of 16");
+    if (p1732 > 0 && pts === p1732) return isSw ? "1-3" : (isDeFormat ? "Loser's Qualification" : "Round of 32");
+    if (p3364 > 0 && pts === p3364) return isSw ? "0-3" : (isDeFormat ? "Loser's Qualification" : "Round of 64");
 
     // 2. Proportional Thresholds (ratio against Champion points or placement brackets)
     if (isSw) {
@@ -431,7 +437,9 @@
     if (pts >= 80) return "Round of 16";
     if (pts >= 40) return "Round of 32";
 
-    return (isDe && !isMulti) ? "Loser's Qualification" : (isMulti ? "Vòng Bảng" : "Round of 128");
+    if (isDeFormat) return "Loser's Qualification";
+    if (isGroup) return "Vòng Bảng";
+    return isMulti ? "Vòng Bảng" : "Round of 128";
   }
 
   function getStorageData(prefixList, id) {
@@ -1918,6 +1926,10 @@
         var s1F = tObj.stage1Format || tObj.format || 'SINGLE_ELIMINATION';
         var s2F = tObj.stage2Format || 'SINGLE_ELIMINATION';
         var isDe = (tObj.format && tObj.format.indexOf('DOUBLE') !== -1) || (s1F && s1F.indexOf('DOUBLE') !== -1);
+        var fmtLbl = getFormatShortCode(s1F);
+        if (isMulti) {
+          fmtLbl = getFormatShortCode(s1F) + " ➔ " + getFormatShortCode(s2F);
+        }
         var ach = (res.achievementsMap && res.achievementsMap[k]);
         if (!ach) {
           var tPtsCfg = tObj.pointsConfig || {};

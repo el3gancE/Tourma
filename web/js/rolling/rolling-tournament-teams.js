@@ -331,94 +331,98 @@
 
   // Calculate realtime standings across completed sub-tournaments and update modal + rank map
   window.calculateAndSyncModalStandings = function () {
-    var modalList = document.getElementById('partnerModalCheckboxList');
-    if (!modalList) return;
+    try {
+      var modalList = document.getElementById('partnerModalCheckboxList');
+      if (!modalList) return;
 
-    var items = Array.from(modalList.querySelectorAll('.partner-checkbox-item'));
-    if (items.length === 0) return;
+      var items = Array.from(modalList.querySelectorAll('.partner-checkbox-item'));
+      if (items.length === 0) return;
 
-    var curTid = (typeof window.currentSubTourneyId !== 'undefined' && window.currentSubTourneyId) ? window.currentSubTourneyId : getTourneyId();
+      var curTid = (typeof window.currentSubTourneyId !== 'undefined' && window.currentSubTourneyId) ? window.currentSubTourneyId : getTourneyId();
 
-    // Extract partner list
-    var partners = window.seriesPartners || [];
-    if (!partners || partners.length === 0) {
-      partners = items.map(function(item) {
-        var rawName = item.getAttribute('data-team-name') || '';
-        if (!rawName) {
-          var nameSpan = item.querySelector('div > span:not(.rank-badge)');
-          if (nameSpan) rawName = nameSpan.textContent.replace('(Đã thêm)', '').trim();
-        }
-        return { name: rawName, id: item.getAttribute('data-team-id') || rawName };
-      });
-    }
+      // Extract partner list
+      var partners = window.seriesPartners || [];
+      if (!partners || partners.length === 0) {
+        partners = items.map(function(item) {
+          var rawName = item.getAttribute('data-team-name') || '';
+          if (!rawName) {
+            var nameSpan = item.querySelector('div > span:not(.rank-badge)');
+            if (nameSpan) rawName = nameSpan.textContent.replace('(Đã thêm)', '').trim();
+          }
+          return { name: rawName, id: item.getAttribute('data-team-id') || rawName };
+        });
+      }
 
-    var result = null;
-    if (window.TourmaRollingStandingsEngine && typeof window.TourmaRollingStandingsEngine.calculateSeriesStandings === 'function') {
-      result = window.TourmaRollingStandingsEngine.calculateSeriesStandings({
-        subTourneys: window.seriesSubTournaments,
-        partners: partners,
-        phaseSize: window.seriesPhaseSize,
-        serverTourneyPoints: window.serverTourneyPoints,
-        serverTourneyParticipation: window.serverTourneyParticipation,
-        excludeTourneyId: curTid
-      });
-    }
+      var result = null;
+      if (window.TourmaRollingStandingsEngine && typeof window.TourmaRollingStandingsEngine.calculateSeriesStandings === 'function') {
+        result = window.TourmaRollingStandingsEngine.calculateSeriesStandings({
+          subTourneys: window.seriesSubTournaments,
+          partners: partners,
+          phaseSize: window.seriesPhaseSize,
+          serverTourneyPoints: window.serverTourneyPoints,
+          serverTourneyParticipation: window.serverTourneyParticipation,
+          excludeTourneyId: curTid
+        });
+      }
 
-    if (result && result.rankMap && result.teamDataArray) {
-      window.seriesStandingsRankMap = result.rankMap;
+      if (result && result.rankMap && result.teamDataArray) {
+        window.seriesStandingsRankMap = result.rankMap;
 
-      // Map items by team name
-      var itemMap = {};
-      items.forEach(function (item) {
-        var rawName = item.getAttribute('data-team-name') || '';
-        if (!rawName) {
-          var nameSpan = item.querySelector('div > span:not(.rank-badge)');
-          if (nameSpan) rawName = nameSpan.textContent.replace('(Đã thêm)', '').trim();
-        }
-        itemMap[rawName.trim().toLowerCase()] = item;
-      });
+        // Map items by team name
+        var itemMap = {};
+        items.forEach(function (item) {
+          var rawName = item.getAttribute('data-team-name') || '';
+          if (!rawName) {
+            var nameSpan = item.querySelector('div > span:not(.rank-badge)');
+            if (nameSpan) rawName = nameSpan.textContent.replace('(Đã thêm)', '').trim();
+          }
+          itemMap[rawName.trim().toLowerCase()] = item;
+        });
 
-      // Sort & update DOM elements in modal according to exact BXH teamDataArray
-      result.teamDataArray.forEach(function (data, rankIdx) {
-        var teamKey = data.name.trim().toLowerCase();
-        var item = itemMap[teamKey];
-        if (!item) {
-          var itemKeys = Object.keys(itemMap);
-          for (var i = 0; i < itemKeys.length; i++) {
-            if (isTeamSelf(data.name, itemKeys[i])) {
-              item = itemMap[itemKeys[i]];
-              break;
+        // Sort & update DOM elements in modal according to exact BXH teamDataArray
+        result.teamDataArray.forEach(function (data, rankIdx) {
+          var teamKey = data.name.trim().toLowerCase();
+          var item = itemMap[teamKey];
+          if (!item) {
+            var itemKeys = Object.keys(itemMap);
+            for (var i = 0; i < itemKeys.length; i++) {
+              if (isTeamSelf(data.name, itemKeys[i])) {
+                item = itemMap[itemKeys[i]];
+                break;
+              }
             }
           }
-        }
-        if (!item) return;
+          if (!item) return;
 
-        var rank = data.rank;
-        item.setAttribute('data-index', rankIdx);
-        item.setAttribute('data-rank', rank);
-        item.setAttribute('data-points', data.totalPts);
+          var rank = data.rank;
+          item.setAttribute('data-index', rankIdx);
+          item.setAttribute('data-rank', rank);
+          item.setAttribute('data-points', data.totalPts);
 
-        var cb = item.querySelector('.partner-cb-input');
-        if (cb) cb.setAttribute('data-index', rankIdx);
+          var cb = item.querySelector('.partner-cb-input');
+          if (cb) cb.setAttribute('data-index', rankIdx);
 
-        // Update rank badge in modal item
-        var badge = item.querySelector('.rank-badge');
-        if (badge) {
-          badge.className = 'rank-badge rank-' + rank;
-          badge.textContent = '#' + rank;
-          badge.style.color = (rank === 1) ? '#fbbf24' : (rank === 2 ? '#e2e8f0' : (rank === 3 ? '#f97316' : '#cbd5e1'));
-          badge.style.borderColor = (rank === 1) ? 'rgba(251,191,36,0.3)' : (rank === 2 ? 'rgba(226,232,240,0.2)' : (rank === 3 ? 'rgba(249,115,22,0.3)' : 'rgba(255,255,255,0.1)'));
-        }
+          // Update rank badge in modal item
+          var badge = item.querySelector('.rank-badge');
+          if (badge) {
+            badge.className = 'rank-badge rank-' + rank;
+            badge.textContent = '#' + rank;
+            badge.style.color = (rank === 1) ? '#fbbf24' : (rank === 2 ? '#e2e8f0' : (rank === 3 ? '#f97316' : '#cbd5e1'));
+            badge.style.borderColor = (rank === 1) ? 'rgba(251,191,36,0.3)' : (rank === 2 ? 'rgba(226,232,240,0.2)' : (rank === 3 ? 'rgba(249,115,22,0.3)' : 'rgba(255,255,255,0.1)'));
+          }
 
-        // Update points display in modal item
-        var ptsDiv = item.querySelector('div:last-child');
-        if (ptsDiv) {
-          ptsDiv.textContent = data.totalPts + ' pts';
-        }
+          // Update points display in modal item
+          var ptsDiv = item.querySelector('div:last-child');
+          if (ptsDiv) {
+            ptsDiv.textContent = data.totalPts + ' pts';
+          }
 
-        // Physically append to modal container in new sorted order
-        modalList.appendChild(item);
-      });
+          // Physically append to modal container in new sorted order
+          modalList.appendChild(item);
+        });
+      }
+    } catch (e) {
+      console.warn('Error in calculateAndSyncModalStandings:', e);
     }
   };
 
@@ -433,7 +437,11 @@
     if (rows.length <= 1) return;
 
     // Ensure latest standings are calculated
-    window.calculateAndSyncModalStandings();
+    try {
+      window.calculateAndSyncModalStandings();
+    } catch (e) {
+      console.warn('Error in calculateAndSyncModalStandings for sort:', e);
+    }
 
     var rankMap = window.seriesStandingsRankMap || {};
 
@@ -475,14 +483,22 @@
   };
 
   window.openPartnerSelectModal = function () {
-    window.calculateAndSyncModalStandings();
+    try {
+      window.calculateAndSyncModalStandings();
+    } catch (e) {
+      console.warn('Error in calculateAndSyncModalStandings for modal open:', e);
+    }
     var modal = document.getElementById('partnerSelectModal');
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+      modal.style.display = 'flex';
+    }
   };
 
   window.closePartnerSelectModal = function () {
     var modal = document.getElementById('partnerSelectModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.style.display = 'none';
+    }
   };
 
   window.selectAllPartnerCheckboxes = function (selectAll) {

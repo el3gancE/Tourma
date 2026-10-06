@@ -222,6 +222,8 @@
             window.TourmaContextPath = "${pageContext.request.contextPath}";
             window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
             window.TourmaDbStage1Status["${not empty tournament.id ? tournament.id : param.id}"] = "<%= dbStage1Status %>";
+            window.TourmaDbTournamentStatus = '<%= dbTournamentStatus %>';
+            window.TourmaDbStage2Teams = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
             window.swissTournamentId = "${not empty tournament.id ? tournament.id : param.id}";
             window.swissContextPath = "${pageContext.request.contextPath}";
             window.swissCurrentStage = <%= currentStage %>;
@@ -231,6 +233,10 @@
                 var tid = window.swissTournamentId;
                 if (window.swissTournamentStatus === 'COMPLETED' && tid) {
                     try { localStorage.setItem('tourma_final_locked_' + tid, 'true'); } catch(e) {}
+                }
+                var s1St = "<%= dbStage1Status %>";
+                if ((s1St === 'LOCKED' || s1St === 'COMPLETED' || window.swissTournamentStatus === 'COMPLETED') && tid) {
+                    try { localStorage.setItem('tourma_stage1_locked_' + tid, 'true'); } catch(e) {}
                 }
             })();
             window.dbSwissMatches = <%= dbMatchesJson %>;

@@ -338,9 +338,13 @@
 
             this.isLocked = true;
 
-            // Persist lock state to localStorage so it survives page refresh/reload
+            // Persist lock state & champion to localStorage so it survives page refresh/reload
             try {
                 localStorage.setItem('tourma_final_locked_' + this.tournamentId, 'true');
+                if (this.championName) {
+                    localStorage.setItem('tourma_champion_' + this.tournamentId, this.championName);
+                    localStorage.setItem('tourma_final_champion_' + this.tournamentId, this.championName);
+                }
             } catch (e) {}
 
             if (typeof this.onLockCallback === 'function') {
@@ -375,6 +379,8 @@
 
             try {
                 localStorage.removeItem('tourma_final_locked_' + this.tournamentId);
+                localStorage.removeItem('tourma_champion_' + this.tournamentId);
+                localStorage.removeItem('tourma_final_champion_' + this.tournamentId);
             } catch (e) {}
 
             this.isLocked = false;

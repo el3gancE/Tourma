@@ -51,8 +51,14 @@
          * Standard International English Round Names (Dynamically supports up to Round of 1024 and beyond)
          */
         getRoundTitle: function (r, totalRounds, isCutStage) {
+            if (!totalRounds || totalRounds < 1) totalRounds = Math.max(1, r);
             var diff = totalRounds - r;
-            var teamsInRound = Math.pow(2, diff + 1);
+            if (diff <= 0) return 'Final';
+            if (diff === 1) return 'Semi Final';
+            if (diff === 2) return 'Quarter Final';
+
+            var teamsInRound = Math.round(Math.pow(2, diff + 1));
+            if (teamsInRound < 2) teamsInRound = 2;
 
             if (isCutStage) {
                 if (teamsInRound === 16) return 'Round of 16';
@@ -60,10 +66,6 @@
                 if (teamsInRound === 4) return 'Round of 4';
                 return 'Round of ' + teamsInRound;
             }
-
-            if (diff === 0) return 'Final';
-            if (diff === 1) return 'Semi Final';
-            if (diff === 2) return 'Quarter Final';
 
             return 'Round of ' + teamsInRound;
         },
@@ -323,6 +325,14 @@
                     var parent2 = this.findParentMatch(matchesMap, match.matchId, 2);
 
                     if (parent1) {
+                        if (!parent1.winnerId && parent1.team1 && parent1.team2 && parent1.team1.score !== '' && parent1.team2.score !== '') {
+                            var sc1 = Number(parent1.team1.score);
+                            var sc2 = Number(parent1.team2.score);
+                            if (!isNaN(sc1) && !isNaN(sc2)) {
+                                if (sc1 > sc2) parent1.winnerId = 'team1';
+                                else if (sc2 > sc1) parent1.winnerId = 'team2';
+                            }
+                        }
                         if (parent1.winnerId) {
                             var w1 = (parent1.winnerId === 'team1') ? parent1.team1 : parent1.team2;
                             if (w1 && w1.name && w1.name !== 'BYE') {
@@ -334,6 +344,14 @@
                         }
                     }
                     if (parent2) {
+                        if (!parent2.winnerId && parent2.team1 && parent2.team2 && parent2.team1.score !== '' && parent2.team2.score !== '') {
+                            var sc1_2 = Number(parent2.team1.score);
+                            var sc2_2 = Number(parent2.team2.score);
+                            if (!isNaN(sc1_2) && !isNaN(sc2_2)) {
+                                if (sc1_2 > sc2_2) parent2.winnerId = 'team1';
+                                else if (sc2_2 > sc1_2) parent2.winnerId = 'team2';
+                            }
+                        }
                         if (parent2.winnerId) {
                             var w2 = (parent2.winnerId === 'team1') ? parent2.team1 : parent2.team2;
                             if (w2 && w2.name && w2.name !== 'BYE') {
