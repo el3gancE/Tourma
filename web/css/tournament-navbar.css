@@ -1,0 +1,213 @@
+/* ============================================================================
+   TOURMA - REUSABLE TOURNAMENT NAVBAR & TOP CONTROL BAR (tournament-navbar.css)
+   Dark Luxury Theme (#181d29 Surface & #0b0d12 Obsidian) | Lexend Typography
+   ============================================================================ */
+
+.tournament-navbar-control-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #181d29;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    font-family: 'Lexend', sans-serif !important;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.tournament-info-badge-group {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.tournament-name-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.tournament-name-title i.text-gold {
+    color: #fbbf24;
+    font-size: 1.1rem;
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
+}
+
+/* Format Badges */
+.format-badge-single,
+.format-badge-double,
+.format-badge-rr,
+.format-badge-swiss,
+.format-badge-group {
+    background: rgba(45, 212, 191, 0.12);
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    border-radius: 50px;
+    padding: 0.22rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.format-badge-double {
+    background: rgba(168, 85, 247, 0.12);
+    color: #a855f7;
+    border-color: rgba(168, 85, 247, 0.3);
+}
+
+.format-badge-rr {
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.format-badge-swiss {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.format-badge-group {
+    background: rgba(236, 72, 153, 0.12);
+    color: #f472b6;
+    border-color: rgba(236, 72, 153, 0.3);
+}
+
+/* Team Count & Advancing Count Badges */
+.team-count-badge {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 50px;
+    padding: 0.22rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.advancing-count-badge {
+    background: rgba(45, 212, 191, 0.15);
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.22rem 0.75rem;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+/* Right Control Actions Group */
+.control-actions-right-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* Quick Mode Toggle Button */
+.btn-quick-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(251, 191, 36, 0.08);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 8px;
+    padding: 0.42rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-quick-mode-toggle:hover {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-quick-mode-toggle.active {
+    background: #fbbf24;
+    color: #0b0d12;
+    border-color: #fbbf24;
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.5);
+}
+
+/* Standalone Reset Button */
+.btn-reset-bracket-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(244, 63, 94, 0.1);
+    color: #f43f5e;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: 8px;
+    padding: 0.42rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease-in-out;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-reset-bracket-action:hover {
+    background: #f43f5e;
+    color: #ffffff;
+    border-color: #f43f5e;
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+    transform: translateY(-1px);
+}
+
+/* View Mode Segmented Toggle Group */
+.view-mode-toggle-group {
+    display: flex;
+    background: #0b0d12;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+}
+
+.btn-view-toggle {
+    padding: 0.4rem 0.85rem;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.18s ease-in-out;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-view-toggle:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-view-toggle.active {
+    background: #2dd4bf;
+    color: #0b0d12;
+    font-weight: 800;
+    box-shadow: 0 0 10px rgba(45, 212, 191, 0.35);
+}

@@ -203,6 +203,10 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
+    pointer-events: auto !important;
+    user-select: auto !important;
+    position: relative;
+    z-index: 10;
 }
 
 .round-random-input {
@@ -219,6 +223,11 @@
     outline: none;
     transition: all 0.15s ease;
     padding-left: 2px;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
 }
 
 .round-random-input:focus {
@@ -262,12 +271,12 @@
 
 .btn-round-random:disabled,
 .btn-round-random.disabled {
-    opacity: 0.25 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    color: #64748b !important;
-    background: rgba(255, 255, 255, 0.03) !important;
+    opacity: 0.55 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    border-color: rgba(251, 191, 36, 0.25) !important;
+    color: rgba(251, 191, 36, 0.7) !important;
+    background: rgba(251, 191, 36, 0.05) !important;
     box-shadow: none !important;
 }
 
@@ -286,22 +295,46 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    pointer-events: auto !important;
 }
 
-.btn-round-reset:hover {
+.btn-reset-round {
+    height: 22px;
+    padding: 0 0.65rem;
+    background: rgba(244, 63, 94, 0.1);
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    border-radius: 4px;
+    color: #f43f5e;
+    font-family: 'Lexend', sans-serif !important;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    gap: 0.35rem;
+    pointer-events: auto !important;
+}
+
+.btn-round-reset:hover,
+.btn-reset-round:hover {
     background: #f43f5e;
     color: #ffffff;
     box-shadow: 0 0 8px rgba(244, 63, 94, 0.35);
 }
 
 .btn-round-reset:disabled,
-.btn-round-reset.disabled {
-    opacity: 0.22 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    color: #64748b !important;
-    background: rgba(255, 255, 255, 0.03) !important;
+.btn-round-reset.disabled,
+.btn-reset-round:disabled,
+.btn-reset-round.disabled {
+    opacity: 0.55 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    border-color: rgba(244, 63, 94, 0.25) !important;
+    color: rgba(244, 63, 94, 0.7) !important;
+    background: rgba(244, 63, 94, 0.05) !important;
     box-shadow: none !important;
 }
 
@@ -457,12 +490,12 @@ body.tourma-team-path-active .bracket-team-row.path-focused.loser .bracket-team-
 
 .btn-round-random:disabled,
 .btn-round-random.disabled {
-    opacity: 0.25 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    color: #64748b !important;
-    background: rgba(255, 255, 255, 0.03) !important;
+    opacity: 0.55 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    border-color: rgba(251, 191, 36, 0.25) !important;
+    color: rgba(251, 191, 36, 0.7) !important;
+    background: rgba(251, 191, 36, 0.05) !important;
     box-shadow: none !important;
 }
 
@@ -481,6 +514,7 @@ body.tourma-team-path-active .bracket-team-row.path-focused.loser .bracket-team-
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    pointer-events: auto !important;
 }
 
 .btn-round-reset:hover {
@@ -491,12 +525,12 @@ body.tourma-team-path-active .bracket-team-row.path-focused.loser .bracket-team-
 
 .btn-round-reset:disabled,
 .btn-round-reset.disabled {
-    opacity: 0.22 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    color: #64748b !important;
-    background: rgba(255, 255, 255, 0.03) !important;
+    opacity: 0.55 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    border-color: rgba(244, 63, 94, 0.25) !important;
+    color: rgba(244, 63, 94, 0.7) !important;
+    background: rgba(244, 63, 94, 0.05) !important;
     box-shadow: none !important;
 }
 

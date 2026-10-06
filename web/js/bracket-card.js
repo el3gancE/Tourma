@@ -278,9 +278,9 @@
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
-                        var parentCol = card.closest('.single-round-column, .de-round-column, .de-column');
-                        var rInp = parentCol ? parentCol.querySelector('.round-random-input') : null;
-                        var customScore = (rInp && rInp.value && Number(rInp.value) > 0) ? rInp.value.trim() : null;
+                        var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
+                            ? window.TourmaRoundControls.getCustomWinScore(card, null)
+                            : null;
 
                         if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
                             window.SingleEliminationEngine.handleQuickWinner(matchId, 1, customScore);
@@ -304,9 +304,9 @@
                     if (window.TourmaQuickMode && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
-                        var parentCol = card.closest('.single-round-column, .de-round-column, .de-column');
-                        var rInp = parentCol ? parentCol.querySelector('.round-random-input') : null;
-                        var customScore = (rInp && rInp.value && Number(rInp.value) > 0) ? rInp.value.trim() : null;
+                        var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
+                            ? window.TourmaRoundControls.getCustomWinScore(card, null)
+                            : null;
 
                         if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
                             window.SingleEliminationEngine.handleQuickWinner(matchId, 2, customScore);

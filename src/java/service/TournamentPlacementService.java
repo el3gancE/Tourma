@@ -1,6 +1,8 @@
 package service;
 
 import dao.DBContext;
+import model.Team;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,9 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Dedicated Service for calculating exact tournament placements (1st, 2nd, 3-4, 5-8, LQ, LR1, etc.)
+ * High-Performance, Database-Driven Service for calculating tournament placements (1st, 2nd, Top 4, Top 8...)
  * directly from the 'matches' table in SQL Server.
- * Serves as the Single Source of Truth for tournament rankings.
  */
 public class TournamentPlacementService {
 
@@ -27,10 +28,7 @@ public class TournamentPlacementService {
         return instance;
     }
 
-    /**
-     * Internal representation of a match row from database
-     */
-    private static class MatchRow {
+    private static class MatchInfo {
         String id;
         int stageOrder;
         String stageFormat;
@@ -40,15 +38,21 @@ public class TournamentPlacementService {
         String team2Id;
         String t1Name;
         String t2Name;
+        String t1Norm;
+        String t2Norm;
         String winnerId;
         String winnerName;
+        String winnerNorm;
+        String loserId;
+        String loserName;
+        String loserNorm;
         Integer score1;
         Integer score2;
         String status;
     }
 
     /**
-     * Preloads placements for all tournaments in a series in a single bulk query
+     * Preloads placements for all tournaments in a series in a single bulk query.
      */
     public Map<String, Map<String, Integer>> preloadSeriesPlacements(String seriesId) {
         Map<String, Map<String, Integer>> seriesPlacements = new HashMap<>();
@@ -56,42 +60,21 @@ public class TournamentPlacementService {
         String sid = seriesId.trim();
 
         DBContext db = new DBContext();
-        Map<String, String[]> tourneyInfoMap = new HashMap<>();
+        String sql = "SELECT m.*, ts.stage_order, ts.format AS stage_format, "
+                + "t1.raw_name AS t1_name, t1.normalized_name AS t1_norm, "
+                + "t2.raw_name AS t2_name, t2.normalized_name AS t2_norm, "
+                + "tw.raw_name AS winner_name, tw.normalized_name AS winner_norm, "
+                + "tl.raw_name AS loser_name, tl.normalized_name AS loser_norm "
+                + "FROM matches m "
+                + "LEFT JOIN tournament_stages ts ON m.stage_id = ts.id "
+                + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
+                + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
+                + "LEFT JOIN teams tw ON m.winner_id = tw.id "
+                + "LEFT JOIN teams tl ON m.loser_id = tl.id "
+                + "WHERE m.tournament_id IN (SELECT id FROM tournaments WHERE series_id = ?) "
+                + "ORDER BY m.tournament_id, ISNULL(ts.stage_order, 1) DESC, m.round_number DESC";
 
-        String tInfoSql = "SELECT t.id, t.tournament_type, " +
-                          "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) as tourney_format " +
-                          "FROM tournaments t WHERE t.series_id = ?";
-        try (Connection conn = db.getConnection();
-             PreparedStatement psInfo = conn.prepareStatement(tInfoSql)) {
-            psInfo.setString(1, sid);
-            try (ResultSet rsInfo = psInfo.executeQuery()) {
-                while (rsInfo.next()) {
-                    String tid = rsInfo.getString("id");
-                    String tt = rsInfo.getString("tournament_type");
-                    String tf = rsInfo.getString("tourney_format");
-                    if (tid != null) {
-                        tourneyInfoMap.put(tid.trim(), new String[]{
-                            tt != null ? tt.trim() : "SINGLE_STAGE",
-                            tf != null ? tf.trim() : "SINGLE_ELIMINATION"
-                        });
-                    }
-                }
-            }
-        } catch (Exception ignore) {}
-
-        String sql = "SELECT m.*, ts.stage_order, ts.format as stage_format, " +
-                     "t1.raw_name AS t1_name, t1.normalized_name AS t1_norm, " +
-                     "t2.raw_name AS t2_name, t2.normalized_name AS t2_norm, " +
-                     "w.raw_name AS winner_name, w.normalized_name AS winner_norm " +
-                     "FROM matches m " +
-                     "LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
-                     "LEFT JOIN teams t1 ON m.team1_id = t1.id " +
-                     "LEFT JOIN teams t2 ON m.team2_id = t2.id " +
-                     "LEFT JOIN teams w ON m.winner_id = w.id " +
-                     "WHERE m.tournament_id IN (SELECT id FROM tournaments WHERE series_id = ?) " +
-                     "ORDER BY m.tournament_id, ISNULL(ts.stage_order, 1) DESC, m.round_number DESC";
-
-        Map<String, List<MatchRow>> tourneyRowsMap = new HashMap<>();
+        Map<String, List<MatchInfo>> tourneyMatches = new HashMap<>();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, sid);
@@ -99,18 +82,14 @@ public class TournamentPlacementService {
                 while (rs.next()) {
                     String tid = rs.getString("tournament_id");
                     if (tid == null) continue;
-                    tid = tid.trim();
-
-                    MatchRow row = parseMatchRow(rs);
-                    tourneyRowsMap.computeIfAbsent(tid, k -> new ArrayList<>()).add(row);
+                    MatchInfo m = parseMatchInfo(rs);
+                    tourneyMatches.computeIfAbsent(tid.trim(), k -> new ArrayList<>()).add(m);
                 }
             }
 
-            for (Map.Entry<String, String[]> entry : tourneyInfoMap.entrySet()) {
+            for (Map.Entry<String, List<MatchInfo>> entry : tourneyMatches.entrySet()) {
                 String tid = entry.getKey();
-                String[] info = entry.getValue();
-                List<MatchRow> rows = tourneyRowsMap.getOrDefault(tid, new ArrayList<>());
-                Map<String, Integer> pMap = computePlacementsFromRows(tid, info[0], info[1], rows, conn);
+                Map<String, Integer> pMap = computePlacements(tid, entry.getValue(), conn);
                 seriesPlacements.put(tid, pMap);
                 RollingWindowPointService.getInstance().putCachedTournamentPlacements(tid, pMap);
             }
@@ -121,682 +100,224 @@ public class TournamentPlacementService {
         return seriesPlacements;
     }
 
-    private MatchRow parseMatchRow(ResultSet rs) throws Exception {
-        MatchRow row = new MatchRow();
-        int stgOrder = rs.getInt("stage_order");
-        if (rs.wasNull()) {
-            String rawId = rs.getString("id");
-            String stgId = rs.getString("stage_id");
-            if ((rawId != null && rawId.contains("_S2_")) || (stgId != null && stgId.contains("_S2_"))) {
-                stgOrder = 2;
-            } else {
-                stgOrder = 1;
-            }
-        }
-
-        row.id = rs.getString("id");
-        row.stageOrder = stgOrder;
-        row.stageFormat = rs.getString("stage_format");
-        row.roundNumber = rs.getInt("round_number");
-        row.bracketType = rs.getString("bracket_type");
-        row.team1Id = rs.getString("team1_id");
-        row.team2Id = rs.getString("team2_id");
-        row.t1Name = rs.getString("t1_name");
-        row.t2Name = rs.getString("t2_name");
-        row.winnerId = rs.getString("winner_id");
-        row.winnerName = rs.getString("winner_name");
-
-        int s1 = rs.getInt("score1");
-        row.score1 = rs.wasNull() ? null : s1;
-        int s2 = rs.getInt("score2");
-        row.score2 = rs.wasNull() ? null : s2;
-        row.status = rs.getString("status");
-
-        return row;
-    }
-
     /**
-     * Calculates placements for all participating teams in a tournament.
-     * Returns a Map where key is team ID or lowercase team name, and value is placement integer
-     * (1 = Champion, 2 = Runner-up, 3/4 = Semi-finals, 5-8 = Quarter-finals, 65 = LQ / Stage 1 LB cut, 97 = LR1, etc.)
+     * Calculates placements for a single tournament from DB matches.
      */
     public Map<String, Integer> getTournamentPlacements(String tournamentId) {
         Map<String, Integer> placementMap = new HashMap<>();
         if (tournamentId == null || tournamentId.trim().isEmpty()) return placementMap;
+        String tid = tournamentId.trim();
 
         DBContext db = new DBContext();
-        String tourneyType = "SINGLE_STAGE";
-        String tourneyFormat = "SINGLE_ELIMINATION";
+        String sql = "SELECT m.*, ts.stage_order, ts.format AS stage_format, "
+                + "t1.raw_name AS t1_name, t1.normalized_name AS t1_norm, "
+                + "t2.raw_name AS t2_name, t2.normalized_name AS t2_norm, "
+                + "tw.raw_name AS winner_name, tw.normalized_name AS winner_norm, "
+                + "tl.raw_name AS loser_name, tl.normalized_name AS loser_norm "
+                + "FROM matches m "
+                + "LEFT JOIN tournament_stages ts ON m.stage_id = ts.id "
+                + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
+                + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
+                + "LEFT JOIN teams tw ON m.winner_id = tw.id "
+                + "LEFT JOIN teams tl ON m.loser_id = tl.id "
+                + "WHERE m.tournament_id = ? "
+                + "ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC";
 
-        // 1. Fetch tournament type and format in one tiny fast query (<1ms)
-        String tInfoSql = "SELECT t.tournament_type, " +
-                          "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) as tourney_format " +
-                          "FROM tournaments t WHERE t.id = ?";
-        try (Connection conn = db.getConnection();
-             PreparedStatement psInfo = conn.prepareStatement(tInfoSql)) {
-            psInfo.setString(1, tournamentId.trim());
-            try (ResultSet rsInfo = psInfo.executeQuery()) {
-                if (rsInfo.next()) {
-                    String tt = rsInfo.getString("tournament_type");
-                    if (tt != null && !tt.trim().isEmpty()) tourneyType = tt.trim();
-                    String tf = rsInfo.getString("tourney_format");
-                    if (tf != null && !tf.trim().isEmpty()) tourneyFormat = tf.trim();
-                }
-            }
-        } catch (Exception ignore) {}
-
-        // 2. Fetch matches cleanly without per-row correlated subquery
-        String sql = "SELECT m.*, ts.stage_order, ts.format as stage_format, " +
-                     "t1.raw_name AS t1_name, t1.normalized_name AS t1_norm, " +
-                     "t2.raw_name AS t2_name, t2.normalized_name AS t2_norm, " +
-                     "w.raw_name AS winner_name, w.normalized_name AS winner_norm " +
-                     "FROM matches m " +
-                     "LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
-                     "LEFT JOIN teams t1 ON m.team1_id = t1.id " +
-                     "LEFT JOIN teams t2 ON m.team2_id = t2.id " +
-                     "LEFT JOIN teams w ON m.winner_id = w.id " +
-                     "WHERE m.tournament_id = ? " +
-                     "ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC";
-
+        List<MatchInfo> matches = new ArrayList<>();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tournamentId.trim());
+            ps.setString(1, tid);
             try (ResultSet rs = ps.executeQuery()) {
-                List<MatchRow> rows = new ArrayList<>();
                 while (rs.next()) {
-                    rows.add(parseMatchRow(rs));
+                    matches.add(parseMatchInfo(rs));
                 }
-                return computePlacementsFromRows(tournamentId, tourneyType, tourneyFormat, rows, conn);
             }
+            placementMap = computePlacements(tid, matches, conn);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return placementMap;
-    }
-
-    public Map<String, Integer> computePlacementsFromRows(String tournamentId, String tourneyType, String tourneyFormat, List<MatchRow> rows, Connection conn) {
-        Map<String, Integer> placementMap = new HashMap<>();
-        if (rows == null) return placementMap;
-
-        int highestStageOrder = 1;
-        java.util.Set<String> distinctTeams = new java.util.HashSet<>();
-
-        for (MatchRow row : rows) {
-            if (row.stageOrder > highestStageOrder) highestStageOrder = row.stageOrder;
-            if (row.t1Name != null && !row.t1Name.isEmpty()) distinctTeams.add(row.t1Name.trim().toLowerCase());
-            if (row.t2Name != null && !row.t2Name.isEmpty()) distinctTeams.add(row.t2Name.trim().toLowerCase());
-
-            // Resolve winner if not explicitly set but scores exist
-            if (row.winnerId == null && row.score1 != null && row.score2 != null && !row.score1.equals(row.score2)) {
-                if (row.score1 > row.score2) {
-                    row.winnerId = row.team1Id;
-                    row.winnerName = row.t1Name;
-                } else {
-                    row.winnerId = row.team2Id;
-                    row.winnerName = row.t2Name;
-                }
-            }
-        }
-
-        boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tourneyType) || highestStageOrder > 1;
-
-        if (isMultiStage && highestStageOrder > 1) {
-            processMultiStageTournament(rows, highestStageOrder, placementMap);
-        } else if (isSwiss(tourneyFormat, rows)) {
-            processSingleStageSwiss(rows, placementMap);
-        } else if (isMultiStage) {
-            processMultiStageDraft(rows, placementMap);
-        } else if (isRoundRobin(tourneyFormat, rows)) {
-            processSingleStageRoundRobin(rows, placementMap);
-        } else if (isGroupStage(tourneyFormat, rows)) {
-            processSingleStageGroupStage(conn, tournamentId, rows, placementMap);
-        } else if (isDoubleElimination(tourneyFormat, rows)) {
-            processSingleStageDoubleElimination(rows, placementMap);
-        } else {
-            processSingleStageElimination(rows, distinctTeams.size(), placementMap);
-        }
 
         return placementMap;
     }
 
-    private boolean isRoundRobin(String tourneyFormat, List<MatchRow> rows) {
-        if (tourneyFormat != null && tourneyFormat.toUpperCase().contains("ROUND_ROBIN")) return true;
-        for (MatchRow r : rows) {
-            if (r.bracketType != null && r.bracketType.toUpperCase().contains("ROUND_ROBIN")) return true;
+    private MatchInfo parseMatchInfo(ResultSet rs) throws Exception {
+        MatchInfo m = new MatchInfo();
+        m.id = rs.getString("id");
+        m.stageOrder = rs.getInt("stage_order");
+        if (rs.wasNull()) m.stageOrder = 1;
+        m.stageFormat = rs.getString("stage_format");
+        m.roundNumber = rs.getInt("round_number");
+        m.bracketType = rs.getString("bracket_type");
+        m.team1Id = rs.getString("team1_id");
+        m.team2Id = rs.getString("team2_id");
+        m.t1Name = rs.getString("t1_name");
+        m.t2Name = rs.getString("t2_name");
+        m.t1Norm = rs.getString("t1_norm");
+        m.t2Norm = rs.getString("t2_norm");
+        m.winnerId = rs.getString("winner_id");
+        m.winnerName = rs.getString("winner_name");
+        m.winnerNorm = rs.getString("winner_norm");
+        m.loserId = rs.getString("loser_id");
+        m.loserName = rs.getString("loser_name");
+        m.loserNorm = rs.getString("loser_norm");
+        int s1 = rs.getInt("score1");
+        m.score1 = rs.wasNull() ? null : s1;
+        int s2 = rs.getInt("score2");
+        m.score2 = rs.wasNull() ? null : s2;
+        m.status = rs.getString("status");
+        return m;
+    }
+
+    private Map<String, Integer> computePlacements(String tournamentId, List<MatchInfo> matches, Connection conn) {
+        Map<String, Integer> placements = new HashMap<>();
+        if (matches == null || matches.isEmpty()) return placements;
+
+        // Group matches by stage
+        int maxStage = 1;
+        for (MatchInfo m : matches) {
+            if (m.stageOrder > maxStage) maxStage = m.stageOrder;
         }
-        return false;
-    }
 
-    private boolean isSwiss(String tourneyFormat, List<MatchRow> rows) {
-        if (tourneyFormat != null && (tourneyFormat.toUpperCase().contains("SWISS") || tourneyFormat.toUpperCase().contains("SWISS_LITE") || tourneyFormat.toUpperCase().equals("SW"))) return true;
-        for (MatchRow r : rows) {
-            if (r.bracketType != null && r.bracketType.toUpperCase().contains("SWISS")) return true;
-        }
-        return false;
-    }
+        // Process final stage knockout / round robin
+        int maxRound = 0;
+        MatchInfo grandFinal = null;
+        MatchInfo thirdPlaceMatch = null;
+        List<MatchInfo> finalStageMatches = new ArrayList<>();
 
-    private boolean isGroupStage(String tourneyFormat, List<MatchRow> rows) {
-        if (tourneyFormat != null && (tourneyFormat.toUpperCase().contains("GROUP") || tourneyFormat.toUpperCase().contains("GROUP_STAGE"))) return true;
-        for (MatchRow r : rows) {
-            if (r.bracketType != null && r.bracketType.toUpperCase().contains("GROUP")) return true;
-        }
-        return false;
-    }
-
-    private boolean isDoubleElimination(String tourneyFormat, List<MatchRow> rows) {
-        if (tourneyFormat != null && tourneyFormat.toUpperCase().contains("DOUBLE")) return true;
-        for (MatchRow r : rows) {
-            if (isLoserBracket(r.bracketType)) return true;
-        }
-        return false;
-    }
-
-    private boolean isLoserBracket(String bType) {
-        if (bType == null) return false;
-        String b = bType.toUpperCase().trim();
-        return b.contains("LOSER") || b.contains("LB") || b.contains("LOWER");
-    }
-
-    private boolean isGrandFinal(String bType) {
-        if (bType == null) return false;
-        String b = bType.toUpperCase().trim();
-        return b.contains("GRAND_FINAL") || b.contains("GRAND_FINALS") || b.contains("GF");
-    }
-
-    private void assignPlacement(Map<String, Integer> map, String teamId, String teamName, int pos) {
-        if (pos <= 0) return;
-        if (teamId != null && !teamId.trim().isEmpty()) {
-            Integer existing = map.get(teamId);
-            if (existing == null || pos < existing) {
-                map.put(teamId, pos);
-            }
-        }
-        if (teamName != null && !teamName.trim().isEmpty()) {
-            String k = teamName.trim().toLowerCase();
-            Integer existing = map.get(k);
-            if (existing == null || pos < existing) {
-                map.put(k, pos);
-            }
-        }
-    }
-
-    /**
-     * Process Multi-Stage Tournament where Stage 2 (Final Stage) is present
-     */
-    private void processMultiStageTournament(List<MatchRow> rows, int highestStageOrder, Map<String, Integer> map) {
-        // 1. Process Stage 2 (Final Stage)
-        int maxRoundStage2 = -1;
-        int maxLbRoundStage2 = 0;
-        java.util.Set<String> s2Teams = new java.util.HashSet<>();
-        for (MatchRow r : rows) {
-            if (r.stageOrder == highestStageOrder) {
-                if (r.roundNumber > maxRoundStage2) maxRoundStage2 = r.roundNumber;
-                if (isLoserBracket(r.bracketType) && r.roundNumber > maxLbRoundStage2) {
-                    maxLbRoundStage2 = r.roundNumber;
+        for (MatchInfo m : matches) {
+            if (m.stageOrder == maxStage) {
+                finalStageMatches.add(m);
+                if (m.roundNumber > maxRound) maxRound = m.roundNumber;
+                if ("GRAND_FINAL".equalsIgnoreCase(m.bracketType) || "GRAND_FINAL_RESET".equalsIgnoreCase(m.bracketType)) {
+                    grandFinal = m;
                 }
-                if (r.t1Name != null && !r.t1Name.isEmpty()) s2Teams.add(r.t1Name.trim().toLowerCase());
-                if (r.t2Name != null && !r.t2Name.isEmpty()) s2Teams.add(r.t2Name.trim().toLowerCase());
-            }
-        }
-
-        int expectedS2Rounds = (s2Teams.size() >= 2) ? (int) Math.ceil(Math.log(s2Teams.size()) / Math.log(2)) : 1;
-        int totalS2Rounds = Math.max(maxRoundStage2, expectedS2Rounds);
-
-        for (MatchRow r : rows) {
-            if (r.stageOrder == highestStageOrder && r.winnerId != null) {
-                String loserId = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.team2Id : r.team1Id;
-                String loserName = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.t2Name : r.t1Name;
-
-                if (maxLbRoundStage2 > 0) {
-                    // Stage 2 is Double Elimination
-                    if (isGrandFinal(r.bracketType) || (r.roundNumber == maxRoundStage2 && !isLoserBracket(r.bracketType) && maxLbRoundStage2 > 0 && maxRoundStage2 > maxLbRoundStage2)) {
-                        assignPlacement(map, r.winnerId, r.winnerName, 1);
-                        assignPlacement(map, loserId, loserName, 2);
-                    } else if (isLoserBracket(r.bracketType)) {
-                        int pos;
-                        if (r.roundNumber == maxLbRoundStage2) pos = 3;
-                        else if (r.roundNumber == maxLbRoundStage2 - 1) pos = 4;
-                        else {
-                            int k = (maxLbRoundStage2 - r.roundNumber) / 2;
-                            pos = (int) Math.pow(2, k + 2) + 1;
-                        }
-                        assignPlacement(map, loserId, loserName, pos);
-                    }
-                } else {
-                    // Stage 2 is Single Elimination
-                    int diff = Math.max(0, totalS2Rounds - r.roundNumber);
-                    if (diff == 0 && r.roundNumber == totalS2Rounds && totalS2Rounds >= 1) {
-                        assignPlacement(map, r.winnerId, r.winnerName, 1);
-                        assignPlacement(map, loserId, loserName, 2);
-                    } else {
-                        int pos = (int) Math.pow(2, diff) + 1;
-                        assignPlacement(map, loserId, loserName, pos);
-                    }
+                if ("THIRD_PLACE".equalsIgnoreCase(m.bracketType)) {
+                    thirdPlaceMatch = m;
                 }
             }
         }
 
-        // 2. Process Stage 1 Eliminated Teams
-        int maxLbRoundStage1 = 0;
-        boolean isStage1Swiss = false;
-        boolean isStage1Group = false;
-
-        for (MatchRow r : rows) {
-            if (r.stageOrder < highestStageOrder) {
-                if (isLoserBracket(r.bracketType)) {
-                    if (r.roundNumber > maxLbRoundStage1) maxLbRoundStage1 = r.roundNumber;
-                } else if (r.bracketType != null && r.bracketType.toUpperCase().contains("SWISS")) {
-                    isStage1Swiss = true;
-                } else if (r.bracketType != null && r.bracketType.toUpperCase().contains("GROUP")) {
-                    isStage1Group = true;
-                }
-            }
-        }
-
-        if (maxLbRoundStage1 > 0) {
-            // Stage 1 is Double Elimination: Only losers in Loser Bracket are eliminated from tournament!
-            for (MatchRow r : rows) {
-                if (r.stageOrder < highestStageOrder && r.winnerId != null && isLoserBracket(r.bracketType)) {
-                    String loserId = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.team2Id : r.team1Id;
-                    String loserName = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.t2Name : r.t1Name;
-
-                    int pos;
-                    if (r.roundNumber == maxLbRoundStage1) {
-                        pos = 65; // Loser's Qualification (LQ)
-                    } else if (r.roundNumber == maxLbRoundStage1 - 1) {
-                        pos = 97; // Losers Round 1 (LR1)
-                    } else {
-                        pos = 129; // Earlier LB rounds
-                    }
-                    assignPlacement(map, loserId, loserName, pos);
-                }
-            }
-        } else if (isStage1Swiss) {
-            // Stage 1 is Swiss System: Tally wins and losses
-            Map<String, int[]> swissStats = new HashMap<>(); // teamKey -> [wins, losses]
-            Map<String, String> teamIdToName = new HashMap<>();
-
-            for (MatchRow r : rows) {
-                if (r.stageOrder < highestStageOrder) {
-                    String wId = r.winnerId;
-                    String wName = r.winnerName;
-                    if (wName == null && r.score1 != null && r.score2 != null && !r.score1.equals(r.score2)) {
-                        if (r.score1 > r.score2) {
-                            wName = r.t1Name;
-                            wId = r.team1Id != null ? r.team1Id : r.t1Name;
-                        } else {
-                            wName = r.t2Name;
-                            wId = r.team2Id != null ? r.team2Id : r.t2Name;
-                        }
-                    }
-                    if (wId != null || wName != null) {
-                        boolean isT1Win = (wName != null && wName.equalsIgnoreCase(r.t1Name)) || (wId != null && (wId.equalsIgnoreCase(r.team1Id) || (r.t1Name != null && wId.equalsIgnoreCase(r.t1Name))));
-                        String winId = isT1Win ? r.team1Id : r.team2Id;
-                        String loseId = isT1Win ? r.team2Id : r.team1Id;
-                        String winName = isT1Win ? r.t1Name : r.t2Name;
-                        String loseName = isT1Win ? r.t2Name : r.t1Name;
-                        String winKey = winId != null ? winId : (winName != null ? winName.toLowerCase() : null);
-                        String loseKey = loseId != null ? loseId : (loseName != null ? loseName.toLowerCase() : null);
-
-                        if (winKey != null) {
-                            swissStats.computeIfAbsent(winKey, k -> new int[2])[0]++;
-                            if (winName != null) teamIdToName.put(winKey, winName);
-                        }
-                        if (loseKey != null) {
-                            swissStats.computeIfAbsent(loseKey, k -> new int[2])[1]++;
-                            if (loseName != null) teamIdToName.put(loseKey, loseName);
-                        }
-                    }
-                }
-            }
-
-            for (Map.Entry<String, int[]> entry : swissStats.entrySet()) {
-                String tId = entry.getKey();
-                int[] record = entry.getValue();
-                int wins = record[0];
-                int losses = record[1];
-
-                // If team is already placed in Stage 2 (top rank), skip
-                if (map.containsKey(tId) && map.get(tId) < 9) continue;
-
-                int pos = 65;
-                if (losses >= 3) {
-                    if (wins == 2) pos = 9;  // swiss_2-3
-                    else if (wins == 1) pos = 12; // swiss_1-3
-                    else if (wins == 0) pos = 15; // swiss_0-3
-                } else if (wins >= 3) {
-                    if (losses == 0) pos = 1;       // swiss_3-0
-                    else if (losses == 1) pos = 3;  // swiss_3-1
-                    else pos = 6;                   // swiss_3-2
-                }
-                String tName = teamIdToName.get(tId);
-                assignPlacement(map, tId, tName, pos);
-                if (tName != null) {
-                    assignPlacement(map, null, tName, pos);
-                }
-            }
+        // 1. Double Elimination handling
+        boolean isDE = finalStageMatches.stream().anyMatch(m -> "LOSER_BRACKET".equalsIgnoreCase(m.bracketType));
+        if (isDE) {
+            computeDoubleEliminationPlacements(finalStageMatches, placements);
         } else {
-            // Stage 1 Single Elimination / Group Stage
-            for (MatchRow r : rows) {
-                if (r.stageOrder < highestStageOrder && r.winnerId != null) {
-                    String loserId = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.team2Id : r.team1Id;
-                    String loserName = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.t2Name : r.t1Name;
-                    assignPlacement(map, loserId, loserName, 65);
+            // 2. Single Elimination handling
+            computeSingleEliminationPlacements(finalStageMatches, maxRound, grandFinal, thirdPlaceMatch, placements);
+        }
+
+        // Fill remaining active teams with base placement if not placed
+        fillRemainingTeams(tournamentId, placements, conn);
+
+        return placements;
+    }
+
+    private void computeSingleEliminationPlacements(List<MatchInfo> matches, int maxRound, MatchInfo grandFinal, MatchInfo thirdPlace, Map<String, Integer> placements) {
+        // Find champion and runner-up from the highest round match
+        MatchInfo finalMatch = grandFinal;
+        if (finalMatch == null) {
+            for (MatchInfo m : matches) {
+                if (m.roundNumber == maxRound && !"THIRD_PLACE".equalsIgnoreCase(m.bracketType)) {
+                    finalMatch = m;
+                    break;
                 }
             }
         }
-    }
 
-    /**
-     * Process Multi-Stage Tournament when only Stage 1 exists (Stage 2 pending)
-     */
-    private void processMultiStageDraft(List<MatchRow> rows, Map<String, Integer> map) {
-        int maxLbRound = 0;
-        for (MatchRow r : rows) {
-            if (isLoserBracket(r.bracketType) && r.roundNumber > maxLbRound) {
-                maxLbRound = r.roundNumber;
+        if (finalMatch != null && finalMatch.winnerNorm != null) {
+            putPlacement(placements, finalMatch.winnerNorm, 1);
+            if (finalMatch.loserNorm != null) {
+                putPlacement(placements, finalMatch.loserNorm, 2);
             }
         }
 
-        for (MatchRow r : rows) {
-            if (r.winnerId != null) {
-                String loserId = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.team2Id : r.team1Id;
-                String loserName = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.t2Name : r.t1Name;
-
-                if (maxLbRound > 0) {
-                    if (!isLoserBracket(r.bracketType)) continue;
-                    int pos = (r.roundNumber == maxLbRound) ? 65 : (r.roundNumber == maxLbRound - 1 ? 97 : 129);
-                    assignPlacement(map, loserId, loserName, pos);
-                } else {
-                    assignPlacement(map, loserId, loserName, 65);
-                }
-            }
-        }
-    }
-
-    /**
-     * Process Single-Stage Double Elimination Tournament
-     */
-    private void processSingleStageDoubleElimination(List<MatchRow> rows, Map<String, Integer> map) {
-        int maxRound = 0;
-        int maxLbRound = 0;
-        for (MatchRow r : rows) {
-            if (r.roundNumber > maxRound) maxRound = r.roundNumber;
-            if (isLoserBracket(r.bracketType) && r.roundNumber > maxLbRound) {
-                maxLbRound = r.roundNumber;
+        // 3rd place match if exists
+        if (thirdPlace != null && thirdPlace.winnerNorm != null) {
+            putPlacement(placements, thirdPlace.winnerNorm, 3);
+            if (thirdPlace.loserNorm != null) {
+                putPlacement(placements, thirdPlace.loserNorm, 4);
             }
         }
 
-        for (MatchRow r : rows) {
-            if (r.winnerId == null) continue;
-            String loserId = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.team2Id : r.team1Id;
-            String loserName = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.t2Name : r.t1Name;
+        // Losers of each preceding round
+        for (MatchInfo m : matches) {
+            if ("THIRD_PLACE".equalsIgnoreCase(m.bracketType)) continue;
+            int r = m.roundNumber;
+            int roundsFromFinal = maxRound - r;
 
-            if (isGrandFinal(r.bracketType) || (r.roundNumber == maxRound && !isLoserBracket(r.bracketType) && maxLbRound > 0 && maxRound > maxLbRound)) {
-                assignPlacement(map, r.winnerId, r.winnerName, 1);
-                assignPlacement(map, loserId, loserName, 2);
-            } else if (isLoserBracket(r.bracketType)) {
-                int pos;
-                if (r.roundNumber == maxLbRound) pos = 3;
-                else if (r.roundNumber == maxLbRound - 1) pos = 4;
-                else {
-                    int k = (maxLbRound - r.roundNumber) / 2;
-                    pos = (int) Math.pow(2, k + 2) + 1;
-                }
-                assignPlacement(map, loserId, loserName, pos);
-            }
-        }
-    }
-
-    /**
-     * Process Single-Stage Single Elimination Tournament
-     */
-    private void processSingleStageElimination(List<MatchRow> rows, int distinctTeamCount, Map<String, Integer> map) {
-        int maxRound = 0;
-        int finalRoundMatches = 0;
-        for (MatchRow r : rows) {
-            if (r.roundNumber > maxRound) maxRound = r.roundNumber;
-        }
-
-        for (MatchRow r : rows) {
-            if (r.roundNumber == maxRound) {
-                finalRoundMatches++;
-            }
-        }
-
-        int expectedRounds = (distinctTeamCount >= 2) ? (int) Math.ceil(Math.log(distinctTeamCount) / Math.log(2)) : 1;
-        int totalRounds = Math.max(maxRound, expectedRounds);
-
-        for (MatchRow r : rows) {
-            if (r.winnerId == null) continue;
-            String loserId = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.team2Id : r.team1Id;
-            String loserName = r.winnerId.equalsIgnoreCase(r.team1Id) ? r.t2Name : r.t1Name;
-
-            int diff = Math.max(0, totalRounds - r.roundNumber);
-            if (diff == 0 && r.roundNumber == totalRounds && finalRoundMatches == 1) {
-                // Genuine final match
-                assignPlacement(map, r.winnerId, r.winnerName, 1);
-                assignPlacement(map, loserId, loserName, 2);
+            int rankForLoser;
+            if (roundsFromFinal == 1) {
+                rankForLoser = 3; // Semi-final losers (Top 4)
+            } else if (roundsFromFinal == 2) {
+                rankForLoser = 5; // Quarter-final losers (Top 8)
+            } else if (roundsFromFinal == 3) {
+                rankForLoser = 9; // Round of 16 losers (Top 16)
             } else {
-                int pos = (int) Math.pow(2, diff) + 1;
-                assignPlacement(map, loserId, loserName, pos);
+                rankForLoser = (int) Math.pow(2, roundsFromFinal) + 1;
+            }
+
+            if (m.loserNorm != null && !placements.containsKey(m.loserNorm.toLowerCase())) {
+                putPlacement(placements, m.loserNorm, rankForLoser);
             }
         }
     }
 
-    /**
-     * Process Single-Stage Round Robin Tournament (Standings calculation based on Points, GD, GF)
-     */
-    private void processSingleStageRoundRobin(List<MatchRow> rows, Map<String, Integer> map) {
-        class RRTeamStat {
-            String id;
-            String name;
-            int points = 0;
-            int wins = 0;
-            int draws = 0;
-            int losses = 0;
-            int gf = 0;
-            int ga = 0;
-            int matchesPlayed = 0;
-        }
-        Map<String, RRTeamStat> stats = new HashMap<>();
-        int totalMatchesPlayed = 0;
-
-        for (MatchRow r : rows) {
-            if (r.t1Name != null && !r.t1Name.isEmpty() && !"BYE".equalsIgnoreCase(r.t1Name)) {
-                String k = r.team1Id != null ? r.team1Id : r.t1Name.trim().toLowerCase();
-                stats.computeIfAbsent(k, key -> {
-                    RRTeamStat s = new RRTeamStat();
-                    s.id = r.team1Id;
-                    s.name = r.t1Name;
-                    return s;
-                });
-            }
-            if (r.t2Name != null && !r.t2Name.isEmpty() && !"BYE".equalsIgnoreCase(r.t2Name)) {
-                String k = r.team2Id != null ? r.team2Id : r.t2Name.trim().toLowerCase();
-                stats.computeIfAbsent(k, key -> {
-                    RRTeamStat s = new RRTeamStat();
-                    s.id = r.team2Id;
-                    s.name = r.t2Name;
-                    return s;
-                });
-            }
-
-            if (r.score1 != null && r.score2 != null) {
-                String k1 = r.team1Id != null ? r.team1Id : (r.t1Name != null ? r.t1Name.trim().toLowerCase() : null);
-                String k2 = r.team2Id != null ? r.team2Id : (r.t2Name != null ? r.t2Name.trim().toLowerCase() : null);
-                RRTeamStat s1 = (k1 != null) ? stats.get(k1) : null;
-                RRTeamStat s2 = (k2 != null) ? stats.get(k2) : null;
-
-                if (s1 != null && s2 != null) {
-                    totalMatchesPlayed++;
-                    s1.matchesPlayed++;
-                    s2.matchesPlayed++;
-                    s1.gf += r.score1;
-                    s1.ga += r.score2;
-                    s2.gf += r.score2;
-                    s2.ga += r.score1;
-
-                    if (r.score1 > r.score2) {
-                        s1.points += 3;
-                        s1.wins++;
-                        s2.losses++;
-                    } else if (r.score2 > r.score1) {
-                        s2.points += 3;
-                        s2.wins++;
-                        s1.losses++;
-                    } else {
-                        s1.points += 1;
-                        s1.draws++;
-                        s2.points += 1;
-                        s2.draws++;
-                    }
-                }
+    private void computeDoubleEliminationPlacements(List<MatchInfo> matches, Map<String, Integer> placements) {
+        // Grand Final
+        for (MatchInfo m : matches) {
+            if ("GRAND_FINAL".equalsIgnoreCase(m.bracketType) || "GRAND_FINAL_RESET".equalsIgnoreCase(m.bracketType)) {
+                if (m.winnerNorm != null) putPlacement(placements, m.winnerNorm, 1);
+                if (m.loserNorm != null) putPlacement(placements, m.loserNorm, 2);
             }
         }
 
-        if (totalMatchesPlayed == 0) return; // Do not prematurely award placements for unplayed tournament
-
-        List<RRTeamStat> list = new ArrayList<>(stats.values());
-        list.sort((a, b) -> {
-            if (a.points != b.points) return Integer.compare(b.points, a.points);
-            int gdA = a.gf - a.ga;
-            int gdB = b.gf - b.ga;
-            if (gdA != gdB) return Integer.compare(gdB, gdA);
-            if (a.gf != b.gf) return Integer.compare(b.gf, a.gf);
-            return (a.name != null && b.name != null) ? a.name.compareToIgnoreCase(b.name) : 0;
-        });
-
-        for (int i = 0; i < list.size(); i++) {
-            RRTeamStat s = list.get(i);
-            assignPlacement(map, s.id, s.name, i + 1);
-        }
-    }
-
-    /**
-     * Process Single-Stage Swiss System Tournament (5 rounds, 3W advance / 3L eliminate)
-     */
-    private void processSingleStageSwiss(List<MatchRow> rows, Map<String, Integer> map) {
-        Map<String, int[]> swissStats = new HashMap<>(); // key -> [wins, losses]
-        Map<String, String> teamIdToName = new HashMap<>();
-
-        for (MatchRow r : rows) {
-            String t1 = (r.t1Name != null && !r.t1Name.trim().isEmpty() && !"TBD".equalsIgnoreCase(r.t1Name) && !"BYE".equalsIgnoreCase(r.t1Name)) ? r.t1Name.trim() : null;
-            String t2 = (r.t2Name != null && !r.t2Name.trim().isEmpty() && !"TBD".equalsIgnoreCase(r.t2Name) && !"BYE".equalsIgnoreCase(r.t2Name)) ? r.t2Name.trim() : null;
-
-            if (t1 == null || t2 == null) continue;
-
-            String wId = r.winnerId;
-            String wName = r.winnerName;
-
-            if (wName == null && r.score1 != null && r.score2 != null && !r.score1.equals(r.score2)) {
-                if (r.score1 > r.score2) {
-                    wName = t1;
-                    wId = r.team1Id != null ? r.team1Id : t1;
-                } else {
-                    wName = t2;
-                    wId = r.team2Id != null ? r.team2Id : t2;
-                }
-            }
-
-            boolean isT1Win = (wName != null && wName.equalsIgnoreCase(t1)) || (wId != null && (wId.equalsIgnoreCase(r.team1Id) || (r.t1Name != null && wId.equalsIgnoreCase(r.t1Name))));
-            boolean isT2Win = (wName != null && wName.equalsIgnoreCase(t2)) || (wId != null && (wId.equalsIgnoreCase(r.team2Id) || (r.t2Name != null && wId.equalsIgnoreCase(r.t2Name))));
-
-            if (isT1Win || isT2Win) {
-                String winTeamId = isT1Win ? r.team1Id : r.team2Id;
-                String loseTeamId = isT1Win ? r.team2Id : r.team1Id;
-                String winName = isT1Win ? t1 : t2;
-                String loseName = isT1Win ? t2 : t1;
-
-                String winKey = winTeamId != null ? winTeamId : winName.toLowerCase();
-                String loseKey = loseTeamId != null ? loseTeamId : loseName.toLowerCase();
-
-                swissStats.computeIfAbsent(winKey, k -> new int[2])[0]++;
-                teamIdToName.put(winKey, winName);
-                if (winTeamId != null) {
-                    teamIdToName.put(winName.toLowerCase(), winName);
-                }
-
-                swissStats.computeIfAbsent(loseKey, k -> new int[2])[1]++;
-                teamIdToName.put(loseKey, loseName);
-                if (loseTeamId != null) {
-                    teamIdToName.put(loseName.toLowerCase(), loseName);
-                }
+        // Lower Bracket rounds descending
+        int maxLowerRound = 0;
+        for (MatchInfo m : matches) {
+            if ("LOSER_BRACKET".equalsIgnoreCase(m.bracketType) && m.roundNumber > maxLowerRound) {
+                maxLowerRound = m.roundNumber;
             }
         }
 
-        for (Map.Entry<String, int[]> entry : swissStats.entrySet()) {
-            String tKey = entry.getKey();
-            int[] rec = entry.getValue();
-            int wins = rec[0];
-            int losses = rec[1];
-            int pos = 0;
+        for (MatchInfo m : matches) {
+            if ("LOSER_BRACKET".equalsIgnoreCase(m.bracketType)) {
+                int dist = maxLowerRound - m.roundNumber;
+                int rankForLoser;
+                if (dist == 0) rankForLoser = 3; // Loser Finals loser = 3rd
+                else if (dist <= 2) rankForLoser = 4; // Top 4
+                else if (dist <= 4) rankForLoser = 5; // Top 6 / Top 8
+                else rankForLoser = 9; // Top 12+
 
-            if (wins >= 3) {
-                if (losses == 0) pos = 1;       // 3-0
-                else if (losses == 1) pos = 3;  // 3-1
-                else pos = 6;                   // 3-2
-            } else if (losses >= 3) {
-                if (wins == 2) pos = 9;         // 2-3
-                else if (wins == 1) pos = 12;   // 1-3
-                else pos = 15;                  // 0-3
-            }
-
-            if (pos > 0) {
-                String tName = teamIdToName.get(tKey);
-                assignPlacement(map, tKey, tName, pos);
-                if (tName != null) {
-                    assignPlacement(map, null, tName, pos);
+                if (m.loserNorm != null && !placements.containsKey(m.loserNorm.toLowerCase())) {
+                    putPlacement(placements, m.loserNorm, rankForLoser);
                 }
             }
         }
     }
 
-    /**
-     * Process Single-Stage Group Stage Tournament (Query group_teams standings)
-     */
-    private void processSingleStageGroupStage(Connection conn, String tournamentId, List<MatchRow> rows, Map<String, Integer> map) {
-        String gtSql = "SELECT gt.team_id, t.raw_name, gt.rank_in_group, gt.points, gt.goal_difference, gt.goals_scored, g.group_name "
-                + "FROM group_teams gt "
-                + "JOIN groups g ON gt.group_id = g.id "
-                + "JOIN tournament_stages s ON g.stage_id = s.id "
-                + "JOIN teams t ON gt.team_id = t.id "
-                + "WHERE s.tournament_id = ? "
-                + "ORDER BY gt.rank_in_group ASC, gt.points DESC, gt.goal_difference DESC, gt.goals_scored DESC";
-        try (PreparedStatement ps = conn.prepareStatement(gtSql)) {
-            ps.setString(1, tournamentId);
-            try (ResultSet rs = ps.executeQuery()) {
-                java.util.Set<String> distinctGroups = new java.util.HashSet<>();
-                List<Object[]> teamGroupRows = new ArrayList<>();
-                while (rs.next()) {
-                    String tId = rs.getString("team_id");
-                    String tName = rs.getString("raw_name");
-                    int rankInGrp = rs.getInt("rank_in_group");
-                    String gName = rs.getString("group_name");
-                    if (gName != null) distinctGroups.add(gName.trim());
-                    teamGroupRows.add(new Object[]{tId, tName, rankInGrp});
-                }
-                int countGroups = distinctGroups.size();
-                for (Object[] row : teamGroupRows) {
-                    String tId = (String) row[0];
-                    String tName = (String) row[1];
-                    int rankInGrp = (Integer) row[2];
-                    int pos = 0;
-                    if (countGroups <= 1) {
-                        pos = rankInGrp;
-                    } else {
-                        if (rankInGrp == 1) pos = 1;
-                        else if (rankInGrp == 2) pos = 5;
-                        else if (rankInGrp == 3) pos = 9;
-                        else pos = 17;
-                    }
-                    if (pos > 0) {
-                        assignPlacement(map, tId, tName, pos);
+    private void fillRemainingTeams(String tournamentId, Map<String, Integer> placements, Connection conn) {
+        try {
+            String sql = "SELECT raw_name, normalized_name, original_seed FROM teams WHERE tournament_id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, tournamentId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String norm = rs.getString("normalized_name");
+                        if (norm != null && !placements.containsKey(norm.trim().toLowerCase())) {
+                            int seed = rs.getInt("original_seed");
+                            placements.put(norm.trim().toLowerCase(), seed > 0 ? Math.max(seed, 16) : 16);
+                        }
                     }
                 }
             }
-        } catch (Exception e) {
-            processSingleStageRoundRobin(rows, map);
+        } catch (Exception ignore) {}
+    }
+
+    private void putPlacement(Map<String, Integer> map, String teamNorm, int rank) {
+        if (teamNorm == null || teamNorm.trim().isEmpty()) return;
+        String key = teamNorm.trim().toLowerCase();
+        if (!map.containsKey(key) || map.get(key) > rank) {
+            map.put(key, rank);
         }
     }
 }

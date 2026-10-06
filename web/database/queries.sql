@@ -29,7 +29,7 @@ UNION ALL SELECT '12. series_standings', COUNT(*) FROM series_standings
 UNION ALL SELECT '13. series_tournament_history', COUNT(*) FROM series_tournament_history;
 GO
 
--- 1.2 Thống kê tổng hợp số lượng giải đấu, đội và trạng thái trận đấu
+-- 1.2 Thống kê tổng hợp số lượng giải đấu, đội và trạng thái trận đấu (Tách biệt trận thật & suất BYE)
 SELECT 
     (SELECT COUNT(*) FROM series WHERE status = 'ACTIVE') AS [Series Đang Hoạt Động],
     (SELECT COUNT(*) FROM tournaments) AS [Tổng Số Giải Đấu],
@@ -37,9 +37,10 @@ SELECT
     (SELECT COUNT(*) FROM tournaments WHERE status = 'ONGOING') AS [Giải Đang Diễn Ra],
     (SELECT COUNT(*) FROM tournaments WHERE status = 'DRAFT') AS [Giải Nháp/Chưa Bắt Đầu],
     (SELECT COUNT(*) FROM teams) AS [Tổng Đội Đăng Ký],
-    (SELECT COUNT(*) FROM matches) AS [Tổng Số Trận Đã Tạo],
-    (SELECT COUNT(*) FROM matches WHERE status = 'FINISHED') AS [Trận Đã Kết Thúc],
-    (SELECT COUNT(*) FROM matches WHERE status IN ('PENDING', 'READY', 'IN_PROGRESS')) AS [Trận Chưa Xong];
+    (SELECT COUNT(*) FROM matches WHERE is_bye = 0 OR is_bye IS NULL) AS [Tổng Số Trận Đấu Thực Tế],
+    (SELECT COUNT(*) FROM matches WHERE is_bye = 1) AS [Số Suất Miễn Đấu (BYE)],
+    (SELECT COUNT(*) FROM matches WHERE (is_bye = 0 OR is_bye IS NULL) AND status = 'FINISHED') AS [Trận Đã Kết Thúc],
+    (SELECT COUNT(*) FROM matches WHERE (is_bye = 0 OR is_bye IS NULL) AND status IN ('PENDING', 'READY', 'IN_PROGRESS')) AS [Trận Chưa Xong];
 GO
 
 -- 1.3 Dashboard danh sách các giải đấu: Thể thức, Số đội, Tiến độ trận đấu & Nhà vô địch
@@ -50,20 +51,33 @@ SELECT
     t.tournament_type AS [Loại Giải],
     ts.format AS [Thể Thức Thi Đấu],
     t.status AS [Trạng Thái Giải],
-    ISNULL(t.champion_name, N'Chưa xác định') AS [Nhà Vô Địch],
-    COUNT(DISTINCT tm.id) AS [Số Đội],
-    COUNT(DISTINCT m.id) AS [Tổng Số Trận],
-    SUM(CASE WHEN m.status = 'FINISHED' THEN 1 ELSE 0 END) AS [Trận Đã Đấu],
-    CAST(ROUND(CASE WHEN COUNT(m.id) > 0 
-         THEN (CAST(SUM(CASE WHEN m.status = 'FINISHED' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(m.id)) * 100 
+    CASE WHEN t.status = 'COMPLETED' AND t.champion_name IS NOT NULL AND RTRIM(LTRIM(t.champion_name)) <> '' 
+         THEN t.champion_name 
+         ELSE N'Chưa xác định' END AS [Nhà Vô Địch],
+    ISNULL(team_stats.team_count, 0) AS [Số Đội],
+    ISNULL(match_stats.total_matches, 0) AS [Tổng Số Trận Thực Tế],
+    ISNULL(match_stats.bye_count, 0) AS [Suất BYE],
+    ISNULL(match_stats.finished_matches, 0) AS [Trận Đã Đấu],
+    CAST(ROUND(CASE WHEN ISNULL(match_stats.total_matches, 0) > 0 
+         THEN (CAST(ISNULL(match_stats.finished_matches, 0) AS FLOAT) / match_stats.total_matches) * 100 
          ELSE 0 END, 1) AS NVARCHAR(10)) + '%' AS [Tiến Độ Hoàn Thành],
     t.created_at AS [Ngày Tạo]
 FROM tournaments t
 LEFT JOIN series s ON t.series_id = s.id
 LEFT JOIN tournament_stages ts ON ts.tournament_id = t.id AND ts.stage_order = 1
-LEFT JOIN teams tm ON tm.tournament_id = t.id
-LEFT JOIN matches m ON m.tournament_id = t.id
-GROUP BY t.id, t.name, s.name, t.tournament_type, ts.format, t.status, t.champion_name, t.created_at
+LEFT JOIN (
+    SELECT tournament_id, COUNT(*) AS team_count 
+    FROM teams 
+    GROUP BY tournament_id
+) team_stats ON team_stats.tournament_id = t.id
+LEFT JOIN (
+    SELECT tournament_id, 
+           COUNT(CASE WHEN is_bye = 0 OR is_bye IS NULL THEN 1 ELSE NULL END) AS total_matches,
+           COUNT(CASE WHEN is_bye = 1 THEN 1 ELSE NULL END) AS bye_count,
+           SUM(CASE WHEN (is_bye = 0 OR is_bye IS NULL) AND status = 'FINISHED' THEN 1 ELSE 0 END) AS finished_matches
+    FROM matches 
+    GROUP BY tournament_id
+) match_stats ON match_stats.tournament_id = t.id
 ORDER BY t.created_at DESC;
 GO
 
@@ -134,15 +148,15 @@ SELECT
     t.name AS [Giải Đấu],
     ts.stage_name AS [Giai Đoạn],
     m.round_number AS [Vòng Đấu],
-    m.match_code AS [Mã Trận],
+    CASE WHEN m.is_bye = 1 THEN N'BYE (Miễn đấu)' ELSE m.match_code END AS [Mã Trận],
     ISNULL(t1.raw_name, N'Chờ xác định') AS [Đội 1],
     m.score1 AS [Điểm 1],
     m.penalty1 AS [Pen 1],
     m.score2 AS [Điểm 2],
     m.penalty2 AS [Pen 2],
-    ISNULL(t2.raw_name, N'Chờ xác định') AS [Đội 2],
-    ISNULL(tw.raw_name, N'---') AS [Đội Thắng],
-    m.status AS [Trạng Thái],
+    CASE WHEN m.is_bye = 1 AND (t2.raw_name IS NULL OR t2.raw_name = '') THEN N'[SUẤT BYE]' ELSE ISNULL(t2.raw_name, N'Chờ xác định') END AS [Đội 2],
+    ISNULL(tw.raw_name, N'---') AS [Đội Thắng/Tiến Vòng Sau],
+    CASE WHEN m.is_bye = 1 THEN N'BYE (Tự động vào Vòng 2)' ELSE m.status END AS [Trạng Thái],
     m.next_match_id AS [Mã Trận Kế Tiếp]
 FROM matches m
 JOIN tournaments t ON m.tournament_id = t.id

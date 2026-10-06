@@ -2,21 +2,18 @@ package controller;
 
 import dao.SingleEliminationDAO;
 import dao.TournamentDAO;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.List;
-import java.util.Map;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.Match;
 import model.Tournament;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+
 /**
- * Controller for Single Elimination Tournament Bracket Page & AJAX Database Persistence.
- * Maps to both /single-elimination and /common/single-elimination to guarantee 0 404 errors.
+ * Controller for Single Elimination Bracket View & Server-Driven Lifecycle.
  */
 @WebServlet(name = "SingleEliminationServlet", urlPatterns = {"/single-elimination", "/common/single-elimination"})
 public class SingleEliminationServlet extends HttpServlet {
@@ -27,7 +24,7 @@ public class SingleEliminationServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         String idParam = request.getParameter("id");
         String tournamentId = (idParam != null && !idParam.trim().isEmpty()) ? idParam.trim() : "demo";
 
@@ -37,7 +34,6 @@ public class SingleEliminationServlet extends HttpServlet {
             currentStage = 2;
         }
 
-        // Fetch tournament details from DB
         Tournament tournament = tournamentDAO.getTournamentById(tournamentId);
         if (tournament == null) {
             tournament = new Tournament();
@@ -48,22 +44,21 @@ public class SingleEliminationServlet extends HttpServlet {
 
         // Fetch matches from DB for this stage
         String dbMatchesJson = singleEliminationDAO.getMatchesJsonForFrontend(tournamentId, currentStage);
-        Map<Integer, List<Match>> roundMap = singleEliminationDAO.getBracketRounds(tournamentId);
 
         request.setAttribute("tournament", tournament);
-        request.setAttribute("roundMap", roundMap);
+        request.setAttribute("tournamentId", tournamentId);
+        request.setAttribute("currentStage", currentStage);
         request.setAttribute("dbMatchesJson", dbMatchesJson);
         request.setAttribute("dbStage2Teams", tournament.getStage2Teams());
         request.setAttribute("dbMultiStageConfig", tournament.getMultiStageConfig());
 
-        // Forward to single-elimination.jsp
         request.getRequestDispatcher("/common/single-elimination.jsp").forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
@@ -75,114 +70,54 @@ public class SingleEliminationServlet extends HttpServlet {
             String stageParam = request.getParameter("stage");
             int stage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
 
-            if ("saveStage2Teams".equalsIgnoreCase(action)) {
-                String stage2TeamsJson = request.getParameter("stage2Teams");
-                if (tournamentId != null && stage2TeamsJson != null && !stage2TeamsJson.trim().isEmpty()) {
-                    boolean ok = tournamentDAO.saveStage2Teams(tournamentId, stage2TeamsJson);
-                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu danh sách Vòng 2 vào CSDL!" : "Lỗi lưu Vòng 2!") + "\"}");
-                } else {
-                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc stage2Teams!\"}");
-                }
-                return;
-            }
-
-            if ("saveMultiStageConfig".equalsIgnoreCase(action)) {
-                String multiConfigJson = request.getParameter("multiConfig");
-                if (tournamentId != null && multiConfigJson != null && !multiConfigJson.trim().isEmpty()) {
-                    boolean ok = tournamentDAO.saveMultiStageConfig(tournamentId, multiConfigJson);
-                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu cấu hình Multi-Stage vào CSDL!" : "Lỗi lưu cấu hình!") + "\"}");
-                } else {
-                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc multiConfig!\"}");
-                }
-                return;
-            }
-
-            if ("saveStage1Status".equalsIgnoreCase(action)) {
-                String s1Status = request.getParameter("stage1Status");
-                if (tournamentId != null && s1Status != null) {
-                    boolean ok = tournamentDAO.saveStage1Status(tournamentId, s1Status);
-                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"stage1Status\":\"" + s1Status + "\"}");
-                } else {
-                    out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId hoặc stage1Status!\"}");
-                }
-                return;
-            }
-
-            // ACTION 1: Batch Sync entire bracket structure to DB
-            if ("batchSync".equalsIgnoreCase(action) || "sync".equalsIgnoreCase(action)) {
-                String matchesData = request.getParameter("matchesData");
-                if (tournamentId != null && matchesData != null) {
-                    boolean ok = singleEliminationDAO.syncBracketMatches(tournamentId, stage, matchesData);
-                    if (ok) {
-                        tryRecalculateSeriesStandings(tournamentId);
-                        out.print("{\"status\":\"success\",\"message\":\"Đồng bộ kết quả nhánh đấu vào CSDL thành công!\"}");
-                    } else {
-                        out.print("{\"status\":\"error\",\"message\":\"Không thể đồng bộ nhánh đấu vào CSDL!\"}");
-                    }
-                } else {
-                    out.print("{\"status\":\"error\",\"message\":\"Dữ liệu batchSync thiếu tournamentId hoặc matchesData!\"}");
-                }
-                return;
-            }
-
-            // ACTION 2: Reset bracket matches in DB
-            if ("reset".equalsIgnoreCase(action)) {
-                if (tournamentId != null) {
-                    boolean ok = singleEliminationDAO.resetBracketMatches(tournamentId, stage);
-                    if (ok) {
-                        tryRecalculateSeriesStandings(tournamentId);
-                    }
-                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Reset CSDL thành công!" : "Lỗi reset CSDL!") + "\"}");
+            if ("reset".equalsIgnoreCase(action) || "resetBracket".equalsIgnoreCase(action)) {
+                if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+                    boolean ok = singleEliminationDAO.resetBracketMatches(tournamentId.trim(), stage);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã đặt lại toàn bộ nhánh đấu!" : "Lỗi khi đặt lại nhánh đấu!") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId!\"}");
                 }
                 return;
             }
 
-            // ACTION 3: Update single match score (default / updateScore)
-            String matchIdStr = request.getParameter("matchId");
-            String score1Str = request.getParameter("team1Score");
-            String score2Str = request.getParameter("team2Score");
-            String winnerFlag = request.getParameter("winner");
-            String team1Name = request.getParameter("team1Name");
-            String team2Name = request.getParameter("team2Name");
-
-            if (matchIdStr != null) {
-                int matchId = Integer.parseInt(matchIdStr.trim());
-                Integer score1 = (score1Str != null && !score1Str.trim().isEmpty()) ? Integer.parseInt(score1Str.trim()) : null;
-                Integer score2 = (score2Str != null && !score2Str.trim().isEmpty()) ? Integer.parseInt(score2Str.trim()) : null;
-
-                boolean success = false;
-                if (tournamentId != null && !tournamentId.trim().isEmpty()) {
-                    success = singleEliminationDAO.updateMatchScoreAndAdvance(tournamentId, stage, matchId, score1, score2, winnerFlag, team1Name, team2Name);
+            if ("saveStage2Teams".equalsIgnoreCase(action)) {
+                String stage2TeamsJson = request.getParameter("stage2Teams");
+                if (tournamentId != null && stage2TeamsJson != null) {
+                    boolean ok = tournamentDAO.saveStage2Teams(tournamentId, stage2TeamsJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu danh sách Vòng 2 vào CSDL!" : "Lỗi lưu Vòng 2!") + "\"}");
                 } else {
-                    success = singleEliminationDAO.updateMatchScoreAndAdvance(matchId, score1 != null ? score1 : 0, score2 != null ? score2 : 0, winnerFlag);
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu dữ liệu!\"}");
                 }
-
-                if (success) {
-                    tryRecalculateSeriesStandings(tournamentId);
-                    out.print("{\"status\":\"success\",\"message\":\"Cập nhật tỷ số trận đấu vào CSDL thành công!\"}");
-                } else {
-                    out.print("{\"status\":\"error\",\"message\":\"Không thể lưu tỷ số vào CSDL!\"}");
-                }
-            } else {
-                out.print("{\"status\":\"error\",\"message\":\"Dữ liệu gửi lên không hợp lệ!\"}");
+                return;
             }
-        } catch (Exception e) {
-            out.print("{\"status\":\"error\",\"message\":\"Lỗi hệ thống: " + e.getMessage() + "\"}");
-        }
-    }
 
-    private void tryRecalculateSeriesStandings(String tournamentId) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
-            try {
-                dao.TournamentDAO tDao = new dao.TournamentDAO();
-                model.Tournament t = tDao.getTournamentById(tournamentId.trim());
-                if (t != null && t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
-                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(t.getSeriesId().trim());
+            if ("saveMultiStageConfig".equalsIgnoreCase(action)) {
+                String multiConfigJson = request.getParameter("multiConfig");
+                if (tournamentId != null && multiConfigJson != null) {
+                    boolean ok = tournamentDAO.saveMultiStageConfig(tournamentId, multiConfigJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu cấu hình Multi-Stage!" : "Lỗi lưu cấu hình!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu dữ liệu!\"}");
                 }
-            } catch (Exception ignore) {}
-        });
+                return;
+            }
+
+            if ("saveStage1Status".equalsIgnoreCase(action)) {
+                String stage1Status = request.getParameter("stage1Status");
+                if (tournamentId != null && stage1Status != null) {
+                    boolean ok = tournamentDAO.updateTournamentStage1Status(tournamentId, stage1Status);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã cập nhật trạng thái Stage 1!" : "Lỗi cập nhật Stage 1!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu dữ liệu!\"}");
+                }
+                return;
+            }
+
+            out.print("{\"status\":\"error\",\"message\":\"Hành động không hợp lệ: " + action + "\"}");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"status\":\"error\",\"message\":\"Lỗi server: " + e.getMessage() + "\"}");
+        }
     }
 }
