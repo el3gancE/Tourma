@@ -4,7 +4,7 @@
  * Reusable for Single Elimination (SE), Double Elimination (DE), and Swiss System.
  * Handles:
  * 1. Clean empty winning score inputs (NO pre-filled numbers, NO placeholder)
- * 2. High-speed batch random score generation
+ * 2. High-speed batch random score generation (with bracketType: UPPER, LOWER, GRAND_FINAL support)
  * 3. Individual round reset with cascading downstream clearing
  * 4. Custom score persistence & bi-directional sync across Bracket & List views
  * 5. Direct Event Listeners + Global Bulletproof Event Delegation
@@ -15,21 +15,32 @@
 
     var TourmaRoundControls = {
         /**
-         * In-memory cache of user-typed custom scores keyed by roundNumber
+         * In-memory cache of user-typed custom scores keyed by [bracketType_]roundNumber
          */
         customScores: {},
 
         /**
          * Retrieve persisted custom score for a round from cache or localStorage
          */
-        getCustomScoreForRound: function (roundNumber, tid) {
+        getCustomScoreForRound: function (roundNumber, tid, bracketType) {
             var rNum = String(roundNumber || 1);
+            var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
+            var rKey = (bType ? bType + '_' : '') + rNum;
+
+            if (this.customScores && this.customScores[rKey] !== undefined && this.customScores[rKey] !== null && this.customScores[rKey] !== '') {
+                return this.customScores[rKey];
+            }
             if (this.customScores && this.customScores[rNum] !== undefined && this.customScores[rNum] !== null && this.customScores[rNum] !== '') {
                 return this.customScores[rNum];
             }
-            var targetTid = tid || (window.SingleEliminationEngine ? window.SingleEliminationEngine.tournamentId : null) || window.TourmaTournamentId || 'demo';
+
+            var targetTid = tid || (window.SingleEliminationEngine ? window.SingleEliminationEngine.tournamentId : null) || (window.TourmaDoubleElimination ? window.TourmaDoubleElimination.tournamentId : null) || window.TourmaTournamentId || 'demo';
             try {
                 var stored = JSON.parse(localStorage.getItem('tourma_custom_scores_' + targetTid) || '{}');
+                if (stored && stored[rKey] !== undefined && stored[rKey] !== null && stored[rKey] !== '') {
+                    this.customScores[rKey] = stored[rKey];
+                    return stored[rKey];
+                }
                 if (stored && stored[rNum] !== undefined && stored[rNum] !== null && stored[rNum] !== '') {
                     this.customScores[rNum] = stored[rNum];
                     return stored[rNum];
@@ -41,12 +52,18 @@
         /**
          * Save custom score for a round to in-memory cache and localStorage
          */
-        saveCustomScoreForRound: function (roundNumber, val, tid) {
+        saveCustomScoreForRound: function (roundNumber, val, tid, bracketType) {
             var rNum = String(roundNumber || 1);
+            var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
+            var rKey = (bType ? bType + '_' : '') + rNum;
+
+            this.customScores[rKey] = val;
             this.customScores[rNum] = val;
-            var targetTid = tid || (window.SingleEliminationEngine ? window.SingleEliminationEngine.tournamentId : null) || window.TourmaTournamentId || 'demo';
+
+            var targetTid = tid || (window.SingleEliminationEngine ? window.SingleEliminationEngine.tournamentId : null) || (window.TourmaDoubleElimination ? window.TourmaDoubleElimination.tournamentId : null) || window.TourmaTournamentId || 'demo';
             try {
                 var stored = JSON.parse(localStorage.getItem('tourma_custom_scores_' + targetTid) || '{}');
+                stored[rKey] = val;
                 stored[rNum] = val;
                 localStorage.setItem('tourma_custom_scores_' + targetTid, JSON.stringify(stored));
             } catch (e) { }
@@ -57,28 +74,38 @@
          */
         resolveEngine: function (engine) {
             if (engine && typeof engine.render === 'function') return engine;
+            if (window.DoubleEliminationEngine && typeof window.DoubleEliminationEngine.render === 'function' && window.DoubleEliminationEngine.tournamentId) return window.DoubleEliminationEngine;
+            if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.render === 'function' && window.TourmaDoubleElimination.tournamentId) return window.TourmaDoubleElimination;
+            if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.render === 'function' && window.SingleEliminationEngine.tournamentId) return window.SingleEliminationEngine;
+            if (window.TourmaSingleElimination && typeof window.TourmaSingleElimination.render === 'function' && window.TourmaSingleElimination.tournamentId) return window.TourmaSingleElimination;
+            if (window.TourmaSwiss && typeof window.TourmaSwiss.render === 'function' && window.TourmaSwiss.tournamentId) return window.TourmaSwiss;
+            if (window.TourmaRoundRobin && typeof window.TourmaRoundRobin.render === 'function' && window.TourmaRoundRobin.tournamentId) return window.TourmaRoundRobin;
+            if (window.TourmaGroupStage && typeof window.TourmaGroupStage.render === 'function' && window.TourmaGroupStage.tournamentId) return window.TourmaGroupStage;
+            if (window.TourmaFFA && typeof window.TourmaFFA.render === 'function' && window.TourmaFFA.tournamentId) return window.TourmaFFA;
+            if (window.TourmaGSL && typeof window.TourmaGSL.render === 'function' && window.TourmaGSL.tournamentId) return window.TourmaGSL;
             if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.render === 'function') return window.SingleEliminationEngine;
-            if (window.TourmaSingleElimination && typeof window.TourmaSingleElimination.render === 'function') return window.TourmaSingleElimination;
             if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.render === 'function') return window.TourmaDoubleElimination;
+            if (window.DoubleEliminationEngine && typeof window.DoubleEliminationEngine.render === 'function') return window.DoubleEliminationEngine;
             if (window.TourmaSwiss && typeof window.TourmaSwiss.render === 'function') return window.TourmaSwiss;
-            if (window.TourmaRoundRobin && typeof window.TourmaRoundRobin.render === 'function') return window.TourmaRoundRobin;
-            if (window.TourmaGroupStage && typeof window.TourmaGroupStage.render === 'function') return window.TourmaGroupStage;
             return null;
         },
 
         /**
          * Generate HTML string for Bracket View Round Header Controls
          */
-        renderHeaderControlsHtml: function (roundNumber, roundTitle) {
+        renderHeaderControlsHtml: function (roundNumber, roundTitle, bracketType) {
             var rNum = roundNumber || 1;
             var rTitle = roundTitle || ('Vòng ' + rNum);
-            var savedVal = this.getCustomScoreForRound(rNum);
-            return '<div class="round-header-random-controls" data-round="' + rNum + '">'
-                + '<input type="number" id="round_random_score_bracket_' + rNum + '" name="round_random_score_bracket_' + rNum + '" class="round-random-input" data-round="' + rNum + '" min="1" max="99" value="' + savedVal + '" autocomplete="off" title="Nhập điểm thắng tùy chỉnh" />'
-                + '<button type="button" class="btn-round-random" data-round="' + rNum + '" title="Tạo tỉ số ngẫu nhiên cho ' + rTitle + '">'
+            var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
+            var savedVal = this.getCustomScoreForRound(rNum, null, bType);
+            var idSuffix = (bType ? bType.toLowerCase() + '_' : '') + rNum;
+
+            return '<div class="round-header-random-controls" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + '>'
+                + '<input type="number" id="round_random_score_bracket_' + idSuffix + '" name="round_random_score_bracket_' + idSuffix + '" class="round-random-input" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + ' min="1" max="99" value="' + savedVal + '" autocomplete="off" title="Nhập điểm thắng tùy chỉnh" />'
+                + '<button type="button" class="btn-round-random" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + ' title="Tạo tỉ số ngẫu nhiên cho ' + rTitle + '">'
                 + '<i class="fa-solid fa-dice"></i> Random'
                 + '</button>'
-                + '<button type="button" class="btn-round-reset" data-round="' + rNum + '" title="Đặt lại kết quả ' + rTitle + '">'
+                + '<button type="button" class="btn-round-reset" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + ' title="Đặt lại kết quả ' + rTitle + '">'
                 + '<i class="fa-solid fa-rotate-right"></i>'
                 + '</button>'
                 + '</div>';
@@ -87,16 +114,20 @@
         /**
          * Generate HTML string for List View Round Header Controls
          */
-        renderListHeaderControlsHtml: function (roundNumber, roundTitle) {
+        renderListHeaderControlsHtml: function (roundNumber, roundTitle, bracketType) {
             var rNum = roundNumber || 1;
-            var savedVal = this.getCustomScoreForRound(rNum);
-            return '<div class="list-round-actions" data-round="' + rNum + '">'
-                + '<input type="number" id="round_random_score_list_' + rNum + '" name="round_random_score_list_' + rNum + '" class="round-random-input" data-round="' + rNum + '" min="1" max="99" value="' + savedVal + '" autocomplete="off" title="Nhập điểm thắng tùy chỉnh" />'
-                + '<button type="button" class="btn-random-round" data-round="' + rNum + '" title="Tạo tỉ số ngẫu nhiên cho Vòng ' + rNum + '">'
-                + '<i class="fa-solid fa-dice"></i> Random Vòng ' + rNum
+            var rTitle = roundTitle || ('Vòng ' + rNum);
+            var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
+            var savedVal = this.getCustomScoreForRound(rNum, null, bType);
+            var idSuffix = (bType ? bType.toLowerCase() + '_' : '') + rNum;
+
+            return '<div class="list-round-actions" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + '>'
+                + '<input type="number" id="round_random_score_list_' + idSuffix + '" name="round_random_score_list_' + idSuffix + '" class="round-random-input" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + ' min="1" max="99" value="' + savedVal + '" autocomplete="off" title="Nhập điểm thắng tùy chỉnh" />'
+                + '<button type="button" class="btn-random-round" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + ' title="Tạo tỉ số ngẫu nhiên cho ' + rTitle + '">'
+                + '<i class="fa-solid fa-dice"></i> Random ' + rTitle
                 + '</button>'
-                + '<button type="button" class="btn-reset-round" data-round="' + rNum + '" title="Đặt lại kết quả Vòng ' + rNum + '">'
-                + '<i class="fa-solid fa-rotate-right"></i> Reset Vòng ' + rNum
+                + '<button type="button" class="btn-reset-round" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + ' title="Đặt lại kết quả ' + rTitle + '">'
+                + '<i class="fa-solid fa-rotate-right"></i> Reset ' + rTitle
                 + '</button>'
                 + '</div>';
         },
@@ -115,8 +146,9 @@
             }
 
             var rNumAttr = parentContainer ? parentContainer.getAttribute('data-round') : null;
+            var bTypeAttr = parentContainer ? parentContainer.getAttribute('data-bracket-type') : null;
             if (rNumAttr) {
-                var val = this.getCustomScoreForRound(rNumAttr);
+                var val = this.getCustomScoreForRound(rNumAttr, null, bTypeAttr);
                 if (val && parseInt(val, 10) > 0) return parseInt(val, 10);
             }
 
@@ -203,27 +235,32 @@
         /**
          * Execute high-speed deadlock-free batch random for a single round
          */
-        executeRandomRound: function (engine, roundNumber) {
+        executeRandomRound: function (engine, roundNumber, bracketType) {
             if (this.isLocked(engine, true)) return;
             var activeEngine = this.resolveEngine(engine);
             var self = this;
             var contextPath = (activeEngine && activeEngine.contextPath) ? activeEngine.contextPath : (window.TourmaContextPath || '');
             var tid = (activeEngine && activeEngine.tournamentId) ? activeEngine.tournamentId : (window.TourmaTournamentId || 'demo');
             var stage = (activeEngine && activeEngine.currentStage) ? activeEngine.currentStage : 1;
+            var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
 
-            // Look up target score from all matching inputs in DOM or cache
+            // Look up target score from matching inputs in DOM or cache
             var targetScore = null;
-            var inputs = document.querySelectorAll('.round-random-input[data-round="' + roundNumber + '"], [data-round="' + roundNumber + '"] .round-random-input');
+            var selector = bType
+                ? ('.round-random-input[data-round="' + roundNumber + '"][data-bracket-type="' + bType + '"], [data-round="' + roundNumber + '"][data-bracket-type="' + bType + '"] .round-random-input')
+                : ('.round-random-input[data-round="' + roundNumber + '"], [data-round="' + roundNumber + '"] .round-random-input');
+            var inputs = document.querySelectorAll(selector);
             for (var i = 0; i < inputs.length; i++) {
                 if (inputs[i].value && parseInt(inputs[i].value, 10) > 0) {
                     targetScore = parseInt(inputs[i].value, 10);
-                    self.customScores[roundNumber] = targetScore;
+                    self.saveCustomScoreForRound(roundNumber, targetScore, tid, bType);
                     break;
                 }
             }
 
-            if (!targetScore && self.customScores[roundNumber]) {
-                targetScore = parseInt(self.customScores[roundNumber], 10);
+            if (!targetScore) {
+                var cached = self.getCustomScoreForRound(roundNumber, tid, bType);
+                if (cached && parseInt(cached, 10) > 0) targetScore = parseInt(cached, 10);
             }
 
             var payload = {
@@ -232,12 +269,18 @@
                 stage: stage,
                 roundNumber: roundNumber
             };
+            if (bType) {
+                payload.bracketType = bType;
+            }
             if (targetScore) {
                 payload.targetScore = targetScore;
             }
 
             // Visual spinner on clicked buttons
-            var btns = document.querySelectorAll('.btn-round-random[data-round="' + roundNumber + '"], .btn-random-round[data-round="' + roundNumber + '"]');
+            var btnSelector = bType
+                ? ('.btn-round-random[data-round="' + roundNumber + '"][data-bracket-type="' + bType + '"], .btn-random-round[data-round="' + roundNumber + '"][data-bracket-type="' + bType + '"]')
+                : ('.btn-round-random[data-round="' + roundNumber + '"], .btn-random-round[data-round="' + roundNumber + '"]');
+            var btns = document.querySelectorAll(btnSelector);
             btns.forEach(function (b) {
                 b.setAttribute('data-original-html', b.innerHTML);
                 b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -287,13 +330,14 @@
         /**
          * Execute reset for a single round
          */
-        executeResetRound: function (engine, roundNumber) {
+        executeResetRound: function (engine, roundNumber, bracketType) {
             if (this.isLocked(engine, true)) return;
             var activeEngine = this.resolveEngine(engine);
             var self = this;
             var contextPath = (activeEngine && activeEngine.contextPath) ? activeEngine.contextPath : (window.TourmaContextPath || '');
             var tid = (activeEngine && activeEngine.tournamentId) ? activeEngine.tournamentId : (window.TourmaTournamentId || 'demo');
             var stage = (activeEngine && activeEngine.currentStage) ? activeEngine.currentStage : 1;
+            var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
 
             var payload = {
                 action: 'resetRound',
@@ -301,9 +345,15 @@
                 stage: stage,
                 roundNumber: roundNumber
             };
+            if (bType) {
+                payload.bracketType = bType;
+            }
 
             // Visual spinner on clicked buttons
-            var btns = document.querySelectorAll('.btn-round-reset[data-round="' + roundNumber + '"], .btn-reset-round[data-round="' + roundNumber + '"]');
+            var btnSelector = bType
+                ? ('.btn-round-reset[data-round="' + roundNumber + '"][data-bracket-type="' + bType + '"], .btn-reset-round[data-round="' + roundNumber + '"][data-bracket-type="' + bType + '"]')
+                : ('.btn-round-reset[data-round="' + roundNumber + '"], .btn-reset-round[data-round="' + roundNumber + '"]');
+            var btns = document.querySelectorAll(btnSelector);
             btns.forEach(function (b) {
                 b.setAttribute('data-original-html', b.innerHTML);
                 b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -413,8 +463,9 @@
                     e.preventDefault();
                     e.stopPropagation();
                     var rNum = parseInt(this.getAttribute('data-round'), 10);
+                    var bType = this.getAttribute('data-bracket-type') || (this.closest('[data-bracket-type]') ? this.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
                     if (!isNaN(rNum)) {
-                        self.executeRandomRound(activeEngine, rNum);
+                        self.executeRandomRound(activeEngine, rNum, bType);
                     }
                 };
             });
@@ -426,8 +477,9 @@
                     e.preventDefault();
                     e.stopPropagation();
                     var rNum = parseInt(this.getAttribute('data-round'), 10);
+                    var bType = this.getAttribute('data-bracket-type') || (this.closest('[data-bracket-type]') ? this.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
                     if (!isNaN(rNum)) {
-                        self.executeResetRound(activeEngine, rNum);
+                        self.executeResetRound(activeEngine, rNum, bType);
                     }
                 };
             });
@@ -437,10 +489,14 @@
             inputs.forEach(function (inp) {
                 inp.oninput = function () {
                     var rNum = this.getAttribute('data-round');
+                    var bType = this.getAttribute('data-bracket-type') || (this.closest('[data-bracket-type]') ? this.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
                     var val = this.value;
                     if (rNum) {
-                        self.customScores[rNum] = val;
-                        var siblings = document.querySelectorAll('.round-random-input[data-round="' + rNum + '"]');
+                        self.saveCustomScoreForRound(rNum, val, null, bType);
+                        var sel = bType 
+                            ? ('.round-random-input[data-round="' + rNum + '"][data-bracket-type="' + bType + '"]')
+                            : ('.round-random-input[data-round="' + rNum + '"]');
+                        var siblings = document.querySelectorAll(sel);
                         siblings.forEach(function (other) {
                             if (other !== inp) {
                                 other.value = val;
@@ -498,8 +554,9 @@
             e.preventDefault();
             e.stopPropagation();
             var rNum = parseInt(randomBtn.getAttribute('data-round'), 10);
+            var bType = randomBtn.getAttribute('data-bracket-type') || (randomBtn.closest('[data-bracket-type]') ? randomBtn.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
             if (!isNaN(rNum)) {
-                TourmaRoundControls.executeRandomRound(null, rNum);
+                TourmaRoundControls.executeRandomRound(null, rNum, bType);
             }
             return;
         }
@@ -510,8 +567,9 @@
             e.preventDefault();
             e.stopPropagation();
             var rNum = parseInt(resetBtn.getAttribute('data-round'), 10);
+            var bType = resetBtn.getAttribute('data-bracket-type') || (resetBtn.closest('[data-bracket-type]') ? resetBtn.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
             if (!isNaN(rNum)) {
-                TourmaRoundControls.executeResetRound(null, rNum);
+                TourmaRoundControls.executeResetRound(null, rNum, bType);
             }
             return;
         }
@@ -521,10 +579,14 @@
     document.addEventListener('input', function (e) {
         if (e.target && e.target.classList && e.target.classList.contains('round-random-input')) {
             var rNum = e.target.getAttribute('data-round');
+            var bType = e.target.getAttribute('data-bracket-type') || (e.target.closest('[data-bracket-type]') ? e.target.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
             var val = e.target.value;
             if (rNum) {
-                TourmaRoundControls.saveCustomScoreForRound(rNum, val);
-                var siblings = document.querySelectorAll('.round-random-input[data-round="' + rNum + '"]');
+                TourmaRoundControls.saveCustomScoreForRound(rNum, val, null, bType);
+                var sel = bType 
+                    ? ('.round-random-input[data-round="' + rNum + '"][data-bracket-type="' + bType + '"]')
+                    : ('.round-random-input[data-round="' + rNum + '"]');
+                var siblings = document.querySelectorAll(sel);
                 siblings.forEach(function (other) {
                     if (other !== e.target) {
                         other.value = val;
@@ -537,10 +599,14 @@
     document.addEventListener('change', function (e) {
         if (e.target && e.target.classList && e.target.classList.contains('round-random-input')) {
             var rNum = e.target.getAttribute('data-round');
+            var bType = e.target.getAttribute('data-bracket-type') || (e.target.closest('[data-bracket-type]') ? e.target.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
             var val = e.target.value;
             if (rNum) {
-                TourmaRoundControls.saveCustomScoreForRound(rNum, val);
-                var siblings = document.querySelectorAll('.round-random-input[data-round="' + rNum + '"]');
+                TourmaRoundControls.saveCustomScoreForRound(rNum, val, null, bType);
+                var sel = bType 
+                    ? ('.round-random-input[data-round="' + rNum + '"][data-bracket-type="' + bType + '"]')
+                    : ('.round-random-input[data-round="' + rNum + '"]');
+                var siblings = document.querySelectorAll(sel);
                 siblings.forEach(function (other) {
                     if (other !== e.target) {
                         other.value = val;

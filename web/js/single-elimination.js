@@ -100,9 +100,22 @@
                     roundGroups[rNum].push(matchObj);
                 }
 
+                var getMatchNum = function (m) {
+                    if (m.matchNumber !== undefined && m.matchNumber !== null && !isNaN(Number(m.matchNumber))) return Number(m.matchNumber);
+                    var s = String(m.rawId || m.matchId || m.id || '');
+                    var idx = s.lastIndexOf('_');
+                    if (idx !== -1) {
+                        var n = parseInt(s.substring(idx + 1), 10);
+                        if (!isNaN(n)) return n;
+                    }
+                    var digits = s.replace(/[^0-9]/g, '');
+                    return digits ? parseInt(digits, 10) : 0;
+                };
+
                 // Build ordered roundsList
                 for (var r = 1; r <= maxRound; r++) {
                     var rMatches = roundGroups[r] || [];
+                    rMatches.sort(function (a, b) { return getMatchNum(a) - getMatchNum(b); });
                     var rTitle = (window.TourmaBracketAlgorithm && window.TourmaBracketAlgorithm.getRoundTitle)
                         ? window.TourmaBracketAlgorithm.getRoundTitle(r, maxRound, this.cutTarget > 1)
                         : ('Vòng ' + r);

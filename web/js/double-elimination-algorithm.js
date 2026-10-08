@@ -686,15 +686,42 @@
         },
 
         /**
+         * Robust Helper to find a match in matchesMap by exact ID, rawId, matchNumber, or numeric suffix
+         */
+        findMatchInMap: function (matchesMap, targetId) {
+            if (!matchesMap || targetId === undefined || targetId === null) return null;
+            var strId = String(targetId).trim();
+            if (matchesMap[strId]) return matchesMap[strId];
+
+            var numPart = strId;
+            var uIdx = strId.lastIndexOf('_');
+            if (uIdx !== -1 && uIdx < strId.length - 1) {
+                numPart = strId.substring(uIdx + 1);
+            }
+
+            for (var k in matchesMap) {
+                var m = matchesMap[k];
+                if (!m) continue;
+                if (m.matchId && String(m.matchId) === strId) return m;
+                if (m.id && String(m.id) === strId) return m;
+                if (m.rawId && String(m.rawId) === strId) return m;
+                if (m.matchNumber && String(m.matchNumber) === strId) return m;
+                if (numPart && (String(m.matchNumber) === numPart || String(m.matchId).endsWith('_' + numPart) || String(m.id).endsWith('_' + numPart))) return m;
+            }
+            return null;
+        },
+
+        /**
          * Recursively reset subsequent descendant matches to placeholders and clear stale scores/winners
          */
         cascadeResetPlaceholders: function (matchesMap, resetMatchId) {
-            var curr = matchesMap[resetMatchId];
+            var curr = this.findMatchInMap(matchesMap, resetMatchId);
             if (!curr) return;
 
             // 1. Reset downstream winner branch
-            if (curr.nextMatchId && matchesMap[curr.nextMatchId]) {
-                var nextMatch = matchesMap[curr.nextMatchId];
+            var nextId = curr.nextMatchId;
+            var nextMatch = nextId ? this.findMatchInMap(matchesMap, nextId) : null;
+            if (nextMatch) {
                 var slot = curr.nextMatchSlot || 1;
                 var placeholderName = (curr.bracketType === 'UPPER' && nextMatch.bracketType === 'GRAND_FINAL') ? 'Winner UB' :
                                       (curr.bracketType === 'LOWER' && nextMatch.bracketType === 'GRAND_FINAL') ? 'Winner LB' :
@@ -717,13 +744,14 @@
                 nextMatch.winnerId = null;
                 nextMatch.status = 'SCHEDULED';
 
-                this.cascadeResetPlaceholders(matchesMap, curr.nextMatchId);
+                this.cascadeResetPlaceholders(matchesMap, nextMatch.matchId || nextId);
             }
 
             // 2. Reset downstream loser drop-down branch (if this was an Upper Bracket match)
-            if (curr.dropToMatchId && matchesMap[curr.dropToMatchId]) {
-                var dropMatch = matchesMap[curr.dropToMatchId];
-                var dropSlot = curr.dropToMatchSlot || 1;
+            var dropId = curr.dropToMatchId || curr.loserNextMatchId;
+            var dropMatch = dropId ? this.findMatchInMap(matchesMap, dropId) : null;
+            if (dropMatch) {
+                var dropSlot = curr.dropToMatchSlot || curr.loserNextSlot || 1;
                 var lPlaceholder = curr.matchNumber ? ('L #' + curr.matchNumber) : '';
 
                 if (lPlaceholder) {
@@ -740,7 +768,7 @@
                     dropMatch.winnerId = null;
                     dropMatch.status = 'SCHEDULED';
 
-                    this.cascadeResetPlaceholders(matchesMap, curr.dropToMatchId);
+                    this.cascadeResetPlaceholders(matchesMap, dropMatch.matchId || dropId);
                 }
             }
         },
@@ -749,7 +777,7 @@
          * Propagate Match Result Realtime (Winners up, Losers down to LB, Grand Finals reset)
          */
         propagateMatchResult: function (matchesMap, matchId, winnerId, isT1Winner) {
-            var currMatch = matchesMap[matchId];
+            var currMatch = this.findMatchInMap(matchesMap, matchId);
             if (!currMatch) return;
 
             var winnerName = isT1Winner ? currMatch.team1.name : currMatch.team2.name;
@@ -758,8 +786,9 @@
             var loserSeed = isT1Winner ? currMatch.team2.seed : currMatch.team1.seed;
 
             // 1. Advance Winner to next match & recursively reset descendants
-            if (currMatch.nextMatchId && matchesMap[currMatch.nextMatchId]) {
-                var nextM = matchesMap[currMatch.nextMatchId];
+            var nextId = currMatch.nextMatchId;
+            var nextM = nextId ? this.findMatchInMap(matchesMap, nextId) : null;
+            if (nextM) {
                 var slot = currMatch.nextMatchSlot || 1;
                 if (slot === 1) {
                     nextM.team1.name = winnerName;
@@ -774,45 +803,43 @@
                 nextM.status = 'SCHEDULED';
 
                 // Reset any downstream matches from nextM
-                this.cascadeResetPlaceholders(matchesMap, nextM.matchId);
+                this.cascadeResetPlaceholders(matchesMap, nextM.matchId || nextId);
             }
 
             // 2. Drop Loser to Lower Bracket & recursively reset descendants
-            if (currMatch.dropToMatchId && matchesMap[currMatch.dropToMatchId]) {
-                var dropM = matchesMap[currMatch.dropToMatchId];
-                var dropSlot = currMatch.dropToMatchSlot || 1;
-                
-                // If loser is not BYE, drop to LB
-                if (loserName && loserName !== 'BYE') {
-                    if (dropSlot === 1) {
-                        dropM.team1.name = loserName;
-                        dropM.team1.seed = loserSeed;
-                    } else {
-                        dropM.team2.name = loserName;
-                        dropM.team2.seed = loserSeed;
-                    }
-                    dropM.team1.score = '';
-                    dropM.team2.score = '';
-                    dropM.winnerId = null;
-                    dropM.status = 'SCHEDULED';
+            var dropId = currMatch.dropToMatchId || currMatch.loserNextMatchId;
+            var dropM = dropId ? this.findMatchInMap(matchesMap, dropId) : null;
+            var dropSlot = currMatch.dropToMatchSlot || currMatch.loserNextSlot || 1;
 
-                    // Reset any downstream matches from dropM
-                    this.cascadeResetPlaceholders(matchesMap, dropM.matchId);
+            if (dropM && loserName && loserName !== 'BYE') {
+                if (dropSlot === 1) {
+                    dropM.team1.name = loserName;
+                    dropM.team1.seed = loserSeed;
+                } else {
+                    dropM.team2.name = loserName;
+                    dropM.team2.seed = loserSeed;
+                }
+                dropM.team1.score = '';
+                dropM.team2.score = '';
+                dropM.winnerId = null;
+                dropM.status = 'SCHEDULED';
 
-                    // If opponent in this LB match is a BYE, auto-advance the real team!
-                    var opponentName = (dropSlot === 1) ? dropM.team2.name : dropM.team1.name;
-                    if (opponentName === 'BYE') {
-                        var realWinnerSlot = (dropSlot === 1) ? 'team1' : 'team2';
-                        dropM.status = 'COMPLETED';
-                        dropM.winnerId = realWinnerSlot;
-                        this.propagateMatchResult(matchesMap, dropM.matchId, realWinnerSlot, (realWinnerSlot === 'team1'));
-                    }
+                // Reset any downstream matches from dropM
+                this.cascadeResetPlaceholders(matchesMap, dropM.matchId || dropId);
+
+                // If opponent in this LB match is a BYE, auto-advance the real team!
+                var opponentName = (dropSlot === 1) ? dropM.team2.name : dropM.team1.name;
+                if (opponentName === 'BYE') {
+                    var realWinnerSlot = (dropSlot === 1) ? 'team1' : 'team2';
+                    dropM.status = 'COMPLETED';
+                    dropM.winnerId = realWinnerSlot;
+                    this.propagateMatchResult(matchesMap, dropM.matchId || dropId, realWinnerSlot, (realWinnerSlot === 'team1'));
                 }
             }
 
             // 3. Handle Grand Finals Reset Match Logic
             if (currMatch.bracketType === 'GRAND_FINAL' && !currMatch.isResetMatch) {
-                var resetMatch = currMatch.nextMatchId ? matchesMap[currMatch.nextMatchId] : null;
+                var resetMatch = nextId ? this.findMatchInMap(matchesMap, nextId) : null;
                 if (resetMatch && resetMatch.isResetMatch) {
                     if (!isT1Winner) {
                         // Winner of LB won GF1! Unlock Bracket Reset Match (GF2)

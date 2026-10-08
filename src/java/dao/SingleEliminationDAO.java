@@ -118,7 +118,7 @@ public class SingleEliminationDAO extends DBContext {
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
-                + "ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC";
+                + "ORDER BY m.round_number ASC, ISNULL(m.match_order, 999999) ASC, LEN(m.id) ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
         int count = 0;

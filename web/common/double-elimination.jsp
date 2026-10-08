@@ -2,11 +2,21 @@
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="dao.TournamentDAO"%>
 <%@page import="dao.ParticipantDAO"%>
+<%@page import="dao.DoubleEliminationDAO"%>
 <%@page import="model.Tournament"%>
 <%@page import="model.Team"%>
 <%@page import="java.util.List"%>
 <%
-    String tourneyId = request.getParameter("id");
+    String tourneyId = (String) request.getAttribute("tournamentId");
+    if (tourneyId == null || tourneyId.trim().isEmpty()) {
+        tourneyId = request.getParameter("id");
+    }
+    if (tourneyId == null || tourneyId.trim().isEmpty()) {
+        tourneyId = request.getParameter("tournamentId");
+    }
+    if (tourneyId == null || tourneyId.trim().isEmpty()) {
+        tourneyId = request.getParameter("tourneyId");
+    }
     String stageParam = request.getParameter("stage");
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
     String activeStepVal = (currentStage == 2) ? "stage2" : "stage1";
@@ -16,6 +26,9 @@
     String dbTournamentStatus = "DRAFT";
     int cutTarget = 0;
     String tournamentType = "SINGLE_STAGE";
+
+    String seriesIdVal = request.getParameter("seriesId");
+    if (seriesIdVal == null) seriesIdVal = "";
 
     String dbStage1Status = "PENDING";
     String dbStage2Teams = null;
@@ -36,6 +49,9 @@
             int totalTeamsCount = plist != null ? plist.size() : 8;
 
             if (t != null) {
+                if (t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty()) {
+                    seriesIdVal = t.getSeriesId().trim();
+                }
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
                 }
@@ -65,7 +81,6 @@
             }
             if (plist != null && !plist.isEmpty()) {
                 int takeCount = plist.size();
-                // For multi-stage stage 2: server only sends the advancingSeatsCount teams
                 if ("MULTI_STAGE".equals(tournamentType) && currentStage == 2 && t != null) {
                     int advSeats = t.getAdvancingSeatsCount();
                     if (advSeats > 1 && advSeats < takeCount) {
@@ -89,7 +104,7 @@
                 deTeamsJson = sb.toString();
             }
 
-            dao.DoubleEliminationDAO deDao = new dao.DoubleEliminationDAO();
+            DoubleEliminationDAO deDao = new DoubleEliminationDAO();
             String jsonM = deDao.getMatchesJsonForFrontend(tourneyId, currentStage);
             if (jsonM != null && !jsonM.trim().isEmpty() && !jsonM.trim().equals("[]")) {
                 dbMatchesJson = jsonM;
@@ -155,81 +170,31 @@
         <!-- Sidebar Component -->
         <jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
-            <jsp:param name="id" value="${not empty param.id ? param.id : (tournament != null ? tournament.id : '')}"/>
+            <jsp:param name="id" value="<%= tourneyId %>"/>
+            <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
         </jsp:include>
 
         <!-- Main Content Area Shifted Right by Sidebar -->
         <main class="container has-sidebar">
             
-            <!-- Top Control Bar (Tournament Title, Format Badge, Team Count Badge & View Mode Toggle) -->
-            <div class="single-elimination-control-bar" style="margin-bottom: 1rem;">
-                <div class="tournament-info-badge-group">
-                    <h1 class="tournament-name-title">
-                        <i class="fa-solid fa-trophy text-gold"></i> 
-                        <span id="deTournamentTitle"><%= tourneyName %></span>
-                    </h1>
-                    <span id="deFormatBadge" class="format-badge-single" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.35);"><%= (currentStage == 2) ? "STAGE 2: DOUBLE ELIMINATION" : "DOUBLE ELIMINATION" %></span>
-                    <span id="deTeamCountBadge" class="team-count-badge">0 Đội</span>
-                    <span id="deAdvancingBadge" class="advancing-count-badge" style="display: none; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.35); font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 9999px; align-items: center; gap: 0.45rem; line-height: 1;">
-                        <i class="fa-solid fa-arrow-right-to-bracket" style="font-size: 0.75rem;"></i> <span id="deAdvancingText">8 Đội đi tiếp</span>
-                    </span>
-                </div>
-
-                <!-- Right Action Bar: Standalone Reset Button + Quick Mode Toggle + View Mode Toggle Buttons -->
-                <div class="control-actions-right-group" style="display: flex; align-items: center; gap: 0.75rem;">
-                    <!-- Quick Mode Toggle Button -->
-                    <button type="button" id="deBtnQuickMode" class="btn-quick-mode-toggle" onclick="window.TourmaDoubleElimination.toggleQuickMode()" title="Chế độ phân định thắng thua nhanh (1-click chọn đội thắng)">
-                        <i class="fa-solid fa-bolt"></i> Quick Mode: <span class="quick-mode-status-text">OFF</span>
-                    </button>
-
-                    <!-- Standalone Reset Bracket Button -->
-                    <button type="button" id="deBtnResetBracket" class="btn-reset-bracket-action" onclick="window.TourmaDoubleElimination.openResetModal()" title="Xóa kết quả và reset lại sơ đồ ban đầu">
-                        <i class="fa-solid fa-rotate-right"></i> Reset Nhánh
-                    </button>
-
-                    <!-- View Mode Toggle Buttons (Bracket ↔ List View) -->
-                    <div class="view-mode-toggle-group">
-                        <button type="button" id="deBtnBracketView" class="btn-view-toggle active" onclick="window.TourmaDoubleElimination.setViewMode('bracket')">
-                            <i class="fa-solid fa-diagram-project"></i> Sơ Đồ Nhánh
-                        </button>
-                        <button type="button" id="deBtnListView" class="btn-view-toggle" onclick="window.TourmaDoubleElimination.setViewMode('list')">
-                            <i class="fa-solid fa-list-ul"></i> Danh Sách Trận
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- RESET BRACKET CONFIRMATION MODAL -->
-            <div id="deResetModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) window.TourmaDoubleElimination.closeResetModal();">
-                <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
-                    <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
-                        <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fa-solid fa-rotate-right"></i>
-                            <span>Xác Nhận Reset Nhánh Đấu</span>
-                        </div>
-                        <button type="button" class="modal-close-btn" onclick="window.TourmaDoubleElimination.closeResetModal()" title="Đóng">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-body-content" style="padding: 1.25rem 1rem;">
-                        <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
-                            <strong style="color: #f43f5e;">⚠️ Cảnh báo quan trọng:</strong><br>
-                            Hành động này sẽ <strong style="color: #ffffff;">XÓA TOÀN BỘ tỷ số và kết quả các trận đã đấu</strong>, reset lại sơ đồ Double Elimination nguyên bản ban đầu từ danh sách hạt giống.
-                        </div>
-                        <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
-                            Bạn có chắc chắn muốn thiết lập lại toàn bộ nhánh đấu không?
-                        </p>
-                    </div>
-
-                    <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem;">
-                        <button type="button" class="btn btn-secondary" onclick="window.TourmaDoubleElimination.closeResetModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
-                        <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="window.TourmaDoubleElimination.confirmResetBracket()">
-                            <i class="fa-solid fa-rotate-right"></i> Xác Nhận Reset
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <!-- Top Tournament Navigation & Control Bar Component -->
+            <jsp:include page="/common/component/tournament-navbar.jsp">
+                <jsp:param name="tourneyName" value="<%= tourneyName %>" />
+                <jsp:param name="format" value='<%= (currentStage == 2) ? "Stage 2: Double Elimination" : "Double Elimination" %>' />
+                <jsp:param name="formatBadgeClass" value="format-badge-double" />
+                <jsp:param name="tournamentType" value="<%= tournamentType %>" />
+                <jsp:param name="cutTarget" value="<%= cutTarget %>" />
+                <jsp:param name="showQuickMode" value="true" />
+                <jsp:param name="showReset" value="true" />
+                <jsp:param name="resetLabel" value="Reset Nhánh" />
+                <jsp:param name="resetModalTitle" value="Xác Nhận Reset Nhánh Đấu" />
+                <jsp:param name="resetWarningText" value="Hành động này sẽ XÓA TOÀN BỘ tỷ số và kết quả các trận đã đấu, reset lại sơ đồ Double Elimination nguyên bản ban đầu từ danh sách hạt giống." />
+                <jsp:param name="engineName" value="DoubleEliminationEngine" />
+                <jsp:param name="view1Icon" value="fa-diagram-project" />
+                <jsp:param name="view1Label" value="Sơ Đồ Nhánh" />
+                <jsp:param name="view2Icon" value="fa-list-ol" />
+                <jsp:param name="view2Label" value="Danh Sách Trận" />
+            </jsp:include>
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
             <div id="deEmptyAlertContainer" style="display: none; width: 100%;"></div>
@@ -246,24 +211,23 @@
                     </div>
 
                     <!-- Upper Viewport Frame with Floating Zoom Toolbar -->
-                    <div id="upperViewportFrame" class="de-viewport-frame">
+                    <div id="upperViewportFrame" class="bracket-viewport-frame de-viewport-frame">
                         <div id="upperZoomToolbar" class="bracket-zoom-toolbar">
-                            <button type="button" class="btn-zoom" onclick="window.TourmaDoubleElimination.zoomUpper(-0.1)" title="Thu nhỏ (-)">
+                            <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomOut('upperViewportContainer')" title="Thu nhỏ (-)">
                                 <i class="fa-solid fa-minus"></i>
                             </button>
                             <span id="upperZoomBadge" class="zoom-level-badge">100%</span>
-                            <button type="button" class="btn-zoom" onclick="window.TourmaDoubleElimination.zoomUpper(0.1)" title="Phóng to (+)">
+                            <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomIn('upperViewportContainer')" title="Phóng to (+)">
                                 <i class="fa-solid fa-plus"></i>
                             </button>
-                            <button type="button" class="btn-zoom" onclick="window.TourmaDoubleElimination.resetZoomUpper()" title="Reset (100%)">
+                            <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.resetZoom('upperViewportContainer')" title="Reset (100%)">
                                 <i class="fa-solid fa-rotate-right"></i>
                             </button>
                         </div>
 
-                        <div id="upperViewportContainer" class="de-viewport-container">
-                            <div id="upperViewportCanvas" class="de-viewport-canvas">
-                                <div id="upperBracketColumnsWrapper" class="de-bracket-columns-wrapper"></div>
-                                <svg id="upperSvgConnectorsLayer" class="de-svg-connectors-layer"></svg>
+                        <div id="upperViewportContainer" class="bracket-viewport-container de-viewport-container">
+                            <div id="upperViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas">
+                                <div id="upperBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper"></div>
                             </div>
                         </div>
                     </div>
@@ -278,24 +242,23 @@
                     </div>
 
                     <!-- Lower Viewport Frame with Floating Zoom Toolbar -->
-                    <div id="lowerViewportFrame" class="de-viewport-frame">
+                    <div id="lowerViewportFrame" class="bracket-viewport-frame de-viewport-frame">
                         <div id="lowerZoomToolbar" class="bracket-zoom-toolbar">
-                            <button type="button" class="btn-zoom" onclick="window.TourmaDoubleElimination.zoomLower(-0.1)" title="Thu nhỏ (-)">
+                            <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomOut('lowerViewportContainer')" title="Thu nhỏ (-)">
                                 <i class="fa-solid fa-minus"></i>
                             </button>
                             <span id="lowerZoomBadge" class="zoom-level-badge">100%</span>
-                            <button type="button" class="btn-zoom" onclick="window.TourmaDoubleElimination.zoomLower(0.1)" title="Phóng to (+)">
+                            <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomIn('lowerViewportContainer')" title="Phóng to (+)">
                                 <i class="fa-solid fa-plus"></i>
                             </button>
-                            <button type="button" class="btn-zoom" onclick="window.TourmaDoubleElimination.resetZoomLower()" title="Reset (100%)">
+                            <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.resetZoom('lowerViewportContainer')" title="Reset (100%)">
                                 <i class="fa-solid fa-rotate-right"></i>
                             </button>
                         </div>
 
-                        <div id="lowerViewportContainer" class="de-viewport-container">
-                            <div id="lowerViewportCanvas" class="de-viewport-canvas">
-                                <div id="lowerBracketColumnsWrapper" class="de-bracket-columns-wrapper"></div>
-                                <svg id="lowerSvgConnectorsLayer" class="de-svg-connectors-layer"></svg>
+                        <div id="lowerViewportContainer" class="bracket-viewport-container de-viewport-container">
+                            <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas">
+                                <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper"></div>
                             </div>
                         </div>
                     </div>
@@ -314,22 +277,21 @@
         <!-- Context Path Injection for AJAX Operations -->
         <script>
             window.TourmaContextPath = '${pageContext.request.contextPath}';
+            window.TourmaTournamentId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
             window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
             window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
         </script>
 
         <!-- Engine Scripts -->
-        <script src="${pageContext.request.contextPath}/js/bracket-viewport.js"></script>
-        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/random-service.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/round-control-helper.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/bracket-card.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/match-card.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/popup.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-viewport.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/round-control-helper.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination.js?v=<%= System.currentTimeMillis() %>"></script>
 
         <!-- Page Bootstrap Execution -->
@@ -352,12 +314,10 @@
                 if (currentStage === 2) {
                     cutTarget = 0; // Stage 2 always plays to Grand Final champion!
                 } else if (!isMultiStage) {
-                    // Single Stage = tìm vô địch, chơi hết rounds (full stage) — clear stale cut config
                     try { localStorage.removeItem('tourma_advance_count_' + tourneyId); } catch (e) { }
                     try { localStorage.removeItem('tourma_cut_target_' + tourneyId); } catch (e) { }
                     cutTarget = 0;
                 } else {
-                    // Multi-Stage Stage 1 ONLY: read cutTarget from tourma_multi_config_ localStorage
                     try {
                         var multiCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tourneyId));
                         if (multiCfg && multiCfg.stage1Config) {
@@ -369,7 +329,6 @@
                             }
                         }
                     } catch (e) { }
-                    // Fallback: try tourma_advance_count_ key
                     if (!cutTarget || cutTarget <= 1) {
                         try {
                             var adv = localStorage.getItem('tourma_advance_count_' + tourneyId)
@@ -391,7 +350,6 @@
                 // Resolve team list
                 var finalTeams = [];
                 if (currentStage === 2 && stage2TeamsRaw && stage2TeamsRaw.length > 0) {
-                    // Stage 2: qualified teams advancing from Stage 1 MUST take priority!
                     finalTeams = stage2TeamsRaw;
                 } else if (preloadedTeams && preloadedTeams.length > 0) {
                     finalTeams = preloadedTeams;
@@ -411,7 +369,7 @@
                 var dbMatches = <%= dbMatchesJson %>;
                 window.TourmaContextDbMatches = dbMatches;
 
-                window.TourmaDoubleElimination.init({
+                window.DoubleEliminationEngine.init({
                     tournamentId: tourneyId,
                     tournamentName: tourneyName,
                     teamsList: finalTeams,

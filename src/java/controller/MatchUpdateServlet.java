@@ -119,7 +119,7 @@ public class MatchUpdateServlet extends HttpServlet {
             String team1Name = params.get("team1Name");
             String team2Name = params.get("team2Name");
 
-            MatchUpdateResult result = handleUpdateMatch(tournamentId, matchId, score1, score2, penalty1, penalty2, winnerFlag, team1Name, team2Name);
+        MatchUpdateResult result = handleUpdateMatch(tournamentId, matchId, score1, score2, penalty1, penalty2, winnerFlag, team1Name, team2Name, parseInteger(params.get("stage")));
 
             if (result.success) {
                 out.print("{"
@@ -163,22 +163,47 @@ public class MatchUpdateServlet extends HttpServlet {
     public MatchUpdateResult handleUpdateMatch(String tournamentId, String matchId, Integer score1, Integer score2,
                                               Integer penalty1, Integer penalty2, String winnerFlag,
                                               String team1Name, String team2Name) {
+        return handleUpdateMatch(tournamentId, matchId, score1, score2, penalty1, penalty2, winnerFlag, team1Name, team2Name, 1);
+    }
+
+    public MatchUpdateResult handleUpdateMatch(String tournamentId, String matchId, Integer score1, Integer score2,
+                                              Integer penalty1, Integer penalty2, String winnerFlag,
+                                              String team1Name, String team2Name, Integer stage) {
         MatchUpdateResult res = new MatchUpdateResult();
         if (matchId == null || matchId.trim().isEmpty()) {
             res.errorMessage = "Thiếu matchId!";
             return res;
         }
 
+        int currentStage = (stage != null && stage > 0) ? stage : 1;
         String mIdClean = matchId.trim();
+        String lastPart = mIdClean;
+        int lastUnderscore = mIdClean.lastIndexOf('_');
+        if (lastUnderscore != -1 && lastUnderscore < mIdClean.length() - 1) {
+            lastPart = mIdClean.substring(lastUnderscore + 1);
+        }
+
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
 
-            // Auto-initialize bracket in DB if needed
+            // Auto-initialize bracket in DB if needed according to tournament format
             if (tournamentId != null && !tournamentId.trim().isEmpty()) {
                 try {
-                    new dao.SingleEliminationDAO().ensureBracketInitialized(tournamentId.trim(), 1);
+                    Tournament tourney = new TournamentDAO().getTournamentById(tournamentId.trim());
+                    String fmt = (tourney != null && tourney.getFormat() != null) ? tourney.getFormat().trim().toUpperCase() : "";
+                    if (fmt.contains("DOUBLE") || fmt.contains("DE")) {
+                        new dao.DoubleEliminationDAO().ensureBracketInitialized(tournamentId.trim(), currentStage);
+                    } else if (fmt.contains("ROUND") || fmt.contains("ROBIN")) {
+                        new dao.RoundRobinDAO().ensureRoundRobinInitialized(tournamentId.trim(), currentStage);
+                    } else if (fmt.contains("SWISS")) {
+                        new dao.SwissSystemDAO().ensureSwissRoundsInitialized(tournamentId.trim(), currentStage);
+                    } else if (fmt.contains("GROUP")) {
+                        new dao.GroupStageDAO().ensureGroupStageInitialized(tournamentId.trim(), currentStage);
+                    } else {
+                        new dao.SingleEliminationDAO().ensureBracketInitialized(tournamentId.trim(), currentStage);
+                    }
                 } catch (Exception ignore) {}
             }
 
@@ -189,7 +214,9 @@ public class MatchUpdateServlet extends HttpServlet {
                     + "FROM matches m "
                     + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                     + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                    + "WHERE (m.id = ? OR m.id LIKE '%[_]' + ? OR m.id LIKE '%[_]S1[_]' + ? OR m.id LIKE '%[_]S2[_]' + ? OR m.match_code = ? OR m.match_code = 'Match #' + ? OR CAST(m.match_order AS VARCHAR) = ?)"
+                    + "WHERE (m.id = ? OR m.id = ? OR m.id LIKE '%[_]' + ? OR m.id LIKE '%[_]UB[_]' + ? OR m.id LIKE '%[_]LB[_]' + ? OR m.id LIKE '%[_]GF[_]' + ? "
+                    + "OR m.id LIKE '%[_]S1[_]' + ? OR m.id LIKE '%[_]S2[_]' + ? "
+                    + "OR m.match_code = ? OR m.match_code = 'Match #' + ? OR CAST(m.match_order AS VARCHAR) = ? OR CAST(m.match_order AS VARCHAR) = ?)"
                     + (hasValidTourneyId ? " AND m.tournament_id = ?" : "");
 
             String dbMatchId = null;
@@ -207,14 +234,19 @@ public class MatchUpdateServlet extends HttpServlet {
 
             try (PreparedStatement psSel = conn.prepareStatement(selectSql)) {
                 psSel.setString(1, mIdClean);
-                psSel.setString(2, mIdClean);
-                psSel.setString(3, mIdClean);
-                psSel.setString(4, mIdClean);
-                psSel.setString(5, mIdClean);
-                psSel.setString(6, mIdClean);
-                psSel.setString(7, mIdClean);
+                psSel.setString(2, lastPart);
+                psSel.setString(3, lastPart);
+                psSel.setString(4, lastPart);
+                psSel.setString(5, lastPart);
+                psSel.setString(6, lastPart);
+                psSel.setString(7, lastPart);
+                psSel.setString(8, lastPart);
+                psSel.setString(9, mIdClean);
+                psSel.setString(10, lastPart);
+                psSel.setString(11, lastPart);
+                psSel.setString(12, mIdClean);
                 if (hasValidTourneyId) {
-                    psSel.setString(8, tournamentId.trim());
+                    psSel.setString(13, tournamentId.trim());
                 }
                 try (ResultSet rs = psSel.executeQuery()) {
                     if (rs.next()) {
@@ -328,34 +360,70 @@ public class MatchUpdateServlet extends HttpServlet {
 
             // 5. Advance Winner to next_match_id
             if (winnerId != null && nextMatchId != null && !nextMatchId.trim().isEmpty() && resolvedTourneyId != null) {
+                String nextClean = nextMatchId.trim();
+                String nextLast = nextClean;
+                int nIdx = nextClean.lastIndexOf('_');
+                if (nIdx != -1 && nIdx < nextClean.length() - 1) {
+                    nextLast = nextClean.substring(nIdx + 1);
+                }
+
                 String slotCol = ("SLOT_2".equalsIgnoreCase(nextSlot) || "2".equals(nextSlot)) ? "team2_id" : "team1_id";
                 String advSql = "UPDATE matches SET " + slotCol + " = ?, "
                         + "status = CASE WHEN (" + (slotCol.equals("team1_id") ? "team2_id" : "team1_id") + " IS NOT NULL) THEN 'READY' ELSE status END "
-                        + "WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)";
+                        + "WHERE tournament_id = ? AND ("
+                        + "id = ? OR id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? "
+                        + "OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? "
+                        + "OR CAST(match_order AS VARCHAR) = ? OR CAST(match_order AS VARCHAR) = ?)";
                 try (PreparedStatement psAdv = conn.prepareStatement(advSql)) {
                     psAdv.setString(1, winnerId);
                     psAdv.setString(2, resolvedTourneyId);
-                    psAdv.setString(3, nextMatchId);
-                    psAdv.setString(4, nextMatchId);
-                    psAdv.setString(5, nextMatchId);
-                    psAdv.setString(6, nextMatchId);
+                    psAdv.setString(3, nextClean);
+                    psAdv.setString(4, nextLast);
+                    psAdv.setString(5, nextLast);
+                    psAdv.setString(6, nextLast);
+                    psAdv.setString(7, nextLast);
+                    psAdv.setString(8, nextLast);
+                    psAdv.setString(9, nextLast);
+                    psAdv.setString(10, nextLast);
+                    psAdv.setString(11, nextClean);
+                    psAdv.setString(12, nextLast);
+                    psAdv.setString(13, nextLast);
+                    psAdv.setString(14, nextClean);
                     psAdv.executeUpdate();
                 }
             }
 
             // 6. Advance Loser to loser_next_match_id (Double Elimination Lower Bracket Drop)
             if (loserId != null && loserNextMatchId != null && !loserNextMatchId.trim().isEmpty() && resolvedTourneyId != null) {
+                String dropClean = loserNextMatchId.trim();
+                String dropLast = dropClean;
+                int dIdx = dropClean.lastIndexOf('_');
+                if (dIdx != -1 && dIdx < dropClean.length() - 1) {
+                    dropLast = dropClean.substring(dIdx + 1);
+                }
+
                 String slotCol = ("SLOT_2".equalsIgnoreCase(loserNextSlot) || "2".equals(loserNextSlot)) ? "team2_id" : "team1_id";
                 String dropSql = "UPDATE matches SET " + slotCol + " = ?, "
                         + "status = CASE WHEN (" + (slotCol.equals("team1_id") ? "team2_id" : "team1_id") + " IS NOT NULL) THEN 'READY' ELSE status END "
-                        + "WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)";
+                        + "WHERE tournament_id = ? AND ("
+                        + "id = ? OR id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? "
+                        + "OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? "
+                        + "OR CAST(match_order AS VARCHAR) = ? OR CAST(match_order AS VARCHAR) = ?)";
                 try (PreparedStatement psDrop = conn.prepareStatement(dropSql)) {
                     psDrop.setString(1, loserId);
                     psDrop.setString(2, resolvedTourneyId);
-                    psDrop.setString(3, loserNextMatchId);
-                    psDrop.setString(4, loserNextMatchId);
-                    psDrop.setString(5, loserNextMatchId);
-                    psDrop.setString(6, loserNextMatchId);
+                    psDrop.setString(3, dropClean);
+                    psDrop.setString(4, dropLast);
+                    psDrop.setString(5, dropLast);
+                    psDrop.setString(6, dropLast);
+                    psDrop.setString(7, dropLast);
+                    psDrop.setString(8, dropLast);
+                    psDrop.setString(9, dropLast);
+                    psDrop.setString(10, dropLast);
+                    psDrop.setString(11, dropClean);
+                    psDrop.setString(12, dropLast);
+                    psDrop.setString(13, dropLast);
+                    psDrop.setString(14, dropClean);
                     psDrop.executeUpdate();
                 }
             }
@@ -394,9 +462,17 @@ public class MatchUpdateServlet extends HttpServlet {
     public boolean handleResetMatch(String tournamentId, String matchId) {
         if (matchId == null || matchId.trim().isEmpty()) return false;
         String mIdClean = matchId.trim();
+        String lastPart = mIdClean;
+        int lastUnderscore = mIdClean.lastIndexOf('_');
+        if (lastUnderscore != -1 && lastUnderscore < mIdClean.length() - 1) {
+            lastPart = mIdClean.substring(lastUnderscore + 1);
+        }
 
         String selectSql = "SELECT id, tournament_id, team1_id, team2_id, next_match_id, next_slot, loser_next_match_id, loser_next_slot, group_id "
-                + "FROM matches WHERE (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)"
+                + "FROM matches WHERE ("
+                + "id = ? OR id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? "
+                + "OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? "
+                + "OR CAST(match_order AS VARCHAR) = ? OR CAST(match_order AS VARCHAR) = ?)"
                 + (tournamentId != null && !tournamentId.trim().isEmpty() ? " AND tournament_id = ?" : "");
 
         DBContext db = new DBContext();
@@ -415,11 +491,19 @@ public class MatchUpdateServlet extends HttpServlet {
 
             try (PreparedStatement psSel = conn.prepareStatement(selectSql)) {
                 psSel.setString(1, mIdClean);
-                psSel.setString(2, mIdClean);
-                psSel.setString(3, mIdClean);
-                psSel.setString(4, mIdClean);
+                psSel.setString(2, lastPart);
+                psSel.setString(3, lastPart);
+                psSel.setString(4, lastPart);
+                psSel.setString(5, lastPart);
+                psSel.setString(6, lastPart);
+                psSel.setString(7, lastPart);
+                psSel.setString(8, lastPart);
+                psSel.setString(9, mIdClean);
+                psSel.setString(10, lastPart);
+                psSel.setString(11, lastPart);
+                psSel.setString(12, mIdClean);
                 if (tournamentId != null && !tournamentId.trim().isEmpty()) {
-                    psSel.setString(5, tournamentId.trim());
+                    psSel.setString(13, tournamentId.trim());
                 }
                 try (ResultSet rs = psSel.executeQuery()) {
                     if (rs.next()) {
@@ -452,30 +536,66 @@ public class MatchUpdateServlet extends HttpServlet {
 
             // If advanced winner was propagated, clear it from next match
             if (nextMatchId != null && !nextMatchId.trim().isEmpty() && resolvedTourneyId != null) {
+                String nextClean = nextMatchId.trim();
+                String nextLast = nextClean;
+                int nIdx = nextClean.lastIndexOf('_');
+                if (nIdx != -1 && nIdx < nextClean.length() - 1) {
+                    nextLast = nextClean.substring(nIdx + 1);
+                }
+
                 String slotCol = ("SLOT_2".equalsIgnoreCase(nextSlot) || "2".equals(nextSlot)) ? "team2_id" : "team1_id";
                 String clearAdvSql = "UPDATE matches SET " + slotCol + " = NULL, status = 'PENDING' "
-                        + "WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)";
+                        + "WHERE tournament_id = ? AND ("
+                        + "id = ? OR id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? "
+                        + "OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? "
+                        + "OR CAST(match_order AS VARCHAR) = ? OR CAST(match_order AS VARCHAR) = ?)";
                 try (PreparedStatement psClear = conn.prepareStatement(clearAdvSql)) {
                     psClear.setString(1, resolvedTourneyId);
-                    psClear.setString(2, nextMatchId);
-                    psClear.setString(3, nextMatchId);
-                    psClear.setString(4, nextMatchId);
-                    psClear.setString(5, nextMatchId);
+                    psClear.setString(2, nextClean);
+                    psClear.setString(3, nextLast);
+                    psClear.setString(4, nextLast);
+                    psClear.setString(5, nextLast);
+                    psClear.setString(6, nextLast);
+                    psClear.setString(7, nextLast);
+                    psClear.setString(8, nextLast);
+                    psClear.setString(9, nextLast);
+                    psClear.setString(10, nextClean);
+                    psClear.setString(11, nextLast);
+                    psClear.setString(12, nextLast);
+                    psClear.setString(13, nextClean);
                     psClear.executeUpdate();
                 }
             }
 
             // If loser was dropped to loser bracket, clear it
             if (loserNextMatchId != null && !loserNextMatchId.trim().isEmpty() && resolvedTourneyId != null) {
+                String dropClean = loserNextMatchId.trim();
+                String dropLast = dropClean;
+                int dIdx = dropClean.lastIndexOf('_');
+                if (dIdx != -1 && dIdx < dropClean.length() - 1) {
+                    dropLast = dropClean.substring(dIdx + 1);
+                }
+
                 String slotCol = ("SLOT_2".equalsIgnoreCase(loserNextSlot) || "2".equals(loserNextSlot)) ? "team2_id" : "team1_id";
                 String clearDropSql = "UPDATE matches SET " + slotCol + " = NULL, status = 'PENDING' "
-                        + "WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)";
+                        + "WHERE tournament_id = ? AND ("
+                        + "id = ? OR id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? "
+                        + "OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? "
+                        + "OR CAST(match_order AS VARCHAR) = ? OR CAST(match_order AS VARCHAR) = ?)";
                 try (PreparedStatement psClearDrop = conn.prepareStatement(clearDropSql)) {
                     psClearDrop.setString(1, resolvedTourneyId);
-                    psClearDrop.setString(2, loserNextMatchId);
-                    psClearDrop.setString(3, loserNextMatchId);
-                    psClearDrop.setString(4, loserNextMatchId);
-                    psClearDrop.setString(5, loserNextMatchId);
+                    psClearDrop.setString(2, dropClean);
+                    psClearDrop.setString(3, dropLast);
+                    psClearDrop.setString(4, dropLast);
+                    psClearDrop.setString(5, dropLast);
+                    psClearDrop.setString(6, dropLast);
+                    psClearDrop.setString(7, dropLast);
+                    psClearDrop.setString(8, dropLast);
+                    psClearDrop.setString(9, dropLast);
+                    psClearDrop.setString(10, dropClean);
+                    psClearDrop.setString(11, dropLast);
+                    psClearDrop.setString(12, dropLast);
+                    psClearDrop.setString(13, dropClean);
                     psClearDrop.executeUpdate();
                 }
             }

@@ -239,7 +239,8 @@
 
         /**
          * UNIVERSAL ORTHOGONAL SVG CONNECTOR DRAWING ENGINE
-         * Group parents by target match and draw clean bracket forks ( ]-- )
+         * Iterates each target match card in the viewport and draws clean bracket forks ( ]-- )
+         * strictly between its immediate parent matches, preventing continuous vertical cross-bleeding.
          */
         drawConnectors: function (canvasElem, wrapperElem, matchesMap, scale) {
             if (!canvasElem || !wrapperElem || !matchesMap) return;
@@ -262,60 +263,165 @@
             svg.innerHTML = '';
 
             var cards = wrapperElem.querySelectorAll('.bracket-node-card');
+            if (!cards || cards.length === 0) return;
+
+            // 1. Build an exact map of DOM cards in the current wrapper
             var cardMap = {};
+            var cardList = [];
             for (var c = 0; c < cards.length; c++) {
-                var mId = cards[c].getAttribute('data-match-id') || (cards[c].dataset ? cards[c].dataset.matchId : null);
+                var card = cards[c];
+                var mId = card.getAttribute('data-match-id') || (card.dataset ? card.dataset.matchId : null);
                 if (mId) {
                     var sMid = String(mId).trim();
-                    cardMap[sMid] = cards[c];
-                    var idx = sMid.lastIndexOf('_M');
-                    var numOnly = (idx !== -1) ? sMid.substring(idx + 2) : sMid.replace(/[^0-9]/g, '');
-                    if (numOnly && !cardMap[numOnly]) cardMap[numOnly] = cards[c];
+                    cardMap[sMid] = card;
+                    cardList.push({ id: sMid, card: card });
                 }
             }
 
-            // Group source matches by nextMatchId
-            var targetGroups = {};
+            // Flatten unique matches from matchesMap
+            var allMatches = [];
+            var seenMatches = [];
             var keys = Object.keys(matchesMap);
             for (var i = 0; i < keys.length; i++) {
-                var m = matchesMap[keys[i]];
-                var nId = m ? (m.nextMatchId || m.next_match_id) : null;
-                if (!m || !nId) continue;
-                var targetId = String(nId).trim();
-                if (!targetGroups[targetId]) targetGroups[targetId] = [];
-                targetGroups[targetId].push(m);
+                var mat = matchesMap[keys[i]];
+                if (mat && seenMatches.indexOf(mat) === -1) {
+                    seenMatches.push(mat);
+                    allMatches.push(mat);
+                }
             }
 
-            var targetIds = Object.keys(targetGroups);
-            for (var t = 0; t < targetIds.length; t++) {
-                var targetId = targetIds[t];
-                var sources = targetGroups[targetId];
-                var tIdx = targetId.lastIndexOf('_M');
-                var tNumOnly = (tIdx !== -1) ? targetId.substring(tIdx + 2) : targetId.replace(/[^0-9]/g, '');
-                var targetCard = cardMap[targetId] || (tNumOnly ? cardMap[tNumOnly] : null);
-                if (!targetCard) continue;
+            var self = this;
 
-                var tgtPos = this.getRelativePos(targetCard, canvasElem);
-                var x2 = tgtPos.left;
-                var yTargetCenter = tgtPos.top + (tgtPos.height / 2);
+            // Helper to find a match object by card ID or numeric ID
+            var findMatchForCard = function (cardId) {
+                if (!cardId) return null;
+                var strId = String(cardId).trim();
+                if (matchesMap[strId]) return matchesMap[strId];
 
-                sources.sort(function (a, b) {
-                    return (a.nextMatchSlot || a.next_match_slot || 1) - (b.nextMatchSlot || b.next_match_slot || 1);
-                });
+                for (var j = 0; j < allMatches.length; j++) {
+                    var m = allMatches[j];
+                    if (m.matchId && String(m.matchId).trim() === strId) return m;
+                    if (m.id && String(m.id).trim() === strId) return m;
+                    if (m.rawId && String(m.rawId).trim() === strId) return m;
+                    if (m.matchNumber !== undefined && m.matchNumber !== null && String(m.matchNumber).trim() === strId) return m;
+                    if (m.matchCode && String(m.matchCode).trim() === strId) return m;
+                }
 
+                // Suffix / Prefix fallback
+                for (var k = 0; k < allMatches.length; k++) {
+                    var m2 = allMatches[k];
+                    var m2Id = String(m2.matchId || m2.id || m2.rawId || '');
+                    if (m2Id && (m2Id.endsWith('_' + strId) || strId.endsWith('_' + m2Id))) return m2;
+                }
+                return null;
+            };
+
+            // Helper to find the DOM card corresponding to a source match within the current viewport
+            var findCardForMatch = function (matchObj) {
+                if (!matchObj) return null;
+                var idsToCheck = [
+                    matchObj.matchId,
+                    matchObj.id,
+                    matchObj.rawId,
+                    (matchObj.matchNumber !== undefined && matchObj.matchNumber !== null) ? String(matchObj.matchNumber) : null,
+                    matchObj.matchCode
+                ];
+                for (var i = 0; i < idsToCheck.length; i++) {
+                    var id = idsToCheck[i];
+                    if (id !== undefined && id !== null && id !== '') {
+                        var strId = String(id).trim();
+                        if (cardMap[strId]) return cardMap[strId];
+                    }
+                }
+                for (var j = 0; j < cardList.length; j++) {
+                    var item = cardList[j];
+                    for (var k = 0; k < idsToCheck.length; k++) {
+                        var checkId = idsToCheck[k];
+                        if (checkId !== undefined && checkId !== null && checkId !== '') {
+                            var sCheck = String(checkId).trim();
+                            if (item.id === sCheck || item.id.endsWith('_' + sCheck) || sCheck.endsWith('_' + item.id)) {
+                                return item.card;
+                            }
+                        }
+                    }
+                }
+                return null;
+            };
+
+            // 2. Iterate each target card in the viewport and draw connectors from its immediate feeders
+            for (var c = 0; c < cards.length; c++) {
+                var targetCard = cards[c];
+                if (targetCard.classList.contains('bye-empty-slot')) continue;
+
+                var targetCardId = targetCard.getAttribute('data-match-id') || (targetCard.dataset ? targetCard.dataset.matchId : null);
+                if (!targetCardId) continue;
+
+                var targetMatch = findMatchForCard(targetCardId);
+                if (!targetMatch) continue;
+
+                var rNum = parseInt(targetMatch.roundNumber || 1, 10);
+                var targetBType = (targetMatch.bracketType || '').toUpperCase();
+                var isTargetLb = (targetBType.indexOf('LOWER') !== -1 || targetBType.indexOf('LOSER') !== -1 || (canvasElem && canvasElem.id === 'lowerViewportCanvas'));
+                var isTargetUb = (targetBType.indexOf('UPPER') !== -1 || targetBType.indexOf('WINNER') !== -1 || targetBType === 'MAIN');
+                var isTargetGf = (targetBType.indexOf('GRAND') !== -1 || targetBType === 'GF');
+
+                // Round 1 matches in SE, UB, and LB have no preceding rounds in their bracket
+                if (rNum <= 1 && !isTargetGf) continue;
+
+                // Find feeder source matches that advance to targetMatch
+                var tIds = [
+                    targetMatch.matchId ? String(targetMatch.matchId).trim() : null,
+                    targetMatch.id ? String(targetMatch.id).trim() : null,
+                    targetMatch.rawId ? String(targetMatch.rawId).trim() : null,
+                    (targetMatch.matchNumber !== undefined && targetMatch.matchNumber !== null) ? String(targetMatch.matchNumber).trim() : null
+                ];
+
+                var feederMatches = [];
+                for (var m = 0; m < allMatches.length; m++) {
+                    var src = allMatches[m];
+                    if (src === targetMatch) continue;
+
+                    var srcNextId = src.nextMatchId || src.next_match_id;
+                    if (!srcNextId || srcNextId === 'null' || srcNextId === 'TBD') continue;
+                    var sNextStr = String(srcNextId).trim();
+
+                    var isMatched = false;
+                    for (var k = 0; k < tIds.length; k++) {
+                        var tId = tIds[k];
+                        if (tId && (sNextStr === tId || sNextStr.endsWith('_' + tId) || tId.endsWith('_' + sNextStr))) {
+                            isMatched = true;
+                            break;
+                        }
+                    }
+
+                    if (!isMatched) continue;
+
+                    // Bracket branch filter: ensure UB matches feed UB, and LB matches feed LB
+                    var srcBType = (src.bracketType || '').toUpperCase();
+                    var isSrcLb = (srcBType.indexOf('LOWER') !== -1 || srcBType.indexOf('LOSER') !== -1);
+                    var isSrcUb = (srcBType.indexOf('UPPER') !== -1 || srcBType.indexOf('WINNER') !== -1 || srcBType === 'MAIN');
+
+                    if (isTargetUb && !isSrcUb) continue;
+                    if (isTargetLb && !isSrcLb) continue;
+
+                    feederMatches.push(src);
+                }
+
+                if (feederMatches.length === 0) continue;
+
+                // Map feeder matches to DOM cards inside current viewport
                 var validSources = [];
-                for (var s = 0; s < sources.length; s++) {
-                    var srcMatch = sources[s];
-                    var sId = (srcMatch.matchId !== undefined && srcMatch.matchId !== null) ? String(srcMatch.matchId).trim()
-                              : ((srcMatch.id !== undefined && srcMatch.id !== null) ? String(srcMatch.id).trim()
-                              : ((srcMatch.matchNumber !== undefined && srcMatch.matchNumber !== null) ? String(srcMatch.matchNumber).trim() : ''));
-                    var sIdx = sId.lastIndexOf('_M');
-                    var sNumOnly = (sIdx !== -1) ? sId.substring(sIdx + 2) : sId.replace(/[^0-9]/g, '');
-                    var srcCard = cardMap[sId] || (sNumOnly ? cardMap[sNumOnly] : null);
-                    if (srcCard && !srcCard.classList.contains('bye-empty-slot')) {
+                var seenSrcCards = [];
+                for (var f = 0; f < feederMatches.length; f++) {
+                    var fMatch = feederMatches[f];
+                    var srcCard = findCardForMatch(fMatch);
+                    if (srcCard && srcCard !== targetCard && !srcCard.classList.contains('bye-empty-slot')) {
+                        if (seenSrcCards.indexOf(srcCard) !== -1) continue;
+                        seenSrcCards.push(srcCard);
+
                         var srcPos = this.getRelativePos(srcCard, canvasElem);
                         validSources.push({
-                            match: srcMatch,
+                            match: fMatch,
                             card: srcCard,
                             pos: srcPos,
                             x1: srcPos.right,
@@ -326,22 +432,26 @@
 
                 if (validSources.length === 0) continue;
 
-                if (validSources.length === 2) {
-                    // Standard Bracket Fork ( ]-- )
+                var tgtPos = this.getRelativePos(targetCard, canvasElem);
+                var x2 = tgtPos.left;
+                var yTargetCenter = tgtPos.top + (tgtPos.height / 2);
+
+                var themeColor = isTargetLb ? '#ff4655' : (isTargetGf ? '#fbbf24' : '#2dd4bf');
+
+                if (validSources.length >= 2) {
+                    // Standard Bracket Fork ( ]-- ) strictly for this target match
+                    validSources.sort(function (a, b) { return a.y1 - b.y1; });
                     var s1 = validSources[0];
-                    var s2 = validSources[1];
+                    var s2 = validSources[validSources.length - 1];
                     var maxX1 = Math.max(s1.x1, s2.x1);
                     var midX = maxX1 + (x2 - maxX1) / 2;
 
-                    var minY = Math.min(s1.y1, s2.y1);
-                    var maxY = Math.max(s1.y1, s2.y1);
+                    var minY = s1.y1;
+                    var maxY = s2.y1;
 
-                    var isLb = (s1.match.bracketType === 'LOWER' || s2.match.bracketType === 'LOWER' || (canvasElem && canvasElem.id === 'lowerViewportCanvas'));
-                    var doneColor = isLb ? '#f43f5e' : '#2dd4bf';
-
-                    var isBothDone = (s1.match.status === 'COMPLETED' || s1.match.status === 'done') &&
-                                     (s2.match.status === 'COMPLETED' || s2.match.status === 'done');
-                    var strokeColor = isBothDone ? doneColor : 'rgba(255, 255, 255, 0.4)';
+                    var isBothDone = (s1.match.status === 'COMPLETED' || s1.match.status === 'done' || s1.match.status === 'FINISHED' || s1.match.winnerId) &&
+                                     (s2.match.status === 'COMPLETED' || s2.match.status === 'done' || s2.match.status === 'FINISHED' || s2.match.winnerId);
+                    var strokeColor = isBothDone ? themeColor : 'rgba(255, 255, 255, 0.4)';
                     var strokeWidth = isBothDone ? '2.2' : '1.6';
 
                     var d = 'M ' + s1.x1.toFixed(1) + ' ' + s1.y1.toFixed(1) + ' H ' + midX.toFixed(1) + ' ' +
@@ -361,12 +471,12 @@
                 } else {
                     // Single feeder match line (1-to-1 connector)
                     var s = validSources[0];
-                    var isLb = (s.match.bracketType === 'LOWER' || (canvasElem && canvasElem.id === 'lowerViewportCanvas'));
-                    var doneColor = isLb ? '#f43f5e' : '#2dd4bf';
-                    var isDone = (s.match.status === 'COMPLETED' || s.match.status === 'done');
+                    var isDone = (s.match.status === 'COMPLETED' || s.match.status === 'done' || s.match.status === 'FINISHED' || s.match.winnerId);
+                    var strokeColor = isDone ? themeColor : 'rgba(255, 255, 255, 0.4)';
+                    var strokeWidth = isDone ? '2.2' : '1.6';
                     var d = '';
 
-                    // If almost horizontal (difference <= 8px), draw a 100% clean straight horizontal line!
+                    // If almost horizontal (difference <= 8px), draw a 100% clean straight horizontal line
                     if (Math.abs(s.y1 - yTargetCenter) <= 8) {
                         d = 'M ' + s.x1.toFixed(1) + ' ' + yTargetCenter.toFixed(1) +
                             ' H ' + x2.toFixed(1);
@@ -381,8 +491,8 @@
                     var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.setAttribute('d', d);
                     path.setAttribute('fill', 'none');
-                    path.setAttribute('stroke', isDone ? doneColor : 'rgba(255, 255, 255, 0.4)');
-                    path.setAttribute('stroke-width', isDone ? '2.2' : '1.6');
+                    path.setAttribute('stroke', strokeColor);
+                    path.setAttribute('stroke-width', strokeWidth);
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');
 

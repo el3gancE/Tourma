@@ -34,9 +34,17 @@
 .bracket-node-card.swiss-card-red,
 .bracket-node-card.lower-bracket-card,
 .bracket-node-card.card-theme-red {
-    --card-theme-color: #f43f5e;
-    --card-theme-hover-bg: rgba(244, 63, 94, 0.22);
-    --card-theme-glow: rgba(244, 63, 94, 0.45);
+    --card-theme-color: #ff4655;
+    --card-theme-hover-bg: rgba(255, 70, 85, 0.22);
+    --card-theme-glow: rgba(255, 70, 85, 0.45);
+}
+
+/* Auto-inherit Lower Bracket theme for all cards inside Lower Bracket containers */
+.de-round-column[data-bracket-type="LOWER"] .bracket-node-card,
+#lowerBracketColumnsWrapper .bracket-node-card {
+    --card-theme-color: #ff4655;
+    --card-theme-hover-bg: rgba(255, 70, 85, 0.22);
+    --card-theme-glow: rgba(255, 70, 85, 0.45);
 }
 
 .bracket-node-card.swiss-card-gold {

@@ -132,7 +132,7 @@ public class DoubleEliminationDAO extends DBContext {
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
-                + "ORDER BY m.round_number ASC, m.id ASC";
+                + "ORDER BY m.round_number ASC, ISNULL(m.match_order, 999999) ASC, LEN(m.id) ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
         int count = 0;
@@ -224,7 +224,13 @@ public class DoubleEliminationDAO extends DBContext {
     public synchronized void ensureBracketInitialized(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return;
 
-        String checkSql = "SELECT COUNT(*) FROM matches m "
+        ParticipantDAO pDao = new ParticipantDAO();
+        List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
+        if (teams == null || teams.isEmpty()) return;
+
+        String checkSql = "SELECT COUNT(*), "
+                + "SUM(CASE WHEN bracket_type IN ('LOSER_BRACKET', 'LOWER', 'LB') THEN 1 ELSE 0 END) AS lb_count "
+                + "FROM matches m "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
 
@@ -236,18 +242,31 @@ public class DoubleEliminationDAO extends DBContext {
             ps.setInt(4, stageOrder);
             ps.setInt(5, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next() && rs.getInt(1) > 0) {
-                    return; // Already initialized!
+                if (rs.next()) {
+                    int totalCount = rs.getInt(1);
+                    int lbCount = rs.getInt(2);
+                    if (totalCount > 0 && (lbCount > 0 || teams.size() < 3)) {
+                        return; // Already initialized!
+                    }
+                    if (totalCount > 0) {
+                        // Stale matches detected (e.g. from SE initialization): delete unplayed matches to recreate DE bracket
+                        try (PreparedStatement psUnlink = conn.prepareStatement(
+                                "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ?")) {
+                            psUnlink.setString(1, tournamentId);
+                            psUnlink.executeUpdate();
+                        }
+                        try (PreparedStatement psDel = conn.prepareStatement(
+                                "DELETE FROM matches WHERE tournament_id = ? AND (status IS NULL OR status = 'PENDING' OR status = 'SCHEDULED' OR status = 'READY')")) {
+                            psDel.setString(1, tournamentId);
+                            psDel.executeUpdate();
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
-
-        ParticipantDAO pDao = new ParticipantDAO();
-        List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
-        if (teams == null || teams.isEmpty()) return;
 
         initializeDoubleEliminationInDB(tournamentId, stageOrder, teams);
     }
@@ -259,12 +278,15 @@ public class DoubleEliminationDAO extends DBContext {
         int bracketSize = 1;
         while (bracketSize < n) bracketSize *= 2;
         int upperRounds = (int) (Math.log(bracketSize) / Math.log(2));
+        int totalLowerRounds = (upperRounds - 1) * 2;
 
         String stageId = lookupOrCreateStageId(tournamentId, stageOrder);
         int[] seeds = generateSeedingArray(bracketSize);
         Map<Integer, Team> seedToTeam = new HashMap<>();
         for (int i = 0; i < teams.size(); i++) {
-            seedToTeam.put(i + 1, teams.get(i));
+            Team tm = teams.get(i);
+            int seed = tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : (i + 1);
+            seedToTeam.put(seed, tm);
         }
 
         List<DeNode> allMatches = new ArrayList<>();
@@ -282,7 +304,7 @@ public class DoubleEliminationDAO extends DBContext {
                 node.roundNumber = r;
                 node.tournamentId = tournamentId;
                 node.stageId = stageId;
-                node.matchCode = "UB R" + r + " #" + (m + 1);
+                node.matchCode = (r == upperRounds) ? "UB Final" : ("UB R" + r + " #" + (m + 1));
                 node.bracketType = "WINNER_BRACKET";
 
                 if (r == 1) {
@@ -315,21 +337,30 @@ public class DoubleEliminationDAO extends DBContext {
         }
 
         // 2. Build Lower Bracket Matches
-        int totalLowerRounds = (upperRounds - 1) * 2;
-        Map<Integer, List<DeNode>> lowerRoundNodes = new HashMap<>();
-        int currLowerMatches = bracketSize / 4;
-        if (currLowerMatches < 1) currLowerMatches = 1;
-
+        List<Integer> lbMatchesPerRound = new ArrayList<>();
+        int matchCountInLb = bracketSize / 4;
+        if (matchCountInLb < 1) matchCountInLb = 1;
         for (int lr = 1; lr <= totalLowerRounds; lr++) {
+            lbMatchesPerRound.add(matchCountInLb);
+            if (lr % 2 == 0) {
+                matchCountInLb = Math.max(1, matchCountInLb / 2);
+            }
+        }
+
+        Map<Integer, List<DeNode>> lowerRoundNodes = new HashMap<>();
+        for (int lr = 1; lr <= totalLowerRounds; lr++) {
+            int mCount = lbMatchesPerRound.get(lr - 1);
+            boolean isMajorRound = (lr % 2 == 0);
             List<DeNode> roundNodes = new ArrayList<>();
-            for (int m = 0; m < currLowerMatches; m++) {
+
+            for (int m = 0; m < mCount; m++) {
                 DeNode node = new DeNode();
                 node.id = "M_" + tournamentId + "_LB_" + matchSeq;
                 node.matchNumber = matchSeq;
                 node.roundNumber = lr;
                 node.tournamentId = tournamentId;
                 node.stageId = stageId;
-                node.matchCode = "LB R" + lr + " #" + (m + 1);
+                node.matchCode = (lr == totalLowerRounds) ? "LB Final" : ("LB R" + lr + " #" + (m + 1));
                 node.bracketType = "LOSER_BRACKET";
                 node.status = "PENDING";
 
@@ -340,38 +371,83 @@ public class DoubleEliminationDAO extends DBContext {
 
             if (lr > 1) {
                 List<DeNode> prevNodes = lowerRoundNodes.get(lr - 1);
-                for (int i = 0; i < prevNodes.size(); i++) {
-                    DeNode prev = prevNodes.get(i);
-                    if (lr % 2 == 1) {
-                        // Halving round
-                        DeNode next = roundNodes.get(i / 2);
-                        prev.nextMatchId = next.id;
-                        prev.nextSlot = (i % 2 == 0) ? "SLOT_1" : "SLOT_2";
-                    } else {
-                        // Minor/Major drop round
-                        DeNode next = roundNodes.get(i);
-                        prev.nextMatchId = next.id;
-                        prev.nextSlot = "SLOT_1";
+                if (isMajorRound) {
+                    // Major round: Winner of preceding LB round goes to Slot 1
+                    for (int i = 0; i < prevNodes.size(); i++) {
+                        if (i < roundNodes.size()) {
+                            DeNode prev = prevNodes.get(i);
+                            DeNode next = roundNodes.get(i);
+                            prev.nextMatchId = next.id;
+                            prev.nextSlot = "SLOT_1";
+                        }
+                    }
+                } else {
+                    // Minor round: Winners of preceding LB round pair up (Slot 1 & Slot 2)
+                    for (int i = 0; i < prevNodes.size(); i++) {
+                        if (i / 2 < roundNodes.size()) {
+                            DeNode prev = prevNodes.get(i);
+                            DeNode next = roundNodes.get(i / 2);
+                            prev.nextMatchId = next.id;
+                            prev.nextSlot = (i % 2 == 0) ? "SLOT_1" : "SLOT_2";
+                        }
                     }
                 }
             }
 
             lowerRoundNodes.put(lr, roundNodes);
-            if (lr % 2 == 1 && currLowerMatches > 1) {
-                currLowerMatches /= 2;
-            }
         }
 
-        // 3. Link Upper Bracket Losers to Lower Bracket
+        // 3. Link Drop Downs from Upper Bracket to Lower Bracket
+        // LB Round 1 Drop Downs:
         List<DeNode> ubR1 = upperRoundNodes.get(1);
         List<DeNode> lbR1 = lowerRoundNodes.get(1);
         if (ubR1 != null && lbR1 != null) {
-            for (int i = 0; i < ubR1.size(); i++) {
-                DeNode ubNode = ubR1.get(i);
-                if (i / 2 < lbR1.size()) {
-                    DeNode lbNode = lbR1.get(i / 2);
-                    ubNode.loserNextMatchId = lbNode.id;
-                    ubNode.loserNextSlot = (i % 2 == 0) ? "SLOT_1" : "SLOT_2";
+            int totalUbR1 = ubR1.size();
+            for (int k = 0; k < lbR1.size(); k++) {
+                DeNode ubM1 = ubR1.get(k);
+                DeNode ubM2 = ubR1.get(totalUbR1 - 1 - k);
+                DeNode lbNode = lbR1.get(k);
+
+                if (ubM1 != null && lbNode != null) {
+                    ubM1.loserNextMatchId = lbNode.id;
+                    ubM1.loserNextSlot = "SLOT_1";
+                }
+                if (ubM2 != null && lbNode != null) {
+                    ubM2.loserNextMatchId = lbNode.id;
+                    ubM2.loserNextSlot = "SLOT_2";
+                }
+            }
+        }
+
+        // UB Round 2+ losers drop to Major LB rounds with Branch Cross-Over
+        for (int ur = 2; ur <= upperRounds; ur++) {
+            int targetLbRound = (ur - 1) * 2;
+            List<DeNode> ubMatches = upperRoundNodes.get(ur);
+            List<DeNode> lbMajorMatches = lowerRoundNodes.get(targetLbRound);
+
+            if (ubMatches != null && lbMajorMatches != null) {
+                int mCount = ubMatches.size();
+                for (int u = 0; u < mCount; u++) {
+                    int targetIdx = u;
+                    if (mCount >= 4) {
+                        int halfM = mCount / 2;
+                        if (u < halfM) {
+                            targetIdx = halfM - 1 - u;
+                        } else {
+                            targetIdx = u;
+                        }
+                    } else if (mCount == 2) {
+                        targetIdx = (u == 0) ? 1 : 0;
+                    } else {
+                        targetIdx = 0;
+                    }
+
+                    if (targetIdx < lbMajorMatches.size()) {
+                        DeNode ubNode = ubMatches.get(u);
+                        DeNode lbNode = lbMajorMatches.get(targetIdx);
+                        ubNode.loserNextMatchId = lbNode.id;
+                        ubNode.loserNextSlot = "SLOT_2";
+                    }
                 }
             }
         }
@@ -400,13 +476,6 @@ public class DoubleEliminationDAO extends DBContext {
         if (lbFinal != null && !lbFinal.isEmpty()) {
             lbFinal.get(0).nextMatchId = gf.id;
             lbFinal.get(0).nextSlot = "SLOT_2";
-        }
-
-        // Sort teams by original seed
-        List<Team> sortedTeams = new ArrayList<>(teams);
-        sortedTeams.sort((a, b) -> Integer.compare(a.getOriginalSeed(), b.getOriginalSeed()));
-        for (int i = 0; i < sortedTeams.size(); i++) {
-            seedToTeam.put(sortedTeams.get(i).getOriginalSeed() > 0 ? sortedTeams.get(i).getOriginalSeed() : (i + 1), sortedTeams.get(i));
         }
 
         // Insert into database in 2 passes to guarantee zero foreign key constraint conflicts

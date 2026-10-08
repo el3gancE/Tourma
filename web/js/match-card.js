@@ -252,14 +252,16 @@
                             ? window.TourmaRoundControls.getCustomWinScore(card, null)
                             : null;
 
+                        var activeEngine = (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
+                            || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId ? window.TourmaDoubleElimination : null)
+                            || (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId ? window.SingleEliminationEngine : null)
+                            || (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId ? window.TourmaSingleElimination : null)
+                            || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
+
                         if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
-                            window.TourmaRoundControls.handleQuickWinner(null, matchId, 1, customScore);
-                        } else if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
-                            window.SingleEliminationEngine.handleQuickWinner(matchId, 1, customScore);
-                        } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
-                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 1, customScore);
-                        } else if (window.TourmaSwiss && typeof window.TourmaSwiss.handleQuickWinner === 'function') {
-                            window.TourmaSwiss.handleQuickWinner(matchId, 1, customScore);
+                            window.TourmaRoundControls.handleQuickWinner(activeEngine, matchId, 1, customScore);
+                        } else if (activeEngine && typeof activeEngine.handleQuickWinner === 'function') {
+                            activeEngine.handleQuickWinner(matchId, 1, customScore);
                         }
                     }
                 });
@@ -275,14 +277,16 @@
                             ? window.TourmaRoundControls.getCustomWinScore(card, null)
                             : null;
 
+                        var activeEngine = (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
+                            || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId ? window.TourmaDoubleElimination : null)
+                            || (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId ? window.SingleEliminationEngine : null)
+                            || (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId ? window.TourmaSingleElimination : null)
+                            || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
+
                         if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
-                            window.TourmaRoundControls.handleQuickWinner(null, matchId, 2, customScore);
-                        } else if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
-                            window.SingleEliminationEngine.handleQuickWinner(matchId, 2, customScore);
-                        } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
-                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 2, customScore);
-                        } else if (window.TourmaSwiss && typeof window.TourmaSwiss.handleQuickWinner === 'function') {
-                            window.TourmaSwiss.handleQuickWinner(matchId, 2, customScore);
+                            window.TourmaRoundControls.handleQuickWinner(activeEngine, matchId, 2, customScore);
+                        } else if (activeEngine && typeof activeEngine.handleQuickWinner === 'function') {
+                            activeEngine.handleQuickWinner(matchId, 2, customScore);
                         }
                     }
                 });

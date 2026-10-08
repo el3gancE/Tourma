@@ -175,7 +175,16 @@ public class TournamentRandomServlet extends HttpServlet {
         }
 
         if (bracketType != null && !bracketType.trim().isEmpty()) {
-            sql.append("AND m.bracket_type = ? ");
+            String bt = bracketType.trim().toUpperCase();
+            if (bt.contains("UPPER") || bt.contains("WINNER")) {
+                sql.append("AND (m.bracket_type LIKE '%WINNER%' OR m.bracket_type LIKE '%UPPER%' OR m.bracket_type = 'MAIN') ");
+            } else if (bt.contains("LOWER") || bt.contains("LOSER")) {
+                sql.append("AND (m.bracket_type LIKE '%LOSER%' OR m.bracket_type LIKE '%LOWER%') ");
+            } else if (bt.contains("GRAND")) {
+                sql.append("AND m.bracket_type LIKE '%GRAND%' ");
+            } else {
+                sql.append("AND m.bracket_type = ? ");
+            }
         }
 
         sql.append("ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC");
@@ -198,7 +207,10 @@ public class TournamentRandomServlet extends HttpServlet {
             }
 
             if (bracketType != null && !bracketType.trim().isEmpty()) {
-                ps.setString(pIdx++, bracketType.trim());
+                String bt = bracketType.trim().toUpperCase();
+                if (!bt.contains("UPPER") && !bt.contains("WINNER") && !bt.contains("LOWER") && !bt.contains("LOSER") && !bt.contains("GRAND")) {
+                    ps.setString(pIdx++, bracketType.trim());
+                }
             }
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -339,10 +351,10 @@ public class TournamentRandomServlet extends HttpServlet {
             res.message = "Đã tạo tỉ số ngẫu nhiên cho " + matchList.size() + " trận đấu thành công!";
 
             // Fetch fresh matches JSON to return to frontend
-            if (format.contains("SINGLE")) {
-                res.matchesJson = new SingleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
-            } else if (format.contains("DOUBLE")) {
+            if (format.contains("DOUBLE") || format.contains("DE")) {
                 res.matchesJson = new DoubleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
+            } else if (format.contains("SINGLE")) {
+                res.matchesJson = new SingleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
             } else if (format.contains("ROUND") || format.contains("ROBIN")) {
                 res.matchesJson = new RoundRobinDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
             } else if (format.contains("SWISS")) {
@@ -378,17 +390,31 @@ public class TournamentRandomServlet extends HttpServlet {
             conn.setAutoCommit(false);
 
             // 1. Fetch only playable non-BYE matches of this round to reset
-            String selSql = "SELECT m.id, m.is_bye, m.team1_id, m.team2_id, m.next_match_id, m.next_slot, m.loser_next_match_id, m.loser_next_slot, m.group_id "
+            StringBuilder selSql = new StringBuilder("SELECT m.id, m.is_bye, m.team1_id, m.team2_id, m.next_match_id, m.next_slot, m.loser_next_match_id, m.loser_next_slot, m.group_id "
                     + "FROM matches m "
                     + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                     + "WHERE m.tournament_id = ? AND m.round_number = ? "
                     + "AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
-                    + "AND (m.is_bye IS NULL OR m.is_bye = 0)"
-                    + (groupId != null && !groupId.trim().isEmpty() ? " AND m.group_id = ?" : "")
-                    + (bracketType != null && !bracketType.trim().isEmpty() ? " AND m.bracket_type = ?" : "");
+                    + "AND (m.is_bye IS NULL OR m.is_bye = 0)");
+
+            if (groupId != null && !groupId.trim().isEmpty()) {
+                selSql.append(" AND m.group_id = ?");
+            }
+            if (bracketType != null && !bracketType.trim().isEmpty()) {
+                String bt = bracketType.trim().toUpperCase();
+                if (bt.contains("UPPER") || bt.contains("WINNER")) {
+                    selSql.append(" AND (m.bracket_type LIKE '%WINNER%' OR m.bracket_type LIKE '%UPPER%' OR m.bracket_type = 'MAIN')");
+                } else if (bt.contains("LOWER") || bt.contains("LOSER")) {
+                    selSql.append(" AND (m.bracket_type LIKE '%LOSER%' OR m.bracket_type LIKE '%LOWER%')");
+                } else if (bt.contains("GRAND")) {
+                    selSql.append(" AND m.bracket_type LIKE '%GRAND%'");
+                } else {
+                    selSql.append(" AND m.bracket_type = ?");
+                }
+            }
 
             List<MatchToRandom> roundMatches = new ArrayList<>();
-            try (PreparedStatement psSel = conn.prepareStatement(selSql)) {
+            try (PreparedStatement psSel = conn.prepareStatement(selSql.toString())) {
                 int p = 1;
                 psSel.setString(p++, tournamentId);
                 psSel.setInt(p++, roundNumber);
@@ -398,8 +424,12 @@ public class TournamentRandomServlet extends HttpServlet {
                 psSel.setInt(p++, stageOrder);
                 if (groupId != null && !groupId.trim().isEmpty())
                     psSel.setString(p++, groupId.trim());
-                if (bracketType != null && !bracketType.trim().isEmpty())
-                    psSel.setString(p++, bracketType.trim());
+                if (bracketType != null && !bracketType.trim().isEmpty()) {
+                    String bt = bracketType.trim().toUpperCase();
+                    if (!bt.contains("UPPER") && !bt.contains("WINNER") && !bt.contains("LOWER") && !bt.contains("LOSER") && !bt.contains("GRAND")) {
+                        psSel.setString(p++, bracketType.trim());
+                    }
+                }
 
                 try (ResultSet rs = psSel.executeQuery()) {
                     while (rs.next()) {
@@ -421,7 +451,9 @@ public class TournamentRandomServlet extends HttpServlet {
                 res.success = true;
                 res.message = "Không tìm thấy trận đấu nào cần đặt lại của Vòng " + roundNumber;
                 // Still return fresh JSON
-                if (format.contains("SINGLE")) {
+                if (format.contains("DOUBLE") || format.contains("DE")) {
+                    res.matchesJson = new DoubleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
+                } else if (format.contains("SINGLE")) {
                     res.matchesJson = new SingleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
                 }
                 return res;
@@ -473,10 +505,10 @@ public class TournamentRandomServlet extends HttpServlet {
             res.message = "Đã đặt lại kết quả Vòng " + roundNumber + " thành công!";
 
             // 5. Fetch fresh matches JSON
-            if (format.contains("SINGLE")) {
-                res.matchesJson = new SingleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
-            } else if (format.contains("DOUBLE")) {
+            if (format.contains("DOUBLE") || format.contains("DE")) {
                 res.matchesJson = new DoubleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
+            } else if (format.contains("SINGLE")) {
+                res.matchesJson = new SingleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
             } else if (format.contains("ROUND") || format.contains("ROBIN")) {
                 res.matchesJson = new RoundRobinDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
             } else if (format.contains("SWISS")) {
@@ -499,7 +531,8 @@ public class TournamentRandomServlet extends HttpServlet {
             return;
         String slotCol = ("SLOT_2".equalsIgnoreCase(nextSlot) || "2".equals(nextSlot)) ? "team2_id" : "team1_id";
 
-        String selSql = "SELECT id, next_match_id, next_slot, loser_next_match_id, loser_next_slot FROM matches WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ?)";
+        String selSql = "SELECT id, next_match_id, next_slot, loser_next_match_id, loser_next_slot FROM matches WHERE tournament_id = ? "
+                + "AND (id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? OR CAST(match_order AS VARCHAR) = ?)";
         String dbNextId = null;
         String downstreamNextId = null;
         String downstreamNextSlot = null;
@@ -510,6 +543,12 @@ public class TournamentRandomServlet extends HttpServlet {
             psSel.setString(1, tournamentId);
             psSel.setString(2, nextMatchId);
             psSel.setString(3, nextMatchId);
+            psSel.setString(4, nextMatchId);
+            psSel.setString(5, nextMatchId);
+            psSel.setString(6, nextMatchId);
+            psSel.setString(7, nextMatchId);
+            psSel.setString(8, nextMatchId);
+            psSel.setString(9, nextMatchId);
             try (ResultSet rs = psSel.executeQuery()) {
                 if (rs.next()) {
                     dbNextId = rs.getString("id");
