@@ -24,7 +24,7 @@
         },
 
         loadData: function () {
-            // Load teams list
+            // Load teams list from localStorage first, then DB_TEAMS fallback
             var rawTeams = localStorage.getItem('tourma_teams_' + this.tournamentId);
             if (rawTeams) {
                 try { 
@@ -41,6 +41,21 @@
                 } catch (e) { this.teamsList = []; }
             }
 
+            if ((!this.teamsList || this.teamsList.length === 0) && window.DB_TEAMS && Array.isArray(window.DB_TEAMS) && window.DB_TEAMS.length > 0) {
+                this.teamsList = window.DB_TEAMS.map(function (item, idx) {
+                    if (typeof item === 'string') {
+                        return { id: idx + 1, name: item };
+                    }
+                    if (item && !item.id) {
+                        item.id = idx + 1;
+                    }
+                    return item;
+                });
+                try {
+                    localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                } catch (e) {}
+            }
+
             // Priority 1: From Database (window.DB_GROUP_ASSIGNMENTS)
             if (window.DB_GROUP_ASSIGNMENTS && typeof window.DB_GROUP_ASSIGNMENTS === 'object' && Object.keys(window.DB_GROUP_ASSIGNMENTS).length > 0) {
                 this.groups = window.DB_GROUP_ASSIGNMENTS;
@@ -53,8 +68,41 @@
                 if (savedGroupsRaw) {
                     try { this.groups = JSON.parse(savedGroupsRaw); } catch (e) { this.groups = {}; }
                 } else {
-                    this.groups = {}; // Default: NO groups created initially!
+                    this.groups = {};
                 }
+            }
+
+            // Priority 3: Auto-create initial balanced groups if workspace is clean and teams exist
+            if ((!this.groups || Object.keys(this.groups).length === 0) && this.teamsList && this.teamsList.length >= 2) {
+                var urlParams = new URLSearchParams(window.location.search);
+                var formatParam = (urlParams.get('format') || '').toUpperCase();
+                var isGsl = (formatParam.indexOf('GSL') !== -1);
+                
+                var teamsPerGroup = 4;
+                if (this.teamsList.length <= 4) teamsPerGroup = 2;
+                var numGroups = Math.max(2, Math.ceil(this.teamsList.length / teamsPerGroup));
+                if (isGsl) {
+                    var p = 1;
+                    while (p < numGroups) p <<= 1;
+                    numGroups = p;
+                }
+                this.groups = {};
+                for (var g = 0; g < numGroups; g++) {
+                    var gSuffix = (g < 26)
+                        ? String.fromCharCode(65 + g)
+                        : (String.fromCharCode(65 + Math.floor((g - 26) / 26)) + String.fromCharCode(65 + ((g - 26) % 26)));
+                    this.groups[gSuffix] = [];
+                }
+                var gKeys = Object.keys(this.groups);
+                for (var i = 0; i < this.teamsList.length; i++) {
+                    var roundIdx = Math.floor(i / numGroups);
+                    var posInRound = i % numGroups;
+                    var targetGIdx = (roundIdx % 2 === 0) ? posInRound : (numGroups - 1 - posInRound);
+                    this.groups[gKeys[targetGIdx]].push(this.teamsList[i]);
+                }
+                try {
+                    localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
+                } catch (e) {}
             }
         },
 
@@ -98,17 +146,17 @@
 
             for (var i = 0; i < 26; i++) {
                 var charKey = letters.charAt(i);
-                if (!this.groups[charKey]) {
+                if (!this.groups[charKey] && !this.groups['Bảng ' + charKey]) {
                     nextName = charKey;
                     break;
                 }
             }
             if (!nextName) {
                 for (var i = 26; i < 702; i++) {
-                    var first = letters.charAt(Math.floor(i / 26) - 1);
-                    var second = letters.charAt(i % 26);
+                    var first = letters.charAt(Math.floor((i - 26) / 26));
+                    var second = letters.charAt((i - 26) % 26);
                     var doubleKey = first + second;
-                    if (!this.groups[doubleKey]) {
+                    if (!this.groups[doubleKey] && !this.groups['Bảng ' + doubleKey]) {
                         nextName = doubleKey;
                         break;
                     }
@@ -136,7 +184,7 @@
         },
 
         handleAutoDistribute: function () {
-            var groupKeys = Object.keys(this.groups);
+            var groupKeys = Object.keys(this.groups).sort(this.compareGroupKeys);
             if (groupKeys.length < 2) {
                 alert('⚠️ Cần có tối thiểu 2 BẢNG ĐẤU để chia ngẫu nhiên các đội!\n\nVui lòng bấm "+ Thêm Bảng Mới" để tạo ít nhất 2 bảng (Bảng A, Bảng B...) trước.');
                 return;
@@ -323,13 +371,35 @@
             }
         },
 
+        compareGroupKeys: function (a, b) {
+            var getIndex = function (str) {
+                var s = String(str || '').trim();
+                var match = s.match(/([A-Za-z]+)$/);
+                if (match) {
+                    var letters = match[1].toUpperCase();
+                    if (letters.length === 1) {
+                        return letters.charCodeAt(0) - 65; // A=0..Z=25
+                    } else if (letters.length === 2) {
+                        return 26 + (letters.charCodeAt(0) - 65) * 26 + (letters.charCodeAt(1) - 65); // AA=26..AF=31
+                    }
+                }
+                var numMatch = s.match(/(\d+)$/);
+                if (numMatch) return parseInt(numMatch[1], 10) - 1;
+                return 9999;
+            };
+            var idxA = getIndex(a);
+            var idxB = getIndex(b);
+            if (idxA !== idxB) return idxA - idxB;
+            return String(a).localeCompare(String(b));
+        },
+
         renderWorkspace: function () {
             var container = document.getElementById('mgWorkspace');
             if (!container) return;
             container.innerHTML = '';
             var self = this;
 
-            var groupKeys = Object.keys(this.groups);
+            var groupKeys = Object.keys(this.groups).sort(this.compareGroupKeys);
             var unassignedTeams = this.getUnassignedTeams();
 
             // 1. TOP SUMMARY BAR
@@ -412,11 +482,12 @@
                         } catch (err) {}
                     });
 
+                    var dispTitle = (gKey.toUpperCase().indexOf('BẢNG') !== -1) ? gKey.toUpperCase() : ('BẢNG ' + gKey.toUpperCase());
                     var headerHtml = '<div class="mg-group-header">' +
-                        '<div class="mg-group-title"><i class="fa-solid fa-layer-group"></i> BẢNG ' + gKey + '</div>' +
+                        '<div class="mg-group-title"><i class="fa-solid fa-layer-group"></i> ' + dispTitle + '</div>' +
                         '<div style="display: flex; align-items: center; gap: 0.5rem;">' +
                         '<span style="font-size: 0.75rem; color: #94a3b8;">' + teamList.length + ' Đội</span>' +
-                        '<button type="button" class="btn-delete-group" onclick="TourmaManageGroup.deleteGroup(\'' + gKey + '\')" title="Xóa Bảng ' + gKey + '">' +
+                        '<button type="button" class="btn-delete-group" onclick="TourmaManageGroup.deleteGroup(\'' + gKey + '\')" title="Xóa ' + dispTitle + '">' +
                         '<i class="fa-solid fa-trash-can"></i>' +
                         '</button>' +
                         '</div>' +
@@ -548,14 +619,31 @@
 
             // Reset match schedule whenever team count or assignments change
             localStorage.removeItem('tourma_group_matches_' + this.tournamentId);
+            localStorage.removeItem('tourma_gsl_matches_' + this.tournamentId);
             localStorage.removeItem('tourma_matches_' + this.tournamentId);
         },
 
         saveAndReturn: function () {
-            var groupKeys = Object.keys(this.groups);
-            if (groupKeys.length < 2) {
-                alert('⚠️ Giải đấu Vòng Bảng bắt buộc phải có tối thiểu 2 BẢNG ĐẤU!\n\nVui lòng bấm "+ Thêm Bảng Mới" hoặc "Chia Đều Đội Về Bảng" để tạo tối thiểu 2 bảng (Bảng A, Bảng B...) trước khi thi đấu.');
-                return;
+            var urlParams = new URLSearchParams(window.location.search);
+            var formatParam = urlParams.get('format') || '';
+            var isGsl = (formatParam.toUpperCase().indexOf('GSL') !== -1);
+            if (!isGsl && this.tournamentId) {
+                var storedFmt = localStorage.getItem('tourma_format_' + this.tournamentId) || '';
+                if (storedFmt.toUpperCase().indexOf('GSL') !== -1) isGsl = true;
+            }
+
+            var groupKeys = Object.keys(this.groups).sort(this.compareGroupKeys);
+            if (isGsl) {
+                var numGroups = groupKeys.length;
+                if (numGroups < 2 || (numGroups & (numGroups - 1)) !== 0) {
+                    alert('⚠️ Thể thức GSL yêu cầu số bảng đấu tối thiểu là 2 và phải là lũy thừa của 2: 2, 4, 8, 16, 32 bảng!\n\nHiện tại đang có ' + numGroups + ' bảng.');
+                    return;
+                }
+            } else {
+                if (groupKeys.length < 2) {
+                    alert('⚠️ Giải đấu Vòng Bảng bắt buộc phải có tối thiểu 2 BẢNG ĐẤU!\n\nVui lòng bấm "+ Thêm Bảng Mới" hoặc "Chia Đều Đội Về Bảng" để tạo tối thiểu 2 bảng (Bảng A, Bảng B...) trước khi thi đấu.');
+                    return;
+                }
             }
 
             var unassigned = this.getUnassignedTeams();
@@ -564,19 +652,34 @@
                 return;
             }
 
+            var expectedGslCount = null;
             for (var k = 0; k < groupKeys.length; k++) {
                 var gKey = groupKeys[k];
                 var tCount = (this.groups[gKey]) ? this.groups[gKey].length : 0;
-                if (tCount < 2) {
-                    alert('⚠️ Mỗi bảng đấu bắt buộc phải có tối thiểu 2 đội bóng! (Bảng ' + gKey + ' hiện chỉ có ' + tCount + ' đội).\n\nVui lòng bấm "+ Thêm Đội" để bổ sung đội vào Bảng ' + gKey + ' hoặc xóa bớt bảng đấu thừa!');
-                    return;
+                if (isGsl) {
+                    if (tCount !== 4 && tCount !== 8 && tCount !== 16 && tCount !== 32) {
+                        alert('⚠️ Thể thức GSL yêu cầu số đội mỗi bảng tối thiểu là 4 và phải là lũy thừa của 2: 4, 8, 16 hoặc 32 đội!\n\nBảng ' + gKey + ' hiện có ' + tCount + ' đội.');
+                        return;
+                    }
+                    if (expectedGslCount === null) {
+                        expectedGslCount = tCount;
+                    } else if (tCount !== expectedGslCount) {
+                        alert('⚠️ Thể thức GSL yêu cầu tất cả các bảng phải có cùng số lượng đội (' + expectedGslCount + ' đội/bảng)!\n\nBảng ' + gKey + ' hiện có ' + tCount + ' đội.');
+                        return;
+                    }
+                } else {
+                    if (tCount < 2) {
+                        alert('⚠️ Mỗi bảng đấu bắt buộc phải có tối thiểu 2 đội bóng! (Bảng ' + gKey + ' hiện chỉ có ' + tCount + ' đội).\n\nVui lòng bấm "+ Thêm Đội" để bổ sung đội vào Bảng ' + gKey + ' hoặc xóa bớt bảng đấu thừa!');
+                        return;
+                    }
                 }
             }
 
             this.saveGroupsState();
-            var urlParams = new URLSearchParams(window.location.search);
             var seriesId = urlParams.get('seriesId');
-            var target = 'group-stage.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GROUP_STAGE';
+            var target = isGsl
+                ? ('gsl.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GSL')
+                : ('group-stage.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GROUP_STAGE');
             if (seriesId) {
                 target += '&seriesId=' + encodeURIComponent(seriesId);
             }

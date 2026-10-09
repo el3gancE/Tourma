@@ -312,11 +312,11 @@ public class GroupStageDAO extends DBContext {
                     + "team1_id, team2_id, is_bye, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'GROUP_STAGE', ?, ?, 0, 'READY')";
 
             int matchSeq = 1;
-            char groupChar = 'A';
 
             for (int g = 0; g < numGroups; g++) {
-                String gName = "Bảng " + (char)(groupChar + g);
-                String gId = "GRP_" + tournamentId + "_" + (char)(groupChar + g);
+                String gSuffix = (g < 26) ? String.valueOf((char)('A' + g)) : ("" + (char)('A' + ((g - 26) / 26)) + (char)('A' + ((g - 26) % 26)));
+                String gName = "Bảng " + gSuffix;
+                String gId = "GRP_" + tournamentId + "_" + gSuffix;
 
                 try (PreparedStatement psG = conn.prepareStatement(insGroupSql)) {
                     psG.setString(1, gId);
@@ -346,7 +346,7 @@ public class GroupStageDAO extends DBContext {
                     for (int j = i + 1; j < n; j++) {
                         Team t1 = grpTeams.get(i);
                         Team t2 = grpTeams.get(j);
-                        String mId = "M_" + tournamentId + "_G_" + (char)(groupChar + g) + "_" + (rNum);
+                        String mId = "M_" + tournamentId + "_G_" + gSuffix + "_" + (rNum);
 
                         try (PreparedStatement psM = conn.prepareStatement(insMatchSql)) {
                             psM.setString(1, mId);

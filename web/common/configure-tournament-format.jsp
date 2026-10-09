@@ -230,10 +230,38 @@
                                             onclick="selectFormat('DOUBLE_ELIMINATION', true)">
                                             Double Elimination
                                         </button>
+                                        <button type="button" class="format-pill-btn" id="pillGSL"
+                                            onclick="selectFormat('GSL', true)">
+                                            GSL Format (Dual Tournament)
+                                        </button>
                                         <button type="button" class="format-pill-btn" id="pillRoundRobin"
                                             onclick="selectFormat('ROUND_ROBIN', true)">
                                             Round Robin
                                         </button>
+                                    </div>
+                                </div>
+
+                                <!-- CHI TIẾT CẤU HÌNH GSL (Single Stage) -->
+                                <div id="gslSinglePanel"
+                                    style="display: none; background: var(--bg-dark-obsidian); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; margin-top: 1rem; margin-bottom: 1.25rem;">
+                                    <div class="section-label-uppercase"
+                                        style="margin-bottom: 0.6rem; color: #2dd4bf;">
+                                        <i class="fa-solid fa-layer-group"></i> CẤU HÌNH THỂ THỨC GSL (DUAL TOURNAMENT)
+                                    </div>
+                                    <div>
+                                        <label class="form-label"
+                                            style="font-size: 0.78rem; color: var(--text-muted);">Tổng Số Đội Đi Tiếp
+                                            <span style="color: #f43f5e;">*</span> <span
+                                                style="font-size: 0.72rem; color: #94a3b8;">Bắt buộc là số mũ của 2: 2, 4, 8, 16</span></label>
+                                        <input type="number" id="gslAdvanceCount" name="gslAdvanceCount"
+                                            class="form-control"
+                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                            value="2" min="2" step="2" placeholder="Ví dụ: 2, 4, 8, 16..."
+                                            onchange="validatePowerOfTwoInput(this)">
+                                        <div id="gslPowerErrorMsg"
+                                            style="display: none; color: #f43f5e; font-size: 0.75rem; margin-top: 0.4rem; font-weight: 600;">
+                                            Tổng số đội đi tiếp của GSL bắt buộc phải là số mũ của 2: 2, 4, 8, 16
+                                        </div>
                                     </div>
                                 </div>
 
@@ -307,6 +335,10 @@
                                         <button type="button" class="format-pill-btn" id="pillStage1DE"
                                             onclick="selectStage1Format('DOUBLE_ELIMINATION', true)">
                                             Double Elimination
+                                        </button>
+                                        <button type="button" class="format-pill-btn" id="pillStage1GSL"
+                                            onclick="selectStage1Format('GSL', true)">
+                                            GSL Format
                                         </button>
                                         <button type="button" class="format-pill-btn" id="pillStage1Swiss"
                                             onclick="selectStage1Format('SWISS_LITE', true)">
@@ -483,6 +515,23 @@
                                                         style="background: rgba(45, 212, 191, 0.2); color: #2dd4bf; border-color: rgba(45, 212, 191, 0.4);">8
                                                         Đội Đi Tiếp</span>
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 6. GSL Format Fields (Stage 1) -->
+                                        <div id="stage1FieldsGSL" style="display: none;">
+                                            <label class="form-label"
+                                                style="font-size: 0.78rem; color: var(--text-muted);">Tổng Số Đội Đi Tiếp
+                                                <span style="color: #f43f5e;">*</span> <span
+                                                    style="font-size: 0.72rem; color: #94a3b8;">Bắt buộc là số mũ của 2: 2, 4, 8, 16</span></label>
+                                            <input type="number" id="stage1AdvanceGSL" name="stage1AdvanceGSL"
+                                                class="form-control"
+                                                style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                value="2" min="2" step="2" placeholder="Ví dụ: 2, 4, 8, 16..."
+                                                onchange="validatePowerOfTwoInput(this)">
+                                            <div id="gslStage1PowerErrorMsg"
+                                                style="display: none; color: #f43f5e; font-size: 0.75rem; margin-top: 0.4rem; font-weight: 600;">
+                                                Tổng số đội đi tiếp của GSL bắt buộc phải là số mũ của 2: 2, 4, 8, 16
                                             </div>
                                         </div>
 
@@ -1145,16 +1194,22 @@
                         }
                         document.getElementById('selectedFormat').value = formatValue;
                         const isRoundRobin = formatValue === 'ROUND_ROBIN';
+                        const isGSL = formatValue === 'GSL';
 
                         var wdlPanel = document.getElementById('wdlPointsPanel');
                         if (wdlPanel) wdlPanel.style.display = isRoundRobin ? 'block' : 'none';
 
+                        var gslPanel = document.getElementById('gslSinglePanel');
+                        if (gslPanel) gslPanel.style.display = isGSL ? 'block' : 'none';
+
                         var btnSingle = document.getElementById('pillSingleElim');
                         var btnDouble = document.getElementById('pillDoubleElim');
+                        var btnGSL = document.getElementById('pillGSL');
                         var btnRound = document.getElementById('pillRoundRobin');
 
                         if (btnSingle) btnSingle.classList.toggle('active', formatValue === 'SINGLE_ELIMINATION');
                         if (btnDouble) btnDouble.classList.toggle('active', formatValue === 'DOUBLE_ELIMINATION');
+                        if (btnGSL) btnGSL.classList.toggle('active', isGSL);
                         if (btnRound) btnRound.classList.toggle('active', isRoundRobin);
                     }
 
@@ -1166,8 +1221,8 @@
                         }
                         document.getElementById('stage1Format').value = formatVal;
                         document.getElementById('selectedFormat').value = formatVal;
-                        var ids = ['pillStage1RR', 'pillStage1GR', 'pillStage1SE', 'pillStage1DE', 'pillStage1Swiss'];
-                        var vals = ['ROUND_ROBIN', 'GROUP_STAGE', 'SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'SWISS_LITE'];
+                        var ids = ['pillStage1RR', 'pillStage1GR', 'pillStage1SE', 'pillStage1DE', 'pillStage1GSL', 'pillStage1Swiss'];
+                        var vals = ['ROUND_ROBIN', 'GROUP_STAGE', 'SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'GSL', 'SWISS_LITE'];
                         for (var i = 0; i < ids.length; i++) {
                             var btn = document.getElementById(ids[i]);
                             if (btn) btn.classList.toggle('active', vals[i] === formatVal);
@@ -1178,12 +1233,14 @@
                         var pGR = document.getElementById('stage1FieldsGR');
                         var pSE = document.getElementById('stage1FieldsSE');
                         var pDE = document.getElementById('stage1FieldsDE');
+                        var pGSL = document.getElementById('stage1FieldsGSL');
                         var pSwiss = document.getElementById('stage1FieldsSwiss');
 
                         if (pRR) pRR.style.display = (formatVal === 'ROUND_ROBIN') ? 'block' : 'none';
                         if (pGR) pGR.style.display = (formatVal === 'GROUP_STAGE') ? 'block' : 'none';
                         if (pSE) pSE.style.display = (formatVal === 'SINGLE_ELIMINATION') ? 'block' : 'none';
                         if (pDE) pDE.style.display = (formatVal === 'DOUBLE_ELIMINATION') ? 'block' : 'none';
+                        if (pGSL) pGSL.style.display = (formatVal === 'GSL') ? 'block' : 'none';
                         if (pSwiss) pSwiss.style.display = (formatVal === 'SWISS_LITE') ? 'block' : 'none';
                     }
 
@@ -1253,6 +1310,12 @@
                                         legsCount: legsInp ? (parseInt(legsInp.value) || 1) : 1
                                     };
                                     localStorage.setItem('tourma_rr_config_' + tournamentId, JSON.stringify(rrConfig));
+                                } else if (selectedVal === 'GSL') {
+                                    var gslInp = document.getElementById('gslAdvanceCount');
+                                    var gslAdv = gslInp ? (parseInt(gslInp.value, 10) || 2) : 2;
+                                    localStorage.setItem('tourma_gsl_advance_count_' + tournamentId, gslAdv);
+                                    localStorage.setItem('tourma_cut_target_' + tournamentId, gslAdv);
+                                    advanceCountToSave = gslAdv;
                                 }
                             }
 
@@ -1300,6 +1363,10 @@
                         } else if (formatVal === 'DOUBLE_ELIMINATION') {
                             var adv = document.getElementById(prefix + 'AdvanceDE');
                             return { advanceCount: adv ? (parseInt(adv.value) || 0) : 0 };
+                        } else if (formatVal === 'GSL') {
+                            var adv = document.getElementById(prefix + 'AdvanceGSL') || document.getElementById('gslAdvanceCount');
+                            var cnt = adv ? (parseInt(adv.value, 10) || 2) : 2;
+                            return { advanceCount: cnt, cutTarget: cnt };
                         } else if (formatVal === 'SWISS_LITE') {
                             return { numTeams: 16, advanceCount: 8 };
                         }
@@ -1446,6 +1513,22 @@
                                 if (deInp) deInp.focus();
                                 return false;
                             }
+                        } else if (formatVal === 'GSL') {
+                            var gslInp = document.getElementById(prefix + 'AdvanceGSL');
+                            var val = gslInp ? gslInp.value.trim() : '';
+                            if (!val || Number(val) <= 0) {
+                                if (e && e.preventDefault) e.preventDefault();
+                                alert('Vui lòng nhập tổng số đội đi tiếp ở ' + stageName + '!');
+                                if (gslInp) gslInp.focus();
+                                return false;
+                            }
+                            if (!validateAdvCountLessThanTotal(val, gslInp, e, stageName)) return false;
+                            if (!validatePowerOfTwoInput(gslInp)) {
+                                if (e && e.preventDefault) e.preventDefault();
+                                alert('Tổng số đội đi tiếp của thể thức GSL ở ' + stageName + ' bắt buộc phải là số mũ của 2 (ví dụ: 2, 4, 8, 16...)');
+                                if (gslInp) gslInp.focus();
+                                return false;
+                            }
                         }
                         return true;
                     }
@@ -1470,6 +1553,7 @@
                                 else if (s1F === 'GROUP_STAGE') advInputEl = document.getElementById('stage1AdvanceGR');
                                 else if (s1F === 'SINGLE_ELIMINATION') advInputEl = document.getElementById('stage1AdvanceSE');
                                 else if (s1F === 'DOUBLE_ELIMINATION') advInputEl = document.getElementById('stage1AdvanceDE');
+                                else if (s1F === 'GSL') advInputEl = document.getElementById('stage1AdvanceGSL');
 
                                 if (advInputEl && advInputEl.value) {
                                     s1AdvCount = parseInt(advInputEl.value.trim(), 10) || 0;
@@ -1481,6 +1565,25 @@
                                     if (advInputEl) advInputEl.focus();
                                     return false;
                                 }
+                            }
+                        }
+
+                        // Validate Single Stage GSL
+                        if (currentType === 'SINGLE_STAGE' && currentSelected === 'GSL') {
+                            var gslInp = document.getElementById('gslAdvanceCount');
+                            var val = gslInp ? gslInp.value.trim() : '';
+                            if (!val || Number(val) <= 0) {
+                                if (e && e.preventDefault) e.preventDefault();
+                                alert('Vui lòng nhập tổng số đội đi tiếp của thể thức GSL!');
+                                if (gslInp) gslInp.focus();
+                                return false;
+                            }
+                            if (!validateAdvCountLessThanTotal(val, gslInp, e, 'GSL')) return false;
+                            if (!validatePowerOfTwoInput(gslInp)) {
+                                if (e && e.preventDefault) e.preventDefault();
+                                alert('Tổng số đội đi tiếp của thể thức GSL bắt buộc phải là số mũ của 2 (ví dụ: 2, 4, 8, 16...)');
+                                if (gslInp) gslInp.focus();
+                                return false;
                             }
                         }
 
@@ -1567,6 +1670,10 @@
                                             var el = document.getElementById(prefix + 'AdvanceDE');
                                             var cnt = (cfg && cfg.advanceCount) ? cfg.advanceCount : parseInt(localStorage.getItem('tourma_advance_count_' + tournamentId) || '0', 10);
                                             if (el && cnt > 0) el.value = cnt;
+                                        } else if (sFormat === 'GSL') {
+                                            var el = document.getElementById(prefix + 'AdvanceGSL') || document.getElementById('gslAdvanceCount');
+                                            var cnt = (cfg && cfg.advanceCount) ? cfg.advanceCount : parseInt(localStorage.getItem('tourma_gsl_advance_count_' + tournamentId) || '2', 10);
+                                            if (el && cnt > 0) el.value = cnt;
                                         }
                                     };
 
@@ -1583,7 +1690,7 @@
                             if (btnSingle) { btnSingle.disabled = true; btnSingle.style.opacity = '0.55'; btnSingle.title = '🔒 Stage 1 đã có trận đấu diễn ra, không thể thay đổi mô hình giải!'; }
                             if (btnMulti) { btnMulti.disabled = true; btnMulti.style.opacity = '0.55'; btnMulti.title = '🔒 Stage 1 đã có trận đấu diễn ra, không thể thay đổi mô hình giải!'; }
 
-                            var s1Pills = ['pillStage1RR', 'pillStage1GR', 'pillStage1SE', 'pillStage1DE', 'pillStage1Swiss', 'pillSingleElim', 'pillDoubleElim', 'pillRoundRobin'];
+                            var s1Pills = ['pillStage1RR', 'pillStage1GR', 'pillStage1SE', 'pillStage1DE', 'pillStage1GSL', 'pillStage1Swiss', 'pillSingleElim', 'pillDoubleElim', 'pillGSL', 'pillRoundRobin'];
                             s1Pills.forEach(function (id) {
                                 var btn = document.getElementById(id);
                                 if (btn) {

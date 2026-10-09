@@ -170,9 +170,17 @@ public class DoubleEliminationDAO extends DBContext {
 
                     String winnerIdCol = rs.getString("winner_id");
                     String winnerSlot = "";
-                    if (winnerIdCol != null) {
-                        if (winnerIdCol.equals(rs.getString("team1_id"))) winnerSlot = "team1";
-                        else if (winnerIdCol.equals(rs.getString("team2_id"))) winnerSlot = "team2";
+                    if (winnerIdCol != null && !winnerIdCol.trim().isEmpty()) {
+                        String wid = winnerIdCol.trim();
+                        if (wid.equalsIgnoreCase("team1") || wid.equals("1") || wid.equals(rs.getString("team1_id"))) {
+                            winnerSlot = "team1";
+                        } else if (wid.equalsIgnoreCase("team2") || wid.equals("2") || wid.equals(rs.getString("team2_id"))) {
+                            winnerSlot = "team2";
+                        }
+                    }
+                    if (winnerSlot.isEmpty() && !s1.isEmpty() && !s2.isEmpty()) {
+                        if (s1Val > s2Val) winnerSlot = "team1";
+                        else if (s2Val > s1Val) winnerSlot = "team2";
                     }
 
                     String nextIdStr = rs.getString("next_match_id");
@@ -185,7 +193,11 @@ public class DoubleEliminationDAO extends DBContext {
 
                     boolean isBye = rs.getBoolean("is_bye");
                     String status = rs.getString("status");
-                    if ("FINISHED".equalsIgnoreCase(status)) status = "COMPLETED";
+                    if ("FINISHED".equalsIgnoreCase(status) || "DONE".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status) || !winnerSlot.isEmpty() || (!s1.isEmpty() && !s2.isEmpty())) {
+                        status = "COMPLETED";
+                    } else if (status == null || status.trim().isEmpty()) {
+                        status = "SCHEDULED";
+                    }
 
                     sb.append("{")
                             .append("\"matchId\":\"").append(escapeJson(rawId)).append("\",")

@@ -339,13 +339,67 @@ WHERE ts.format = 'SWISS_LITE'
 ORDER BY t.id, m.round_number ASC, m.match_order ASC;
 GO
 
--- 3.6 TIẾN TRÌNH MULTI-STAGE: Danh sách đội hạt giống tiến vào Stage 2
+-- 3.6 THỂ THỨC GSL FORMAT (DUAL TOURNAMENT - CÁC BẢNG NHÁNH THẮNG / NHÁNH THUA)
+-- 3.6.1 Danh sách chi tiết các trận đấu GSL theo từng bảng đấu
+SELECT 
+    t.name AS [Giải Đấu],
+    ISNULL(g.group_name, m.group_id) AS [Bảng Đấu],
+    CASE m.bracket_type 
+        WHEN 'WINNER_BRACKET' THEN N'Nhánh Thắng (Upper)'
+        WHEN 'LOSER_BRACKET' THEN N'Nhánh Thua (Lower)'
+        ELSE m.bracket_type 
+    END AS [Phân Loại Nhánh],
+    m.round_number AS [Vòng Đấu],
+    m.id AS [Mã Trận Đấu],
+    ISNULL(t1.raw_name, N'Chờ nhánh trước') AS [Đội 1],
+    m.score1 AS [Điểm 1],
+    m.score2 AS [Điểm 2],
+    ISNULL(t2.raw_name, N'Chờ nhánh trước') AS [Đội 2],
+    ISNULL(tw.raw_name, N'---') AS [Đội Thắng Đi Tiếp],
+    m.next_match_id AS [Trận Nhánh Thắng Tiếp Theo],
+    ISNULL(tl.raw_name, N'---') AS [Đội Thua Rớt Nhánh],
+    m.loser_next_match_id AS [Trận Nhánh Thua Rớt Xuống],
+    m.status AS [Trạng Thái]
+FROM matches m
+JOIN tournaments t ON m.tournament_id = t.id
+JOIN tournament_stages ts ON m.stage_id = ts.id
+LEFT JOIN groups g ON (m.group_id = g.id OR m.group_id = g.group_name)
+LEFT JOIN teams t1 ON m.team1_id = t1.id
+LEFT JOIN teams t2 ON m.team2_id = t2.id
+LEFT JOIN teams tw ON m.winner_id = tw.id
+LEFT JOIN teams tl ON m.loser_id = tl.id
+WHERE ts.format = 'GSL'
+ORDER BY t.id, ISNULL(g.group_name, m.group_id) ASC, 
+         CASE m.bracket_type WHEN 'WINNER_BRACKET' THEN 1 ELSE 2 END, 
+         m.round_number ASC, m.match_order ASC;
+GO
+
+-- 3.6.2 Danh sách các đội trong từng Bảng GSL
+SELECT 
+    t.name AS [Giải Đấu],
+    g.group_name AS [Bảng Đấu],
+    gt.seed_in_group AS [Hạt Giống Trong Bảng],
+    tm.raw_name AS [Tên Đội],
+    gt.matches_played AS [Số Trận Đã Đấu],
+    gt.wins AS [Thắng],
+    gt.losses AS [Thua],
+    gt.rank_in_group AS [Xếp Hạng Trong Bảng]
+FROM group_teams gt
+JOIN groups g ON gt.group_id = g.id
+JOIN tournament_stages ts ON g.stage_id = ts.id
+JOIN tournaments t ON ts.tournament_id = t.id
+JOIN teams tm ON gt.team_id = tm.id
+WHERE ts.format = 'GSL'
+ORDER BY t.id, g.group_name ASC, gt.seed_in_group ASC;
+GO
+
+-- 3.7 TIẾN TRÌNH MULTI-STAGE: Danh sách đội hạt giống tiến vào Stage 2
 SELECT 
     t.name AS [Giải Đấu],
     ts.stage_name AS [Giai Đoạn Đích (Stage 2)],
     sp.seed_in_stage AS [Hạt Giống Stage 2],
     tm.raw_name AS [Tên Đội],
-    sp.qualification_source AS [Nguồn Suất Vé (Vòng Bảng / Swiss)],
+    sp.qualification_source AS [Nguồn Suất Vé (Vòng Bảng / Swiss / GSL)],
     sp.status AS [Trạng Thái]
 FROM stage_participants sp
 JOIN tournament_stages ts ON sp.stage_id = ts.id

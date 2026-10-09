@@ -70,6 +70,8 @@
         targetBracketUrl = "round-robin.jsp";
     } else if ("GROUP_STAGE".equalsIgnoreCase(format)) {
         targetBracketUrl = "group-stage.jsp";
+    } else if ("GSL".equalsIgnoreCase(format)) {
+        targetBracketUrl = "gsl.jsp";
     } else if ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format)) {
         targetBracketUrl = "swiss-stage.jsp";
     }
@@ -78,12 +80,14 @@
     if ("DOUBLE_ELIMINATION".equalsIgnoreCase(stage1Format)) targetBracketUrlStage1 = "double-elimination.jsp";
     else if ("ROUND_ROBIN".equalsIgnoreCase(stage1Format)) targetBracketUrlStage1 = "round-robin.jsp";
     else if ("GROUP_STAGE".equalsIgnoreCase(stage1Format)) targetBracketUrlStage1 = "group-stage.jsp";
+    else if ("GSL".equalsIgnoreCase(stage1Format)) targetBracketUrlStage1 = "gsl.jsp";
     else if ("SWISS_LITE".equalsIgnoreCase(stage1Format) || "SWISS".equalsIgnoreCase(stage1Format)) targetBracketUrlStage1 = "swiss-stage.jsp";
 
     String targetBracketUrlStage2 = "single-elimination.jsp";
     if ("DOUBLE_ELIMINATION".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "double-elimination.jsp";
     else if ("ROUND_ROBIN".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "round-robin.jsp";
     else if ("GROUP_STAGE".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "group-stage.jsp";
+    else if ("GSL".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "gsl.jsp";
     else if ("SWISS_LITE".equalsIgnoreCase(stage2Format) || "SWISS".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "swiss-stage.jsp";
 
     boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType) || (stageFormats != null && stageFormats.size() >= 2);
@@ -200,9 +204,9 @@
         </li>
         <% } %>
 
-        <!-- MỤC RIÊNG CHO GROUP STAGE: QUẢN LÝ BẢNG ĐẤU -->
-        <li class="sidebar-menu-item" id="sidebarMenuManageGroup" style="<%= "GROUP_STAGE".equalsIgnoreCase(format) ? "" : "display: none;" %>">
-            <a href="${pageContext.request.contextPath}/common/manage-group.jsp?id=<%= tournamentId %>&seriesId=<%= seriesId %>&format=GROUP_STAGE"
+        <!-- MỤC RIÊNG CHO GROUP STAGE & GSL: QUẢN LÝ BẢNG ĐẤU -->
+        <li class="sidebar-menu-item" id="sidebarMenuManageGroup" style="<%= ("GROUP_STAGE".equalsIgnoreCase(format) || "GSL".equalsIgnoreCase(format)) ? "" : "display: none;" %>">
+            <a href="${pageContext.request.contextPath}/common/manage-group.jsp?id=<%= tournamentId %>&seriesId=<%= seriesId %>&format=<%= format %>"
                class="sidebar-menu-link <%= "manage-group".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid fa-pen-to-square menu-icon text-mint"></i>
                 <span>Quản Lý Bảng Đấu</span>
@@ -266,9 +270,9 @@
         <!-- SINGLE-STAGE: SƠ ĐỒ NHÁNH / LỊCH ĐẤU & TỈ SỐ -->
         <li class="sidebar-menu-item" id="sidebarMenuSingleStage" style="<%= isMultiStage ? "display: none;" : "" %>">
             <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %><%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
-               class="sidebar-menu-link <%= ("bracket".equals(activeStep) || "step3".equals(activeStep)) && !isMultiStage ? "active" : "" %>">
-                <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "fa-layer-group" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "fa-diagram-project" : "fa-diagram-project")) %> menu-icon"></i>
-                <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu & Tỉ Số" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "Vòng Bảng & Tỉ Số" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "Vòng Swiss & Tỉ Số" : "Sơ Đồ Nhánh & Tỉ Số")) %></span>
+               class="sidebar-menu-link <%= ("bracket".equals(activeStep) || "step3".equals(activeStep) || "gsl".equals(activeStep)) && !isMultiStage ? "active" : "" %>">
+                <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : (("GROUP_STAGE".equalsIgnoreCase(format) || "GSL".equalsIgnoreCase(format)) ? "fa-layer-group" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "fa-diagram-project" : "fa-diagram-project")) %> menu-icon"></i>
+                <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu & Tỉ Số" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "Vòng Bảng & Tỉ Số" : ("GSL".equalsIgnoreCase(format) ? "Bảng Đấu GSL & Tỉ Số" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "Vòng Swiss & Tỉ Số" : "Sơ Đồ Nhánh & Tỉ Số"))) %></span>
             </a>
         </li>
     </ul>
@@ -321,6 +325,7 @@
                     if (fmt === 'DOUBLE_ELIMINATION') return 'double-elimination.jsp';
                     if (fmt === 'ROUND_ROBIN') return 'round-robin.jsp';
                     if (fmt === 'GROUP_STAGE') return 'group-stage.jsp';
+                    if (fmt === 'GSL') return 'gsl.jsp';
                     if (fmt === 'SWISS_LITE' || fmt === 'SWISS') return 'swiss-stage.jsp';
                     return 'single-elimination.jsp';
                 };
@@ -344,10 +349,10 @@
                     menuRR2.style.display = 'none';
                 }
 
-                // Display Group Stage items if Stage 1 is Group Stage
-                if (s1Format === 'GROUP_STAGE') {
+                // Display Group Stage / GSL items if Stage 1 is Group Stage or GSL
+                if (s1Format === 'GROUP_STAGE' || s1Format === 'GSL') {
                     if (menuMG) menuMG.style.display = '';
-                    if (menuGS) menuGS.style.display = '';
+                    if (menuGS) menuGS.style.display = (s1Format === 'GROUP_STAGE') ? '' : 'none';
                 }
             }
 
@@ -358,12 +363,16 @@
             if (localFmt === 'DOUBLE_ELIMINATION') page = 'double-elimination.jsp';
             else if (localFmt === 'ROUND_ROBIN') page = 'round-robin.jsp';
             else if (localFmt === 'GROUP_STAGE') page = 'group-stage.jsp';
+            else if (localFmt === 'GSL') page = 'gsl.jsp';
             else if (localFmt === 'SWISS_LITE' || localFmt === 'SWISS') page = 'swiss-stage.jsp';
             
             var aLink = sSingle.querySelector('a');
             if (aLink) {
                 var seriesId = '<%= seriesId %>';
                 aLink.href = '${pageContext.request.contextPath}/common/' + page + '?id=' + tid + '&format=' + localFmt + (seriesId ? ('&seriesId=' + seriesId) : '');
+            }
+            if (menuMG) {
+                menuMG.style.display = (localFmt === 'GROUP_STAGE' || localFmt === 'GSL') ? '' : 'none';
             }
         }
     } catch (e) {}

@@ -88,7 +88,7 @@
         <span class="<%= formatBadgeClass %>"><%= formatName %></span>
         <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
         <span id="tournamentAdvancingBadge" class="advancing-count-badge"
-            style="<%= ("MULTI_STAGE".equals(tournamentType) && cutTarget > 1) ? "" : "display: none;" %>">
+            style="<%= (cutTarget > 0) ? "" : "display: none;" %>">
             <i class="fa-solid fa-arrow-right-to-bracket"></i>
             <%= cutTarget %> Đội đi tiếp
         </span>
@@ -177,7 +177,7 @@
     window.TourmaNavbar = {
         engineName: '<%= engineName %>',
         getEngine: function () {
-            return window[this.engineName] || window.SingleEliminationEngine || window.TourmaSingleElimination || window.TourmaDoubleElimination || window.TourmaSwiss || window.TourmaRoundRobin || window.TourmaGroupStage;
+            return window[this.engineName] || window.GSLEngine || window.TourmaGSL || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine || window.TourmaSingleElimination || window.TourmaSwiss || window.TourmaRoundRobin || window.TourmaGroupStage;
         },
         openResetModal: function () {
             var engine = this.getEngine();
@@ -247,4 +247,30 @@
             }
         }
     };
+
+    // Immediate View Mode Active State Sync from localStorage
+    (function () {
+        var tid = window.TourmaTournamentId || '';
+        if (!tid) {
+            try {
+                var params = new URLSearchParams(window.location.search);
+                tid = params.get('id') || params.get('tournamentId') || 'demo';
+            } catch (e) { }
+        }
+        var savedView = null;
+        try {
+            savedView = localStorage.getItem('tourma_view_mode_' + tid) ||
+                        localStorage.getItem('tourma_view_mode_demo') ||
+                        localStorage.getItem('tourma_gsl_view_mode_' + tid) ||
+                        localStorage.getItem('tourma_de_view_mode_' + tid) ||
+                        localStorage.getItem('tourma_se_view_mode_' + tid);
+        } catch (e) { }
+
+        if (savedView && savedView.toUpperCase() === 'LIST') {
+            var bBtns = document.querySelectorAll('#btnViewBracket, .btn-view-toggle:first-child');
+            var lBtns = document.querySelectorAll('#btnViewList, .btn-view-toggle:last-child');
+            bBtns.forEach(function (b) { b.classList.remove('active'); });
+            lBtns.forEach(function (b) { b.classList.add('active'); });
+        }
+    })();
 </script>

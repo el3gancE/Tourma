@@ -271,7 +271,39 @@
                     if (localStorage.getItem('tourma_stage1_completed_' + tid) === 'true') return true;
                 } catch(e) {}
 
-                return false;
+            // 6. GSL (Dual Tournament) Stage 1
+            if (format === 'GSL') {
+                var gslData = null;
+                try {
+                    gslData = JSON.parse(localStorage.getItem('tourma_gsl_matches_' + tid));
+                } catch(e) {}
+                if (!gslData) return false;
+                var gKeys = Object.keys(gslData);
+                if (gKeys.length === 0) return false;
+                var allGroupsDone = true;
+                var totalGslMatches = 0;
+                for (var gIdx = 0; gIdx < gKeys.length; gIdx++) {
+                    var grp = gslData[gKeys[gIdx]];
+                    if (!grp || !grp.matchesMap) { allGroupsDone = false; break; }
+                    var mMap = grp.matchesMap;
+                    var mKeys = Object.keys(mMap);
+                    for (var mk = 0; mk < mKeys.length; mk++) {
+                        var gm = mMap[mKeys[mk]];
+                        if (!gm) continue;
+                        var t1 = gm.team1 ? (gm.team1.name || gm.team1) : '';
+                        var t2 = gm.team2 ? (gm.team2.name || gm.team2) : '';
+                        if (!t1 || !t2 || t1 === 'BYE' || t2 === 'BYE' || t1 === 'TBD' || t2 === 'TBD') continue;
+                        totalGslMatches++;
+                        var s1 = (gm.team1 && gm.team1.score !== '' && gm.team1.score !== null && !isNaN(Number(gm.team1.score))) ? Number(gm.team1.score) : null;
+                        var s2 = (gm.team2 && gm.team2.score !== '' && gm.team2.score !== null && !isNaN(Number(gm.team2.score))) ? Number(gm.team2.score) : null;
+                        if (s1 === null || s2 === null || s1 === s2) {
+                            allGroupsDone = false;
+                            break;
+                        }
+                    }
+                    if (!allGroupsDone) break;
+                }
+                return (totalGslMatches > 0 && allGroupsDone);
             }
 
             return false;
@@ -446,6 +478,9 @@
                 }
                 if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.checkAndTriggerStage2Cut === 'function') {
                     window.TourmaDoubleElimination.checkAndTriggerStage2Cut();
+                }
+                if (window.TourmaGSL && typeof window.TourmaGSL.checkAndTriggerStage2Cut === 'function') {
+                    window.TourmaGSL.checkAndTriggerStage2Cut();
                 }
                 if (window.TourmaSwiss && typeof window.TourmaSwiss.checkSwissStageCompletion === 'function') {
                     window.TourmaSwiss.checkSwissStageCompletion();

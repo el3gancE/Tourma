@@ -144,18 +144,23 @@ public class RollingPointConfigServlet extends HttpServlet {
                 s1F = clientS1Fmt.trim().toUpperCase();
             }
 
+            boolean isGSL = "GSL".equals(fmt) || "GSL".equals(s1F);
             boolean isGroupStage = "GROUP_STAGE".equals(fmt) || "GROUP_STAGE".equals(s1F);
 
-            if (isGroupStage) {
-                redirectUrl = request.getContextPath() + "/common/manage-group.jsp?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : "") + "&format=GROUP_STAGE";
+            String sParam = (seriesId != null && !seriesId.trim().isEmpty()) ? ("&seriesId=" + seriesId.trim()) : "";
+
+            if (isGSL) {
+                redirectUrl = request.getContextPath() + "/common/manage-group.jsp?id=" + tournamentId + sParam + "&format=GSL";
+            } else if (isGroupStage) {
+                redirectUrl = request.getContextPath() + "/common/manage-group.jsp?id=" + tournamentId + sParam + "&format=GROUP_STAGE";
             } else if ("SINGLE_ELIMINATION".equals(s1F) || "SINGLE_ELIMINATION".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/single-elimination.jsp?id=" + tournamentId;
+                redirectUrl = request.getContextPath() + "/common/single-elimination.jsp?id=" + tournamentId + sParam;
             } else if ("DOUBLE_ELIMINATION".equals(s1F) || "DOUBLE_ELIMINATION".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/double-elimination.jsp?id=" + tournamentId;
+                redirectUrl = request.getContextPath() + "/common/double-elimination.jsp?id=" + tournamentId + sParam;
             } else if ("ROUND_ROBIN".equals(s1F) || "ROUND_ROBIN".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/round-robin.jsp?id=" + tournamentId;
+                redirectUrl = request.getContextPath() + "/common/round-robin.jsp?id=" + tournamentId + sParam;
             } else if ("SWISS_LITE".equals(s1F) || "SWISS".equals(s1F) || "SWISS_LITE".equals(fmt) || "SWISS".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/swiss-stage.jsp?id=" + tournamentId;
+                redirectUrl = request.getContextPath() + "/common/swiss-stage.jsp?id=" + tournamentId + sParam;
             }
         }
 

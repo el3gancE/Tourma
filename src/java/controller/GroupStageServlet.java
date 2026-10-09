@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Controller for Group Stage Tournament Page & Server-Driven Standings.
  */
-@WebServlet(name = "GroupStageServlet", urlPatterns = {"/group-stage", "/common/group-stage"})
+@WebServlet(name = "GroupStageServlet", urlPatterns = { "/group-stage", "/common/group-stage" })
 public class GroupStageServlet extends HttpServlet {
 
     private final GroupStageDAO groupStageDAO = new GroupStageDAO();
@@ -75,7 +75,8 @@ public class GroupStageServlet extends HttpServlet {
             if ("reset".equalsIgnoreCase(action) || "resetBracket".equalsIgnoreCase(action)) {
                 if (tournamentId != null && !tournamentId.trim().isEmpty()) {
                     boolean ok = groupStageDAO.resetBracketMatches(tournamentId.trim(), stage);
-                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã đặt lại toàn bộ bảng đấu!" : "Lỗi khi đặt lại bảng đấu!") + "\"}");
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\""
+                            + (ok ? "Đã đặt lại toàn bộ bảng đấu!" : "Lỗi khi đặt lại bảng đấu!") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu tournamentId!\"}");
                 }
@@ -86,7 +87,8 @@ public class GroupStageServlet extends HttpServlet {
                 String stage2TeamsJson = request.getParameter("stage2Teams");
                 if (tournamentId != null && stage2TeamsJson != null) {
                     boolean ok = tournamentDAO.saveStage2Teams(tournamentId, stage2TeamsJson);
-                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu danh sách Vòng 2 vào CSDL!" : "Lỗi lưu Vòng 2!") + "\"}");
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\""
+                            + (ok ? "Đã lưu danh sách Vòng 2 vào CSDL!" : "Lỗi lưu Vòng 2!") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu dữ liệu!\"}");
                 }
@@ -97,7 +99,8 @@ public class GroupStageServlet extends HttpServlet {
                 String multiConfigJson = request.getParameter("multiConfig");
                 if (tournamentId != null && multiConfigJson != null) {
                     boolean ok = tournamentDAO.saveMultiStageConfig(tournamentId, multiConfigJson);
-                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu cấu hình Multi-Stage!" : "Lỗi lưu cấu hình!") + "\"}");
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\""
+                            + (ok ? "Đã lưu cấu hình Multi-Stage!" : "Lỗi lưu cấu hình!") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu dữ liệu!\"}");
                 }
@@ -108,7 +111,8 @@ public class GroupStageServlet extends HttpServlet {
                 String stage1Status = request.getParameter("stage1Status");
                 if (tournamentId != null && stage1Status != null) {
                     boolean ok = tournamentDAO.updateTournamentStage1Status(tournamentId, stage1Status);
-                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã cập nhật trạng thái Stage 1!" : "Lỗi cập nhật Stage 1!") + "\"}");
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\""
+                            + (ok ? "Đã cập nhật trạng thái Stage 1!" : "Lỗi cập nhật Stage 1!") + "\"}");
                 } else {
                     out.print("{\"status\":\"error\",\"message\":\"Thiếu dữ liệu!\"}");
                 }

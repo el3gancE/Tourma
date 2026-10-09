@@ -115,6 +115,7 @@
                                                         <c:when test="${t.format == 'ROUND_ROBIN'}">Round Robin</c:when>
                                                         <c:when test="${t.format == 'SWISS_LITE'}">Swiss System</c:when>
                                                         <c:when test="${t.format == 'GROUP_STAGE'}">Group Stage</c:when>
+                                                        <c:when test="${t.format == 'GSL'}">GSL Format</c:when>
                                                         <c:otherwise>Single Elimination</c:otherwise>
                                                     </c:choose>
                                                 </span>
@@ -143,7 +144,7 @@
                                             <c:when test="${t.format == 'DOUBLE_ELIMINATION'}">
                                                 <a href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=${t.id}&format=DOUBLE_ELIMINATION" class="btn-view-bracket-card">
                                                     Trận Đấu ➔
-                                                </a>
+                                                 </a>
                                             </c:when>
                                             <c:when test="${t.format == 'ROUND_ROBIN'}">
                                                 <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=${t.id}&format=ROUND_ROBIN" class="btn-view-bracket-card">
@@ -157,6 +158,11 @@
                                             </c:when>
                                             <c:when test="${t.format == 'SWISS_LITE' || t.format == 'SWISS'}">
                                                 <a href="${pageContext.request.contextPath}/common/swiss-stage.jsp?id=${t.id}&format=SWISS_LITE" class="btn-view-bracket-card">
+                                                    Trận Đấu ➔
+                                                </a>
+                                            </c:when>
+                                            <c:when test="${t.format == 'GSL'}">
+                                                <a href="${pageContext.request.contextPath}/common/gsl.jsp?id=${t.id}&format=GSL" class="btn-view-bracket-card">
                                                     Trận Đấu ➔
                                                 </a>
                                             </c:when>
@@ -378,6 +384,7 @@
                 if (!fmt) return 'Single Elimination';
                 var u = fmt.toUpperCase();
                 if (u === 'GROUP_STAGE') return 'Group Stage';
+                if (u === 'GSL') return 'GSL Format';
                 if (u === 'ROUND_ROBIN') return 'Round Robin';
                 if (u === 'SINGLE_ELIMINATION') return 'Single Elimination';
                 if (u === 'DOUBLE_ELIMINATION') return 'Double Elimination';
@@ -544,6 +551,12 @@
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Swiss System';
                                 if (btnView) {
                                     btnView.href = ctx + '/common/swiss-stage.jsp?id=' + tid + '&format=SWISS_LITE';
+                                    btnView.innerHTML = 'Trận Đấu ➔';
+                                }
+                            } else if (localFmt === 'GSL') {
+                                if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> GSL Format';
+                                if (btnView) {
+                                    btnView.href = ctx + '/common/gsl.jsp?id=' + tid + '&format=GSL';
                                     btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             }

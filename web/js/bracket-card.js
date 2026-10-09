@@ -66,28 +66,28 @@
                 }
 
                 var tid = (matchData && (matchData.tournamentId || matchData.tourneyId)) ||
-                          (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
-                          (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
-                          (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
-                          (window.TourmaSwissStage && window.TourmaSwissStage.tournamentId) ||
-                          (window.TourmaGroupStage && window.TourmaGroupStage.tournamentId) ||
-                          (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId) ||
-                          window.TourmaContextPathTourneyId;
+                    (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
+                    (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
+                    (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
+                    (window.TourmaSwissStage && window.TourmaSwissStage.tournamentId) ||
+                    (window.TourmaGroupStage && window.TourmaGroupStage.tournamentId) ||
+                    (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId) ||
+                    window.TourmaContextPathTourneyId;
                 if (!tid) {
                     try {
                         var params = new URLSearchParams(window.location.search);
                         tid = params.get('id');
-                    } catch (e) {}
+                    } catch (e) { }
                 }
 
                 // If seed is missing, try looking it up by teamName from memory or localStorage
                 if (isNaN(sNum) && teamName && teamName !== 'BYE' && teamName !== 'TBD' && !teamName.startsWith('W #') && !teamName.startsWith('L #')) {
                     try {
                         var teams = (window.SingleEliminationEngine && window.SingleEliminationEngine.teamsList) ||
-                                    (window.TourmaDoubleElimination && window.TourmaDoubleElimination.teamsList) ||
-                                    (window.TourmaRoundRobin && window.TourmaRoundRobin.teamsList) ||
-                                    (window.TourmaSwissStage && window.TourmaSwissStage.teamsList) ||
-                                    (window.TourmaGroupStage && window.TourmaGroupStage.teamsList);
+                            (window.TourmaDoubleElimination && window.TourmaDoubleElimination.teamsList) ||
+                            (window.TourmaRoundRobin && window.TourmaRoundRobin.teamsList) ||
+                            (window.TourmaSwissStage && window.TourmaSwissStage.teamsList) ||
+                            (window.TourmaGroupStage && window.TourmaGroupStage.teamsList);
                         if ((!teams || !Array.isArray(teams) || teams.length === 0) && tid) {
                             teams = JSON.parse(localStorage.getItem('tourma_teams_' + tid));
                         }
@@ -103,7 +103,7 @@
                                 }
                             }
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
 
                 if (isNaN(sNum)) return '';
@@ -112,12 +112,12 @@
                 if (tid) {
                     try {
                         cfgRaw = localStorage.getItem('tourma_hide_seed_config_' + tid);
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 if (!cfgRaw) {
                     try {
                         cfgRaw = localStorage.getItem('tourma_hide_seed_config_demo');
-                    } catch (e) {}
+                    } catch (e) { }
                 }
 
                 if (cfgRaw) {
@@ -136,7 +136,7 @@
                                 return ''; // Hide seeds with number > maxVisible
                             }
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 return String(sNum);
             };
@@ -167,24 +167,24 @@
                 byeCard.setAttribute('data-match-id', String(matchId));
                 byeCard.innerHTML =
                     '<div class="bracket-node-header">' +
-                        '<span class="bracket-match-id" style="color:#2dd4bf;">AUTO</span>' +
-                        '<span class="bracket-status-badge" style="background:rgba(45,212,191,0.2);color:#2dd4bf;border-color:rgba(45,212,191,0.4);">BYE</span>' +
+                    '<span class="bracket-match-id" style="color:#2dd4bf;">AUTO</span>' +
+                    '<span class="bracket-status-badge" style="background:rgba(45,212,191,0.2);color:#2dd4bf;border-color:rgba(45,212,191,0.4);">BYE</span>' +
                     '</div>' +
                     '<div class="bracket-teams-box">' +
-                        '<div class="bracket-team-row winner" data-team-name="' + t1Name + '">' +
-                            '<div class="bracket-team-info">' +
-                                '<span class="bracket-seed-badge"' + (seed1 ? ' style="background:rgba(45,212,191,0.25);color:#2dd4bf;"' : '') + '>' + (seed1 || '') + '</span>' +
-                                '<span class="bracket-team-name" title="' + t1Name + '">' + t1Name + '</span>' +
-                            '</div>' +
-                            '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
-                        '</div>' +
-                        '<div class="bracket-team-row winner" data-team-name="' + t2Name + '">' +
-                            '<div class="bracket-team-info">' +
-                                '<span class="bracket-seed-badge"' + (seed2 ? ' style="background:rgba(45,212,191,0.25);color:#2dd4bf;"' : '') + '>' + (seed2 || '') + '</span>' +
-                                '<span class="bracket-team-name" title="' + t2Name + '">' + t2Name + '</span>' +
-                            '</div>' +
-                            '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
-                        '</div>' +
+                    '<div class="bracket-team-row winner" data-team-name="' + t1Name + '">' +
+                    '<div class="bracket-team-info">' +
+                    '<span class="bracket-seed-badge"' + (seed1 ? ' style="background:rgba(45,212,191,0.25);color:#2dd4bf;"' : '') + '>' + (seed1 || '') + '</span>' +
+                    '<span class="bracket-team-name" title="' + t1Name + '">' + t1Name + '</span>' +
+                    '</div>' +
+                    '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
+                    '</div>' +
+                    '<div class="bracket-team-row winner" data-team-name="' + t2Name + '">' +
+                    '<div class="bracket-team-info">' +
+                    '<span class="bracket-seed-badge"' + (seed2 ? ' style="background:rgba(45,212,191,0.25);color:#2dd4bf;"' : '') + '>' + (seed2 || '') + '</span>' +
+                    '<span class="bracket-team-name" title="' + t2Name + '">' + t2Name + '</span>' +
+                    '</div>' +
+                    '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
+                    '</div>' +
                     '</div>';
                 return byeCard;
             }
@@ -211,41 +211,41 @@
             var t1RowClass = 'bracket-team-row ' + (isT1Winner ? 'winner ' : '') + (isT1Loser ? 'loser ' : '') + (isT1Bye ? 'bye-row ' : '');
             var t2RowClass = 'bracket-team-row ' + (isT2Winner ? 'winner ' : '') + (isT2Loser ? 'loser ' : '') + (isT2Bye ? 'bye-row ' : '');
 
-            var t1SeedHtml = isT1Placeholder ? '' : 
-                             (isT1Bye ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : 
-                             ('<span class="bracket-seed-badge">' + (seed1 || '') + '</span>'));
-            var t2SeedHtml = isT2Placeholder ? '' : 
-                             (isT2Bye ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' : 
-                             ('<span class="bracket-seed-badge">' + (seed2 || '') + '</span>'));
+            var t1SeedHtml = isT1Placeholder ? '' :
+                (isT1Bye ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' :
+                    ('<span class="bracket-seed-badge">' + (seed1 || '') + '</span>'));
+            var t2SeedHtml = isT2Placeholder ? '' :
+                (isT2Bye ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' :
+                    ('<span class="bracket-seed-badge">' + (seed2 || '') + '</span>'));
 
-            var matchHeaderContent = matchHeaderLabel ? 
-                ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') : 
+            var matchHeaderContent = matchHeaderLabel ?
+                ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') :
                 (hasBye ? '<span class="bracket-match-id" style="color: #64748b; font-style: italic; font-size: 0.65rem;">BYE</span>' : '<span class="bracket-match-id">&nbsp;</span>');
 
-            var statusBadgeContent = hasBye ? 
-                '<span class="bracket-status-badge" style="visibility: hidden;">BYE</span>' : 
+            var statusBadgeContent = hasBye ?
+                '<span class="bracket-status-badge" style="visibility: hidden;">BYE</span>' :
                 ('<span class="bracket-status-badge ' + statusClass + '">' + statusLabel + '</span>');
 
             card.innerHTML =
                 '<div class="bracket-node-header">' +
-                    matchHeaderContent +
-                    statusBadgeContent +
+                matchHeaderContent +
+                statusBadgeContent +
                 '</div>' +
                 '<div class="bracket-teams-box">' +
-                    '<div class="' + t1RowClass + '" data-team-name="' + t1Name + '">' +
-                        '<div class="bracket-team-info">' +
-                            t1SeedHtml +
-                            '<span class="bracket-team-name ' + (isT1Placeholder ? 'placeholder' : '') + '" title="' + t1Name + '">' + t1Name + '</span>' +
-                        '</div>' +
-                        '<span class="bracket-score-box">' + t1ScoreDisp + '</span>' +
-                    '</div>' +
-                    '<div class="' + t2RowClass + '" data-team-name="' + t2Name + '">' +
-                        '<div class="bracket-team-info">' +
-                            t2SeedHtml +
-                            '<span class="bracket-team-name ' + (isT2Placeholder ? 'placeholder' : '') + '" title="' + t2Name + '">' + t2Name + '</span>' +
-                        '</div>' +
-                        '<span class="bracket-score-box">' + t2ScoreDisp + '</span>' +
-                    '</div>' +
+                '<div class="' + t1RowClass + '" data-team-name="' + t1Name + '">' +
+                '<div class="bracket-team-info">' +
+                t1SeedHtml +
+                '<span class="bracket-team-name ' + (isT1Placeholder ? 'placeholder' : '') + '" title="' + t1Name + '">' + t1Name + '</span>' +
+                '</div>' +
+                '<span class="bracket-score-box">' + t1ScoreDisp + '</span>' +
+                '</div>' +
+                '<div class="' + t2RowClass + '" data-team-name="' + t2Name + '">' +
+                '<div class="bracket-team-info">' +
+                t2SeedHtml +
+                '<span class="bracket-team-name ' + (isT2Placeholder ? 'placeholder' : '') + '" title="' + t2Name + '">' + t2Name + '</span>' +
+                '</div>' +
+                '<span class="bracket-score-box">' + t2ScoreDisp + '</span>' +
+                '</div>' +
                 '</div>';
 
             var checkCardLocked = function (shouldPrompt) {
@@ -259,7 +259,7 @@
                 } else {
                     var _tid = tid || (window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null);
                     if (_tid) {
-                        try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') isL = true; } catch(e) {}
+                        try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') isL = true; } catch (e) { }
                     }
                 }
                 if (isL && shouldPrompt && window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
@@ -280,18 +280,21 @@
                 });
                 rows[0].addEventListener('click', function (e) {
                     if (checkCardLocked(true)) return;
-                    if (window.TourmaQuickMode && isPlayable) {
+                    var isQ = window.TourmaQuickMode || (window.GSLEngine && window.GSLEngine.isQuickMode) || (window.TourmaGSL && window.TourmaGSL.isQuickMode) || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.isQuickMode) || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.isQuickMode) || (window.SingleEliminationEngine && window.SingleEliminationEngine.isQuickMode);
+                    if (isQ && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
                         var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
                             ? window.TourmaRoundControls.getCustomWinScore(card, null)
                             : null;
 
-                        var activeEngine = (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
+                        var activeEngine = (window.GSLEngine && window.GSLEngine.tournamentId ? window.GSLEngine : null)
+                            || (window.TourmaGSL && window.TourmaGSL.tournamentId ? window.TourmaGSL : null)
+                            || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
                             || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId ? window.TourmaDoubleElimination : null)
                             || (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId ? window.SingleEliminationEngine : null)
                             || (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId ? window.TourmaSingleElimination : null)
-                            || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
+                            || window.GSLEngine || window.TourmaGSL || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
 
                         if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
                             window.TourmaRoundControls.handleQuickWinner(activeEngine, matchId, 1, customScore);
@@ -310,18 +313,21 @@
                 });
                 rows[1].addEventListener('click', function (e) {
                     if (checkCardLocked(true)) return;
-                    if (window.TourmaQuickMode && isPlayable) {
+                    var isQ = window.TourmaQuickMode || (window.GSLEngine && window.GSLEngine.isQuickMode) || (window.TourmaGSL && window.TourmaGSL.isQuickMode) || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.isQuickMode) || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.isQuickMode) || (window.SingleEliminationEngine && window.SingleEliminationEngine.isQuickMode);
+                    if (isQ && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
                         var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
                             ? window.TourmaRoundControls.getCustomWinScore(card, null)
                             : null;
 
-                        var activeEngine = (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
+                        var activeEngine = (window.GSLEngine && window.GSLEngine.tournamentId ? window.GSLEngine : null)
+                            || (window.TourmaGSL && window.TourmaGSL.tournamentId ? window.TourmaGSL : null)
+                            || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
                             || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId ? window.TourmaDoubleElimination : null)
                             || (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId ? window.SingleEliminationEngine : null)
                             || (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId ? window.TourmaSingleElimination : null)
-                            || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
+                            || window.GSLEngine || window.TourmaGSL || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
 
                         if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
                             window.TourmaRoundControls.handleQuickWinner(activeEngine, matchId, 2, customScore);
@@ -340,7 +346,8 @@
                     return; // Disabled from clicking
                 }
 
-                if (window.TourmaQuickMode) {
+                var isQ = window.TourmaQuickMode || (window.GSLEngine && window.GSLEngine.isQuickMode) || (window.TourmaGSL && window.TourmaGSL.isQuickMode) || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.isQuickMode) || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.isQuickMode) || (window.SingleEliminationEngine && window.SingleEliminationEngine.isQuickMode);
+                if (isQ) {
                     return; // In Quick Mode, only team row clicks are active
                 }
 

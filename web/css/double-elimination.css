@@ -212,11 +212,11 @@ body, button, input, select, textarea, .bracket-header-title, .de-viewport-title
     color: #2dd4bf !important;
 }
 
-.de-round-header.lower {
+.de-round-header.lower:not(.gsl-round-header) {
     border-color: rgba(244, 63, 94, 0.35);
 }
 
-.de-round-header.lower .round-header-title {
+.de-round-header.lower:not(.gsl-round-header) .round-header-title {
     color: #f43f5e !important;
 }
 

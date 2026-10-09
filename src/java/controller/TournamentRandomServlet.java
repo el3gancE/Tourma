@@ -6,6 +6,7 @@ import dao.DoubleEliminationDAO;
 import dao.RoundRobinDAO;
 import dao.SwissSystemDAO;
 import dao.GroupStageDAO;
+import dao.GSLStageDAO;
 import dao.TournamentDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -351,7 +352,9 @@ public class TournamentRandomServlet extends HttpServlet {
             res.message = "Đã tạo tỉ số ngẫu nhiên cho " + matchList.size() + " trận đấu thành công!";
 
             // Fetch fresh matches JSON to return to frontend
-            if (format.contains("DOUBLE") || format.contains("DE")) {
+            if (format.contains("GSL")) {
+                res.matchesJson = new GSLStageDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
+            } else if (format.contains("DOUBLE") || format.contains("DE")) {
                 res.matchesJson = new DoubleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
             } else if (format.contains("SINGLE")) {
                 res.matchesJson = new SingleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
@@ -505,7 +508,9 @@ public class TournamentRandomServlet extends HttpServlet {
             res.message = "Đã đặt lại kết quả Vòng " + roundNumber + " thành công!";
 
             // 5. Fetch fresh matches JSON
-            if (format.contains("DOUBLE") || format.contains("DE")) {
+            if (format.contains("GSL")) {
+                res.matchesJson = new GSLStageDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
+            } else if (format.contains("DOUBLE") || format.contains("DE")) {
                 res.matchesJson = new DoubleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);
             } else if (format.contains("SINGLE")) {
                 res.matchesJson = new SingleEliminationDAO().getMatchesJsonForFrontend(tournamentId, stageOrder);

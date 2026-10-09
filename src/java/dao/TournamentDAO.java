@@ -338,7 +338,7 @@ public class TournamentDAO {
             return false;
         String cleanFmt = format.trim().toUpperCase();
         if (!cleanFmt.equals("SINGLE_ELIMINATION") && !cleanFmt.equals("DOUBLE_ELIMINATION") &&
-                !cleanFmt.equals("ROUND_ROBIN") && !cleanFmt.equals("SWISS_LITE") && !cleanFmt.equals("GROUP_STAGE")) {
+                !cleanFmt.equals("ROUND_ROBIN") && !cleanFmt.equals("SWISS_LITE") && !cleanFmt.equals("GROUP_STAGE") && !cleanFmt.equals("GSL")) {
             cleanFmt = "SINGLE_ELIMINATION";
         }
 

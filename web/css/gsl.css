@@ -1,0 +1,501 @@
+/* ============================================================================
+   TOURMA - GSL FORMAT ENHANCED STYLESHEET (gsl.css)
+   Font: Lexend | High-Density Dark Theme (#181d29 Surface & #0b0d12 Obsidian)
+   Unified 1-Viewport Per Group (Upper & Lower Brackets in 1 Single Viewport)
+   100% Matching Aesthetics, Proportions, Round Controls & Bracket Lines
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
+
+/* Global Font Enforcement */
+body, button, input, select, textarea, .gsl-viewport-title, .gsl-group-title, .de-viewport-title, .gsl-branch-header {
+    font-family: 'Lexend', sans-serif !important;
+}
+
+/* Page Base */
+.gsl-page-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #0b0d12;
+    color: #f8fafc;
+}
+
+/* ============================================================================
+   GROUP SWITCHER TABS BAR (When multiple groups exist)
+   ============================================================================ */
+.gsl-group-tabs-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    overflow-x: auto;
+    padding: 0.4rem 0.2rem 1rem 0.2rem;
+    margin-bottom: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 212, 191, 0.3) rgba(11, 13, 18, 0.8);
+}
+
+.gsl-group-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #181d29;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    user-select: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.gsl-group-tab-btn:hover {
+    background: #202736;
+    color: #f8fafc;
+    border-color: var(--tab-color, rgba(45, 212, 191, 0.35));
+    transform: translateY(-1px);
+}
+
+.gsl-group-tab-btn.active {
+    background: var(--tab-hover, rgba(45, 212, 191, 0.15)) !important;
+    color: var(--tab-color, #2dd4bf) !important;
+    border-color: var(--tab-color, #2dd4bf) !important;
+    box-shadow: 0 0 16px var(--tab-glow, rgba(45, 212, 191, 0.3)) !important;
+}
+
+.gsl-group-tab-badge {
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+    border-radius: 50px;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.gsl-group-tab-btn.active .gsl-group-tab-badge {
+    background: var(--tab-hover, rgba(45, 212, 191, 0.25)) !important;
+    color: var(--tab-color, #2dd4bf) !important;
+}
+
+/* ============================================================================
+   GROUP CONTAINER & WRAPPER
+   ============================================================================ */
+.gsl-groups-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    width: 100%;
+    margin-bottom: 2.5rem;
+}
+
+.gsl-group-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+/* Group Main Header Card */
+.gsl-group-main-header {
+    background: #181d29;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.gsl-group-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.gsl-group-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--grp-color, #2dd4bf);
+    margin: 0;
+    text-shadow: 0 0 14px var(--grp-glow, rgba(45, 212, 191, 0.3));
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gsl-group-badge {
+    background: var(--grp-hover, rgba(45, 212, 191, 0.12));
+    color: var(--grp-color, #2dd4bf);
+    border: 1px solid var(--grp-color, rgba(45, 212, 191, 0.3));
+    border-radius: 6px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.gsl-group-advancing-badge {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 6px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+/* Group Action Buttons (Random Bảng, Reset Bảng) */
+.gsl-group-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-gsl-group-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.38rem 0.85rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.btn-gsl-group-action:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.btn-gsl-group-action.random-btn:hover {
+    background: var(--grp-hover, rgba(45, 212, 191, 0.18));
+    color: var(--grp-color, #2dd4bf);
+    border-color: var(--grp-color, rgba(45, 212, 191, 0.45));
+    box-shadow: 0 0 10px var(--grp-glow, rgba(45, 212, 191, 0.25));
+}
+
+.btn-gsl-group-action.reset-btn:hover {
+    background: rgba(244, 63, 94, 0.18);
+    color: #f43f5e;
+    border-color: rgba(244, 63, 94, 0.45);
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.25);
+}
+
+/* ============================================================================
+   UNIFIED 1-VIEWPORT FRAME PER GROUP
+   ============================================================================ */
+.gsl-viewport-frame {
+    position: relative;
+    width: 100%;
+    border-radius: 14px;
+    overflow: hidden;
+    height: 640px;
+    min-height: 520px;
+    background: #0b0d12;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+.gsl-viewport-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #0b0d12;
+    overflow: auto;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: 'Lexend', sans-serif !important;
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 212, 191, 0.25) rgba(11, 13, 18, 0.8);
+}
+
+.gsl-viewport-container:active,
+.gsl-viewport-container.grabbing {
+    cursor: grabbing !important;
+}
+
+.gsl-viewport-canvas {
+    position: relative;
+    display: inline-flex;
+    align-items: flex-start;
+    padding: 3rem 1.75rem 2.5rem 1.75rem;
+    min-width: max-content;
+    min-height: max-content;
+    transform-origin: 0 0;
+    transition: none !important;
+}
+
+/* Single Viewport Columns & Branch Wrapper */
+.gsl-single-viewport-wrapper {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 2.25rem;
+    padding: 0.5rem;
+}
+
+/* Sub-Branch (Upper / Lower Section inside 1 Viewport) */
+.gsl-branch-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.gsl-branch-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.25rem;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+.gsl-branch-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--grp-color, #2dd4bf);
+    text-shadow: 0 0 12px var(--grp-glow, rgba(45, 212, 191, 0.25));
+    margin: 0;
+    padding: 0;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.gsl-branch-columns {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 3.5rem;
+}
+
+.gsl-round-column {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    flex-shrink: 0;
+}
+
+/* GSL Bracket View Round Header (Matching DE/SE with Dynamic Group Color) */
+.gsl-round-header,
+.gsl-round-column .gsl-round-header,
+.gsl-round-column .de-round-header,
+.gsl-single-viewport-wrapper .de-round-header,
+.gsl-single-viewport-wrapper .single-round-header {
+    background: #181d29 !important;
+    border: 1px solid var(--grp-color, rgba(45, 212, 191, 0.35)) !important;
+    border-radius: 8px !important;
+    padding: 0.45rem 0.6rem !important;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
+    color: var(--grp-color, #2dd4bf) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    text-align: center !important;
+    margin-bottom: 1.25rem !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.35rem !important;
+    min-height: 52px !important;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+.gsl-round-header .round-header-title,
+.gsl-round-column .gsl-round-header .round-header-title,
+.gsl-round-column .de-round-header .round-header-title,
+.gsl-single-viewport-wrapper .de-round-header .round-header-title,
+.gsl-single-viewport-wrapper .round-header-title {
+    color: var(--grp-color, #2dd4bf) !important;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    width: 100% !important;
+}
+
+.gsl-round-matches-stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    flex: 1;
+    gap: 1.5rem;
+}
+
+/* SVG Connectors Overlay */
+.gsl-svg-connectors-layer,
+.bracket-svg-connectors {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: visible;
+}
+
+/* Floating Zoom Toolbar */
+.gsl-zoom-toolbar,
+.bracket-zoom-toolbar {
+    position: absolute;
+    top: 0.85rem;
+    right: 1.25rem;
+    z-index: 50;
+    background: rgba(24, 29, 41, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    padding: 0.35rem 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(45, 212, 191, 0.15);
+    pointer-events: auto;
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+/* ============================================================================
+   LIST VIEW CONTAINER (Frameless Groups & Dynamic Group Theme)
+   ============================================================================ */
+.gsl-list-view-container {
+    display: none;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 1rem 3rem 1rem;
+    flex-direction: column;
+    font-family: 'Lexend', sans-serif !important;
+    gap: 2rem;
+    box-sizing: border-box;
+}
+
+/* BỎ KHUNG Ở LIST VIEW: Không còn box card bao quanh Bảng */
+.gsl-list-group-card {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    box-shadow: none !important;
+}
+
+.gsl-list-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.25rem 0.75rem 0.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+}
+
+.gsl-list-group-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--grp-color, #2dd4bf);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+}
+
+.gsl-list-section-header {
+    font-family: 'Lexend', sans-serif !important;
+    margin-top: 0.85rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    color: var(--grp-color, #2dd4bf);
+    border-bottom: 1px solid var(--grp-color, rgba(45, 212, 191, 0.25));
+}
+
+.gsl-list-section-header .list-round-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.gsl-list-section-header .round-header-title {
+    color: var(--grp-color, #2dd4bf) !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    margin: 0 !important;
+}
+
+.gsl-list-section-header .list-round-badge {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #94a3b8 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 4px !important;
+    padding: 0.1rem 0.42rem !important;
+    font-size: 0.68rem !important;
+    font-weight: 600 !important;
+    font-family: 'Lexend', sans-serif !important;
+}
+
+/* GSL List View: Match Cards Dynamic Group Theme Colors */
+.gsl-list-view-container .match-card-item.lower,
+.gsl-list-view-container .match-card-item {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.gsl-list-view-container .match-card-item.lower:hover,
+.gsl-list-view-container .match-card-item:hover {
+    border-color: var(--grp-color, #2dd4bf) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 12px var(--grp-glow, rgba(45, 212, 191, 0.25)) !important;
+}
+
+.gsl-list-view-container .match-card-accent-bar.lower,
+.gsl-list-view-container .match-card-accent-bar {
+    background: var(--grp-color, #2dd4bf) !important;
+    box-shadow: 0 0 8px var(--grp-glow, rgba(45, 212, 191, 0.35)) !important;
+}
+
+.gsl-list-view-container .match-team-side.winner .match-list-name,
+.gsl-list-view-container .match-card-item.lower .match-team-side.winner .match-list-name {
+    color: var(--grp-color, #2dd4bf) !important;
+}
+
+.gsl-list-view-container .match-list-status.done,
+.gsl-list-view-container .match-card-item.lower .match-list-status.done {
+    background: var(--grp-hover, rgba(45, 212, 191, 0.15)) !important;
+    color: var(--grp-color, #2dd4bf) !important;
+    border: 1px solid var(--grp-color, #2dd4bf) !important;
+}

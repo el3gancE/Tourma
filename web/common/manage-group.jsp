@@ -1,6 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="dao.TournamentDAO" %>
+<%@ page import="dao.ParticipantDAO" %>
 <%@ page import="model.Tournament" %>
+<%@ page import="model.Team" %>
+<%@ page import="java.util.List" %>
 <%
     String tournamentId = request.getParameter("id");
     if (tournamentId == null || tournamentId.trim().isEmpty()) {
@@ -14,6 +17,22 @@
 
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
     String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
+
+    ParticipantDAO pDao = new ParticipantDAO();
+    List<Team> dbTeams = pDao.getTeamsByTournamentId(tournamentId);
+    StringBuilder teamsJsonBuilder = new StringBuilder("[");
+    if (dbTeams != null) {
+        for (int i = 0; i < dbTeams.size(); i++) {
+            if (i > 0) teamsJsonBuilder.append(",");
+            Team tm = dbTeams.get(i);
+            String tName = (tm.getRawName() != null && !tm.getRawName().isEmpty()) ? tm.getRawName() : tm.getName();
+            if (tName == null) tName = "Team " + (i + 1);
+            teamsJsonBuilder.append("{\"id\":\"").append(tm.getId() != null ? tm.getId() : String.valueOf(i + 1))
+                            .append("\",\"name\":\"").append(tName.replace("\\", "\\\\").replace("\"", "\\\""))
+                            .append("\"}");
+        }
+    }
+    teamsJsonBuilder.append("]");
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -38,7 +57,7 @@
         <jsp:param name="activeStep" value="manage-group" />
         <jsp:param name="id" value="<%= tournamentId %>" />
         <jsp:param name="seriesId" value="<%= seriesId %>" />
-        <jsp:param name="format" value="GROUP_STAGE" />
+        <jsp:param name="format" value="<%= (request.getParameter(\"format\") != null && !request.getParameter(\"format\").trim().isEmpty()) ? request.getParameter(\"format\") : ((tourney != null && tourney.getFormat() != null) ? tourney.getFormat() : \"GROUP_STAGE\") %>" />
     </jsp:include>
 
     <div class="mg-container has-sidebar">
@@ -104,6 +123,7 @@
     <script>
         window.contextPath = '${pageContext.request.contextPath}';
         window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
+        window.DB_TEAMS = <%= teamsJsonBuilder.toString() %>;
     </script>
     <script src="${pageContext.request.contextPath}/js/manage-group.js"></script>
 </body>

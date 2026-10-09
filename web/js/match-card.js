@@ -72,6 +72,8 @@
                 }
 
                 var tid = (matchData && (matchData.tournamentId || matchData.tourneyId)) ||
+                    (window.TourmaGSL && window.TourmaGSL.tournamentId) ||
+                    (window.GSLEngine && window.GSLEngine.tournamentId) ||
                     (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
                     (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
                     (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
@@ -89,7 +91,9 @@
                 // If seed is missing, try looking it up by teamName from memory or localStorage
                 if (isNaN(sNum) && teamName && teamName !== 'BYE' && teamName !== 'TBD' && !teamName.startsWith('W #') && !teamName.startsWith('L #')) {
                     try {
-                        var teams = (window.SingleEliminationEngine && window.SingleEliminationEngine.teamsList) ||
+                        var teams = (window.TourmaGSL && window.TourmaGSL.teamsList) ||
+                            (window.GSLEngine && window.GSLEngine.teamsList) ||
+                            (window.SingleEliminationEngine && window.SingleEliminationEngine.teamsList) ||
                             (window.TourmaDoubleElimination && window.TourmaDoubleElimination.teamsList) ||
                             (window.TourmaRoundRobin && window.TourmaRoundRobin.teamsList) ||
                             (window.TourmaSwissStage && window.TourmaSwissStage.teamsList) ||
@@ -245,18 +249,21 @@
             if (t1Side) {
                 t1Side.addEventListener('click', function (e) {
                     if (checkCardLocked(true)) return;
-                    if (window.TourmaQuickMode && isPlayable) {
+                    var isQ = window.TourmaQuickMode || (window.GSLEngine && window.GSLEngine.isQuickMode) || (window.TourmaGSL && window.TourmaGSL.isQuickMode) || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.isQuickMode) || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.isQuickMode) || (window.SingleEliminationEngine && window.SingleEliminationEngine.isQuickMode);
+                    if (isQ && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
                         var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
                             ? window.TourmaRoundControls.getCustomWinScore(card, null)
                             : null;
 
-                        var activeEngine = (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
+                        var activeEngine = (window.GSLEngine && window.GSLEngine.tournamentId ? window.GSLEngine : null)
+                            || (window.TourmaGSL && window.TourmaGSL.tournamentId ? window.TourmaGSL : null)
+                            || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
                             || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId ? window.TourmaDoubleElimination : null)
                             || (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId ? window.SingleEliminationEngine : null)
                             || (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId ? window.TourmaSingleElimination : null)
-                            || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
+                            || window.GSLEngine || window.TourmaGSL || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
 
                         if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
                             window.TourmaRoundControls.handleQuickWinner(activeEngine, matchId, 1, customScore);
@@ -270,18 +277,21 @@
             if (t2Side) {
                 t2Side.addEventListener('click', function (e) {
                     if (checkCardLocked(true)) return;
-                    if (window.TourmaQuickMode && isPlayable) {
+                    var isQ = window.TourmaQuickMode || (window.GSLEngine && window.GSLEngine.isQuickMode) || (window.TourmaGSL && window.TourmaGSL.isQuickMode) || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.isQuickMode) || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.isQuickMode) || (window.SingleEliminationEngine && window.SingleEliminationEngine.isQuickMode);
+                    if (isQ && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
                         var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
                             ? window.TourmaRoundControls.getCustomWinScore(card, null)
                             : null;
 
-                        var activeEngine = (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
+                        var activeEngine = (window.GSLEngine && window.GSLEngine.tournamentId ? window.GSLEngine : null)
+                            || (window.TourmaGSL && window.TourmaGSL.tournamentId ? window.TourmaGSL : null)
+                            || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
                             || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId ? window.TourmaDoubleElimination : null)
                             || (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId ? window.SingleEliminationEngine : null)
                             || (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId ? window.TourmaSingleElimination : null)
-                            || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
+                            || window.GSLEngine || window.TourmaGSL || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
 
                         if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
                             window.TourmaRoundControls.handleQuickWinner(activeEngine, matchId, 2, customScore);
@@ -300,7 +310,8 @@
                     return; // Prevent clicking unconfirmed / BYE matches
                 }
 
-                if (window.TourmaQuickMode) {
+                var isQ = window.TourmaQuickMode || (window.GSLEngine && window.GSLEngine.isQuickMode) || (window.TourmaGSL && window.TourmaGSL.isQuickMode) || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.isQuickMode) || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.isQuickMode) || (window.SingleEliminationEngine && window.SingleEliminationEngine.isQuickMode);
+                if (isQ) {
                     return; // In Quick Mode, only team clicks are active
                 }
 

@@ -263,7 +263,9 @@
             // 1. Restore View Mode from localStorage
             var savedView = null;
             try {
-                savedView = localStorage.getItem('tourma_view_mode_' + this.tournamentId);
+                savedView = localStorage.getItem('tourma_view_mode_' + this.tournamentId) ||
+                            localStorage.getItem('tourma_view_mode_' + (window.TourmaTournamentId || 'demo')) ||
+                            localStorage.getItem('tourma_se_view_mode_' + this.tournamentId);
             } catch (e) { }
             if (savedView) {
                 this.currentViewMode = (savedView.toUpperCase() === 'LIST') ? 'LIST' : 'BRACKET';
@@ -315,22 +317,19 @@
             this.renderListView();
 
             // Apply active view mode visibility
+            var btnBracketViews = document.querySelectorAll('#btnViewBracket, #singleBtnBracketView, .btn-view-toggle:first-child');
+            var btnListViews = document.querySelectorAll('#btnViewList, #singleBtnListView, .btn-view-toggle:last-child');
+            var bracketFrame = document.getElementById('bracketViewportFrame');
+            var listContainer = document.getElementById('singleListViewContainer');
+
             if (this.currentViewMode === 'LIST') {
-                var btnBracketView = document.getElementById('btnViewBracket');
-                var btnListView = document.getElementById('btnViewList');
-                var bracketFrame = document.getElementById('bracketViewportFrame');
-                var listContainer = document.getElementById('singleListViewContainer');
-                if (btnListView) btnListView.classList.add('active');
-                if (btnBracketView) btnBracketView.classList.remove('active');
+                btnListViews.forEach(function (b) { b.classList.add('active'); });
+                btnBracketViews.forEach(function (b) { b.classList.remove('active'); });
                 if (bracketFrame) bracketFrame.style.display = 'none';
                 if (listContainer) listContainer.style.display = 'block';
             } else {
-                var btnBracketView = document.getElementById('btnViewBracket');
-                var btnListView = document.getElementById('btnViewList');
-                var bracketFrame = document.getElementById('bracketViewportFrame');
-                var listContainer = document.getElementById('singleListViewContainer');
-                if (btnBracketView) btnBracketView.classList.add('active');
-                if (btnListView) btnListView.classList.remove('active');
+                btnBracketViews.forEach(function (b) { b.classList.add('active'); });
+                btnListViews.forEach(function (b) { b.classList.remove('active'); });
                 if (bracketFrame) bracketFrame.style.display = 'block';
                 if (listContainer) listContainer.style.display = 'none';
             }
@@ -537,7 +536,14 @@
          */
         attachCardClickListener: function (cardEl, matchData) {
             var self = this;
-            cardEl.addEventListener('click', function () {
+            cardEl.addEventListener('click', function (e) {
+                // If Quick Mode is active, NEVER open modal on card click!
+                if (window.TourmaQuickMode || self.isQuickMode) return;
+
+                if (e && e.target && e.target.closest('.bracket-team-row, .match-team-side, .btn-round-random, .btn-round-reset, input, button')) {
+                    if (window.TourmaQuickMode || self.isQuickMode) return;
+                }
+
                 var m = self.findMatch(matchData.matchId) || matchData;
                 var t1Name = (m.team1 && m.team1.name) ? m.team1.name : '';
                 var t2Name = (m.team2 && m.team2.name) ? m.team2.name : '';
@@ -834,27 +840,28 @@
         },
 
         switchViewMode: function (mode) {
-            var btnBracketView = document.getElementById('btnViewBracket');
-            var btnListView = document.getElementById('btnViewList');
+            var btnBracketViews = document.querySelectorAll('#btnViewBracket, #singleBtnBracketView, .btn-view-toggle:first-child');
+            var btnListViews = document.querySelectorAll('#btnViewList, #singleBtnListView, .btn-view-toggle:last-child');
             var bracketFrame = document.getElementById('bracketViewportFrame');
             var listContainer = document.getElementById('singleListViewContainer');
 
             var normMode = (mode || 'bracket').toLowerCase();
             try {
                 localStorage.setItem('tourma_view_mode_' + this.tournamentId, normMode);
+                localStorage.setItem('tourma_se_view_mode_' + this.tournamentId, normMode);
             } catch (e) { }
 
             if (normMode === 'bracket') {
                 this.currentViewMode = 'BRACKET';
-                if (btnBracketView) btnBracketView.classList.add('active');
-                if (btnListView) btnListView.classList.remove('active');
+                btnBracketViews.forEach(function (b) { b.classList.add('active'); });
+                btnListViews.forEach(function (b) { b.classList.remove('active'); });
                 if (bracketFrame) bracketFrame.style.display = 'block';
                 if (listContainer) listContainer.style.display = 'none';
                 this.renderBracketView();
             } else {
                 this.currentViewMode = 'LIST';
-                if (btnListView) btnListView.classList.add('active');
-                if (btnBracketView) btnBracketView.classList.remove('active');
+                btnListViews.forEach(function (b) { b.classList.add('active'); });
+                btnBracketViews.forEach(function (b) { b.classList.remove('active'); });
                 if (bracketFrame) bracketFrame.style.display = 'none';
                 if (listContainer) listContainer.style.display = 'block';
                 this.renderListView();

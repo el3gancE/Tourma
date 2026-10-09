@@ -20,7 +20,7 @@
         targetPage = "double-elimination.jsp";
     } else if ("ROUND_ROBIN".equalsIgnoreCase(format)) {
         targetPage = "round-robin.jsp";
-    } else if ("GROUP_STAGE".equalsIgnoreCase(format)) {
+    } else if ("GROUP_STAGE".equalsIgnoreCase(format) || "GSL".equalsIgnoreCase(format)) {
         targetPage = "manage-group.jsp";
     } else if ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format)) {
         targetPage = "swiss-stage.jsp";
@@ -33,6 +33,5 @@
             targetUrl += "&format=" + format;
         }
     }
-
     response.sendRedirect(targetUrl);
 %>

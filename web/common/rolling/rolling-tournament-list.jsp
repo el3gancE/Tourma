@@ -74,6 +74,7 @@
         if ("DOUBLE_ELIMINATION".equals(f)) return "Double Elimination";
         if ("ROUND_ROBIN".equals(f)) return "Round Robin";
         if ("GROUP_STAGE".equals(f)) return "Group Stage";
+        if ("GSL".equals(f)) return "GSL Format";
         if ("SWISS_LITE".equals(f) || "SWISS".equals(f)) return "Swiss System";
         return "Single Elimination";
     }
@@ -168,6 +169,7 @@
                         if ("DOUBLE_ELIMINATION".equals(s1Fmt)) bracketUrl = "/common/double-elimination.jsp";
                         else if ("ROUND_ROBIN".equals(s1Fmt)) bracketUrl = "/common/round-robin.jsp";
                         else if ("GROUP_STAGE".equals(s1Fmt)) bracketUrl = "/common/group-stage.jsp";
+                        else if ("GSL".equals(s1Fmt)) bracketUrl = "/common/gsl.jsp";
                         else if ("SWISS_LITE".equals(s1Fmt) || "SWISS".equals(s1Fmt)) bracketUrl = "/common/swiss-stage.jsp";
 
                         String championName = t.getChampionName();
@@ -516,6 +518,7 @@
                 if (f === 'DOUBLE_ELIMINATION') return 'Double Elimination';
                 if (f === 'ROUND_ROBIN') return 'Round Robin';
                 if (f === 'GROUP_STAGE') return 'Group Stage';
+                if (f === 'GSL') return 'GSL Format';
                 if (f === 'SWISS_LITE' || f === 'SWISS') return 'Swiss System';
                 return 'Single Elimination';
             }
@@ -632,6 +635,8 @@
                             btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&seriesId=' + seriesId;
                         } else if (s1Upper === 'GROUP_STAGE') {
                             btnView.href = ctx + '/common/group-stage.jsp?id=' + tid + '&seriesId=' + seriesId;
+                        } else if (s1Upper === 'GSL') {
+                            btnView.href = ctx + '/common/gsl.jsp?id=' + tid + '&seriesId=' + seriesId;
                         } else if (s1Upper === 'SWISS_LITE' || s1Upper === 'SWISS') {
                             btnView.href = ctx + '/common/swiss-stage.jsp?id=' + tid + '&seriesId=' + seriesId;
                         } else {

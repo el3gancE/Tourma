@@ -693,21 +693,24 @@
             var strId = String(targetId).trim();
             if (matchesMap[strId]) return matchesMap[strId];
 
-            var numPart = strId;
-            var uIdx = strId.lastIndexOf('_');
-            if (uIdx !== -1 && uIdx < strId.length - 1) {
-                numPart = strId.substring(uIdx + 1);
-            }
-
+            // 1. Exact ID check across items
             for (var k in matchesMap) {
                 var m = matchesMap[k];
                 if (!m) continue;
                 if (m.matchId && String(m.matchId) === strId) return m;
                 if (m.id && String(m.id) === strId) return m;
                 if (m.rawId && String(m.rawId) === strId) return m;
-                if (m.matchNumber && String(m.matchNumber) === strId) return m;
-                if (numPart && (String(m.matchNumber) === numPart || String(m.matchId).endsWith('_' + numPart) || String(m.id).endsWith('_' + numPart))) return m;
             }
+
+            // 2. Exact matchNumber check if targetId is a pure number
+            if (/^\d+$/.test(strId)) {
+                for (var k2 in matchesMap) {
+                    var m2 = matchesMap[k2];
+                    if (!m2) continue;
+                    if (m2.matchNumber && String(m2.matchNumber) === strId) return m2;
+                }
+            }
+
             return null;
         },
 

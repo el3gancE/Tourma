@@ -46,6 +46,12 @@ public class ManageGroupServlet extends HttpServlet {
         if (tournamentId != null && groupAssignmentsJson != null && !groupAssignmentsJson.trim().isEmpty()) {
             TournamentDAO tDao = new TournamentDAO();
             boolean ok = tDao.saveGroupAssignments(tournamentId.trim(), groupAssignmentsJson);
+            if (ok) {
+                try {
+                    new dao.GSLStageDAO().resetBracketMatches(tournamentId.trim(), 1);
+                    new dao.GroupStageDAO().resetBracketMatches(tournamentId.trim(), 1);
+                } catch (Exception ignore) {}
+            }
             response.getWriter().print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu chia bảng vào CSDL!" : "Lỗi lưu chia bảng!") + "\"}");
             return;
         }

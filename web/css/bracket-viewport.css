@@ -189,8 +189,8 @@
     color: #2dd4bf !important;
 }
 
-.de-list-section-header.lower .round-header-title,
-.de-round-header.lower .round-header-title {
+.de-list-section-header.lower:not(.gsl-list-section-header) .round-header-title,
+.de-round-header.lower:not(.gsl-round-header) .round-header-title {
     color: #f43f5e !important;
 }
 

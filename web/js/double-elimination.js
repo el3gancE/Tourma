@@ -414,7 +414,10 @@
             // 1. Restore View Mode from localStorage
             var savedView = null;
             try {
-                savedView = localStorage.getItem('tourma_view_mode_' + this.tournamentId) || localStorage.getItem('tourma_de_view_mode_' + this.tournamentId);
+                savedView = localStorage.getItem('tourma_view_mode_' + this.tournamentId) ||
+                            localStorage.getItem('tourma_view_mode_' + (window.TourmaTournamentId || 'demo')) ||
+                            localStorage.getItem('tourma_de_view_mode_' + this.tournamentId) ||
+                            localStorage.getItem('tourma_de_view_mode_' + (window.TourmaTournamentId || 'demo'));
             } catch (e) { }
             if (savedView) {
                 this.currentViewMode = (savedView.toUpperCase() === 'LIST') ? 'LIST' : 'BRACKET';
@@ -503,8 +506,8 @@
                 localStorage.setItem('tourma_de_view_mode_' + this.tournamentId, normMode);
             } catch (e) { }
 
-            var btnBracketViews = document.querySelectorAll('#btnViewBracket, #deBtnBracketView');
-            var btnListViews = document.querySelectorAll('#btnViewList, #deBtnListView');
+            var btnBracketViews = document.querySelectorAll('#btnViewBracket, #deBtnBracketView, .btn-view-toggle:first-child');
+            var btnListViews = document.querySelectorAll('#btnViewList, #deBtnListView, .btn-view-toggle:last-child');
             var dualWorkspace = document.getElementById('deDualViewportWorkspace');
             var listContainer = document.getElementById('deListViewContainer');
 
@@ -535,8 +538,8 @@
             this.renderListView();
 
             // Apply active view mode visibility
-            var btnBracketViews = document.querySelectorAll('#btnViewBracket, #deBtnBracketView');
-            var btnListViews = document.querySelectorAll('#btnViewList, #deBtnListView');
+            var btnBracketViews = document.querySelectorAll('#btnViewBracket, #deBtnBracketView, .btn-view-toggle:first-child');
+            var btnListViews = document.querySelectorAll('#btnViewList, #deBtnListView, .btn-view-toggle:last-child');
             var dualWorkspace = document.getElementById('deDualViewportWorkspace');
             var listContainer = document.getElementById('deListViewContainer');
 
@@ -832,9 +835,11 @@
             if (!cardElement || !matchData) return;
 
             cardElement.addEventListener('click', function (e) {
-                // If quick mode action or interactive button was clicked, don't trigger modal popup
+                // If Quick Mode is active, NEVER open modal on card click!
+                if (window.TourmaQuickMode || self.isQuickMode) return;
+
                 if (e.target.closest('.bracket-team-row, .match-team-side, .btn-round-random, .btn-round-reset, input, button')) {
-                    if (self.isQuickMode) return;
+                    if (window.TourmaQuickMode || self.isQuickMode) return;
                 }
 
                 if (matchData.isBye || matchData.status === 'BYE') return;

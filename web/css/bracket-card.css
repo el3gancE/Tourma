@@ -39,12 +39,24 @@
     --card-theme-glow: rgba(255, 70, 85, 0.45);
 }
 
-/* Auto-inherit Lower Bracket theme for all cards inside Lower Bracket containers */
-.de-round-column[data-bracket-type="LOWER"] .bracket-node-card,
+/* Auto-inherit Lower Bracket theme for all cards inside Double Elimination Lower Bracket containers */
+.de-round-column[data-bracket-type="LOWER"]:not(.gsl-round-column) .bracket-node-card,
 #lowerBracketColumnsWrapper .bracket-node-card {
     --card-theme-color: #ff4655;
     --card-theme-hover-bg: rgba(255, 70, 85, 0.22);
     --card-theme-glow: rgba(255, 70, 85, 0.45);
+}
+
+/* GSL Format: Dynamic Group Theme for both Upper & Lower cards in the same group viewport */
+.gsl-round-column .bracket-node-card,
+.gsl-group-section .bracket-node-card,
+.gsl-single-viewport-wrapper .bracket-node-card,
+.gsl-viewport-canvas .bracket-node-card,
+.gsl-branch-columns .bracket-node-card,
+[data-group-color] .bracket-node-card {
+    --card-theme-color: var(--grp-color, #2dd4bf) !important;
+    --card-theme-hover-bg: var(--grp-hover, rgba(45, 212, 191, 0.22)) !important;
+    --card-theme-glow: var(--grp-glow, rgba(45, 212, 191, 0.45)) !important;
 }
 
 .bracket-node-card.swiss-card-gold {
@@ -233,4 +245,19 @@
 .bracket-connector-in,
 .bracket-connector-out {
     display: none;
+}
+
+/* Quick Mode 1-Click Interactive Hover Feedback (Dynamically matches card theme / group color without double borders) */
+body.quick-mode-active .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:not(.bye-row):hover,
+body.quick-mode-active .match-card:not(.disabled-unconfirmed):not(.bye-match-card) .match-team-side:not(.bye-team):hover,
+body.quick-mode-active .match-card-item:not(.disabled-unconfirmed):not(.bye-match-item) .match-team-side:not(.bye-team):hover {
+    background: var(--card-theme-hover-bg, var(--grp-hover, rgba(45, 212, 191, 0.22))) !important;
+    cursor: pointer !important;
+    border-left: 2.5px solid var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+}
+
+body.quick-mode-active .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:not(.bye-row):hover .bracket-team-name,
+body.quick-mode-active .match-card:not(.disabled-unconfirmed):not(.bye-match-card) .match-team-side:not(.bye-team):hover .match-list-name,
+body.quick-mode-active .match-card-item:not(.disabled-unconfirmed):not(.bye-match-item) .match-team-side:not(.bye-team):hover .match-list-name {
+    color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
 }
