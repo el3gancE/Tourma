@@ -60,7 +60,8 @@ public class GSLStageDAO extends DBContext {
                     first = false;
 
                     String rawId = rs.getString("id");
-                    String groupId = rs.getString("display_group_name");
+                    String rawGroupId = rs.getString("display_group_name");
+                    String groupId = formatDisplayGroupName(rawGroupId);
                     if (groupId == null || groupId.trim().isEmpty())
                         groupId = "Bảng A";
                     int matchNum = rs.getInt("match_order");
@@ -329,6 +330,26 @@ public class GSLStageDAO extends DBContext {
 
     public static String getGroupNameForIndex(int index) {
         return "Bảng " + getGroupSuffix(index);
+    }
+
+    public static String formatDisplayGroupName(String raw) {
+        if (raw == null || raw.trim().isEmpty())
+            return "Bảng A";
+        String s = raw.trim();
+        if (s.startsWith("Bảng ") || s.startsWith("Bảng")) {
+            return s;
+        }
+        if (s.startsWith("Group ")) {
+            return "Bảng " + s.substring(6).trim();
+        }
+
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("(?:B_NG_|GRP_.*_B_NG_|GRP_.*_G|GRP_.*_|Group_|Group|Bảng_|Bảng|G)?([A-Za-z]+|[0-9]+)$", java.util.regex.Pattern.CASE_INSENSITIVE);
+        java.util.regex.Matcher m = p.matcher(s);
+        if (m.find() && m.group(1) != null && !m.group(1).isEmpty()) {
+            return "Bảng " + m.group(1).toUpperCase();
+        }
+
+        return s;
     }
 
     private Map<String, List<Team>> resolveGroupAssignments(String tournamentId, List<Team> allTeams,

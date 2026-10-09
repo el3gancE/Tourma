@@ -28,7 +28,32 @@
     font-family: 'Lexend', sans-serif !important;
     box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
     scrollbar-width: thin;
-    scrollbar-color: rgba(45, 212, 191, 0.25) rgba(11, 13, 18, 0.8);
+    scrollbar-color: rgba(45, 212, 191, 0.45) rgba(11, 13, 18, 0.9);
+}
+
+.bracket-viewport-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.bracket-viewport-container::-webkit-scrollbar-track {
+    background: rgba(11, 13, 18, 0.9);
+    border-radius: 4px;
+}
+
+.bracket-viewport-container::-webkit-scrollbar-thumb {
+    background: rgba(45, 212, 191, 0.45);
+    border-radius: 4px;
+    border: 2px solid rgba(11, 13, 18, 0.9);
+}
+
+.bracket-viewport-container::-webkit-scrollbar-thumb:hover {
+    background: #2dd4bf;
+    filter: brightness(1.2);
+}
+
+.bracket-viewport-container::-webkit-scrollbar-corner {
+    background: rgba(11, 13, 18, 0.9);
 }
 
 .bracket-viewport-container.grabbing {

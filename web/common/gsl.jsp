@@ -238,7 +238,8 @@
                     cutTarget: cutTarget,
                     tournamentType: tournamentType,
                     stage: currentStage,
-                    dbMatches: dbMatches
+                    dbMatches: dbMatches,
+                    contextPath: '${pageContext.request.contextPath}'
                 });
             });
         </script>

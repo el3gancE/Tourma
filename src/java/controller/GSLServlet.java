@@ -88,6 +88,39 @@ public class GSLServlet extends HttpServlet {
                 return;
             }
 
+            if ("saveStage2Teams".equalsIgnoreCase(action)) {
+                String stage2TeamsJson = request.getParameter("stage2Teams");
+                if (tournamentId != null && stage2TeamsJson != null) {
+                    boolean ok = tournamentDAO.saveStage2Teams(tournamentId, stage2TeamsJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu danh sách đội Vòng 2!" : "Lỗi lưu danh sách đội Vòng 2!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu dữ liệu!\"}");
+                }
+                return;
+            }
+
+            if ("saveMultiStageConfig".equalsIgnoreCase(action)) {
+                String multiConfigJson = request.getParameter("multiConfig");
+                if (tournamentId != null && multiConfigJson != null) {
+                    boolean ok = tournamentDAO.saveMultiStageConfig(tournamentId, multiConfigJson);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu cấu hình Multi-Stage!" : "Lỗi lưu cấu hình!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu dữ liệu!\"}");
+                }
+                return;
+            }
+
+            if ("saveStage1Status".equalsIgnoreCase(action)) {
+                String stage1Status = request.getParameter("stage1Status");
+                if (tournamentId != null && stage1Status != null) {
+                    boolean ok = tournamentDAO.saveStage1Status(tournamentId, stage1Status);
+                    out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã cập nhật trạng thái Stage 1!" : "Lỗi cập nhật Stage 1!") + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"Thiếu dữ liệu!\"}");
+                }
+                return;
+            }
+
             out.print("{\"status\":\"error\",\"message\":\"Hành động không hợp lệ!\"}");
         } catch (Exception e) {
             out.print("{\"status\":\"error\",\"message\":\"" + e.getMessage() + "\"}");

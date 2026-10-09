@@ -242,11 +242,29 @@
         /**
          * Execute high-speed deadlock-free batch random for a single round
          */
+        getContextPath: function (engine) {
+            var activeEngine = this.resolveEngine(engine);
+            if (activeEngine && activeEngine.contextPath && typeof activeEngine.contextPath === 'string' && activeEngine.contextPath.trim().length > 0) {
+                return activeEngine.contextPath.trim();
+            }
+            if (window.TourmaContextPath && typeof window.TourmaContextPath === 'string' && window.TourmaContextPath.trim().length > 0) {
+                return window.TourmaContextPath.trim();
+            }
+            var pathname = window.location.pathname || '';
+            if (pathname.indexOf('/Tourma') === 0) return '/Tourma';
+            var secondSlash = pathname.indexOf('/', 1);
+            if (secondSlash > 0) return pathname.substring(0, secondSlash);
+            return '';
+        },
+
+        /**
+         * Execute batch random for a single round
+         */
         executeRandomRound: function (engine, roundNumber, bracketType, groupId) {
             if (this.isLocked(engine, true)) return;
             var activeEngine = this.resolveEngine(engine);
             var self = this;
-            var contextPath = (activeEngine && activeEngine.contextPath) ? activeEngine.contextPath : (window.TourmaContextPath || '');
+            var contextPath = this.getContextPath(activeEngine);
             var tid = (activeEngine && activeEngine.tournamentId) ? activeEngine.tournamentId : (window.TourmaTournamentId || 'demo');
             var stage = (activeEngine && activeEngine.currentStage) ? activeEngine.currentStage : 1;
             var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
@@ -297,14 +315,18 @@
                 b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             });
 
-            fetch(contextPath + '/api/tournament-random', {
+            var apiUrl = (contextPath ? contextPath : '') + '/api/tournament-random';
+            fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
                 },
                 body: new URLSearchParams(payload).toString()
             })
-            .then(function (res) { return res.json(); })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
             .then(function (data) {
                 // Restore button HTML
                 btns.forEach(function (b) {
@@ -345,7 +367,7 @@
             if (this.isLocked(engine, true)) return;
             var activeEngine = this.resolveEngine(engine);
             var self = this;
-            var contextPath = (activeEngine && activeEngine.contextPath) ? activeEngine.contextPath : (window.TourmaContextPath || '');
+            var contextPath = this.getContextPath(activeEngine);
             var tid = (activeEngine && activeEngine.tournamentId) ? activeEngine.tournamentId : (window.TourmaTournamentId || 'demo');
             var stage = (activeEngine && activeEngine.currentStage) ? activeEngine.currentStage : 1;
             var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
@@ -374,14 +396,18 @@
                 b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             });
 
-            fetch(contextPath + '/api/tournament-random', {
+            var apiUrl = (contextPath ? contextPath : '') + '/api/tournament-random';
+            fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
                 },
                 body: new URLSearchParams(payload).toString()
             })
-            .then(function (res) { return res.json(); })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
             .then(function (data) {
                 // Restore button HTML
                 btns.forEach(function (b) {
@@ -422,7 +448,7 @@
             if (this.isLocked(engine, true)) return;
             var activeEngine = this.resolveEngine(engine);
             var self = this;
-            var contextPath = (activeEngine && activeEngine.contextPath) ? activeEngine.contextPath : (window.TourmaContextPath || '');
+            var contextPath = this.getContextPath(activeEngine);
             var tid = (activeEngine && activeEngine.tournamentId) ? activeEngine.tournamentId : (window.TourmaTournamentId || 'demo');
             var stage = (activeEngine && activeEngine.currentStage) ? activeEngine.currentStage : 1;
 
@@ -432,14 +458,18 @@
                 stage: stage
             };
 
-            fetch(contextPath + '/api/tournament-random', {
+            var apiUrl = (contextPath ? contextPath : '') + '/api/tournament-random';
+            fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
                 },
                 body: new URLSearchParams(payload).toString()
             })
-            .then(function (res) { return res.json(); })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
             .then(function (data) {
                 if (data.status === 'success') {
                     if (Array.isArray(data.matchesData) && data.matchesData.length > 0) {

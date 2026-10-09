@@ -179,6 +179,41 @@ public class MatchUpdateServlet extends HttpServlet {
     public MatchUpdateResult handleUpdateMatch(String tournamentId, String matchId, Integer score1, Integer score2,
                                               Integer penalty1, Integer penalty2, String winnerFlag,
                                               String team1Name, String team2Name, Integer stage, String groupHint) {
+        int maxRetries = 5;
+        MatchUpdateResult lastResult = null;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            lastResult = executeUpdateMatchAttempt(tournamentId, matchId, score1, score2, penalty1, penalty2,
+                    winnerFlag, team1Name, team2Name, stage, groupHint);
+
+            if (lastResult.success) {
+                return lastResult;
+            }
+
+            // Check if error is a SQL deadlock error (code 1205 or deadlock victim message)
+            if (lastResult.errorMessage != null && (
+                    lastResult.errorMessage.toLowerCase().contains("deadlock") ||
+                    lastResult.errorMessage.contains("1205")
+            )) {
+                if (attempt < maxRetries) {
+                    try {
+                        // Exponential jitter backoff (50ms to 200ms)
+                        Thread.sleep(50 + (long) (Math.random() * 150));
+                    } catch (InterruptedException ignore) {}
+                    continue; // Retry!
+                }
+            } else {
+                // Non-deadlock error -> return immediately
+                return lastResult;
+            }
+        }
+
+        return (lastResult != null) ? lastResult : new MatchUpdateResult();
+    }
+
+    private MatchUpdateResult executeUpdateMatchAttempt(String tournamentId, String matchId, Integer score1, Integer score2,
+                                                       Integer penalty1, Integer penalty2, String winnerFlag,
+                                                       String team1Name, String team2Name, Integer stage, String groupHint) {
         MatchUpdateResult res = new MatchUpdateResult();
         if (matchId == null || matchId.trim().isEmpty()) {
             res.errorMessage = "Thiếu matchId!";
@@ -223,9 +258,9 @@ public class MatchUpdateServlet extends HttpServlet {
 
             String selectSql = "SELECT m.*, "
                     + "t1.raw_name AS t1_name, t2.raw_name AS t2_name "
-                    + "FROM matches m "
-                    + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                    + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
+                    + "FROM matches m WITH (NOLOCK) "
+                    + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                    + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
                     + "WHERE (m.id = ? OR m.id = ? OR m.id LIKE '%[_]' + ? OR m.id LIKE '%[_]UB[_]' + ? OR m.id LIKE '%[_]LB[_]' + ? OR m.id LIKE '%[_]GF[_]' + ? "
                     + "OR m.id LIKE '%[_]S1[_]' + ? OR m.id LIKE '%[_]S2[_]' + ? "
                     + "OR m.match_code = ? OR m.match_code = 'Match #' + ? OR CAST(m.match_order AS VARCHAR) = ? OR CAST(m.match_order AS VARCHAR) = ?)"
@@ -246,9 +281,9 @@ public class MatchUpdateServlet extends HttpServlet {
 
             // 1. Try EXACT MATCH by match ID first!
             String exactSql = "SELECT m.*, t1.raw_name AS t1_name, t2.raw_name AS t2_name "
-                    + "FROM matches m "
-                    + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                    + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
+                    + "FROM matches m WITH (NOLOCK) "
+                    + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                    + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
                     + "WHERE (m.id = ? OR m.id = ?)"
                     + (hasValidTourneyId ? " AND m.tournament_id = ?" : "");
 
@@ -280,10 +315,10 @@ public class MatchUpdateServlet extends HttpServlet {
             if (dbMatchId == null && groupHint != null && !groupHint.trim().isEmpty()) {
                 String grpClean = groupHint.trim();
                 String groupMatchSql = "SELECT m.*, t1.raw_name AS t1_name, t2.raw_name AS t2_name "
-                        + "FROM matches m "
-                        + "LEFT JOIN groups g ON (m.group_id = g.id OR m.group_id = g.group_name) "
-                        + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                        + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
+                        + "FROM matches m WITH (NOLOCK) "
+                        + "LEFT JOIN groups g WITH (NOLOCK) ON (m.group_id = g.id OR m.group_id = g.group_name) "
+                        + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                        + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
                         + "WHERE (g.id = ? OR g.group_name = ? OR m.group_id = ? OR m.group_id LIKE '%' + ? + '%') "
                         + "AND (m.match_code = ? OR m.match_code = 'Match #' + ? OR CAST(m.match_order AS VARCHAR) = ? OR m.id LIKE '%[_]' + ?) "
                         + (hasValidTourneyId ? " AND m.tournament_id = ?" : "")
@@ -325,9 +360,9 @@ public class MatchUpdateServlet extends HttpServlet {
             // 3. Fallback to match_order or suffix ONLY IF exact match not found
             if (dbMatchId == null) {
                 String fallbackSql = "SELECT m.*, t1.raw_name AS t1_name, t2.raw_name AS t2_name "
-                        + "FROM matches m "
-                        + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                        + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
+                        + "FROM matches m WITH (NOLOCK) "
+                        + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                        + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
                         + "WHERE (m.match_code = ? OR m.match_code = 'Match #' + ? OR CAST(m.match_order AS VARCHAR) = ? OR m.id LIKE '%[_]' + ?) "
                         + (hasValidTourneyId ? " AND m.tournament_id = ?" : "")
                         + " ORDER BY CASE WHEN m.id = ? THEN 0 ELSE 1 END";
@@ -558,6 +593,18 @@ public class MatchUpdateServlet extends HttpServlet {
      * Resets a match: clears score, winner, loser and resets status to PENDING/READY.
      */
     public boolean handleResetMatch(String tournamentId, String matchId) {
+        int maxRetries = 5;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            boolean ok = executeResetMatchAttempt(tournamentId, matchId);
+            if (ok) return true;
+            try {
+                Thread.sleep(50 + (long) (Math.random() * 150));
+            } catch (InterruptedException ignore) {}
+        }
+        return false;
+    }
+
+    private boolean executeResetMatchAttempt(String tournamentId, String matchId) {
         if (matchId == null || matchId.trim().isEmpty()) return false;
         String mIdClean = matchId.trim();
         String lastPart = mIdClean;
@@ -567,7 +614,7 @@ public class MatchUpdateServlet extends HttpServlet {
         }
 
         String selectSql = "SELECT id, tournament_id, team1_id, team2_id, next_match_id, next_slot, loser_next_match_id, loser_next_slot, group_id "
-                + "FROM matches WHERE ("
+                + "FROM matches WITH (NOLOCK) WHERE ("
                 + "id = ? OR id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? "
                 + "OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? "
                 + "OR CAST(match_order AS VARCHAR) = ? OR CAST(match_order AS VARCHAR) = ?)"
@@ -743,6 +790,17 @@ public class MatchUpdateServlet extends HttpServlet {
     public static void updateGroupTableStandings(Connection conn, String groupId) {
         if (groupId == null || groupId.trim().isEmpty()) return;
         try {
+            // Check if group_teams table actually has rows for this groupId
+            String checkSql = "SELECT TOP 1 1 FROM group_teams WITH (NOLOCK) WHERE group_id = ?";
+            try (PreparedStatement psCheck = conn.prepareStatement(checkSql)) {
+                psCheck.setString(1, groupId.trim());
+                try (ResultSet rsCheck = psCheck.executeQuery()) {
+                    if (!rsCheck.next()) {
+                        return; // Not a group table (e.g. GSL bracket), skip to avoid locking!
+                    }
+                }
+            }
+
             // Recalculate stats for each group_team
             String calcSql = "UPDATE gt SET "
                     + "gt.matches_played = ISNULL(stats.mp, 0), "
@@ -768,13 +826,13 @@ public class MatchUpdateServlet extends HttpServlet {
                     + "           CASE WHEN score1 > score2 THEN 1 ELSE 0 END AS is_win, "
                     + "           CASE WHEN score1 = score2 THEN 1 ELSE 0 END AS is_draw, "
                     + "           CASE WHEN score1 < score2 THEN 1 ELSE 0 END AS is_loss "
-                    + "    FROM matches WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
+                    + "    FROM matches WITH (NOLOCK) WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
                     + "    UNION ALL "
                     + "    SELECT team2_id AS t_id, score2 AS gf, score1 AS ga, "
                     + "           CASE WHEN score2 > score1 THEN 1 ELSE 0 END AS is_win, "
                     + "           CASE WHEN score2 = score1 THEN 1 ELSE 0 END AS is_draw, "
                     + "           CASE WHEN score2 < score1 THEN 1 ELSE 0 END AS is_loss "
-                    + "    FROM matches WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
+                    + "    FROM matches WITH (NOLOCK) WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
                     + "  ) sub GROUP BY t_id"
                     + ") stats ON gt.team_id = stats.t_id "
                     + "WHERE gt.group_id = ?";

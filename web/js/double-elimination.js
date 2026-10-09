@@ -1073,6 +1073,17 @@
                 if (window.FinalStagePopup && typeof window.FinalStagePopup.closeBanner === 'function') {
                     window.FinalStagePopup.closeBanner();
                 }
+                if (window.StageEndPopup && typeof window.StageEndPopup.update === 'function') {
+                    window.StageEndPopup.update(
+                        this.tournamentId,
+                        'DOUBLE_ELIMINATION',
+                        this.matchesMap,
+                        this.teamsList,
+                        { isMultiStage: true, cutTarget: this.cutTarget },
+                        null,
+                        this.currentStage
+                    );
+                }
                 return;
             }
 

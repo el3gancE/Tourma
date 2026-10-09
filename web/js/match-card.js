@@ -236,8 +236,17 @@
                         try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') isL = true; } catch (e) { }
                     }
                 }
-                if (isL && shouldPrompt && window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
-                    window.FinalStagePopup.promptUnlock();
+                if (isL && shouldPrompt) {
+                    var _lockTid = tid || (window.StageEndPopup ? window.StageEndPopup.tournamentId : null) || (window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null);
+                    if (window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(_lockTid)) {
+                        if (typeof window.StageEndPopup.showUnlockConfirmModal === 'function') {
+                            window.StageEndPopup.showUnlockConfirmModal();
+                            return isL;
+                        }
+                    }
+                    if (window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                        window.FinalStagePopup.promptUnlock();
+                    }
                 }
                 return isL;
             };

@@ -84,7 +84,21 @@
 
         checkFinalStage: function () {
             if (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1) {
-                return; // Stage 1 cut stage — NEVER trigger FinalStagePopup / champion banner!
+                if (window.FinalStagePopup && typeof window.FinalStagePopup.closeBanner === 'function') {
+                    window.FinalStagePopup.closeBanner();
+                }
+                if (window.StageEndPopup && typeof window.StageEndPopup.update === 'function') {
+                    window.StageEndPopup.update(
+                        this.tournamentId,
+                        'ROUND_ROBIN',
+                        this.matchesMap,
+                        this.teamsList,
+                        { isMultiStage: true, cutTarget: this.cutTarget },
+                        null,
+                        this.currentStage
+                    );
+                }
+                return;
             }
             if (window.FinalStagePopup) {
                 window.FinalStagePopup.checkAndRender(

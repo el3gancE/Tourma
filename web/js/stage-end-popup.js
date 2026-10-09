@@ -22,6 +22,12 @@
         isMultiStage1: function (tournamentId, currentStage) {
             if (currentStage && (currentStage === 2 || currentStage === '2')) return false;
             try {
+                if (window.TourmaTournamentType === 'MULTI_STAGE') return true;
+                if (window.TourmaGSL && (window.TourmaGSL.tournamentType === 'MULTI_STAGE' || window.TourmaGSL.cutTarget > 0)) return true;
+                if (window.GSLEngine && (window.GSLEngine.tournamentType === 'MULTI_STAGE' || window.GSLEngine.cutTarget > 0)) return true;
+                if (window.SingleEliminationEngine && (window.SingleEliminationEngine.tournamentType === 'MULTI_STAGE' || window.SingleEliminationEngine.cutTarget > 0)) return true;
+                if (window.TourmaDoubleElimination && (window.TourmaDoubleElimination.tournamentType === 'MULTI_STAGE' || window.TourmaDoubleElimination.cutTarget > 0)) return true;
+
                 var tType = localStorage.getItem('tourma_type_' + tournamentId);
                 if (tType === 'SINGLE_STAGE') return false;
                 var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
@@ -31,6 +37,8 @@
                     if (tType === 'MULTI_STAGE') return true;
                     return !!(mObj && mObj.stage2Format);
                 }
+                var cut = localStorage.getItem('tourma_advance_count_' + tournamentId) || localStorage.getItem('tourma_cut_target_' + tournamentId);
+                if (cut && parseInt(cut, 10) > 0) return true;
                 return (tType === 'MULTI_STAGE');
             } catch (e) {
                 return false;
@@ -270,13 +278,22 @@
                 try {
                     if (localStorage.getItem('tourma_stage1_completed_' + tid) === 'true') return true;
                 } catch(e) {}
+            }
 
             // 6. GSL (Dual Tournament) Stage 1
             if (format === 'GSL') {
-                var gslData = null;
-                try {
-                    gslData = JSON.parse(localStorage.getItem('tourma_gsl_matches_' + tid));
-                } catch(e) {}
+                var gslData = groupsData;
+                if (!gslData && window.TourmaGSL && window.TourmaGSL.groupsMap) {
+                    gslData = window.TourmaGSL.groupsMap;
+                }
+                if (!gslData && window.GSLEngine && window.GSLEngine.groupsMap) {
+                    gslData = window.GSLEngine.groupsMap;
+                }
+                if (!gslData) {
+                    try {
+                        gslData = JSON.parse(localStorage.getItem('tourma_gsl_matches_' + tid));
+                    } catch(e) {}
+                }
                 if (!gslData) return false;
                 var gKeys = Object.keys(gslData);
                 if (gKeys.length === 0) return false;
@@ -293,6 +310,8 @@
                         var t1 = gm.team1 ? (gm.team1.name || gm.team1) : '';
                         var t2 = gm.team2 ? (gm.team2.name || gm.team2) : '';
                         if (!t1 || !t2 || t1 === 'BYE' || t2 === 'BYE' || t1 === 'TBD' || t2 === 'TBD') continue;
+                        if (typeof t1 === 'string' && (t1.indexOf('#') !== -1 || t1.indexOf('Winner') !== -1 || t1.indexOf('Loser') !== -1)) continue;
+                        if (typeof t2 === 'string' && (t2.indexOf('#') !== -1 || t2.indexOf('Winner') !== -1 || t2.indexOf('Loser') !== -1)) continue;
                         totalGslMatches++;
                         var s1 = (gm.team1 && gm.team1.score !== '' && gm.team1.score !== null && !isNaN(Number(gm.team1.score))) ? Number(gm.team1.score) : null;
                         var s2 = (gm.team2 && gm.team2.score !== '' && gm.team2.score !== null && !isNaN(Number(gm.team2.score))) ? Number(gm.team2.score) : null;
@@ -338,9 +357,9 @@
                         '</div>' +
                     '</div>';
 
-                var mainEl = document.querySelector('main.container');
+                var mainEl = document.querySelector('main.container, main.has-sidebar, main');
                 var controlBar = document.querySelector(
-                    '.group-stage-control-bar, .single-elimination-control-bar, .rr-control-bar, .de-control-bar, .swiss-control-bar'
+                    '.tournament-navbar-control-bar, .gsl-control-bar, .group-stage-control-bar, .single-elimination-control-bar, .rr-control-bar, .de-control-bar, .swiss-control-bar'
                 );
 
                 if (mainEl && controlBar && controlBar.parentNode === mainEl) {
@@ -611,12 +630,14 @@
                 window.TourmaQuickMode = false;
                 if (window.SingleEliminationEngine) window.SingleEliminationEngine.isQuickMode = false;
                 if (window.TourmaDoubleElimination) window.TourmaDoubleElimination.isQuickMode = false;
+                if (window.TourmaGSL) window.TourmaGSL.isQuickMode = false;
+                if (window.GSLEngine) window.GSLEngine.isQuickMode = false;
             } else {
                 document.body.classList.remove('stage1-is-locked');
             }
 
             // Quick mode buttons
-            var qBtns = document.querySelectorAll('#singleBtnQuickMode, #deBtnQuickMode, .btn-quick-mode-toggle');
+            var qBtns = document.querySelectorAll('#singleBtnQuickMode, #deBtnQuickMode, #gslBtnQuickMode, .btn-quick-mode-toggle');
             for (var q = 0; q < qBtns.length; q++) {
                 if (isLocked) {
                     qBtns[q].classList.remove('active');
@@ -636,7 +657,7 @@
                 scoreInputs[i].disabled = isLocked;
             }
 
-            var randomBtns = document.querySelectorAll('.btn-random-scores, .btn-random-round, .btn-random-group, .btn-auto-score');
+            var randomBtns = document.querySelectorAll('.btn-random-scores, .btn-random-round, .btn-random-group, .btn-auto-score, #gslBtnRandomAll, .btn-random-all');
             for (var j = 0; j < randomBtns.length; j++) {
                 randomBtns[j].disabled = isLocked;
                 if (isLocked) {
@@ -674,6 +695,8 @@
             endpoint = contextPath + '/group-stage';
         } else if (path.indexOf('/round-robin') !== -1) {
             endpoint = contextPath + '/round-robin';
+        } else if (path.indexOf('/gsl') !== -1) {
+            endpoint = contextPath + '/gsl';
         }
 
         var params = new URLSearchParams();
