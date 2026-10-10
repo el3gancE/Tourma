@@ -43,7 +43,16 @@ public class SaveTeamsServlet extends HttpServlet {
             }
 
             if (!teamNames.isEmpty()) {
-                if ("ROUND_ROBIN".equalsIgnoreCase(format) && teamNames.size() > 24) {
+                boolean isRoundRobin = "ROUND_ROBIN".equalsIgnoreCase(format);
+                if (!isRoundRobin && tournamentId != null) {
+                    try {
+                        model.Tournament t = new dao.TournamentDAO().getTournamentById(tournamentId);
+                        if (t != null && "ROUND_ROBIN".equalsIgnoreCase(t.getFormat())) {
+                            isRoundRobin = true;
+                        }
+                    } catch (Exception ignore) {}
+                }
+                if (isRoundRobin && teamNames.size() > 24) {
                     teamNames = new ArrayList<>(teamNames.subList(0, 24));
                 }
                 ParticipantDAO dao = new ParticipantDAO();

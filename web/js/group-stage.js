@@ -52,11 +52,27 @@
             } catch (e) {}
         }
 
-        if (!teamsList || teamsList.length === 0) {
-            teamsList = [];
-            for (var i = 1; i <= 16; i++) {
-                teamsList.push({ id: 'TEAM_' + i, name: 'Đội ' + i, seed: i });
+        // Handle Stage Finish Alert (Stage 2 access check)
+        if (currentStage === 2) {
+            if (window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+                if (window.StageFinishAlert.checkAndRender(tournamentId, currentStage, document.getElementById('stageFinishAlertContainer') || document.getElementById('gsEmptyAlertContainer'))) {
+                    var mainContent = document.getElementById('gsMainContent');
+                    if (mainContent) mainContent.style.display = 'none';
+                    return;
+                }
             }
+        }
+
+        if (!teamsList || teamsList.length < 2) {
+            teamsList = teamsList || [];
+            if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
+                window.TourmaEmptyTeamAlert.checkAndRender(tournamentId, teamsList, document.getElementById('gsEmptyAlertContainer'));
+            }
+            var mainContent = document.getElementById('gsMainContent');
+            if (mainContent) mainContent.style.display = 'none';
+            var teamCountBadge = document.getElementById('gsTeamCountBadge') || document.getElementById('tournamentTeamCountBadge');
+            if (teamCountBadge) teamCountBadge.innerText = teamsList.length + ' Đội';
+            return;
         }
 
         // 2. Load Group Assignments
@@ -717,9 +733,20 @@
             return;
         }
 
-        if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
-            alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset giải.');
-            return;
+        if (window.TourmaScoreModal && typeof window.TourmaScoreModal.isLocked === 'function') {
+            if (window.TourmaScoreModal.isLocked(tournamentId)) {
+                if (window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                    window.FinalStagePopup.promptUnlock();
+                } else if (window.StageEndPopup && typeof window.StageEndPopup.promptUnlock === 'function') {
+                    window.StageEndPopup.promptUnlock();
+                }
+                return;
+            }
+        } else if (window.FinalStagePopup && typeof window.FinalStagePopup.isTournamentLocked === 'function') {
+            if (window.FinalStagePopup.isTournamentLocked(tournamentId)) {
+                window.FinalStagePopup.promptUnlock();
+                return;
+            }
         }
 
         if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ tỷ số và đặt lại giai đoạn Vòng Bảng về ban đầu?')) {

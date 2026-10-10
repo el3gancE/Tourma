@@ -1331,6 +1331,30 @@
                                 if (s2ConfigContainer) {
                                     s2ConfigContainer.style.display = (formatVal === 'ROUND_ROBIN') ? 'block' : 'none';
                                 }
+
+                                updateStage1AdvanceConstraints(formatVal);
+                            }
+
+                            function updateStage1AdvanceConstraints(s2Format) {
+                                var isStage2RR = (s2Format === 'ROUND_ROBIN');
+                                var s1Inputs = [
+                                    document.getElementById('stage1AdvanceRR'),
+                                    document.getElementById('stage1AdvanceGR'),
+                                    document.getElementById('stage1AdvanceSE'),
+                                    document.getElementById('stage1AdvanceDE'),
+                                    document.getElementById('stage1AdvanceGSL')
+                                ];
+
+                                s1Inputs.forEach(function (inp) {
+                                    if (!inp) return;
+                                    if (isStage2RR) {
+                                        inp.setAttribute('max', '24');
+                                        inp.title = 'Stage 2 là Vòng Tròn: Tối đa 24 đội đi tiếp';
+                                    } else {
+                                        inp.removeAttribute('max');
+                                        inp.title = '';
+                                    }
+                                });
                             }
 
                             function persistFormatSelection() {
@@ -1607,7 +1631,7 @@
                                     var s2F = document.getElementById('stage2Format').value;
                                     if (!validateStageInputs(1, s1F, e)) return false;
 
-                                    // If Stage 2 is ROUND_ROBIN, advancing teams from Stage 1 MUST be <= 24!
+                                    // If Stage 2 is ROUND_ROBIN, advancing teams from Stage 1 MUST be <= 24 and >= 2!
                                     if (s2F === 'ROUND_ROBIN') {
                                         var s1AdvCount = 0;
                                         var advInputEl = null;
@@ -1616,6 +1640,7 @@
                                         else if (s1F === 'SINGLE_ELIMINATION') advInputEl = document.getElementById('stage1AdvanceSE');
                                         else if (s1F === 'DOUBLE_ELIMINATION') advInputEl = document.getElementById('stage1AdvanceDE');
                                         else if (s1F === 'GSL') advInputEl = document.getElementById('stage1AdvanceGSL');
+                                        else if (s1F === 'SWISS_LITE') s1AdvCount = 8;
 
                                         if (advInputEl && advInputEl.value) {
                                             s1AdvCount = parseInt(advInputEl.value.trim(), 10) || 0;
@@ -1624,6 +1649,12 @@
                                         if (s1AdvCount > 24) {
                                             if (e && e.preventDefault) e.preventDefault();
                                             alert('⚠️ Thể thức Vòng Tròn (Round Robin) ở Stage 2 chỉ hỗ trợ tối đa 24 đội tham gia!\n\nVui lòng nhập số đội đi tiếp từ Stage 1 tối đa là 24 đội (Hiện tại bạn đang nhập: ' + s1AdvCount + ' đội).');
+                                            if (advInputEl) advInputEl.focus();
+                                            return false;
+                                        }
+                                        if (s1AdvCount < 2 && s1F !== 'SWISS_LITE') {
+                                            if (e && e.preventDefault) e.preventDefault();
+                                            alert('⚠️ Thể thức Vòng Tròn (Round Robin) ở Stage 2 yêu cầu ít nhất 2 đội tham gia!');
                                             if (advInputEl) advInputEl.focus();
                                             return false;
                                         }

@@ -107,7 +107,7 @@ public class RoundRobinDAO extends DBContext {
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
-                + "ORDER BY m.round_number ASC, m.id ASC";
+                + "ORDER BY m.round_number ASC, m.match_order ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
         int count = 0;
@@ -296,17 +296,23 @@ public class RoundRobinDAO extends DBContext {
                 + "         SUM(ga) AS ga, "
                 + "         SUM(CASE WHEN is_win = 1 THEN 3 WHEN is_draw = 1 THEN 1 ELSE 0 END) AS pts "
                 + "  FROM ("
-                + "    SELECT team1_id AS t_id, score1 AS gf, score2 AS ga, "
-                + "           CASE WHEN score1 > score2 THEN 1 ELSE 0 END AS is_win, "
-                + "           CASE WHEN score1 = score2 THEN 1 ELSE 0 END AS is_draw, "
-                + "           CASE WHEN score1 < score2 THEN 1 ELSE 0 END AS is_loss "
-                + "    FROM matches WHERE tournament_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
+                + "    SELECT m.team1_id AS t_id, m.score1 AS gf, m.score2 AS ga, "
+                + "           CASE WHEN m.score1 > m.score2 THEN 1 ELSE 0 END AS is_win, "
+                + "           CASE WHEN m.score1 = m.score2 THEN 1 ELSE 0 END AS is_draw, "
+                + "           CASE WHEN m.score1 < m.score2 THEN 1 ELSE 0 END AS is_loss "
+                + "    FROM matches m "
+                + "    LEFT JOIN tournament_stages s ON m.stage_id = s.id "
+                + "    WHERE m.tournament_id = ? AND (m.status = 'FINISHED' OR m.status = 'COMPLETED') AND m.score1 IS NOT NULL AND m.score2 IS NOT NULL "
+                + "      AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
                 + "    UNION ALL "
-                + "    SELECT team2_id AS t_id, score2 AS gf, score1 AS ga, "
-                + "           CASE WHEN score2 > score1 THEN 1 ELSE 0 END AS is_win, "
-                + "           CASE WHEN score2 = score1 THEN 1 ELSE 0 END AS is_draw, "
-                + "           CASE WHEN score2 < score1 THEN 1 ELSE 0 END AS is_loss "
-                + "    FROM matches WHERE tournament_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
+                + "    SELECT m.team2_id AS t_id, m.score2 AS gf, m.score1 AS ga, "
+                + "           CASE WHEN m.score2 > m.score1 THEN 1 ELSE 0 END AS is_win, "
+                + "           CASE WHEN m.score2 = m.score1 THEN 1 ELSE 0 END AS is_draw, "
+                + "           CASE WHEN m.score2 < m.score1 THEN 1 ELSE 0 END AS is_loss "
+                + "    FROM matches m "
+                + "    LEFT JOIN tournament_stages s ON m.stage_id = s.id "
+                + "    WHERE m.tournament_id = ? AND (m.status = 'FINISHED' OR m.status = 'COMPLETED') AND m.score1 IS NOT NULL AND m.score2 IS NOT NULL "
+                + "      AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
                 + "  ) sub GROUP BY t_id"
                 + ") stats ON t.id = stats.t_id "
                 + "WHERE t.tournament_id = ? "
@@ -315,8 +321,18 @@ public class RoundRobinDAO extends DBContext {
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tournamentId);
-            ps.setString(2, tournamentId);
-            ps.setString(3, tournamentId);
+            ps.setInt(2, stageOrder);
+            ps.setInt(3, stageOrder);
+            ps.setInt(4, stageOrder);
+            ps.setInt(5, stageOrder);
+
+            ps.setString(6, tournamentId);
+            ps.setInt(7, stageOrder);
+            ps.setInt(8, stageOrder);
+            ps.setInt(9, stageOrder);
+            ps.setInt(10, stageOrder);
+
+            ps.setString(11, tournamentId);
             try (ResultSet rs = ps.executeQuery()) {
                 int rk = 1;
                 while (rs.next()) {

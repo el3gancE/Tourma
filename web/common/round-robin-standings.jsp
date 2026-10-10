@@ -10,6 +10,7 @@
     String safeTourneyId = (tourneyId != null) ? tourneyId : "";
     String tourneyName = "Bảng Xếp Hạng Giải Đấu";
     String teamsJson = "[]";
+    String dbMatchesJson = "[]";
     String stageParam = request.getParameter("stage");
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
     String activeStepVal = (currentStage == 2) ? "standings2" : "standings1";
@@ -51,6 +52,11 @@
                 sb.append("]");
                 teamsJson = sb.toString();
             }
+            dao.RoundRobinDAO rrDao = new dao.RoundRobinDAO();
+            String jsonM = rrDao.getMatchesJsonForFrontend(tourneyId, currentStage);
+            if (jsonM != null && !jsonM.trim().isEmpty() && !jsonM.trim().equals("[]")) {
+                dbMatchesJson = jsonM;
+            }
         } catch (Exception e) {}
     }
 %>
@@ -75,14 +81,19 @@
         <!-- Main Stylesheets -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin-standings.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     </head>
     <body>
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp"/>
+
+        <!-- Stage Finish Alert Component (Locked Stage 2) -->
+        <jsp:include page="/common/component/stage-finish-alert.jsp"/>
 
         <!-- Final Stage Popup Banner -->
         <jsp:include page="/common/component/final-stage-popup.jsp"/>
@@ -107,8 +118,8 @@
             <div class="rr-control-bar">
                 <div class="rr-info-group">
                     <h1 class="rr-tourney-title">
-                        <i class="fa-solid fa-ranking-star text-gold"></i> 
-                        <span>Bảng Xếp Hạng: <%= tourneyName %></span>
+                        <i class="fa-solid fa-trophy text-gold"></i> 
+                        <span><%= tourneyName %></span>
                     </h1>
                     <span class="format-badge-rr"><%= (currentStage == 2) ? "Stage 2: Round Robin" : "Round Robin" %></span>
                     <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
@@ -119,6 +130,11 @@
                 </div>
 
                 <div class="rr-actions-group" style="display: flex; align-items: center; gap: 0.75rem;">
+                    <!-- Standalone Reset Bracket / Tournament Action Button -->
+                    <button type="button" class="btn-reset-bracket-action" onclick="window.TourmaRoundRobinStandings.openResetModal()" title="Xóa toàn bộ kết quả và thiết lập lại từ đầu">
+                        <i class="fa-solid fa-rotate-right"></i> Reset Giải
+                    </button>
+
                     <!-- View Mode Segmented Toggle Buttons (Fixtures List ↔ Standings Table) -->
                     <div class="view-mode-toggle-group">
                         <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=<%= safeTourneyId %>&format=ROUND_ROBIN<%= (currentStage == 2) ? "&stage=2" : "" %>" 
@@ -129,6 +145,38 @@
                            class="btn-view-toggle active" style="text-decoration: none;">
                             <i class="fa-solid fa-ranking-star"></i> Bảng Xếp Hạng
                         </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Modal for Reset Tournament -->
+            <div id="rrResetModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) window.TourmaRoundRobinStandings.closeResetModal();">
+                <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
+                        <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span>Xác Nhận Reset Toàn Bộ Giải</span>
+                        </div>
+                        <button type="button" class="modal-close-btn" onclick="window.TourmaRoundRobinStandings.closeResetModal()" title="Đóng">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+                        <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
+                            <strong style="color: #f43f5e;">⚠️ Cảnh báo quan trọng:</strong><br>
+                            Hành động này sẽ <strong style="color: #ffffff;">XÓA TOÀN BỘ tỷ số và kết quả của tất cả các vòng</strong>, đưa Bảng Xếp Hạng về 0 điểm ban đầu.
+                        </div>
+                        <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
+                            Bạn có chắc chắn muốn thiết lập lại toàn bộ giải đấu không?
+                        </p>
+                    </div>
+
+                    <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.75rem 1rem;">
+                        <button type="button" class="btn btn-secondary" onclick="window.TourmaRoundRobinStandings.closeResetModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
+                        <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="window.TourmaRoundRobinStandings.confirmResetTournament()">
+                            <i class="fa-solid fa-rotate-right"></i> Xác Nhận Reset
+                        </button>
                     </div>
                 </div>
             </div>
@@ -177,6 +225,7 @@
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
+        <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin-standings.js"></script>
 
         <script>
@@ -219,7 +268,8 @@
                     }
                     cutTarget = 0; // Stage 2 plays to find a champion!
                 }
-                window.TourmaRoundRobinStandings.init(tourneyId, preloadedTeams, null, currentStage, cutTarget);
+                var dbMatches = <%= dbMatchesJson %>;
+                window.TourmaRoundRobinStandings.init(tourneyId, preloadedTeams, null, currentStage, cutTarget, dbMatches);
             });
         </script>
     </body>

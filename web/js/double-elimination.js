@@ -67,6 +67,19 @@
                 advBadge.style.display = 'none';
             }
 
+            // Handle Stage Finish Alert (Stage 2 access check)
+            if (this.currentStage === 2) {
+                if (window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+                    if (window.StageFinishAlert.checkAndRender(this.tournamentId, this.currentStage, document.getElementById('stageFinishAlertContainer') || document.getElementById('deEmptyAlertContainer'))) {
+                        var ws = document.getElementById('deDualViewportWorkspace');
+                        if (ws) ws.style.display = 'none';
+                        var lv = document.getElementById('deListViewContainer');
+                        if (lv) lv.style.display = 'none';
+                        return;
+                    }
+                }
+            }
+
             // 3. Handle Empty Team Alert (< 2 teams)
             if (this.teamsList.length < 2 && (!options.dbMatches || options.dbMatches.length === 0)) {
                 if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
@@ -1170,6 +1183,23 @@
          * Open Reset Bracket Modal
          */
         openResetModal: function () {
+            var tid = this.tournamentId || window.TourmaTournamentId || 'demo';
+            if (window.TourmaScoreModal && typeof window.TourmaScoreModal.isLocked === 'function') {
+                if (window.TourmaScoreModal.isLocked(tid)) {
+                    if (window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                        window.FinalStagePopup.promptUnlock();
+                    } else if (window.StageEndPopup && typeof window.StageEndPopup.promptUnlock === 'function') {
+                        window.StageEndPopup.promptUnlock();
+                    }
+                    return;
+                }
+            } else if (window.FinalStagePopup && typeof window.FinalStagePopup.isTournamentLocked === 'function') {
+                if (window.FinalStagePopup.isTournamentLocked(tid)) {
+                    window.FinalStagePopup.promptUnlock();
+                    return;
+                }
+            }
+
             var modal = document.getElementById('seResetModalBackdrop') || document.getElementById('deResetModalBackdrop');
             if (modal) {
                 modal.style.display = 'flex';

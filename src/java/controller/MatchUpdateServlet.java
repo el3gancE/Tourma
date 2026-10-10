@@ -426,7 +426,11 @@ public class MatchUpdateServlet extends HttpServlet {
 
             if (winnerFlag != null && !winnerFlag.trim().isEmpty()) {
                 String wf = winnerFlag.trim();
-                if ("team1".equalsIgnoreCase(wf) || "1".equals(wf)) {
+                if ("draw".equalsIgnoreCase(wf) || "hoa".equalsIgnoreCase(wf) || "0".equals(wf) || "none".equalsIgnoreCase(wf)) {
+                    winnerId = null;
+                    loserId = null;
+                    winnerName = null;
+                } else if ("team1".equalsIgnoreCase(wf) || "1".equals(wf)) {
                     winnerId = team1Id;
                     loserId = team2Id;
                     winnerName = t1Name;

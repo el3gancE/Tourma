@@ -294,6 +294,7 @@
         <script src="${pageContext.request.contextPath}/js/bracket-viewport.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination.js?v=<%= System.currentTimeMillis() %>"></script>
 
         <!-- Page Bootstrap Execution -->

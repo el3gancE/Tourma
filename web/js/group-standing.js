@@ -293,7 +293,13 @@
 
             var groupKeys = Object.keys(this.groups);
             if (groupKeys.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:3rem; color:#94a3b8;">Chưa có bảng đấu. Vui lòng bấm "Quản Lý Chia Bảng" để chia bảng.</div>';
+                var urlParams = new URLSearchParams(window.location.search);
+                var tid = urlParams.get('id') || 'demo';
+                if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
+                    window.TourmaEmptyTeamAlert.checkAndRender(tid, [], container);
+                } else {
+                    container.innerHTML = '<div style="text-align:center; padding:3rem; color:#94a3b8;">Chưa có bảng đấu. Vui lòng thêm đội và chia bảng để xem bảng xếp hạng.</div>';
+                }
                 return;
             }
 

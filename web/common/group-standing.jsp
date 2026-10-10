@@ -46,8 +46,12 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
 </head>
 <body style="background: #0b0d12; color: #f8fafc;">
+
+    <!-- EMPTY TEAM ALERT COMPONENT -->
+    <jsp:include page="/common/component/empty-team-alert.jsp" />
 
     <!-- TOP NAVBAR & SIDEBAR -->
     <jsp:include page="/common/component/header.jsp">
@@ -101,6 +105,7 @@
         <div id="gsStandingsContainer" class="gst-container" style="padding: 0;"></div>
     </main>
 
+    <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
     <script src="${pageContext.request.contextPath}/js/group-standing.js"></script>
     <script>
         window.groupTournamentId = "<%= tournamentId %>";

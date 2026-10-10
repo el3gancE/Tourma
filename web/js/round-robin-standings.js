@@ -18,7 +18,7 @@
         /**
          * Initialize Standings Page
          */
-        init: function (tourneyId, preloadedTeams, config, stage, cutTarget) {
+        init: function (tourneyId, preloadedTeams, config, stage, cutTarget, dbMatches) {
             this.tournamentId = tourneyId || 'demo';
             this.currentStage = (stage === 2 || stage === '2') ? 2 : 1;
             this.cutTarget = cutTarget || 0;
@@ -57,6 +57,17 @@
                 }
             }
 
+            // Handle Stage Finish Alert (Stage 2 access check)
+            if (this.currentStage === 2) {
+                if (window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+                    if (window.StageFinishAlert.checkAndRender(this.tournamentId, this.currentStage, document.getElementById('stageFinishAlertContainer') || document.querySelector('.rr-standings-card'))) {
+                        var card = document.querySelector('.rr-standings-card');
+                        if (card) card.style.display = 'none';
+                        return;
+                    }
+                }
+            }
+
             if (!teams) {
                 teams = [];
             }
@@ -73,7 +84,7 @@
             }
 
             // 2. Load Matches State
-            this.loadMatchesState();
+            this.loadMatchesState(dbMatches);
 
             // 3. Render Standings Table
             this.renderStandings();
@@ -113,9 +124,41 @@
         },
 
         /**
-         * Load Matches Data from LocalStorage
+         * Load Matches Data from DB or LocalStorage
          */
-        loadMatchesState: function () {
+        loadMatchesState: function (dbMatches) {
+            this.matchesMap = {};
+
+            if (dbMatches && Array.isArray(dbMatches) && dbMatches.length > 0) {
+                for (var i = 0; i < dbMatches.length; i++) {
+                    var rawM = dbMatches[i];
+                    var mId = rawM.matchId || rawM.id || ('M_' + this.tournamentId + '_RR_' + (i + 1));
+                    var t1 = rawM.team1 || {};
+                    var t2 = rawM.team2 || {};
+                    var matchObj = {
+                        id: mId,
+                        matchId: mId,
+                        matchNumber: rawM.matchNumber || (i + 1),
+                        roundNumber: rawM.roundNumber || 1,
+                        status: (rawM.status === 'FINISHED' || rawM.status === 'COMPLETED') ? 'COMPLETED' : 'SCHEDULED',
+                        team1: {
+                            name: (typeof t1 === 'object') ? (t1.name || '') : String(t1),
+                            seed: (typeof t1 === 'object') ? (t1.seed || '') : '',
+                            score: (typeof t1 === 'object' && t1.score !== undefined && t1.score !== null) ? String(t1.score) : ''
+                        },
+                        team2: {
+                            name: (typeof t2 === 'object') ? (t2.name || '') : String(t2),
+                            seed: (typeof t2 === 'object') ? (t2.seed || '') : '',
+                            score: (typeof t2 === 'object' && t2.score !== undefined && t2.score !== null) ? String(t2.score) : ''
+                        },
+                        winnerId: rawM.winnerId || null,
+                        isBye: rawM.isBye === true
+                    };
+                    this.matchesMap[mId] = matchObj;
+                }
+                return;
+            }
+
             var storageKeyRR = (this.currentStage === 2) ? ('tourma_rr_matches_stage2_' + this.tournamentId) : ('tourma_rr_matches_' + this.tournamentId);
             var storageKeyMatches = (this.currentStage === 2) ? ('tourma_matches_stage2_' + this.tournamentId) : ('tourma_matches_' + this.tournamentId);
 
@@ -181,7 +224,7 @@
 
             tbody.innerHTML = '';
 
-            if (!this.teamsList || this.teamsList.length === 0) {
+            if (!this.teamsList || this.teamsList.length < 2) {
                 this.renderEmptyState(tbody);
                 return;
             }
@@ -247,6 +290,78 @@
 
                 tbody.appendChild(tr);
             }
+        },
+
+        /**
+         * Reset Modal Dialog Controls
+         */
+        openResetModal: function () {
+            var tid = this.tournamentId || window.TourmaTournamentId || 'demo';
+            if (window.TourmaScoreModal && typeof window.TourmaScoreModal.isLocked === 'function') {
+                if (window.TourmaScoreModal.isLocked(tid)) {
+                    if (window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                        window.FinalStagePopup.promptUnlock();
+                    } else if (window.StageEndPopup && typeof window.StageEndPopup.promptUnlock === 'function') {
+                        window.StageEndPopup.promptUnlock();
+                    }
+                    return;
+                }
+            } else if (window.FinalStagePopup && typeof window.FinalStagePopup.isTournamentLocked === 'function') {
+                if (window.FinalStagePopup.isTournamentLocked(tid)) {
+                    window.FinalStagePopup.promptUnlock();
+                    return;
+                }
+            }
+
+            var modal = document.getElementById('rrResetModalBackdrop');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        },
+
+        closeResetModal: function () {
+            var modal = document.getElementById('rrResetModalBackdrop');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            document.body.style.overflow = '';
+        },
+
+        confirmResetTournament: function () {
+            var self = this;
+            var tid = this.tournamentId || 'demo';
+
+            // Clean localStorage keys
+            try {
+                localStorage.removeItem('tourma_rr_matches_' + tid);
+                localStorage.removeItem('tourma_matches_' + tid);
+                localStorage.removeItem('tourma_champion_' + tid);
+                localStorage.removeItem('tourma_final_champion_' + tid);
+                localStorage.removeItem('tourma_final_locked_' + tid);
+            } catch (e) {}
+
+            fetch((window.TourmaContextPath || '') + '/api/match-update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: new URLSearchParams({
+                    action: 'resetBracket',
+                    tournamentId: tid,
+                    stage: this.currentStage || 1
+                }).toString()
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    self.closeResetModal();
+                    window.location.reload();
+                })
+                .catch(function (err) {
+                    console.error('[TourmaRoundRobinStandings] Reset error:', err);
+                    self.closeResetModal();
+                    window.location.reload();
+                });
         }
     };
 

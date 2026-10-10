@@ -520,15 +520,19 @@
                         if (btnView) {
                             var s1Fmt = (multiConfig.stage1Format || 'GROUP_STAGE').toUpperCase();
                             if (s1Fmt === 'GROUP_STAGE') {
-                                btnView.href = ctx + '/common/group-stage.jsp?id=' + tid;
-                                btnView.innerText = 'Trận Đấu ➔';
+                                btnView.href = ctx + '/common/group-stage.jsp?id=' + tid + '&stage=1';
                             } else if (s1Fmt === 'DOUBLE_ELIMINATION') {
-                                btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid;
-                                btnView.innerText = 'Trận Đấu ➔';
+                                btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid + '&stage=1';
+                            } else if (s1Fmt === 'ROUND_ROBIN') {
+                                btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&format=ROUND_ROBIN&stage=1';
+                            } else if (s1Fmt === 'GSL') {
+                                btnView.href = ctx + '/common/gsl.jsp?id=' + tid + '&format=GSL&stage=1';
+                            } else if (s1Fmt === 'SWISS_LITE' || s1Fmt === 'SWISS') {
+                                btnView.href = ctx + '/common/swiss-stage.jsp?id=' + tid + '&format=SWISS_LITE&stage=1';
                             } else {
-                                btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid;
-                                btnView.innerText = 'Trận Đấu ➔';
+                                btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&stage=1';
                             }
+                            btnView.innerText = 'Trận Đấu ➔';
                         }
                     } else {
                         var localFmt = localStorage.getItem("tourma_format_" + tid);

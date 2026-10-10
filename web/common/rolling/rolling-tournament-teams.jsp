@@ -527,6 +527,7 @@
                 } %>
             ];
             window.seriesPhaseSize = <%= phaseSize %>;
+            window.tourneyFormat = "<%= tourneyFormat %>";
             window.seriesStandingsRankMap = {
                 <% 
                 int mapIdx = 0;

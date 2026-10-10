@@ -622,6 +622,34 @@
         },
 
         /**
+         * Prompt user when attempting to edit a locked Stage 1
+         */
+        promptUnlock: function () {
+            var banner = document.getElementById('stageEndPopupBanner');
+            if (banner) {
+                banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            var oldToast = document.getElementById('tourmaLockToast');
+            if (oldToast) oldToast.remove();
+
+            var toast = document.createElement('div');
+            toast.id = 'tourmaLockToast';
+            toast.className = 'tourma-lock-toast';
+            toast.innerHTML = 
+                '<i class="fa-solid fa-lock tourma-lock-toast-icon"></i>' +
+                '<div class="tourma-lock-toast-body">' +
+                    '<div class="tourma-lock-toast-title">Vòng 1 đã hoàn thành & đang khóa</div>' +
+                    '<div class="tourma-lock-toast-desc">Bấm "Mở khóa" trên banner để chỉnh sửa lại kết quả.</div>' +
+                '</div>' +
+                '<button type="button" class="tourma-lock-toast-btn" onclick="if(window.StageEndPopup){window.StageEndPopup.showUnlockConfirmModal();}var t=document.getElementById(\'tourmaLockToast\');if(t)t.remove();">Mở khóa</button>';
+            document.body.appendChild(toast);
+            setTimeout(function () {
+                if (toast && toast.parentNode) toast.remove();
+            }, 5000);
+        },
+
+        /**
          * Apply or remove disabled states from inputs/buttons when locked
          */
         applyLockToUI: function (isLocked) {

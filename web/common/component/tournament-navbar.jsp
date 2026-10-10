@@ -181,6 +181,23 @@
         },
         openResetModal: function () {
             var engine = this.getEngine();
+            var tid = (engine && engine.tournamentId) || window.TourmaTournamentId || '';
+            if (window.TourmaScoreModal && typeof window.TourmaScoreModal.isLocked === 'function') {
+                if (window.TourmaScoreModal.isLocked(tid)) {
+                    if (window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                        window.FinalStagePopup.promptUnlock();
+                    } else if (window.StageEndPopup && typeof window.StageEndPopup.promptUnlock === 'function') {
+                        window.StageEndPopup.promptUnlock();
+                    }
+                    return;
+                }
+            } else if (window.FinalStagePopup && typeof window.FinalStagePopup.isTournamentLocked === 'function') {
+                if (window.FinalStagePopup.isTournamentLocked(tid)) {
+                    window.FinalStagePopup.promptUnlock();
+                    return;
+                }
+            }
+
             if (engine && typeof engine.openResetModal === 'function') {
                 engine.openResetModal();
             } else {

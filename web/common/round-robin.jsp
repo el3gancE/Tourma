@@ -177,6 +177,9 @@
                 </div>
             </div>
 
+            <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
+            <div id="rrEmptyAlertContainer" style="display: none; width: 100%;"></div>
+
             <!-- Horizontal Round Selector Bar (Pill Tabs) -->
             <div id="rrRoundSelectorBar" class="rr-round-selector-bar">
                 <!-- Injected via JavaScript -->
@@ -188,7 +191,7 @@
             </div>
 
             <!-- Confirmation Modal for Reset Tournament -->
-            <div id="rrResetModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) window.TourmaRoundRobin.closeResetModal();">
+            <div id="rrResetModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) window.TourmaRoundRobin.closeResetModal();">
                 <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
                     <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
                         <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
@@ -232,6 +235,8 @@
         <script src="${pageContext.request.contextPath}/js/popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
+        <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
+        <script src="${pageContext.request.contextPath}/js/round-control-helper.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin.js"></script>
 
         <script>

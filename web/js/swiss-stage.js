@@ -780,13 +780,7 @@
       } catch(e) {}
     }
 
-    // Default 16 placeholder teams if empty
-    if (!teamsList || teamsList.length === 0) {
-      teamsList = [];
-      for (var i = 1; i <= 16; i++) {
-        teamsList.push({ id: 'TEAM_' + i, name: 'Đội ' + i, seed: i });
-      }
-    }
+    teamsList = teamsList || [];
 
     // Update team count badge
     var teamCountBadge = document.getElementById('swissTeamCountBadge') || document.getElementById('tournamentTeamCountBadge');
@@ -794,10 +788,43 @@
       teamCountBadge.innerText = teamsList.length + ' Đội';
     }
 
-    // 2. Exact 16 Teams Validation Banner
+    // Handle Stage Finish Alert (Stage 2 access check)
+    var urlParams = new URLSearchParams(window.location.search);
+    var stageParam = urlParams.get('stage');
+    var isStage2 = (stageParam === '2' || stageParam === 2);
+    if (isStage2) {
+      if (window.StageFinishAlert && typeof window.StageFinishAlert.checkAndRender === 'function') {
+        if (window.StageFinishAlert.checkAndRender(tournamentId, 2, alertBox || 'swissInvalidTeamAlert')) {
+          if (alertBox) {
+            alertBox.style.display = 'block';
+            alertBox.style.background = 'transparent';
+            alertBox.style.border = 'none';
+            alertBox.style.boxShadow = 'none';
+            alertBox.style.padding = '0';
+          }
+          if (mainWrapper) mainWrapper.style.display = 'none';
+          return;
+        }
+      }
+    }
+
+    // 2. Exact 16 Teams Validation Banner / Empty Alert
     var alertBox = document.getElementById('swissInvalidTeamAlert');
     var mainWrapper = document.getElementById('swissMainContentWrapper');
     if (teamsList.length !== 16) {
+      if (teamsList.length === 0 && window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
+        window.TourmaEmptyTeamAlert.checkAndRender(tournamentId, teamsList, alertBox);
+        if (alertBox) {
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'transparent';
+          alertBox.style.border = 'none';
+          alertBox.style.boxShadow = 'none';
+          alertBox.style.padding = '0';
+        }
+        if (mainWrapper) mainWrapper.style.display = 'none';
+        return;
+      }
+
       if (alertBox && mainWrapper) {
         alertBox.style.display = 'block';
         mainWrapper.style.display = 'none';

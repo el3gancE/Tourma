@@ -63,9 +63,13 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-stage.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
 </head>
 <body style="background: #0b0d12; color: #f8fafc;">
+
+    <!-- Stage Finish Alert Component (Locked Stage 2) -->
+    <jsp:include page="/common/component/stage-finish-alert.jsp"/>
 
     <!-- Stage End Popup Component -->
     <jsp:include page="/common/component/stage-end-popup.jsp"/>
@@ -177,6 +181,8 @@
     <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
     <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
     <script src="${pageContext.request.contextPath}/js/popup.js"></script>
+    <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
+    <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
     <script src="${pageContext.request.contextPath}/js/group-standing.js"></script>
     <script src="${pageContext.request.contextPath}/js/group-stage.js"></script>
 </body>

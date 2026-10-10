@@ -25,39 +25,36 @@
             if (stageNum !== 2) return false;
             if (!tournamentId) return false;
 
-            // 1. Check if Stage 1 has been confirmed and locked or if Stage 2 has matches
+            // 1. Check if Stage 1 has been confirmed and locked
             var isLocked = false;
             try {
-                isLocked = (localStorage.getItem('tourma_stage1_locked_' + tournamentId) === 'true');
+                // PRIMARY: read from DB-injected value (set by JSP from tournament.stage1_status)
+                if (window.TourmaDbStage1Status && window.TourmaDbStage1Status[tournamentId]) {
+                    var s = window.TourmaDbStage1Status[tournamentId];
+                    if (s === 'LOCKED' || s === 'COMPLETED') {
+                        isLocked = true;
+                    }
+                }
+                if (!isLocked) {
+                    isLocked = (localStorage.getItem('tourma_stage1_locked_' + tournamentId) === 'true');
+                }
             } catch (e) {
                 isLocked = false;
             }
 
-            // Also check if Stage 2 already has saved matches or DB preloads
-            if (!isLocked) {
-                try {
-                    if (localStorage.getItem('tourma_matches_stage2_' + tournamentId) ||
-                        localStorage.getItem('tourma_bracket_stage2_' + tournamentId) ||
-                        localStorage.getItem('tourma_stage2_teams_' + tournamentId) ||
-                        localStorage.getItem('tourma_champion_' + tournamentId) ||
-                        localStorage.getItem('tourma_final_champion_' + tournamentId)) {
-                        isLocked = true;
-                    }
-                } catch (e) {}
-            }
-
+            // If Stage 2 has active database matches saved, Stage 2 is unlocked
             if (!isLocked && window.TourmaContextDbMatches && Array.isArray(window.TourmaContextDbMatches) && window.TourmaContextDbMatches.length > 0) {
                 isLocked = true;
             }
 
-            // If Stage 1 is already confirmed and locked or Stage 2 has active data, Stage 2 is unlocked!
+            // If Stage 1 is confirmed and locked or Stage 2 already active, allow Stage 2 access
             if (isLocked) {
                 var wrapper = document.getElementById('stageFinishAlertContainer');
                 if (wrapper) wrapper.style.display = 'none';
                 return false;
             }
 
-            // 2. Stage 1 is NOT yet confirmed/locked -> MUST SHOW ALERT AND HIDE VIEWPORT!
+            // 2. Stage 1 is NOT yet confirmed/locked -> MUST SHOW ALERT AND HIDE STAGE 2 WORKSPACES!
             // Detect Stage 1 format to create the return link
             var s1Format = 'GROUP_STAGE';
             try {
@@ -78,52 +75,55 @@
                 s1Format = 'GROUP_STAGE';
             }
 
-            var title = 'Bạn chưa hoàn thành vòng 1';
-            var desc = 'Vui lòng hoàn thành và xác nhận kết quả vòng 1 để tiếp tục.';
-
-            // Resolve Stage 1 return link
-            var isCommonPath = (window.location.pathname.indexOf('/common/') !== -1);
-            var basePrefix = isCommonPath ? '' : 'common/';
+            s1Format = String(s1Format).toUpperCase();
             var page = 'group-stage.jsp';
             if (s1Format === 'SINGLE_ELIMINATION') page = 'single-elimination.jsp';
             else if (s1Format === 'DOUBLE_ELIMINATION') page = 'double-elimination.jsp';
             else if (s1Format === 'ROUND_ROBIN') page = 'round-robin.jsp';
+            else if (s1Format === 'GSL') page = 'gsl.jsp';
             else if (s1Format === 'SWISS' || s1Format === 'SWISS_LITE') page = 'swiss-stage.jsp';
 
-            var targetHref = basePrefix + page + '?id=' + encodeURIComponent(tournamentId) + '&stage=1';
+            var seriesId = urlParams.get('seriesId') || '';
+            if (!seriesId && tournamentId) {
+                try {
+                    seriesId = localStorage.getItem('tourma_series_id_' + tournamentId) || '';
+                } catch(e) {}
+            }
+
+            var isCommonPath = (window.location.pathname.indexOf('/common/') !== -1);
+            var contextPath = window.TourmaContextPath || (isCommonPath ? window.location.pathname.substring(0, window.location.pathname.indexOf('/common/')) : '');
+            var basePrefix = isCommonPath ? '' : 'common/';
+            if (contextPath && basePrefix.indexOf(contextPath) === -1) {
+                basePrefix = contextPath + '/common/';
+            }
+            var targetHref = basePrefix + page + '?id=' + encodeURIComponent(tournamentId) + '&stage=1' + (seriesId ? ('&seriesId=' + encodeURIComponent(seriesId)) : '');
+
+            var title = 'Bạn chưa hoàn thành Vòng 1';
+            var desc = 'Vòng 1 của giải đấu chưa được xác nhận hoàn thành. Vui lòng hoàn thành tất cả các trận đấu và bấm xác nhận kết quả ở Vòng 1 để chuyển sang Vòng 2 thi đấu.';
 
             var targetNode = (typeof targetContainer === 'string') ? document.getElementById(targetContainer) : targetContainer;
             var wrapperElem = document.getElementById('stageFinishAlertContainer');
 
-            var alertHtml = 
-                '<div class="stage-finish-alert-wrapper" style="display: flex; width: 100%; justify-content: center; margin: 2rem 0;">' +
-                    '<div class="stage-finish-alert-card">' +
-                        '<div class="stage-finish-alert-icon-box">' +
-                            '<i class="fa-solid fa-lock stage-finish-alert-icon"></i>' +
-                        '</div>' +
-                        '<h3 class="stage-finish-alert-title">' + title + '</h3>' +
-                        '<p class="stage-finish-alert-desc">' + desc + '</p>' +
-                        '<a href="' + targetHref + '" class="btn-stage-finish-return">' +
-                            '<i class="fa-solid fa-arrow-left"></i> Quay Lại Vòng 1' +
-                        '</a>' +
+            var cardContentHtml = 
+                '<div class="stage-finish-alert-card">' +
+                    '<div class="stage-finish-alert-icon-box">' +
+                        '<i class="fa-solid fa-lock stage-finish-alert-icon"></i>' +
                     '</div>' +
+                    '<h3 class="stage-finish-alert-title">' + title + '</h3>' +
+                    '<p class="stage-finish-alert-desc">' + desc + '</p>' +
+                    '<a href="' + targetHref + '" class="btn-stage-finish-return">' +
+                        '<i class="fa-solid fa-arrow-left"></i> Quay Lại Vòng 1' +
+                    '</a>' +
                 '</div>';
 
             if (targetNode) {
-                targetNode.innerHTML = alertHtml;
-                targetNode.style.display = 'flex';
-            } else if (wrapperElem) {
-                wrapperElem.innerHTML = 
-                    '<div class="stage-finish-alert-card">' +
-                        '<div class="stage-finish-alert-icon-box">' +
-                            '<i class="fa-solid fa-lock stage-finish-alert-icon"></i>' +
-                        '</div>' +
-                        '<h3 class="stage-finish-alert-title">' + title + '</h3>' +
-                        '<p class="stage-finish-alert-desc">' + desc + '</p>' +
-                        '<a href="' + targetHref + '" class="btn-stage-finish-return">' +
-                            '<i class="fa-solid fa-arrow-left"></i> Quay Lại Vòng 1' +
-                        '</a>' +
+                targetNode.innerHTML = 
+                    '<div class="stage-finish-alert-wrapper" style="display: flex; width: 100%; justify-content: center; margin: 2rem 0;">' +
+                        cardContentHtml +
                     '</div>';
+                targetNode.style.display = 'block';
+            } else if (wrapperElem) {
+                wrapperElem.innerHTML = cardContentHtml;
                 wrapperElem.style.display = 'flex';
             } else {
                 var mainEl = document.querySelector('main.container');
@@ -132,40 +132,41 @@
                     div.id = 'stageFinishAlertContainer';
                     div.className = 'stage-finish-alert-wrapper';
                     div.style.display = 'flex';
-                    div.innerHTML = 
-                        '<div class="stage-finish-alert-card">' +
-                            '<div class="stage-finish-alert-icon-box">' +
-                                '<i class="fa-solid fa-lock stage-finish-alert-icon"></i>' +
-                            '</div>' +
-                            '<h3 class="stage-finish-alert-title">' + title + '</h3>' +
-                            '<p class="stage-finish-alert-desc">' + desc + '</p>' +
-                            '<a href="' + targetHref + '" class="btn-stage-finish-return">' +
-                                '<i class="fa-solid fa-arrow-left"></i> Quay Lại Vòng 1' +
-                            '</a>' +
-                        '</div>';
+                    div.innerHTML = cardContentHtml;
                     mainEl.insertBefore(div, mainEl.firstChild);
                 }
             }
 
-            // HIDE ALL VIEWPORTS & MATCH WORKSPACES
-            var dualWs = document.getElementById('deDualViewportWorkspace');
-            if (dualWs) dualWs.style.display = 'none';
-            var listV = document.getElementById('deListViewContainer');
-            if (listV) listV.style.display = 'none';
-            var singleVp = document.getElementById('bracketViewportFrame');
-            if (singleVp) singleVp.style.display = 'none';
-            var singleList = document.getElementById('singleListViewContainer');
-            if (singleList) singleList.style.display = 'none';
-            var swissMain = document.getElementById('swissMainContentWrapper');
-            if (swissMain) swissMain.style.display = 'none';
-            var swissAlert = document.getElementById('swissInvalidTeamAlert');
-            if (swissAlert) swissAlert.style.display = 'none';
-            var rrFixt = document.getElementById('rrFixturesContainer');
-            if (rrFixt) rrFixt.style.display = 'none';
-            var rrTabs = document.getElementById('rrRoundSelectorTabs');
-            if (rrTabs) rrTabs.style.display = 'none';
-            var emptyAlert = document.getElementById('emptyTeamAlertContainer');
-            if (emptyAlert) emptyAlert.style.display = 'none';
+            // HIDE ALL VIEWPORTS & MATCH WORKSPACES ACROSS ALL FORMATS
+            var idsToHide = [
+                'bracketViewportFrame',
+                'singleListViewContainer',
+                'singleEmptyAlertContainer',
+                'deDualViewportWorkspace',
+                'deListViewContainer',
+                'deEmptyAlertContainer',
+                'rrRoundSelectorBar',
+                'rrRoundSelectorTabs',
+                'rrFixturesContainer',
+                'rrEmptyAlertContainer',
+                'gsMainContent',
+                'gsGroupSelectorBar',
+                'gsMatchesView',
+                'gsStandingsView',
+                'gsEmptyAlertContainer',
+                'gslGroupsWorkspace',
+                'gslListViewContainer',
+                'gslEmptyAlertContainer',
+                'swissMainContentWrapper',
+                'swissInvalidTeamAlert',
+                'swissListView',
+                'emptyTeamAlertContainer'
+            ];
+
+            idsToHide.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
 
             return true; // Alert shown -> viewport hidden
         }

@@ -510,6 +510,11 @@
       count = totalPartnerCount;
       numInput.value = totalPartnerCount;
     }
+    var fmt = (window.tourneyFormat || '').toUpperCase();
+    if (fmt === 'ROUND_ROBIN' && count > 24) {
+      count = 24;
+      numInput.value = 24;
+    }
 
     // Clear selection on enabled checkboxes first
     availableCbs.forEach(function (cb) {
@@ -690,6 +695,18 @@
     if (window.targetTeamCount && window.targetTeamCount > 0) {
       if (teamNames.length !== window.targetTeamCount) {
         alert('RÀNG BUỘC SỐ LƯỢNG ĐỘI:\nGiải đấu này được thiết lập cấu hình sao chép với đúng ' + window.targetTeamCount + ' đội.\nHiện tại danh sách có ' + teamNames.length + ' đội. Vui lòng thêm hoặc bớt để có đúng ' + window.targetTeamCount + ' đội trước khi tiếp tục sang bước tiếp theo!');
+        return false;
+      }
+    }
+
+    var fmt = (window.tourneyFormat || '').toUpperCase();
+    if (fmt === 'ROUND_ROBIN') {
+      if (teamNames.length > 24) {
+        alert('⚠️ Thể thức Vòng Tròn (Round Robin) chỉ hỗ trợ tối đa 24 đội bóng. Hiện tại danh sách có ' + teamNames.length + ' đội. Vui lòng bớt đội để tiếp tục!');
+        return false;
+      }
+      if (teamNames.length < 2) {
+        alert('⚠️ Cần ít nhất 2 đội bóng để sinh sơ đồ thi đấu Vòng Tròn (Round Robin)!');
         return false;
       }
     }

@@ -336,6 +336,16 @@
 
             // Helper to get effective Stage 1 Format
             function getStage1Format() {
+                var urlParams = new URLSearchParams(window.location.search);
+                var urlType = urlParams.get('tournamentType');
+                var urlStage1 = urlParams.get('stage1Format');
+                var urlFormat = urlParams.get('format');
+
+                if (urlType === 'MULTI_STAGE' && urlStage1) {
+                    return urlStage1.toUpperCase();
+                }
+                if (urlFormat) return urlFormat.toUpperCase();
+
                 if (tournamentId) {
                     var tType = localStorage.getItem('tourma_type_' + tournamentId);
                     var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
@@ -348,8 +358,9 @@
                     var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
                     if (localFmt) return localFmt.toUpperCase();
                 }
-                var urlFormat = new URLSearchParams(window.location.search).get('format');
-                if (urlFormat) return urlFormat.toUpperCase();
+                <% if (stage1FormatParam != null && !stage1FormatParam.trim().isEmpty()) { %>
+                    return "<%= stage1FormatParam.trim().toUpperCase() %>";
+                <% } %>
                 if (tourneyFormatServer) return tourneyFormatServer.toUpperCase();
                 return 'SINGLE_ELIMINATION';
             }
@@ -859,10 +870,15 @@
                     }
                 }
 
-                // Round Robin validation: MUST NOT exceed 24 teams!
+                // Round Robin validation: MUST NOT exceed 24 teams and MUST have at least 2 teams!
                 if (checkIsRoundRobin()) {
                     if (currentTeamsList.length > 24) {
-                        alert('Thể thức Round Robin chỉ hỗ trợ tối đa 24 đội bóng. Hiện tại bạn đã nhập ' + currentTeamsList.length + ' đội. Vui lòng bớt đội để tiếp tục.');
+                        alert('⚠️ Thể thức Vòng Tròn (Round Robin) chỉ hỗ trợ tối đa 24 đội bóng. Hiện tại danh sách có ' + currentTeamsList.length + ' đội. Vui lòng bớt đội để tiếp tục.');
+                        if (e && e.preventDefault) e.preventDefault();
+                        return false;
+                    }
+                    if (currentTeamsList.length < 2) {
+                        alert('⚠️ Cần ít nhất 2 đội bóng để sinh lịch thi đấu Vòng Tròn (Round Robin).');
                         if (e && e.preventDefault) e.preventDefault();
                         return false;
                     }
