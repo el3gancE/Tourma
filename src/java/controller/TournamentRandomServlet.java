@@ -237,6 +237,20 @@ public class TournamentRandomServlet extends HttpServlet {
         String format = (t != null && t.getFormat() != null) ? t.getFormat().trim().toUpperCase()
                 : "SINGLE_ELIMINATION";
 
+        if (format.contains("SWISS")) {
+            SwissSystemDAO swissDao = new SwissSystemDAO();
+            boolean ok;
+            if ("randomRound".equalsIgnoreCase(action)) {
+                ok = swissDao.randomRoundInDB(tournamentId, stageOrder, (roundNumber != null ? roundNumber : 1), (targetWinScore != null ? targetWinScore : 3));
+            } else {
+                ok = swissDao.randomAllInDB(tournamentId, stageOrder, (targetWinScore != null ? targetWinScore : 3));
+            }
+            res.success = ok;
+            res.message = ok ? "Đã tạo tỉ số ngẫu nhiên cho thể thức Swiss thành công!" : "Lỗi khi random thể thức Swiss!";
+            res.matchesJson = swissDao.getMatchesJsonForFrontend(tournamentId, stageOrder);
+            return res;
+        }
+
         boolean allowDraw = format.contains("ROUND") || format.contains("ROBIN") || format.contains("GROUP");
 
         int totalUpdated = 0;
@@ -661,6 +675,15 @@ public class TournamentRandomServlet extends HttpServlet {
         Tournament t = tourneyDao.getTournamentById(tournamentId);
         String format = (t != null && t.getFormat() != null) ? t.getFormat().trim().toUpperCase()
                 : "SINGLE_ELIMINATION";
+
+        if (format.contains("SWISS")) {
+            SwissSystemDAO swissDao = new SwissSystemDAO();
+            boolean ok = swissDao.resetBracketMatches(tournamentId, stageOrder);
+            res.success = ok;
+            res.message = ok ? "Đã đặt lại trận đấu Swiss thành công!" : "Lỗi khi đặt lại Swiss!";
+            res.matchesJson = swissDao.getMatchesJsonForFrontend(tournamentId, stageOrder);
+            return res;
+        }
 
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection()) {

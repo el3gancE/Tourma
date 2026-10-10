@@ -71,12 +71,14 @@
         <!-- Shared System Stylesheets -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/swiss-stage.css">
     </head>
@@ -104,46 +106,27 @@
             <jsp:param name="id" value="${not empty param.id ? param.id : (tournament != null ? tournament.id : '')}"/>
         </jsp:include>
 
-                <!-- Main Content Area Shifted Right by Sidebar -->
+        <!-- Main Content Area Shifted Right by Sidebar -->
         <main class="container has-sidebar">
 
-            <!-- Control Bar (Title, Badges, View Mode Toggle, Quick Mode, Random, Reset Button) -->
-            <div class="swiss-control-bar">
-                <div class="tournament-info-badge-group">
-                    <h1 class="tournament-name-title">
-                        <i class="fa-solid fa-diagram-project text-mint"></i> <%= tourneyName %>
-                    </h1>
-                    <span class="format-badge-swiss"><%= (currentStage == 2) ? "STAGE 2: SWISS SYSTEM" : "SWISS SYSTEM" %></span>
-                    <span id="swissTeamCountBadge" class="team-count-badge">16 Đội</span>
-                    <span class="qualified-count-badge"><i class="fa-solid fa-trophy"></i> 8 Đội Đi Tiếp</span>
-                </div>
-
-                <!-- Right Action Bar: Quick Mode + Random + Reset + View Mode Toggles + Configure Button -->
-                <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
-                    <!-- Quick Mode Toggle Button -->
-                    <button type="button" id="btnSwissQuickMode" class="btn-quick-mode-toggle" onclick="toggleSwissQuickMode()" title="Chế độ phân định thắng thua nhanh (1-click chọn đội thắng)">
-                        <i class="fa-solid fa-bolt"></i> Quick Mode: <span id="quickModeText">OFF</span>
-                    </button>
-
-                    <!-- Standalone Reset Button -->
-                    <button type="button" id="btnSwissReset" class="btn" onclick="resetSwissMatches()" title="Xóa toàn bộ tỷ số và làm mới giai đoạn Swiss" style="background: rgba(244, 63, 94, 0.14); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.35); height: 36px; padding: 0 0.85rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.2s ease;">
-                        <i class="fa-solid fa-rotate-right"></i> Reset
-                    </button>
-
-                    <div class="swiss-view-mode-toggle-group">
-                        <button type="button" id="btnSwissViewList" class="btn-toggle-view" onclick="switchSwissViewMode('LIST')">
-                            <i class="fa-solid fa-list-ul"></i> Dạng Danh Sách
-                        </button>
-                        <button type="button" id="btnSwissViewBracket" class="btn-toggle-view active" onclick="switchSwissViewMode('BRACKET')">
-                            <i class="fa-solid fa-sitemap"></i> Sơ Đồ Bracket
-                        </button>
-                    </div>
-
-                    <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${not empty tournament.id ? tournament.id : param.id}" class="btn" style="background: rgba(255, 255, 255, 0.06); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.15); height: 36px; padding: 0 0.85rem; font-size: 0.8rem; border-radius: 8px;">
-                        <i class="fa-solid fa-sliders"></i> Cấu Hình Giải
-                    </a>
-                </div>
-            </div>
+            <!-- Top Tournament Navigation & Control Bar Component -->
+            <jsp:include page="/common/component/tournament-navbar.jsp">
+                <jsp:param name="tourneyName" value="<%= tourneyName %>" />
+                <jsp:param name="format" value='<%= (currentStage == 2) ? "Stage 2: Swiss System" : "Swiss System" %>' />
+                <jsp:param name="formatBadgeClass" value="format-badge-swiss" />
+                <jsp:param name="tournamentType" value="SWISS" />
+                <jsp:param name="cutTarget" value="<%= (currentStage == 1) ? 8 : 0 %>" />
+                <jsp:param name="showQuickMode" value="true" />
+                <jsp:param name="showReset" value="true" />
+                <jsp:param name="resetLabel" value="Reset Vòng Đấu" />
+                <jsp:param name="resetModalTitle" value="Xác Nhận Reset Toàn Bộ Swiss" />
+                <jsp:param name="resetWarningText" value="Hành động này sẽ XÓA TOÀN BỘ tỷ số và kết quả các trận Swiss, reset lại sơ đồ nguyên bản ban đầu từ danh sách hạt giống." />
+                <jsp:param name="engineName" value="TourmaSwiss" />
+                <jsp:param name="view1Icon" value="fa-diagram-project" />
+                <jsp:param name="view1Label" value="Sơ Đồ Nhánh" />
+                <jsp:param name="view2Icon" value="fa-list-ol" />
+                <jsp:param name="view2Label" value="Danh Sách Trận" />
+            </jsp:include>
 
             <!-- SWISS TEAM COUNT ALERT BANNER (When team count != 16) -->
             <div id="swissInvalidTeamAlert" style="display: none; background: rgba(18, 22, 32, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(244, 63, 94, 0.35); border-radius: 14px; padding: 3.5rem 2rem; text-align: center; margin-top: 1.5rem; margin-bottom: 2.5rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);">
