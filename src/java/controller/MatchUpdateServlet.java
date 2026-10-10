@@ -566,10 +566,20 @@ public class MatchUpdateServlet extends HttpServlet {
                 updateGroupTableStandings(conn, groupId);
             }
 
+            // 8. Auto-advance tournament status to ONGOING if currently DRAFT / INCOMING
+            if (resolvedTourneyId != null) {
+                try (PreparedStatement psTourn = conn.prepareStatement(
+                        "UPDATE tournaments SET status = 'ONGOING' WHERE id = ? AND (status IS NULL OR status = 'DRAFT' OR status = 'INCOMING')")) {
+                    psTourn.setString(1, resolvedTourneyId);
+                    psTourn.executeUpdate();
+                } catch (Exception ignore) {}
+            }
+
             conn.commit();
 
             // Clear in-memory caches to reflect new match state immediately
             RollingWindowPointService.clearAllCaches();
+            TournamentDAO.clearTournamentCaches();
 
             res.success = true;
             res.matchId = dbMatchId;
@@ -769,18 +779,17 @@ public class MatchUpdateServlet extends HttpServlet {
             tDao.updateTournamentChampion(tournamentId.trim(), championName.trim());
         }
         RollingWindowPointService.clearAllCaches();
+        TournamentDAO.clearTournamentCaches();
         return ok;
     }
 
-    /**
-     * Unlocks a tournament and resets status back to DRAFT with no champion.
-     */
     public boolean handleUnlockTournament(String tournamentId) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
         TournamentDAO tDao = new TournamentDAO();
-        boolean ok = tDao.updateTournamentStatus(tournamentId.trim(), "DRAFT");
+        boolean ok = tDao.updateTournamentStatus(tournamentId.trim(), "ONGOING");
         tDao.updateTournamentChampion(tournamentId.trim(), null);
         RollingWindowPointService.clearAllCaches();
+        TournamentDAO.clearTournamentCaches();
         return ok;
     }
 

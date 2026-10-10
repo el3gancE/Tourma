@@ -244,9 +244,22 @@
             window.TourmaTournamentId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
             window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
             window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
+            window.TourmaDbTournamentStatus = window.TourmaDbTournamentStatus || {};
+            window.TourmaDbTournamentStatus["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbTournamentStatus %>";
             
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
+                var dbTournamentStatus = '<%= dbTournamentStatus %>';
+                if (dbTournamentStatus === 'COMPLETED') {
+                    try { localStorage.setItem('tourma_final_locked_' + tourneyId, 'true'); } catch(e) {}
+                } else {
+                    try {
+                        localStorage.removeItem('tourma_final_locked_' + tourneyId);
+                        localStorage.removeItem('tourma_champion_' + tourneyId);
+                        localStorage.removeItem('tourma_final_champion_' + tourneyId);
+                    } catch(e) {}
+                }
+
                 var preloadedTeams = <%= teamsJson %>;
                 var cutTarget = <%= cutTarget %>;
                 var currentStage = <%= currentStage %>;

@@ -14,17 +14,125 @@ import model.Tournament;
  */
 public class TournamentDAO {
 
+    public static final String TOURNAMENT_SELECT_QUERY =
+        "SELECT t.*, " +
+        "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
+        "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count, " +
+        "(SELECT COUNT(*) FROM matches WHERE tournament_id = t.id AND (is_bye = 0 OR is_bye IS NULL)) AS total_matches, " +
+        "(SELECT COUNT(*) FROM matches WHERE tournament_id = t.id AND (is_bye = 0 OR is_bye IS NULL) AND (status IN ('FINISHED', 'COMPLETED', 'DONE') OR winner_id IS NOT NULL OR (score1 IS NOT NULL AND score2 IS NOT NULL))) AS completed_matches, " +
+        "(SELECT TOP 1 tm.raw_name FROM matches m " +
+        " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
+        " JOIN teams tm ON m.winner_id = tm.id " +
+        " WHERE m.tournament_id = t.id " +
+        "   AND m.winner_id IS NOT NULL " +
+        "   AND (m.is_bye = 0 OR m.is_bye IS NULL) " +
+        "   AND ( " +
+        "       (m.bracket_type IN ('GRAND_FINAL', 'GF_RESET') OR m.match_code LIKE N'%Chung Kết%' OR m.id LIKE '%_GF_%') " +
+        "       OR " +
+        "       (m.round_number = (SELECT MAX(m2.round_number) FROM matches m2 WHERE m2.tournament_id = t.id AND ISNULL(m2.stage_id, '') = ISNULL(m.stage_id, '') AND (m2.is_bye = 0 OR m2.is_bye IS NULL)) " +
+        "        AND (m.match_code NOT LIKE N'%Hạng 3%' AND m.match_code NOT LIKE N'%3rd%' AND m.match_code NOT LIKE N'%Third%' OR m.match_code IS NULL)) " +
+        "   ) " +
+        "   AND (t.tournament_type <> 'MULTI_STAGE' OR ISNULL(ts.stage_order, 1) = 2 OR m.stage_id LIKE '%S2%' OR m.stage_id LIKE '%STAGE_2%') " +
+        " ORDER BY ISNULL(ts.stage_order, 1) DESC, " +
+        "   CASE WHEN m.bracket_type = 'GF_RESET' OR m.id LIKE '%GF_RESET%' THEN 100 " +
+        "        WHEN m.bracket_type = 'GRAND_FINAL' OR m.match_code LIKE N'%Chung Kết%' OR m.id LIKE '%_GF_%' THEN 90 " +
+        "        ELSE 0 END DESC, " +
+        "   m.round_number DESC, m.match_order DESC) AS db_champion_name ";
+
+    public Tournament mapTournamentFromResultSet(ResultSet rs) {
+        try {
+            String rawStatus = null;
+            try { rawStatus = rs.getString("status"); } catch (Exception ignore) {}
+            int totalMatches = 0;
+            int completedMatches = 0;
+            try { totalMatches = rs.getInt("total_matches"); } catch (Exception ignore) {}
+            try { completedMatches = rs.getInt("completed_matches"); } catch (Exception ignore) {}
+
+            String effectiveStatus = "INCOMING";
+            if ("COMPLETED".equalsIgnoreCase(rawStatus) || "FINISHED".equalsIgnoreCase(rawStatus)) {
+                effectiveStatus = "COMPLETED";
+            } else if ("ONGOING".equalsIgnoreCase(rawStatus) || "IN_PROGRESS".equalsIgnoreCase(rawStatus)) {
+                effectiveStatus = "IN_PROGRESS";
+            } else if (completedMatches > 0) {
+                effectiveStatus = "IN_PROGRESS";
+            } else {
+                effectiveStatus = "INCOMING";
+            }
+
+            Tournament t = new Tournament(
+                    rs.getString("id"),
+                    rs.getString("series_id"),
+                    rs.getString("name"),
+                    rs.getString("tournament_type"),
+                    rs.getString("series_event_type"),
+                    rs.getString("tier_name"),
+                    rs.getInt("tournament_index_in_series"),
+                    rs.getInt("phase_number"),
+                    rs.getInt("max_teams_per_group"),
+                    rs.getInt("advancing_seats_count"),
+                    rs.getString("linked_qualifier_tournament_id"),
+                    effectiveStatus,
+                    rs.getTimestamp("created_at"));
+
+            try {
+                t.setTeamCount(rs.getInt("team_count"));
+            } catch (Exception ignore) {}
+
+            try {
+                String fmt = rs.getString("stage_format");
+                if (fmt != null && !fmt.trim().isEmpty()) {
+                    t.setFormat(fmt.trim());
+                }
+            } catch (Exception ignore) {}
+
+            try {
+                if ("COMPLETED".equals(effectiveStatus)) {
+                    String champDirect = null;
+                    try { champDirect = rs.getString("champion_name"); } catch (Exception ignore) {}
+                    String champSubq = null;
+                    try { champSubq = rs.getString("db_champion_name"); } catch (Exception ignore) {}
+
+                    String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSubq;
+                    if (champ != null && !champ.trim().isEmpty()) {
+                        t.setChampionName(champ.trim());
+                    }
+                } else {
+                    t.setChampionName(null);
+                }
+            } catch (Exception ignore) {}
+
+            try {
+                t.setSeriesRewardPoints(rs.getInt("series_reward_points"));
+            } catch (Exception ignore) {}
+            try {
+                t.setSeriesPointsConfig(rs.getString("series_points_config"));
+            } catch (Exception ignore) {}
+            try {
+                t.setGroupAssignments(rs.getString("group_assignments"));
+            } catch (Exception ignore) {}
+            try {
+                t.setStage2Teams(rs.getString("stage2_teams"));
+            } catch (Exception ignore) {}
+            try {
+                t.setMultiStageConfig(rs.getString("multi_stage_config"));
+            } catch (Exception ignore) {}
+            try {
+                t.setStage1Status(rs.getString("stage1_status"));
+            } catch (Exception ignore) {}
+            try {
+                t.setTeamsJson(rs.getString("teams_json"));
+            } catch (Exception ignore) {}
+
+            return t;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public List<Tournament> getAllTournaments() {
         List<Tournament> list = new ArrayList<>();
-        String sql = "SELECT t.*, " +
-                "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
-                "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count, " +
-                "(SELECT TOP 1 tm.raw_name FROM matches m " +
-                " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
-                " JOIN teams tm ON m.winner_id = tm.id " +
-                " WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL " +
-                " ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) AS db_champion_name " +
-                "FROM tournaments t ORDER BY t.created_at DESC";
+        String sql = TOURNAMENT_SELECT_QUERY + "FROM tournaments t ORDER BY t.created_at DESC";
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection();
@@ -32,64 +140,10 @@ public class TournamentDAO {
                 ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                Tournament t = new Tournament(
-                        rs.getString("id"),
-                        rs.getString("series_id"),
-                        rs.getString("name"),
-                        rs.getString("tournament_type"),
-                        rs.getString("series_event_type"),
-                        rs.getString("tier_name"),
-                        rs.getInt("tournament_index_in_series"),
-                        rs.getInt("phase_number"),
-                        rs.getInt("max_teams_per_group"),
-                        rs.getInt("advancing_seats_count"),
-                        rs.getString("linked_qualifier_tournament_id"),
-                        rs.getString("status"),
-                        rs.getTimestamp("created_at"));
-                try {
-                    t.setTeamCount(rs.getInt("team_count"));
-                } catch (Exception ignore) {
+                Tournament t = mapTournamentFromResultSet(rs);
+                if (t != null) {
+                    list.add(t);
                 }
-                try {
-                    String fmt = rs.getString("stage_format");
-                    if (fmt != null && !fmt.trim().isEmpty()) {
-                        t.setFormat(fmt.trim());
-                    }
-                } catch (Exception ignore) {
-                }
-                try {
-                    String st = rs.getString("status");
-                    if ("COMPLETED".equalsIgnoreCase(st)) {
-                        String champDirect = rs.getString("champion_name");
-                        String champSubq = rs.getString("db_champion_name");
-                        String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSubq;
-                        if (champ != null && !champ.trim().isEmpty()) {
-                            t.setChampionName(champ.trim());
-                        }
-                    }
-                } catch (Exception ignore) {
-                }
-                try {
-                    t.setSeriesRewardPoints(rs.getInt("series_reward_points"));
-                } catch (Exception ignore) {
-                }
-                try {
-                    t.setSeriesPointsConfig(rs.getString("series_points_config"));
-                } catch (Exception ignore) {
-                }
-                try {
-                    t.setGroupAssignments(rs.getString("group_assignments"));
-                } catch (Exception ignore) {
-                }
-                try {
-                    t.setStage2Teams(rs.getString("stage2_teams"));
-                } catch (Exception ignore) {
-                }
-                try {
-                    t.setMultiStageConfig(rs.getString("multi_stage_config"));
-                } catch (Exception ignore) {
-                }
-                list.add(t);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -102,94 +156,17 @@ public class TournamentDAO {
         Tournament cached = TOURNAMENT_BY_ID_CACHE.get(id.trim());
         if (cached != null) return cached;
 
-        String sql = "SELECT t.*, " +
-                "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, "
-                +
-                "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count, "
-                +
-                "(SELECT TOP 1 tm.raw_name FROM matches m "
-                + " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id "
-                + " JOIN teams tm ON m.winner_id = tm.id "
-                + " WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL "
-                + " ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) AS db_champion_name "
-                +
-                "FROM tournaments t WHERE t.id = ?";
-        // champion_name and teams_json are fetched via SELECT t.* above
+        String sql = TOURNAMENT_SELECT_QUERY + "FROM tournaments t WHERE t.id = ?";
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, id);
+            ps.setString(1, id.trim());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    Tournament t = new Tournament(
-                            rs.getString("id"),
-                            rs.getString("series_id"),
-                            rs.getString("name"),
-                            rs.getString("tournament_type"),
-                            rs.getString("series_event_type"),
-                            rs.getString("tier_name"),
-                            rs.getInt("tournament_index_in_series"),
-                            rs.getInt("phase_number"),
-                            rs.getInt("max_teams_per_group"),
-                            rs.getInt("advancing_seats_count"),
-                            rs.getString("linked_qualifier_tournament_id"),
-                            rs.getString("status"),
-                            rs.getTimestamp("created_at"));
-                    try {
-                        t.setTeamCount(rs.getInt("team_count"));
-                    } catch (Exception ignore) {
-                    }
-                    try {
-                        String fmt = rs.getString("stage_format");
-                        if (fmt != null && !fmt.trim().isEmpty()) {
-                            t.setFormat(fmt.trim());
-                        }
-                    } catch (Exception ignore) {
-                    }
-                    try {
-                        String st = rs.getString("status");
-                        if ("COMPLETED".equalsIgnoreCase(st)) {
-                            // Prefer champion_name column (directly persisted), fall back to match-derived subquery
-                            String champDirect = rs.getString("champion_name");
-                            String champSubq = rs.getString("db_champion_name");
-                            String champ = (champDirect != null && !champDirect.trim().isEmpty()) ? champDirect.trim() : champSubq;
-                            if (champ != null && !champ.trim().isEmpty()) {
-                                t.setChampionName(champ.trim());
-                            }
-                        }
-                    } catch (Exception ignore) {
-                    }
-                    try {
-                        t.setSeriesRewardPoints(rs.getInt("series_reward_points"));
-                    } catch (Exception ignore) {
-                    }
-                    try {
-                        t.setSeriesPointsConfig(rs.getString("series_points_config"));
-                    } catch (Exception ignore) {
-                    }
-                    try {
-                        t.setGroupAssignments(rs.getString("group_assignments"));
-                    } catch (Exception ignore) {
-                    }
-                    try {
-                        t.setStage2Teams(rs.getString("stage2_teams"));
-                    } catch (Exception ignore) {
-                    }
-                    try {
-                        t.setMultiStageConfig(rs.getString("multi_stage_config"));
-                    } catch (Exception ignore) {
-                    }
-                    try {
-                        t.setStage1Status(rs.getString("stage1_status"));
-                    } catch (Exception ignore) {
-                    }
-                    try {
-                        t.setTeamsJson(rs.getString("teams_json"));
-                    } catch (Exception ignore) {
-                    }
-                    if (id != null) {
+                    Tournament t = mapTournamentFromResultSet(rs);
+                    if (t != null) {
                         TOURNAMENT_BY_ID_CACHE.put(id.trim(), t);
                     }
                     return t;
@@ -204,101 +181,21 @@ public class TournamentDAO {
     public List<Tournament> getTournamentsBySeriesId(String seriesId) {
         List<Tournament> list = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return list;
-        String sql = "SELECT t.*, " +
-                     "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
-                     "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count " +
-                     "FROM tournaments t WHERE t.series_id = ? ORDER BY t.tournament_index_in_series ASC, t.created_at ASC";
+        String sql = TOURNAMENT_SELECT_QUERY + "FROM tournaments t WHERE t.series_id = ? ORDER BY t.tournament_index_in_series ASC, t.created_at ASC";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, seriesId);
+            ps.setString(1, seriesId.trim());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Tournament t = new Tournament(
-                        rs.getString("id"),
-                        rs.getString("series_id"),
-                        rs.getString("name"),
-                        rs.getString("tournament_type"),
-                        rs.getString("series_event_type"),
-                        rs.getString("tier_name"),
-                        rs.getInt("tournament_index_in_series"),
-                        rs.getInt("phase_number"),
-                        rs.getInt("max_teams_per_group"),
-                        rs.getInt("advancing_seats_count"),
-                        rs.getString("linked_qualifier_tournament_id"),
-                        rs.getString("status"),
-                        rs.getTimestamp("created_at")
-                    );
-                    try {
-                        t.setTeamCount(rs.getInt("team_count"));
-                    } catch (Exception ignore) {}
-                    try {
-                        String fmt = rs.getString("stage_format");
-                        if (fmt != null && !fmt.trim().isEmpty()) t.setFormat(fmt.trim());
-                    } catch (Exception ignore) {}
-                    try {
-                        t.setSeriesRewardPoints(rs.getInt("series_reward_points"));
-                    } catch (Exception ignore) {}
-                    try {
-                        t.setSeriesPointsConfig(rs.getString("series_points_config"));
-                    } catch (Exception ignore) {}
-                    try {
-                        t.setGroupAssignments(rs.getString("group_assignments"));
-                    } catch (Exception ignore) {}
-                    try {
-                        t.setStage2Teams(rs.getString("stage2_teams"));
-                    } catch (Exception ignore) {}
-                    try {
-                        t.setMultiStageConfig(rs.getString("multi_stage_config"));
-                    } catch (Exception ignore) {}
-                    try {
-                        String champDirect = rs.getString("champion_name");
-                        if (champDirect != null && !champDirect.trim().isEmpty()) {
-                            t.setChampionName(champDirect.trim());
-                        }
-                    } catch (Exception ignore) {}
-                    list.add(t);
+                    Tournament t = mapTournamentFromResultSet(rs);
+                    if (t != null) {
+                        list.add(t);
+                    }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-
-        // Fast batch lookup for champions
-        if (!list.isEmpty()) {
-            Map<String, String> champMap = new HashMap<>();
-            String sqlBatchChamp = "WITH RankedWinners AS (" +
-                " SELECT m.tournament_id, tm.raw_name, " +
-                "        ROW_NUMBER() OVER (PARTITION BY m.tournament_id ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) as rn " +
-                " FROM matches m " +
-                " JOIN tournaments t ON m.tournament_id = t.id " +
-                " JOIN teams tm ON m.winner_id = tm.id " +
-                " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
-                " WHERE t.series_id = ? AND m.winner_id IS NOT NULL" +
-                ") " +
-                "SELECT tournament_id, raw_name FROM RankedWinners WHERE rn = 1";
-            try (Connection conn = db.getConnection();
-                 PreparedStatement psChamp = conn.prepareStatement(sqlBatchChamp)) {
-                psChamp.setString(1, seriesId);
-                try (ResultSet rsChamp = psChamp.executeQuery()) {
-                    while (rsChamp.next()) {
-                        champMap.put(rsChamp.getString("tournament_id"), rsChamp.getString("raw_name"));
-                    }
-                }
-            } catch (Exception ignore) {}
-
-            for (Tournament t : list) {
-                if ("COMPLETED".equalsIgnoreCase(t.getStatus())) {
-                    if (t.getChampionName() == null || t.getChampionName().trim().isEmpty()) {
-                        String c = champMap.get(t.getId());
-                        if (c != null && !c.trim().isEmpty()) {
-                            t.setChampionName(c.trim());
-                        }
-                    }
-                } else {
-                    t.setChampionName(null);
-                }
-            }
         }
         return list;
     }

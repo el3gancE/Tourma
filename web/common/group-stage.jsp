@@ -15,6 +15,7 @@
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
     String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
     String dbStage1Status = (tourney != null && tourney.getStage1Status() != null) ? tourney.getStage1Status() : "PENDING";
+    String dbTournamentStatus = (tourney != null && tourney.getStatus() != null) ? tourney.getStatus().trim() : "DRAFT";
     String tournamentType = (tourney != null && tourney.getTournamentType() != null) ? tourney.getTournamentType() : "SINGLE_STAGE";
     int cutTarget = (tourney != null) ? tourney.getAdvancingSeatsCount() : 0;
 
@@ -145,6 +146,15 @@
         window.TourmaContextPath = "${pageContext.request.contextPath}";
         window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
         window.TourmaDbStage1Status["<%= tournamentId %>"] = "<%= dbStage1Status %>";
+        window.TourmaDbTournamentStatus = window.TourmaDbTournamentStatus || {};
+        window.TourmaDbTournamentStatus["<%= tournamentId %>"] = "<%= dbTournamentStatus %>";
+        if ('<%= dbTournamentStatus %>' !== 'COMPLETED') {
+            try {
+                localStorage.removeItem('tourma_final_locked_' + '<%= tournamentId %>');
+                localStorage.removeItem('tourma_champion_' + '<%= tournamentId %>');
+                localStorage.removeItem('tourma_final_champion_' + '<%= tournamentId %>');
+            } catch(e) {}
+        }
         window.groupTournamentId = "<%= tournamentId %>";
         window.dbGroupMatches = <%= dbMatchesJson %>;
         window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;

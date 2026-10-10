@@ -224,6 +224,11 @@
         isTournamentLocked: function (tournamentId) {
             if (!tournamentId) return false;
             try {
+                if (window.TourmaDbTournamentStatus && window.TourmaDbTournamentStatus[tournamentId] !== undefined) {
+                    var s = window.TourmaDbTournamentStatus[tournamentId];
+                    if (s === 'COMPLETED') return true;
+                    if (s === 'ONGOING' || s === 'IN_PROGRESS' || s === 'DRAFT' || s === 'INCOMING') return false;
+                }
                 return localStorage.getItem('tourma_final_locked_' + tournamentId) === 'true';
             } catch (e) {
                 return false;
@@ -392,8 +397,15 @@
 
             this.isLocked = true;
 
+            if (!window.TourmaDbTournamentStatus) window.TourmaDbTournamentStatus = {};
+            window.TourmaDbTournamentStatus[this.tournamentId] = 'COMPLETED';
+
             try {
                 localStorage.setItem('tourma_final_locked_' + this.tournamentId, 'true');
+                if (this.championName) {
+                    localStorage.setItem('tourma_champion_' + this.tournamentId, this.championName);
+                    localStorage.setItem('tourma_final_champion_' + this.tournamentId, this.championName);
+                }
             } catch (e) {}
 
             if (typeof this.onLockCallback === 'function') {
@@ -440,7 +452,12 @@
 
             try {
                 localStorage.removeItem('tourma_final_locked_' + this.tournamentId);
+                localStorage.removeItem('tourma_champion_' + this.tournamentId);
+                localStorage.removeItem('tourma_final_champion_' + this.tournamentId);
             } catch (e) {}
+
+            if (!window.TourmaDbTournamentStatus) window.TourmaDbTournamentStatus = {};
+            window.TourmaDbTournamentStatus[this.tournamentId] = 'ONGOING';
 
             this.isLocked = false;
 

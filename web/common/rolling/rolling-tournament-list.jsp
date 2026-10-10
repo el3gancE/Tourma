@@ -463,10 +463,14 @@
 
             function findChampionName(card) {
                 var tid = card.getAttribute('data-id');
-                var dbChamp = card.getAttribute('data-db-champion');
+                var dbChamp = (card.getAttribute('data-db-champion') || '').trim();
+                var dbStatus = (card.getAttribute('data-db-status') || '').trim();
+                if (dbStatus === 'ONGOING' || dbStatus === 'IN_PROGRESS' || dbStatus === 'DRAFT') {
+                    return "";
+                }
                 var saved = localStorage.getItem("tourma_champion_" + tid) || localStorage.getItem("tourma_final_champion_" + tid);
                 if (saved && saved.trim() !== "" && saved.trim() !== "BYE" && saved.trim() !== "TBD") return saved.trim();
-                if (dbChamp && dbChamp.trim() !== "" && dbChamp.trim() !== "BYE" && dbChamp.trim() !== "TBD") return dbChamp.trim();
+                if (dbChamp && dbChamp !== "" && dbChamp !== "BYE" && dbChamp !== "TBD") return dbChamp;
 
                 var isRealTeam = function(n) {
                     if (!n) return false;
@@ -529,9 +533,12 @@
                     var tid = card.getAttribute('data-id');
                     if (!tid) return;
 
-                    var dbStatus = card.getAttribute('data-db-status');
-                    var championName = findChampionName(card);
-                    var isFinished = (championName && championName.trim() !== '') || dbStatus === 'COMPLETED' || (localStorage.getItem('tourma_stage2_locked_' + tid) === 'true' && championName && championName.trim() !== '');
+                    var dbStatus = (card.getAttribute('data-db-status') || '').trim();
+                    var dbChamp = (card.getAttribute('data-db-champion') || '').trim();
+                    var championName = findChampionName(card) || (dbStatus === 'COMPLETED' ? dbChamp : '');
+                    var isFinished = (dbStatus === 'COMPLETED') ||
+                        (((championName && championName.trim() !== '') || (localStorage.getItem('tourma_stage2_locked_' + tid) === 'true' && championName && championName.trim() !== ''))
+                         && dbStatus !== 'ONGOING' && dbStatus !== 'IN_PROGRESS' && dbStatus !== 'DRAFT');
 
                     var statusPill = card.querySelector('.status-pill');
                     var championMeta = card.querySelector('.tourney-champion-meta');

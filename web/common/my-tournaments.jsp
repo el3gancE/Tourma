@@ -75,7 +75,8 @@
                                  data-db-champion="${t.championName}"
                                  data-stage-type="${t.tournamentType}"
                                  data-context="${empty t.seriesId ? 'STANDALONE' : 'SERIES'}"
-                                 data-status="${t.status == 'COMPLETED' ? 'COMPLETED' : (t.status == 'ONGOING' ? 'IN_PROGRESS' : 'INCOMING')}"
+                                 data-team-count="${t.teamCount}"
+                                 data-status="${t.status == 'COMPLETED' ? 'COMPLETED' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'IN_PROGRESS' : 'INCOMING')}"
                                  data-name="${t.name}">
                                 
                                 <div class="tourney-card-main">
@@ -87,8 +88,8 @@
                                         <c:if test="${not empty t.tierName}">
                                             <span class="tourney-badge-tier tier-${t.tierName.toLowerCase()}">TIER ${t.tierName}</span>
                                         </c:if>
-                                        <span class="status-pill ${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' ? 'in-progress' : 'incoming')}" id="statusPill_${t.id}">
-                                            ${t.status == 'COMPLETED' ? 'Completed' : (t.status == 'ONGOING' ? 'In Progress' : 'Incoming')}
+                                        <span class="status-pill ${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'in-progress' : 'incoming')}" id="statusPill_${t.id}">
+                                            ${t.status == 'COMPLETED' ? 'Completed' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'In Progress' : 'Incoming')}
                                         </span>
                                     </div>
 
@@ -96,7 +97,7 @@
                                         <!-- TOTAL TEAMS COUNT META -->
                                         <span class="tourney-teams-meta" id="teamMeta_${t.id}">
                                             <i class="fa-solid fa-users text-mint"></i> 
-                                            <span class="team-count-val" style="color: #f8fafc; font-weight: 700;">0 Đội</span>
+                                            <span class="team-count-val" style="color: #f8fafc; font-weight: 700;">${t.teamCount > 0 ? t.teamCount : 0} Đội</span>
                                         </span>
 
                                         <span class="meta-divider">•</span>
@@ -123,7 +124,7 @@
                                         </c:choose>
 
                                         <!-- INLINE CHAMPION META (When Completed) -->
-                                        <span id="championMeta_${t.id}" class="tourney-champion-meta" style="${(t.status == 'COMPLETED' || not empty t.championName) ? 'display: inline-flex;' : 'display: none;'}">
+                                        <span id="championMeta_${t.id}" class="tourney-champion-meta" style="${(t.status == 'COMPLETED' && not empty t.championName) ? 'display: inline-flex;' : 'display: none;'}">
                                             <span class="meta-divider">•</span>
                                             <i class="fa-solid fa-trophy text-gold"></i> Nhà vô địch: <span class="champion-name-val" style="color: #fbbf24;">${not empty t.championName ? t.championName : ''}</span>
                                         </span>
@@ -331,10 +332,14 @@
 
             function findChampionName(card) {
                 var tid = card.getAttribute('data-id');
-                var dbChamp = card.getAttribute('data-db-champion');
+                var dbChamp = (card.getAttribute('data-db-champion') || '').trim();
+                var dbStatus = (card.getAttribute('data-db-status') || '').trim();
+                if (dbStatus === 'ONGOING' || dbStatus === 'IN_PROGRESS' || dbStatus === 'DRAFT') {
+                    return "";
+                }
                 var saved = localStorage.getItem("tourma_champion_" + tid) || localStorage.getItem("tourma_final_champion_" + tid);
                 if (saved && saved.trim() !== "" && saved.trim() !== "BYE" && saved.trim() !== "TBD") return saved.trim();
-                if (dbChamp && dbChamp.trim() !== "" && dbChamp.trim() !== "BYE" && dbChamp.trim() !== "TBD") return dbChamp.trim();
+                if (dbChamp && dbChamp !== "" && dbChamp !== "BYE" && dbChamp !== "TBD") return dbChamp;
 
                 var isRealTeam = function(n) {
                     if (!n) return false;
@@ -451,15 +456,20 @@
                     var tid = card.getAttribute('data-id');
                     if (!tid) return;
 
-                    var dbStatus = card.getAttribute('data-db-status');
-                    var championName = findChampionName(card);
-                    var isLocked = localStorage.getItem("tourma_final_locked_" + tid) === "true" || 
-                                   localStorage.getItem("tourma_stage2_locked_" + tid) === "true" ||
-                                   dbStatus === 'COMPLETED' || 
-                                   (championName && championName.trim() !== "");
+                    var dbStatus = (card.getAttribute('data-db-status') || '').trim();
+                    var dbChamp = (card.getAttribute('data-db-champion') || '').trim();
+                    var championName = findChampionName(card) || (dbStatus === 'COMPLETED' ? dbChamp : '');
+
+                    var isCompleted = (dbStatus === 'COMPLETED') || 
+                                   ((localStorage.getItem("tourma_final_locked_" + tid) === "true" || 
+                                     localStorage.getItem("tourma_stage2_locked_" + tid) === "true" || 
+                                     (championName && championName.trim() !== "")) &&
+                                    dbStatus !== 'ONGOING' && dbStatus !== 'IN_PROGRESS' && dbStatus !== 'DRAFT');
 
                     // --- 1. UPDATE TEAMS COUNT ---
-                    var teamsCount = getTournamentTeamsCount(tid);
+                    var dbTeamCount = parseInt(card.getAttribute('data-team-count')) || 0;
+                    var localTeamsCount = getTournamentTeamsCount(tid);
+                    var teamsCount = dbTeamCount > 0 ? dbTeamCount : localTeamsCount;
                     var teamMeta = card.querySelector('.tourney-teams-meta');
                     if (teamMeta) {
                         var teamValEl = teamMeta.querySelector('.team-count-val');
@@ -476,7 +486,7 @@
                         try { multiConfig = JSON.parse(multiConfigRaw); } catch(e) {}
                     }
 
-                    var isMulti = (localType === 'MULTI_STAGE' || multiConfig !== null);
+                    var isMulti = (localType === 'MULTI_STAGE' || multiConfig !== null || card.getAttribute('data-stage-type') === 'MULTI_STAGE');
                     
                     var badgeType = card.querySelector('.tourney-badge-type');
                     if (badgeType) {
@@ -494,7 +504,7 @@
                     }
 
                     var formatSpan = card.querySelector('.tourney-format-span');
-                    var btnView = card.querySelector('.btn-view-bracket');
+                    var btnView = card.querySelector('.btn-view-bracket-card') || card.querySelector('.btn-view-bracket');
                     var ctx = "${pageContext.request.contextPath}";
 
                     if (isMulti && multiConfig) {
@@ -594,8 +604,9 @@
 
                     var statusPill = card.querySelector('.status-pill');
                     var championMeta = card.querySelector('.tourney-champion-meta');
+                    var isOngoing = !isCompleted && (dbStatus === 'ONGOING' || dbStatus === 'IN_PROGRESS' || completedMatchesCount > 0);
 
-                    if (isLocked) {
+                    if (isCompleted) {
                         card.setAttribute('data-status', 'COMPLETED');
                         if (statusPill) {
                             statusPill.className = 'status-pill completed';
@@ -604,9 +615,9 @@
                         if (championMeta) {
                             var nameValEl = championMeta.querySelector('.champion-name-val');
                             if (nameValEl) nameValEl.innerText = championName || '';
-                            championMeta.style.display = championName ? 'inline-flex' : 'none';
+                            championMeta.style.display = (championName && championName.trim() !== "") ? 'inline-flex' : 'none';
                         }
-                    } else if (completedMatchesCount > 0 || dbStatus === 'ONGOING') {
+                    } else if (isOngoing) {
                         card.setAttribute('data-status', 'IN_PROGRESS');
                         if (statusPill) {
                             statusPill.className = 'status-pill in-progress';
