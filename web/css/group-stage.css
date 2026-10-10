@@ -177,53 +177,11 @@
     font-size: 0.7rem;
     font-weight: 700;
     color: var(--gs-accent-teal);
+/* Group Stage Matches View Section - Frameless List Layout Matching SE/DE/Swiss */
+.gs-matches-container {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    font-family: 'Lexend', sans-serif !important;
 }
 
-.gs-group-package {
-    background: #121620;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.75rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-}
-
-.gs-group-package-header {
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: #fbbf24;
-    padding-bottom: 0.75rem;
-    margin-bottom: 1.25rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.gs-group-package-badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #94a3b8;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 0.2rem 0.65rem;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.gs-round-subpackage {
-    margin-bottom: 1.25rem;
-}
-
-.gs-round-subpackage:last-child {
-    margin-bottom: 0;
-}
-
-.gs-round-subtitle {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #2dd4bf;
-    margin-bottom: 0.6rem;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}

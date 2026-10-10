@@ -374,33 +374,8 @@ public class GSLStageDAO extends DBContext {
             }
         }
 
-        // 2. Default Auto-Divide: groups strictly 4 teams each (or 2/8/16/32), minimum 2 groups
-        int totalTeams = allTeams.size();
-        int teamsPerGroup = 4;
-        if (totalTeams <= 2) {
-            teamsPerGroup = 2;
-        }
-
-        int numGroups = (int) Math.ceil((double) totalTeams / teamsPerGroup);
-        if (numGroups < 2) {
-            numGroups = 2;
-        }
-        numGroups = nextPowerOfTwo(numGroups);
-
-        for (int g = 0; g < numGroups; g++) {
-            groupMap.put(getGroupNameForIndex(g), new ArrayList<>());
-        }
-
-        // Snake Seeding distribution
-        String[] groupKeys = groupMap.keySet().toArray(new String[0]);
-        for (int i = 0; i < allTeams.size(); i++) {
-            int roundIndex = i / numGroups;
-            int posInRound = i % numGroups;
-            int targetGroupIndex = (roundIndex % 2 == 0) ? posInRound : (numGroups - 1 - posInRound);
-            groupMap.get(groupKeys[targetGroupIndex]).add(allTeams.get(i));
-        }
-
-        return groupMap;
+        // 2. Strict Business Logic: Do NOT auto-divide into groups. User must manually create groups in manage-group.
+        return new LinkedHashMap<>();
     }
 
     private Map<String, List<Team>> parseGroupAssignments(String json, List<Team> allTeams) {

@@ -1,9 +1,10 @@
 /**
  * Tourma Manage Group JS Engine
  * Default state: Clean empty workspace initially.
- * Supports HTML5 Drag & Drop moving teams between group columns,
- * Auto distribution ("Chia Đều Đội Về Bảng"), Modal popup team selection,
- * and minimum 2 groups requirement validation.
+ * Clean, compact group card layout.
+ * Click a group (or "+ Thêm Đội") to open modal popup with unassigned teams.
+ * Supports manual group creation, Modal popup team selection,
+ * Auto distribution ("Ngẫu Nhiên"), and format validation.
  */
 
 (function () {
@@ -56,53 +57,23 @@
                 } catch (e) {}
             }
 
-            // Priority 1: From Database (window.DB_GROUP_ASSIGNMENTS)
+            // Load Group Assignments from DB if saved
             if (window.DB_GROUP_ASSIGNMENTS && typeof window.DB_GROUP_ASSIGNMENTS === 'object' && Object.keys(window.DB_GROUP_ASSIGNMENTS).length > 0) {
                 this.groups = window.DB_GROUP_ASSIGNMENTS;
                 try {
                     localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
                 } catch (e) {}
             } else {
-                // Priority 2: Fallback to localStorage
-                var savedGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
-                if (savedGroupsRaw) {
-                    try { this.groups = JSON.parse(savedGroupsRaw); } catch (e) { this.groups = {}; }
-                } else {
-                    this.groups = {};
-                }
+                // If DB has no saved group assignments, start with a 100% clean empty workspace
+                this.groups = {};
+                try {
+                    localStorage.removeItem('tourma_group_assignments_' + this.tournamentId);
+                } catch (e) {}
             }
 
-            // Priority 3: Auto-create initial balanced groups if workspace is clean and teams exist
-            if ((!this.groups || Object.keys(this.groups).length === 0) && this.teamsList && this.teamsList.length >= 2) {
-                var urlParams = new URLSearchParams(window.location.search);
-                var formatParam = (urlParams.get('format') || '').toUpperCase();
-                var isGsl = (formatParam.indexOf('GSL') !== -1);
-                
-                var teamsPerGroup = 4;
-                if (this.teamsList.length <= 4) teamsPerGroup = 2;
-                var numGroups = Math.max(2, Math.ceil(this.teamsList.length / teamsPerGroup));
-                if (isGsl) {
-                    var p = 1;
-                    while (p < numGroups) p <<= 1;
-                    numGroups = p;
-                }
+            // Clean workspace: Groups are strictly created manually by user, or via "Ngẫu Nhiên" button.
+            if (!this.groups || typeof this.groups !== 'object') {
                 this.groups = {};
-                for (var g = 0; g < numGroups; g++) {
-                    var gSuffix = (g < 26)
-                        ? String.fromCharCode(65 + g)
-                        : (String.fromCharCode(65 + Math.floor((g - 26) / 26)) + String.fromCharCode(65 + ((g - 26) % 26)));
-                    this.groups[gSuffix] = [];
-                }
-                var gKeys = Object.keys(this.groups);
-                for (var i = 0; i < this.teamsList.length; i++) {
-                    var roundIdx = Math.floor(i / numGroups);
-                    var posInRound = i % numGroups;
-                    var targetGIdx = (roundIdx % 2 === 0) ? posInRound : (numGroups - 1 - posInRound);
-                    this.groups[gKeys[targetGIdx]].push(this.teamsList[i]);
-                }
-                try {
-                    localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
-                } catch (e) {}
             }
         },
 
@@ -119,7 +90,6 @@
         },
 
         getUnassignedTeams: function () {
-            // Find teams that are NOT assigned to any group
             var assignedIds = {};
             for (var gKey in this.groups) {
                 var teamList = this.groups[gKey] || [];
@@ -183,10 +153,21 @@
             }
         },
 
+        clearAllGroups: function () {
+            var groupKeys = Object.keys(this.groups);
+            if (groupKeys.length === 0) return;
+
+            if (confirm('⚠️ Bạn có chắc chắn muốn xóa tất cả các bảng đấu và đưa toàn bộ đội bóng về danh sách chưa xếp?')) {
+                this.groups = {};
+                this.saveGroupsState();
+                this.renderWorkspace();
+            }
+        },
+
         handleAutoDistribute: function () {
             var groupKeys = Object.keys(this.groups).sort(this.compareGroupKeys);
             if (groupKeys.length < 2) {
-                alert('⚠️ Cần có tối thiểu 2 BẢNG ĐẤU để chia ngẫu nhiên các đội!\n\nVui lòng bấm "+ Thêm Bảng Mới" để tạo ít nhất 2 bảng (Bảng A, Bảng B...) trước.');
+                alert('⚠️ Cần có tối thiểu 2 BẢNG ĐẤU để chia ngẫu nhiên các đội!\n\nVui lòng bấm "+ Thêm Bảng Mới" để tạo ít nhất 2 bảng (Bảng A, Bảng B...) trước khi chia ngẫu nhiên.');
                 return;
             }
 
@@ -216,7 +197,6 @@
             }
 
             // Seeded Pot Distribution: Group teams into pots of size K (#1..#K, #K+1..#2K, etc.)
-            // For each pot, randomly shuffle target groups so top seeds are split 1 per group randomly!
             for (var startIdx = 0; startIdx < totalTeams; startIdx += K) {
                 var potTeams = this.teamsList.slice(startIdx, startIdx + K);
                 var shuffledGroups = shuffleArray(groupKeys);
@@ -237,8 +217,12 @@
             var titleElem = document.getElementById('modalGroupTitleDisplay');
             var container = document.getElementById('modalTeamChecklistContainer');
             var countElem = document.getElementById('modalSelectedCountDisplay');
+            var searchInput = document.getElementById('modalTeamSearchInput');
 
-            if (titleElem) titleElem.innerText = 'Thêm Đội Vào Bảng ' + gKey;
+            if (searchInput) searchInput.value = '';
+
+            var dispTitle = (gKey.toUpperCase().indexOf('BẢNG') !== -1) ? gKey.toUpperCase() : ('BẢNG ' + gKey.toUpperCase());
+            if (titleElem) titleElem.innerText = 'Thêm Đội Vào ' + dispTitle;
 
             var availableTeams = this.getUnassignedTeams();
             if (container) {
@@ -255,6 +239,8 @@
                         var seedNum = this.getTeamSeedNumber(team);
 
                         var row = document.createElement('label');
+                        row.className = 'modal-team-row';
+                        row.dataset.teamName = String(tName).toLowerCase();
                         row.style.display = 'flex';
                         row.style.alignItems = 'center';
                         row.style.justifyContent = 'space-between';
@@ -264,12 +250,22 @@
                         row.style.padding = '0.65rem 0.85rem';
                         row.style.marginBottom = '0.4rem';
                         row.style.cursor = 'pointer';
+                        row.style.transition = 'all 0.2s ease';
+
+                        row.onmouseover = function() {
+                            this.style.borderColor = 'rgba(45, 212, 191, 0.4)';
+                            this.style.background = 'rgba(45, 212, 191, 0.04)';
+                        };
+                        row.onmouseout = function() {
+                            this.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                            this.style.background = '#181d29';
+                        };
 
                         row.innerHTML = '<div style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; font-weight:600; color:#f8fafc;">' +
                             '<span class="mg-seed-badge">' + seedNum + '</span>' +
                             '<span>' + tName + '</span>' +
                             '</div>' +
-                            '<input type="checkbox" class="modal-team-checkbox" value="' + tId + '" onchange="TourmaManageGroup.updateModalSelectedCount()" style="width:16px; height:16px; accent-color:#2dd4bf; cursor:pointer;">';
+                            '<input type="checkbox" class="modal-team-checkbox" value="' + tId + '" onchange="TourmaManageGroup.updateModalSelectedCount()" style="width:17px; height:17px; accent-color:#2dd4bf; cursor:pointer;">';
 
                         container.appendChild(row);
                     }
@@ -278,6 +274,31 @@
 
             if (countElem) countElem.innerText = '0';
             if (modal) modal.style.display = 'flex';
+        },
+
+        filterModalTeams: function (query) {
+            var q = String(query || '').trim().toLowerCase();
+            var rows = document.querySelectorAll('.modal-team-row');
+            rows.forEach(function (row) {
+                var name = row.dataset.teamName || '';
+                if (!q || name.indexOf(q) !== -1) {
+                    row.style.display = 'flex';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        },
+
+        selectAllModalTeams: function (select) {
+            var checkboxes = document.querySelectorAll('.modal-team-checkbox');
+            checkboxes.forEach(function (cb) {
+                // only select visible checkboxes
+                var parentRow = cb.closest('.modal-team-row');
+                if (!parentRow || parentRow.style.display !== 'none') {
+                    cb.checked = !!select;
+                }
+            });
+            this.updateModalSelectedCount();
         },
 
         closeAddTeamModal: function () {
@@ -422,7 +443,7 @@
                 '<span style="font-size: 0.8rem; color: #94a3b8; margin-left: 1rem;">| Đội chưa xếp bảng: <strong style="color: ' + (unassignedCount > 0 ? '#fbbf24' : '#2dd4bf') + ';">' + unassignedCount + ' Đội</strong></span>' +
                 '</div>' +
                 '<div style="font-size: 0.78rem; color: #94a3b8;">' +
-                '<i class="fa-solid fa-hand-pointer text-mint"></i> Kéo thả đội hoặc bấm ô <strong>"+"</strong> để xếp đội vào bảng' +
+                '<i class="fa-solid fa-hand-pointer text-mint"></i> Bấm vào từng bảng để chọn đội bóng vào bảng thi đấu.' +
                 '</div>';
 
             container.appendChild(summaryBar);
@@ -436,25 +457,24 @@
                 emptyNotice.style.flexDirection = 'column';
                 emptyNotice.style.alignItems = 'center';
                 emptyNotice.style.justifyContent = 'center';
-                emptyNotice.style.padding = '3.5rem 1.5rem';
+                emptyNotice.style.padding = '3rem 1.5rem';
                 emptyNotice.style.textAlign = 'center';
                 emptyNotice.style.background = '#121620';
                 emptyNotice.style.borderRadius = '12px';
-                emptyNotice.style.border = '1px dashed rgba(255, 255, 255, 0.12)';
+                emptyNotice.style.border = '1px dashed rgba(255, 255, 255, 0.15)';
 
                 emptyNotice.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size: 2.8rem; color: #2dd4bf; margin-bottom: 1rem;"></i>' +
                     '<h3 style="font-size: 1.15rem; font-weight: 800; color: #f8fafc; margin: 0 0 0.5rem 0;">Chưa có bảng đấu nào</h3>' +
-                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.5rem 0; max-width: 420px;">Giải đấu Vòng Bảng bắt buộc cần <strong>tối thiểu 2 BẢNG ĐẤU</strong>.<br>Vui lòng bấm <strong>"+ Thêm Bảng Mới"</strong> hoặc <strong>"Chia Đều Đội Về Bảng"</strong> để tạo bảng.</p>' +
+                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.5rem 0; max-width: 460px;">Vui lòng bấm <strong>"+ Thêm Bảng Mới"</strong> để tạo các bảng đấu (Bảng A, Bảng B...), sau đó chọn đội vào từng bảng.</p>' +
                     '<div style="display:flex; gap: 0.75rem;">' +
                     '<button type="button" class="btn-mg-add" onclick="TourmaManageGroup.addNewGroup()" style="padding: 0.55rem 1.25rem;"><i class="fa-solid fa-plus"></i> Thêm Bảng Mới</button>' +
-                    '<button type="button" class="btn-mg-distribute" onclick="TourmaManageGroup.handleAutoDistribute()" style="padding: 0.55rem 1.25rem;">Ngẫu Nhiên</button>' +
                     '</div>';
 
                 container.appendChild(emptyNotice);
                 return;
             }
 
-            // 3. RENDER GROUP COLUMNS WITH DRAG & DROP
+            // 3. RENDER GROUP COLUMNS ONLY (NO UNASSIGNED COLUMN ON LEFT)
             for (var k = 0; k < groupKeys.length; k++) {
                 (function(gKey) {
                     var teamList = self.groups[gKey] || [];
@@ -484,9 +504,11 @@
 
                     var dispTitle = (gKey.toUpperCase().indexOf('BẢNG') !== -1) ? gKey.toUpperCase() : ('BẢNG ' + gKey.toUpperCase());
                     var headerHtml = '<div class="mg-group-header">' +
-                        '<div class="mg-group-title"><i class="fa-solid fa-layer-group"></i> ' + dispTitle + '</div>' +
+                        '<div class="mg-group-title" onclick="TourmaManageGroup.openAddTeamModal(\'' + gKey + '\')" style="cursor:pointer;" title="Bấm để chọn đội vào ' + dispTitle + '">' +
+                        '<i class="fa-solid fa-layer-group"></i> ' + dispTitle +
+                        '</div>' +
                         '<div style="display: flex; align-items: center; gap: 0.5rem;">' +
-                        '<span style="font-size: 0.75rem; color: #94a3b8;">' + teamList.length + ' Đội</span>' +
+                        '<span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">' + teamList.length + ' Đội</span>' +
                         '<button type="button" class="btn-delete-group" onclick="TourmaManageGroup.deleteGroup(\'' + gKey + '\')" title="Xóa ' + dispTitle + '">' +
                         '<i class="fa-solid fa-trash-can"></i>' +
                         '</button>' +
@@ -499,13 +521,13 @@
                     listWrapper.className = 'mg-team-list-wrapper';
 
                     if (teamList.length === 0) {
-                        // Fully Clickable Middle Dashed Box
+                        // Fully Clickable Compact Middle Dashed Box
                         var emptyBox = document.createElement('div');
                         emptyBox.onclick = function() { self.openAddTeamModal(gKey); };
                         emptyBox.style.fontSize = '0.8rem';
                         emptyBox.style.color = '#94a3b8';
                         emptyBox.style.textAlign = 'center';
-                        emptyBox.style.padding = '1.75rem 1rem';
+                        emptyBox.style.padding = '1.25rem 0.75rem';
                         emptyBox.style.border = '1px dashed rgba(45, 212, 191, 0.35)';
                         emptyBox.style.borderRadius = '8px';
                         emptyBox.style.cursor = 'pointer';
@@ -521,8 +543,8 @@
                             this.style.background = 'rgba(45, 212, 191, 0.03)';
                         };
 
-                        emptyBox.innerHTML = '<div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;"><i class="fa-solid fa-plus"></i></div><br>' +
-                            'Bảng này đang trống.<br><strong style="color: #2dd4bf;">Bấm vào đây để chọn đội vào bảng.</strong>';
+                        emptyBox.innerHTML = '<div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.35rem;"><i class="fa-solid fa-plus"></i></div><br>' +
+                            '<span style="font-size: 0.78rem;">Bảng này đang trống.</span><br><strong style="color: #2dd4bf; font-size: 0.8rem;">Bấm vào đây để chọn đội vào bảng.</strong>';
 
                         listWrapper.appendChild(emptyBox);
                     } else {
@@ -550,11 +572,13 @@
                                     '<span>' + tName + '</span>' +
                                     '</div>';
 
-                                var removeBtnHtml = '<button type="button" onclick="TourmaManageGroup.removeTeamFromGroup(\'' + gKey + '\', ' + tId + ')" title="Bỏ đội ra khỏi bảng" style="background:transparent; border:none; color:#94a3b8; font-size:0.85rem; cursor:pointer; padding:0.2rem 0.4rem; border-radius:4px; transition:color 0.2s ease;">' +
+                                var actionsHtml = '<div style="display:flex; align-items:center; gap:0.4rem;">';
+                                actionsHtml += '<button type="button" onclick="TourmaManageGroup.removeTeamFromGroup(\'' + gKey + '\', ' + tId + ')" title="Bỏ đội ra khỏi bảng" style="background:transparent; border:none; color:#94a3b8; font-size:0.85rem; cursor:pointer; padding:0.2rem 0.4rem; border-radius:4px; transition:color 0.2s ease;">' +
                                     '<i class="fa-solid fa-xmark"></i>' +
-                                    '</button>';
+                                    '</button>' +
+                                    '</div>';
 
-                                item.innerHTML = infoHtml + removeBtnHtml;
+                                item.innerHTML = infoHtml + actionsHtml;
                                 listWrapper.appendChild(item);
                             })(teamList[i]);
                         }
@@ -565,14 +589,14 @@
                         addMoreRow.style.fontSize = '0.78rem';
                         addMoreRow.style.color = '#2dd4bf';
                         addMoreRow.style.textAlign = 'center';
-                        addMoreRow.style.padding = '0.5rem';
+                        addMoreRow.style.padding = '0.45rem';
                         addMoreRow.style.border = '1px dashed rgba(45, 212, 191, 0.3)';
                         addMoreRow.style.borderRadius = '6px';
-                        addMoreRow.style.marginTop = '0.6rem';
+                        addMoreRow.style.marginTop = '0.5rem';
                         addMoreRow.style.cursor = 'pointer';
                         addMoreRow.style.fontWeight = '600';
                         addMoreRow.style.background = 'rgba(45, 212, 191, 0.03)';
-                        addMoreRow.innerHTML = '<i class="fa-solid fa-plus"></i> Thêm Đội Vào Bảng ' + gKey;
+                        addMoreRow.innerHTML = '<i class="fa-solid fa-plus"></i> Thêm Đội Vào ' + dispTitle;
 
                         listWrapper.appendChild(addMoreRow);
                     }
@@ -584,21 +608,6 @@
         },
 
         saveGroupsState: function () {
-            var oldGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
-            var oldTotalCount = 0;
-            if (oldGroupsRaw) {
-                try {
-                    var oldG = JSON.parse(oldGroupsRaw);
-                    Object.keys(oldG).forEach(function(k) { if (Array.isArray(oldG[k])) oldTotalCount += oldG[k].length; });
-                } catch(e) {}
-            }
-
-            var newTotalCount = 0;
-            var self = this;
-            Object.keys(this.groups).forEach(function(k) {
-                if (Array.isArray(self.groups[k])) newTotalCount += self.groups[k].length;
-            });
-
             localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
 
             // Sync directly to DB in background
@@ -641,7 +650,7 @@
                 }
             } else {
                 if (groupKeys.length < 2) {
-                    alert('⚠️ Giải đấu Vòng Bảng bắt buộc phải có tối thiểu 2 BẢNG ĐẤU!\n\nVui lòng bấm "+ Thêm Bảng Mới" hoặc "Chia Đều Đội Về Bảng" để tạo tối thiểu 2 bảng (Bảng A, Bảng B...) trước khi thi đấu.');
+                    alert('⚠️ Giải đấu Vòng Bảng bắt buộc phải có tối thiểu 2 BẢNG ĐẤU!\n\nVui lòng bấm "+ Thêm Bảng Mới" hoặc "Ngẫu Nhiên" để tạo tối thiểu 2 bảng (Bảng A, Bảng B...) trước khi thi đấu.');
                     return;
                 }
             }

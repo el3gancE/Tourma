@@ -2,19 +2,20 @@ package dao;
 
 import model.Match;
 import model.Team;
+import model.Tournament;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * High-Performance, Database-Driven DAO for Group Stage Tournament Format.
- * 100% Database-Driven: manages groups, group_teams rankings, and group fixtures in SQL Server.
+ * 100% Database-Driven:
+ * - Manages groups, group_teams rankings, and group fixtures in SQL Server.
+ * - Real-time standings recalculation (MP, W, D, L, GF, GA, GD, PTS, Rank)
+ * - Auto stage advancement pipeline into stage2_teams.
  */
 public class GroupStageDAO extends DBContext {
 
@@ -42,67 +43,294 @@ public class GroupStageDAO extends DBContext {
     }
 
     public boolean syncGroupsAndGroupTeams(String tournamentId, int stageOrder, String groupAssignmentsJson) {
-        // Group synchronization logic if updated via JSON
-        return true;
+        if (tournamentId == null || groupAssignmentsJson == null || groupAssignmentsJson.trim().isEmpty()) return false;
+        
+        ParticipantDAO pDao = new ParticipantDAO();
+        List<Team> allTeams = pDao.getTeamsByTournamentId(tournamentId);
+        if (allTeams == null || allTeams.isEmpty()) return false;
+
+        Map<String, List<Team>> groups = parseGroupAssignments(groupAssignmentsJson, allTeams);
+        if (groups == null || groups.isEmpty()) return false;
+
+        String stageId = lookupOrCreateStageId(tournamentId, stageOrder);
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+
+            // 1. Delete old matches, group_teams, and groups for this stage
+            try (PreparedStatement psDelM = conn.prepareStatement("DELETE FROM matches WHERE tournament_id = ? AND stage_id = ?")) {
+                psDelM.setString(1, tournamentId);
+                psDelM.setString(2, stageId);
+                psDelM.executeUpdate();
+            }
+
+            try (PreparedStatement psDelGT = conn.prepareStatement("DELETE gt FROM group_teams gt JOIN groups g ON gt.group_id = g.id WHERE g.stage_id = ?")) {
+                psDelGT.setString(1, stageId);
+                psDelGT.executeUpdate();
+            }
+
+            try (PreparedStatement psDelG = conn.prepareStatement("DELETE FROM groups WHERE stage_id = ?")) {
+                psDelG.setString(1, stageId);
+                psDelG.executeUpdate();
+            }
+
+            // 2. Re-create groups, group_teams, and matches
+            initializeGroupsAndFixturesFromMap(conn, tournamentId, stageId, groups);
+
+            conn.commit();
+            service.RollingWindowPointService.clearAllCaches();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
-    public List<Match> getMatchesByTournamentId(String tournamentId) {
-        List<Match> list = new ArrayList<>();
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return list;
+    // ------------------------------------------------------------------------
+    // 1. INITIALIZATION & GROUP FIXTURES
+    // ------------------------------------------------------------------------
 
-        String sql = "SELECT m.*, "
-                + "t1.raw_name AS t1_name, t1.original_seed AS t1_seed, "
-                + "t2.raw_name AS t2_name, t2.original_seed AS t2_seed, "
-                + "tw.raw_name AS winner_name "
-                + "FROM matches m "
-                + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "WHERE m.tournament_id = ? "
-                + "ORDER BY m.round_number ASC, m.id ASC";
+    public synchronized void ensureGroupStageInitialized(String tournamentId, int stageOrder) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
 
+        String stageId = lookupOrCreateStageId(tournamentId, stageOrder);
+
+        String checkSql = "SELECT COUNT(*) FROM groups WHERE stage_id = ?";
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tournamentId);
+             PreparedStatement ps = conn.prepareStatement(checkSql)) {
+            ps.setString(1, stageId);
             try (ResultSet rs = ps.executeQuery()) {
-                int seq = 1;
-                while (rs.next()) {
-                    Match m = new Match();
-                    String rawId = rs.getString("id");
-                    int numId = parseNumericId(rawId, seq++);
-                    m.setId(numId);
-                    m.setRoundNumber(rs.getInt("round_number"));
-                    m.setMatchNumber(numId);
-                    m.setBracketType(rs.getString("bracket_type"));
-
-                    m.setTeam1Name(rs.getString("t1_name"));
-                    int s1Seed = rs.getInt("t1_seed");
-                    if (!rs.wasNull()) m.setTeam1Seed(s1Seed);
-                    int s1 = rs.getInt("score1");
-                    if (!rs.wasNull()) m.setTeam1Score(s1);
-
-                    m.setTeam2Name(rs.getString("t2_name"));
-                    int s2Seed = rs.getInt("t2_seed");
-                    if (!rs.wasNull()) m.setTeam2Seed(s2Seed);
-                    int s2 = rs.getInt("score2");
-                    if (!rs.wasNull()) m.setTeam2Score(s2);
-
-                    String winnerId = rs.getString("winner_id");
-                    if (winnerId != null) {
-                        if (winnerId.equals(rs.getString("team1_id"))) m.setWinnerTeamId(1);
-                        else if (winnerId.equals(rs.getString("team2_id"))) m.setWinnerTeamId(2);
-                    }
-
-                    String st = rs.getString("status");
-                    m.setStatus("FINISHED".equalsIgnoreCase(st) ? "COMPLETED" : (st != null ? st : "SCHEDULED"));
-                    list.add(m);
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return; // Groups already exist in DB!
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        ParticipantDAO pDao = new ParticipantDAO();
+        List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
+        if (teams == null || teams.size() < 2) {
+            teams = generateDefaultTeams(tournamentId, 16);
+        }
+
+        TournamentDAO tDao = new TournamentDAO();
+        Tournament tourney = tDao.getTournamentById(tournamentId);
+
+        Map<String, List<Team>> groups = resolveGroupAssignments(tournamentId, teams, tourney);
+        if (groups == null || groups.isEmpty()) return;
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            initializeGroupsAndFixturesFromMap(conn, tournamentId, stageId, groups);
+            conn.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Map<String, List<Team>> resolveGroupAssignments(String tournamentId, List<Team> allTeams, Tournament tourney) {
+        // 1. Prioritize user-configured group_assignments saved in DB
+        String assignmentsJson = (tourney != null) ? tourney.getGroupAssignments() : null;
+        if (assignmentsJson != null && !assignmentsJson.trim().isEmpty() && !assignmentsJson.trim().equals("{}")) {
+            Map<String, List<Team>> parsed = parseGroupAssignments(assignmentsJson, allTeams);
+            if (parsed != null && !parsed.isEmpty()) {
+                return parsed;
+            }
+        }
+
+        // 2. Strict Business Logic: Do NOT auto-divide into 4-team groups. User must manually create groups in manage-group.
+        return new LinkedHashMap<>();
+    }
+
+    private Map<String, List<Team>> parseGroupAssignments(String json, List<Team> allTeams) {
+        Map<String, List<Team>> result = new LinkedHashMap<>();
+        if (json == null || json.trim().isEmpty() || json.trim().equals("{}")) {
+            return result;
+        }
+
+        Map<String, Team> teamLookup = new HashMap<>();
+        for (Team t : allTeams) {
+            if (t.getId() != null) {
+                teamLookup.put(String.valueOf(t.getId()).trim().toLowerCase(), t);
+            }
+            if (t.getName() != null) {
+                teamLookup.put(t.getName().trim().toLowerCase(), t);
+            }
+            if (t.getRawName() != null) {
+                teamLookup.put(t.getRawName().trim().toLowerCase(), t);
+            }
+        }
+
+        try {
+            java.util.regex.Pattern groupPattern = java.util.regex.Pattern.compile("\"([^\"]+)\"\\s*:\\s*\\[([^\\]]*)\\]");
+            java.util.regex.Matcher matcher = groupPattern.matcher(json);
+
+            while (matcher.find()) {
+                String rawKey = matcher.group(1).trim();
+                String groupName = rawKey;
+                if (groupName.length() <= 2 && !groupName.startsWith("Bảng")) {
+                    groupName = "Bảng " + groupName.toUpperCase();
+                }
+
+                String arrayContent = matcher.group(2).trim();
+                List<Team> groupTeams = new ArrayList<>();
+
+                if (!arrayContent.isEmpty()) {
+                    if (arrayContent.contains("{")) {
+                        java.util.regex.Pattern objPattern = java.util.regex.Pattern.compile("\\{([^\\}]+)\\}");
+                        java.util.regex.Matcher objMatcher = objPattern.matcher(arrayContent);
+                        while (objMatcher.find()) {
+                            String objBody = objMatcher.group(1);
+                            String teamId = extractFieldFromJson(objBody, "id");
+                            String teamName = extractFieldFromJson(objBody, "name");
+                            if (teamName == null) teamName = extractFieldFromJson(objBody, "rawName");
+
+                            Team found = null;
+                            if (teamId != null) found = teamLookup.get(teamId.toLowerCase());
+                            if (found == null && teamName != null) found = teamLookup.get(teamName.toLowerCase());
+
+                            if (found != null) {
+                                groupTeams.add(found);
+                            } else if (teamName != null && !teamName.isEmpty()) {
+                                Team placeholder = new Team();
+                                placeholder.setId(teamId != null ? teamId : ("TM_" + System.currentTimeMillis()));
+                                placeholder.setRawName(teamName);
+                                placeholder.setNormalizedName(teamName);
+                                groupTeams.add(placeholder);
+                            }
+                        }
+                    } else {
+                        String[] tokens = arrayContent.split(",");
+                        for (String tk : tokens) {
+                            String cleanTk = tk.replace("\"", "").replace("'", "").trim();
+                            if (cleanTk.isEmpty()) continue;
+                            Team found = teamLookup.get(cleanTk.toLowerCase());
+                            if (found != null) {
+                                groupTeams.add(found);
+                            } else {
+                                Team placeholder = new Team();
+                                placeholder.setRawName(cleanTk);
+                                placeholder.setNormalizedName(cleanTk);
+                                groupTeams.add(placeholder);
+                            }
+                        }
+                    }
+                }
+
+                if (!groupTeams.isEmpty()) {
+                    result.put(groupName, groupTeams);
+                }
+            }
+        } catch (Exception ignore) {}
+        return result;
+    }
+
+    private String extractFieldFromJson(String objBody, String fieldName) {
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\"" + fieldName + "\"\\s*:\\s*(?:\"([^\"]*)\"|([^,}\\s]+))");
+        java.util.regex.Matcher m = p.matcher(objBody);
+        if (m.find()) {
+            String val = m.group(1);
+            if (val == null) val = m.group(2);
+            return (val != null) ? val.trim() : null;
+        }
+        return null;
+    }
+
+    private List<Team> generateDefaultTeams(String tournamentId, int count) {
+        List<Team> list = new ArrayList<>();
+        String insertTeamSql = "INSERT INTO teams (id, tournament_id, raw_name, normalized_name, original_seed) VALUES (?, ?, ?, ?, ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(insertTeamSql)) {
+            for (int i = 1; i <= count; i++) {
+                String tId = "TM_" + tournamentId + "_" + i;
+                String tName = "Đội " + i;
+                ps.setString(1, tId);
+                ps.setString(2, tournamentId);
+                ps.setString(3, tName);
+                ps.setString(4, tName);
+                ps.setInt(5, i);
+                ps.addBatch();
+
+                Team tm = new Team();
+                tm.setId(tId);
+                tm.setRawName(tName);
+                tm.setOriginalSeed(i);
+                list.add(tm);
+            }
+            ps.executeBatch();
         } catch (Exception e) {
             e.printStackTrace();
         }
         return list;
     }
+
+    private void initializeGroupsAndFixturesFromMap(Connection conn, String tournamentId, String stageId, Map<String, List<Team>> groups) throws Exception {
+        String insGroupSql = "INSERT INTO groups (id, stage_id, group_name, qualified_slots_count) VALUES (?, ?, ?, ?)";
+        String insGroupTeamSql = "INSERT INTO group_teams (id, group_id, team_id, seed_in_group, rank_in_group) VALUES (?, ?, ?, ?, ?)";
+        String insMatchSql = "INSERT INTO matches (id, tournament_id, stage_id, group_id, round_number, match_order, match_code, bracket_type, "
+                + "team1_id, team2_id, is_bye, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'GROUP_STAGE', ?, ?, 0, 'READY')";
+
+        int matchSeq = 1;
+
+        for (Map.Entry<String, List<Team>> entry : groups.entrySet()) {
+            String gName = entry.getKey();
+            String gSuffix = gName.replaceAll("[^a-zA-Z0-9]", "_").toUpperCase();
+            if (gSuffix.isEmpty()) gSuffix = "GA";
+            String gId = "GRP_" + tournamentId + "_" + gSuffix;
+
+            try (PreparedStatement psG = conn.prepareStatement(insGroupSql)) {
+                psG.setString(1, gId);
+                psG.setString(2, stageId);
+                psG.setString(3, gName);
+                psG.setInt(4, 2);
+                psG.executeUpdate();
+            }
+
+            List<Team> grpTeams = entry.getValue();
+            for (int t = 0; t < grpTeams.size(); t++) {
+                Team tm = grpTeams.get(t);
+                try (PreparedStatement psGT = conn.prepareStatement(insGroupTeamSql)) {
+                    psGT.setString(1, "GT_" + gId + "_" + (t + 1));
+                    psGT.setString(2, gId);
+                    psGT.setString(3, tm.getId());
+                    psGT.setInt(4, t + 1);
+                    psGT.setInt(5, t + 1);
+                    psGT.executeUpdate();
+                }
+            }
+
+            // Generate round robin fixtures for this group
+            int n = grpTeams.size();
+            int rNum = 1;
+            for (int i = 0; i < n; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    Team t1 = grpTeams.get(i);
+                    Team t2 = grpTeams.get(j);
+                    String mId = "M_" + tournamentId + "_G_" + gSuffix + "_" + (rNum);
+
+                    try (PreparedStatement psM = conn.prepareStatement(insMatchSql)) {
+                        psM.setString(1, mId);
+                        psM.setString(2, tournamentId);
+                        psM.setString(3, stageId);
+                        psM.setString(4, gId);
+                        psM.setInt(5, rNum);
+                        psM.setInt(6, matchSeq++);
+                        psM.setString(7, gName + " - Trận " + rNum);
+                        psM.setString(8, t1.getId());
+                        psM.setString(9, t2.getId());
+                        psM.executeUpdate();
+                    }
+                    rNum++;
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // 2. DATA QUERIES (GROUPS, STANDINGS, MATCHES JSON)
+    // ------------------------------------------------------------------------
 
     public List<GroupDTO> getGroupsWithTeams(String tournamentId, int stageOrder) {
         List<GroupDTO> groups = new ArrayList<>();
@@ -205,13 +433,26 @@ public class GroupStageDAO extends DBContext {
                     int matchNum = (matchOrder > 0) ? matchOrder : seq++;
                     int roundNumber = rs.getInt("round_number");
                     String grpName = rs.getString("group_name");
+                    String grpId = rs.getString("group_id");
 
+                    // Extract single letter group key (e.g., "A", "B")
+                    String groupKey = "A";
+                    if (grpName != null && grpName.contains(" ")) {
+                        String[] parts = grpName.split(" ");
+                        if (parts.length > 1) groupKey = parts[parts.length - 1];
+                    } else if (grpId != null && grpId.contains("_")) {
+                        String[] parts = grpId.split("_");
+                        if (parts.length > 0) groupKey = parts[parts.length - 1];
+                    }
+
+                    String t1Id = rs.getString("team1_id");
                     String t1Name = rs.getString("t1_name");
                     int t1SeedVal = rs.getInt("t1_seed");
                     String t1Seed = rs.wasNull() ? "" : String.valueOf(t1SeedVal);
                     int s1Val = rs.getInt("score1");
                     String s1 = rs.wasNull() ? "" : String.valueOf(s1Val);
 
+                    String t2Id = rs.getString("team2_id");
                     String t2Name = rs.getString("t2_name");
                     int t2SeedVal = rs.getInt("t2_seed");
                     String t2Seed = rs.wasNull() ? "" : String.valueOf(t2SeedVal);
@@ -220,9 +461,10 @@ public class GroupStageDAO extends DBContext {
 
                     String winnerIdCol = rs.getString("winner_id");
                     String winnerSlot = "";
-                    if (winnerIdCol != null) {
-                        if (winnerIdCol.equals(rs.getString("team1_id"))) winnerSlot = "team1";
-                        else if (winnerIdCol.equals(rs.getString("team2_id"))) winnerSlot = "team2";
+                    if (winnerIdCol != null && !winnerIdCol.trim().isEmpty()) {
+                        if (winnerIdCol.equals(t1Id) || "team1".equalsIgnoreCase(winnerIdCol)) winnerSlot = "team1";
+                        else if (winnerIdCol.equals(t2Id) || "team2".equalsIgnoreCase(winnerIdCol)) winnerSlot = "team2";
+                        else if ("draw".equalsIgnoreCase(winnerIdCol)) winnerSlot = "draw";
                     }
 
                     boolean isBye = rs.getBoolean("is_bye");
@@ -233,16 +475,25 @@ public class GroupStageDAO extends DBContext {
                             .append("\"matchId\":\"").append(escapeJson(rawId)).append("\",")
                             .append("\"id\":\"").append(escapeJson(rawId)).append("\",")
                             .append("\"rawId\":\"").append(escapeJson(rawId)).append("\",")
-                            .append("\"groupId\":\"").append(escapeJson(rs.getString("group_id") != null ? rs.getString("group_id") : "")).append("\",")
+                            .append("\"matchKey\":\"").append(escapeJson(rawId)).append("\",")
+                            .append("\"groupId\":\"").append(escapeJson(grpId != null ? grpId : "")).append("\",")
                             .append("\"groupName\":\"").append(escapeJson(grpName != null ? grpName : "")).append("\",")
+                            .append("\"groupKey\":\"").append(escapeJson(groupKey)).append("\",")
                             .append("\"roundNumber\":").append(roundNumber).append(",")
+                            .append("\"roundIndex\":").append(roundNumber).append(",")
                             .append("\"matchNumber\":").append(matchNum).append(",")
+                            .append("\"score1\":\"").append(escapeJson(s1)).append("\",")
+                            .append("\"score2\":\"").append(escapeJson(s2)).append("\",")
+                            .append("\"team1Score\":\"").append(escapeJson(s1)).append("\",")
+                            .append("\"team2Score\":\"").append(escapeJson(s2)).append("\",")
                             .append("\"team1\":{")
+                            .append("\"id\":\"").append(escapeJson(t1Id != null ? t1Id : "")).append("\",")
                             .append("\"name\":\"").append(escapeJson(t1Name != null ? t1Name : "")).append("\",")
                             .append("\"seed\":\"").append(escapeJson(t1Seed)).append("\",")
                             .append("\"score\":\"").append(escapeJson(s1)).append("\"")
                             .append("},")
                             .append("\"team2\":{")
+                            .append("\"id\":\"").append(escapeJson(t2Id != null ? t2Id : "")).append("\",")
                             .append("\"name\":\"").append(escapeJson(t2Name != null ? t2Name : "")).append("\",")
                             .append("\"seed\":\"").append(escapeJson(t2Seed)).append("\",")
                             .append("\"score\":\"").append(escapeJson(s2)).append("\"")
@@ -260,18 +511,145 @@ public class GroupStageDAO extends DBContext {
         return sb.toString();
     }
 
-    public synchronized void ensureGroupStageInitialized(String tournamentId, int stageOrder) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
+    // ------------------------------------------------------------------------
+    // 3. MATCH SCORING & STANDINGS RECALCULATION
+    // ------------------------------------------------------------------------
 
-        String stageId = lookupOrCreateStageId(tournamentId, stageOrder);
+    public boolean saveMatchScore(String tournamentId, int stageOrder, String matchId, int score1, int score2, String winnerId) {
+        if (tournamentId == null || matchId == null) return false;
 
-        String checkSql = "SELECT COUNT(*) FROM groups WHERE stage_id = ?";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(checkSql)) {
-            ps.setString(1, stageId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next() && rs.getInt(1) > 0) {
-                    return; // Groups already exist!
+        String findSql = "SELECT id, group_id, team1_id, team2_id FROM matches WHERE tournament_id = ? AND "
+                + "(id = ? OR id LIKE '%[_]' + ? OR id LIKE '%' + ?)";
+        String updateSql = "UPDATE matches SET score1 = ?, score2 = ?, winner_id = ?, loser_id = ?, status = 'FINISHED' WHERE id = ?";
+
+        try (Connection conn = getConnection()) {
+            String actualMatchId = null;
+            String groupId = null;
+            String actualT1 = null;
+            String actualT2 = null;
+
+            try (PreparedStatement psFind = conn.prepareStatement(findSql)) {
+                psFind.setString(1, tournamentId);
+                psFind.setString(2, matchId);
+                psFind.setString(3, matchId);
+                psFind.setString(4, matchId);
+                try (ResultSet rs = psFind.executeQuery()) {
+                    if (rs.next()) {
+                        actualMatchId = rs.getString("id");
+                        groupId = rs.getString("group_id");
+                        actualT1 = rs.getString("team1_id");
+                        actualT2 = rs.getString("team2_id");
+                    }
+                }
+            }
+
+            if (actualMatchId == null) return false;
+
+            String resolvedWinner = null;
+            String resolvedLoser = null;
+            if ("team1".equalsIgnoreCase(winnerId)) {
+                resolvedWinner = actualT1;
+                resolvedLoser = actualT2;
+            } else if ("team2".equalsIgnoreCase(winnerId)) {
+                resolvedWinner = actualT2;
+                resolvedLoser = actualT1;
+            } else if ("draw".equalsIgnoreCase(winnerId) || score1 == score2) {
+                resolvedWinner = null;
+                resolvedLoser = null;
+            } else if (winnerId != null && !winnerId.trim().isEmpty() && !"null".equalsIgnoreCase(winnerId)) {
+                resolvedWinner = winnerId.trim();
+                if (resolvedWinner.equals(actualT1)) resolvedLoser = actualT2;
+                else if (resolvedWinner.equals(actualT2)) resolvedLoser = actualT1;
+            } else if (score1 > score2) {
+                resolvedWinner = actualT1;
+                resolvedLoser = actualT2;
+            } else if (score2 > score1) {
+                resolvedWinner = actualT2;
+                resolvedLoser = actualT1;
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                ps.setInt(1, score1);
+                ps.setInt(2, score2);
+                if (resolvedWinner != null && !resolvedWinner.isEmpty()) ps.setString(3, resolvedWinner);
+                else ps.setNull(3, Types.VARCHAR);
+
+                if (resolvedLoser != null && !resolvedLoser.isEmpty()) ps.setString(4, resolvedLoser);
+                else ps.setNull(4, Types.VARCHAR);
+
+                ps.setString(5, actualMatchId);
+                ps.executeUpdate();
+            }
+
+            if (groupId != null) {
+                recalculateGroupStandings(conn, groupId);
+            }
+
+            checkAndFinishGroupStageInDB(tournamentId, stageOrder);
+            service.RollingWindowPointService.clearAllCaches();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean batchSyncMatches(String tournamentId, int stageOrder, String matchesJson) {
+        if (tournamentId == null || matchesJson == null || matchesJson.trim().isEmpty()) return false;
+        try {
+            String clean = matchesJson.trim();
+            if (clean.startsWith("[")) clean = clean.substring(1);
+            if (clean.endsWith("]")) clean = clean.substring(0, clean.length() - 1);
+
+            String[] rawItems = clean.split("\\}\\s*,\\s*\\{");
+            for (String item : rawItems) {
+                String obj = item.replace("{", "").replace("}", "");
+                String mKey = extractJsonString(obj, "matchKey");
+                if (mKey == null || mKey.isEmpty()) mKey = extractJsonString(obj, "matchId");
+                if (mKey == null || mKey.isEmpty()) continue;
+
+                String s1Str = extractJsonString(obj, "team1Score");
+                if (s1Str == null) s1Str = extractJsonString(obj, "score1");
+                String s2Str = extractJsonString(obj, "team2Score");
+                if (s2Str == null) s2Str = extractJsonString(obj, "score2");
+                String st = extractJsonString(obj, "status");
+                String win = extractJsonString(obj, "winnerId");
+
+                if (("COMPLETED".equalsIgnoreCase(st) || "FINISHED".equalsIgnoreCase(st)) && s1Str != null && s2Str != null) {
+                    try {
+                        int s1 = Integer.parseInt(s1Str.trim());
+                        int s2 = Integer.parseInt(s2Str.trim());
+                        saveMatchScore(tournamentId, stageOrder, mKey, s1, s2, win);
+                    } catch (Exception ignore) {}
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public void recalculateGroupStandings(Connection conn, String groupId) {
+        if (groupId == null || groupId.trim().isEmpty()) return;
+
+        String selectMatchesSql = "SELECT team1_id, team2_id, score1, score2, winner_id, status FROM matches "
+                + "WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL";
+
+        String selectTeamsSql = "SELECT team_id, seed_in_group FROM group_teams WHERE group_id = ?";
+        String updateGroupTeamSql = "UPDATE group_teams SET matches_played = ?, wins = ?, draws = ?, losses = ?, "
+                + "goals_scored = ?, goals_conceded = ?, goal_difference = ?, points = ?, rank_in_group = ? WHERE group_id = ? AND team_id = ?";
+
+        Map<String, GroupTeamDTO> teamStats = new HashMap<>();
+
+        try (PreparedStatement psT = conn.prepareStatement(selectTeamsSql)) {
+            psT.setString(1, groupId);
+            try (ResultSet rsT = psT.executeQuery()) {
+                while (rsT.next()) {
+                    GroupTeamDTO gt = new GroupTeamDTO();
+                    gt.teamId = rsT.getString("team_id");
+                    gt.seedInGroup = rsT.getInt("seed_in_group");
+                    teamStats.put(gt.teamId, gt);
                 }
             }
         } catch (Exception e) {
@@ -279,95 +657,291 @@ public class GroupStageDAO extends DBContext {
             return;
         }
 
-        ParticipantDAO pDao = new ParticipantDAO();
-        List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
-        if (teams == null || teams.size() < 2) return;
+        try (PreparedStatement psM = conn.prepareStatement(selectMatchesSql)) {
+            psM.setString(1, groupId);
+            try (ResultSet rsM = psM.executeQuery()) {
+                while (rsM.next()) {
+                    String t1 = rsM.getString("team1_id");
+                    String t2 = rsM.getString("team2_id");
+                    int s1 = rsM.getInt("score1");
+                    int s2 = rsM.getInt("score2");
 
-        initializeGroupsAndFixturesInDB(tournamentId, stageId, teams);
+                    GroupTeamDTO st1 = teamStats.get(t1);
+                    GroupTeamDTO st2 = teamStats.get(t2);
+
+                    if (st1 != null && st2 != null) {
+                        st1.matchesPlayed++;
+                        st2.matchesPlayed++;
+                        st1.goalsScored += s1;
+                        st1.goalsConceded += s2;
+                        st2.goalsScored += s2;
+                        st2.goalsConceded += s1;
+
+                        if (s1 > s2) {
+                            st1.wins++;
+                            st1.points += 3;
+                            st2.losses++;
+                        } else if (s2 > s1) {
+                            st2.wins++;
+                            st2.points += 3;
+                            st1.losses++;
+                        } else {
+                            st1.draws++;
+                            st1.points += 1;
+                            st2.draws++;
+                            st2.points += 1;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        // Sort teams by points DESC -> GD DESC -> GF DESC -> seed ASC
+        List<GroupTeamDTO> sortedList = new ArrayList<>(teamStats.values());
+        for (GroupTeamDTO gt : sortedList) {
+            gt.goalDifference = gt.goalsScored - gt.goalsConceded;
+        }
+
+        sortedList.sort((a, b) -> {
+            if (b.points != a.points) return b.points - a.points;
+            if (b.goalDifference != a.goalDifference) return b.goalDifference - a.goalDifference;
+            if (b.goalsScored != a.goalsScored) return b.goalsScored - a.goalsScored;
+            return a.seedInGroup - b.seedInGroup;
+        });
+
+        int rank = 1;
+        try (PreparedStatement psU = conn.prepareStatement(updateGroupTeamSql)) {
+            for (GroupTeamDTO gt : sortedList) {
+                gt.rankInGroup = rank++;
+                psU.setInt(1, gt.matchesPlayed);
+                psU.setInt(2, gt.wins);
+                psU.setInt(3, gt.draws);
+                psU.setInt(4, gt.losses);
+                psU.setInt(5, gt.goalsScored);
+                psU.setInt(6, gt.goalsConceded);
+                psU.setInt(7, gt.goalDifference);
+                psU.setInt(8, gt.points);
+                psU.setInt(9, gt.rankInGroup);
+                psU.setString(10, groupId);
+                psU.setString(11, gt.teamId);
+                psU.addBatch();
+            }
+            psU.executeBatch();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    private void initializeGroupsAndFixturesInDB(String tournamentId, String stageId, List<Team> teams) {
-        int numTeams = teams.size();
-        int maxPerGroup = 4;
-        int numGroups = (int) Math.ceil((double) numTeams / maxPerGroup);
-        if (numGroups < 1) numGroups = 1;
+    public void checkAndFinishGroupStageInDB(String tournamentId, int stageOrder) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
 
-        List<List<Team>> groupList = new ArrayList<>();
-        for (int i = 0; i < numGroups; i++) {
-            groupList.add(new ArrayList<>());
+        String checkSql = "SELECT COUNT(*) FROM matches m "
+                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1)) "
+                + "AND (m.status != 'FINISHED' OR m.score1 IS NULL OR m.score2 IS NULL)";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(checkSql)) {
+            ps.setString(1, tournamentId);
+            ps.setInt(2, stageOrder);
+            ps.setInt(3, stageOrder);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) == 0) {
+                    // ALL MATCHES IN GROUP STAGE COMPLETED!
+                    finishGroupStageAdvancement(tournamentId, stageOrder);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void finishGroupStageAdvancement(String tournamentId, int stageOrder) {
+        List<GroupDTO> groups = getGroupsWithTeams(tournamentId, stageOrder);
+        if (groups.isEmpty()) return;
+
+        List<GroupTeamDTO> qualifiedList = new ArrayList<>();
+
+        // Group Stage advancement logic: Top 2 from each group (or qualifiedSlots count)
+        for (GroupDTO g : groups) {
+            int slots = g.qualifiedSlots > 0 ? g.qualifiedSlots : 2;
+            for (int i = 0; i < Math.min(slots, g.teams.size()); i++) {
+                qualifiedList.add(g.teams.get(i));
+            }
         }
 
-        // Snake / Seed distribution across groups
-        for (int i = 0; i < numTeams; i++) {
-            int gIdx = i % numGroups;
-            groupList.get(gIdx).add(teams.get(i));
+        StringBuilder jsonSb = new StringBuilder("[");
+        for (int i = 0; i < qualifiedList.size(); i++) {
+            if (i > 0) jsonSb.append(",");
+            GroupTeamDTO gt = qualifiedList.get(i);
+            jsonSb.append("{\"id\":\"").append(escapeJson(gt.teamId))
+                    .append("\",\"name\":\"").append(escapeJson(gt.teamName))
+                    .append("\",\"seed\":").append(i + 1).append("}");
         }
+        jsonSb.append("]");
+
+        TournamentDAO tDao = new TournamentDAO();
+        tDao.saveStage2Teams(tournamentId, jsonSb.toString());
+        tDao.updateTournamentStage1Status(tournamentId, "COMPLETED");
+    }
+
+    // ------------------------------------------------------------------------
+    // 4. RANDOM & RESET OPERATIONS
+    // ------------------------------------------------------------------------
+
+    public boolean randomGroupMatchesInDB(String tournamentId, int stageOrder, String groupId, int maxScore) {
+        if (tournamentId == null) return false;
+        ensureGroupStageInitialized(tournamentId, stageOrder);
+
+        String selSql = "SELECT id, team1_id, team2_id, group_id FROM matches "
+                + "WHERE tournament_id = ? " + (groupId != null ? "AND group_id = ? " : "") + "AND (score1 IS NULL OR status != 'FINISHED')";
+        String updateSql = "UPDATE matches SET score1 = ?, score2 = ?, winner_id = ?, loser_id = ?, status = 'FINISHED' WHERE id = ?";
+
+        Random rand = new Random();
+        int maxS = maxScore > 0 ? maxScore : 4;
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+            List<String[]> matchesToUpdate = new ArrayList<>();
+            Set<String> affectedGroups = new HashSet<>();
 
-            String insGroupSql = "INSERT INTO groups (id, stage_id, group_name, qualified_slots_count) VALUES (?, ?, ?, ?)";
-            String insGroupTeamSql = "INSERT INTO group_teams (id, group_id, team_id, seed_in_group, rank_in_group) VALUES (?, ?, ?, ?, ?)";
-            String insMatchSql = "INSERT INTO matches (id, tournament_id, stage_id, group_id, round_number, match_order, match_code, bracket_type, "
-                    + "team1_id, team2_id, is_bye, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'GROUP_STAGE', ?, ?, 0, 'READY')";
-
-            int matchSeq = 1;
-
-            for (int g = 0; g < numGroups; g++) {
-                String gSuffix = (g < 26) ? String.valueOf((char)('A' + g)) : ("" + (char)('A' + ((g - 26) / 26)) + (char)('A' + ((g - 26) % 26)));
-                String gName = "Bảng " + gSuffix;
-                String gId = "GRP_" + tournamentId + "_" + gSuffix;
-
-                try (PreparedStatement psG = conn.prepareStatement(insGroupSql)) {
-                    psG.setString(1, gId);
-                    psG.setString(2, stageId);
-                    psG.setString(3, gName);
-                    psG.setInt(4, 2);
-                    psG.executeUpdate();
-                }
-
-                List<Team> grpTeams = groupList.get(g);
-                for (int t = 0; t < grpTeams.size(); t++) {
-                    Team tm = grpTeams.get(t);
-                    try (PreparedStatement psGT = conn.prepareStatement(insGroupTeamSql)) {
-                        psGT.setString(1, "GT_" + gId + "_" + (t + 1));
-                        psGT.setString(2, gId);
-                        psGT.setString(3, tm.getId());
-                        psGT.setInt(4, t + 1);
-                        psGT.setInt(5, t + 1);
-                        psGT.executeUpdate();
-                    }
-                }
-
-                // Generate round robin fixtures for this group
-                int n = grpTeams.size();
-                int rNum = 1;
-                for (int i = 0; i < n; i++) {
-                    for (int j = i + 1; j < n; j++) {
-                        Team t1 = grpTeams.get(i);
-                        Team t2 = grpTeams.get(j);
-                        String mId = "M_" + tournamentId + "_G_" + gSuffix + "_" + (rNum);
-
-                        try (PreparedStatement psM = conn.prepareStatement(insMatchSql)) {
-                            psM.setString(1, mId);
-                            psM.setString(2, tournamentId);
-                            psM.setString(3, stageId);
-                            psM.setString(4, gId);
-                            psM.setInt(5, rNum);
-                            psM.setInt(6, matchSeq++);
-                            psM.setString(7, gName + " - Trận " + rNum);
-                            psM.setString(8, t1.getId());
-                            psM.setString(9, t2.getId());
-                            psM.executeUpdate();
-                        }
-                        rNum++;
+            try (PreparedStatement psSel = conn.prepareStatement(selSql)) {
+                psSel.setString(1, tournamentId);
+                if (groupId != null) psSel.setString(2, groupId);
+                try (ResultSet rs = psSel.executeQuery()) {
+                    while (rs.next()) {
+                        matchesToUpdate.add(new String[]{
+                                rs.getString("id"),
+                                rs.getString("team1_id"),
+                                rs.getString("team2_id"),
+                                rs.getString("group_id")
+                        });
+                        affectedGroups.add(rs.getString("group_id"));
                     }
                 }
             }
 
+            try (PreparedStatement psUp = conn.prepareStatement(updateSql)) {
+                for (String[] m : matchesToUpdate) {
+                    int s1 = rand.nextInt(maxS + 1);
+                    int s2 = rand.nextInt(maxS + 1);
+                    String winId = null;
+                    String loseId = null;
+
+                    if (s1 > s2) {
+                        winId = m[1];
+                        loseId = m[2];
+                    } else if (s2 > s1) {
+                        winId = m[2];
+                        loseId = m[1];
+                    }
+
+                    psUp.setInt(1, s1);
+                    psUp.setInt(2, s2);
+                    if (winId != null) psUp.setString(3, winId); else psUp.setNull(3, Types.VARCHAR);
+                    if (loseId != null) psUp.setString(4, loseId); else psUp.setNull(4, Types.VARCHAR);
+                    psUp.setString(5, m[0]);
+                    psUp.addBatch();
+                }
+                psUp.executeBatch();
+            }
+
+            // Recalculate standings for all affected groups
+            for (String gId : affectedGroups) {
+                if (gId != null) recalculateGroupStandings(conn, gId);
+            }
+
             conn.commit();
+            checkAndFinishGroupStageInDB(tournamentId, stageOrder);
+            service.RollingWindowPointService.clearAllCaches();
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean randomAllMatchesInDB(String tournamentId, int stageOrder, int maxScore) {
+        return randomGroupMatchesInDB(tournamentId, stageOrder, null, maxScore);
+    }
+
+    public boolean resetGroupMatchesInDB(String tournamentId, int stageOrder, String groupId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String resetMatchesSql = "UPDATE matches SET score1 = NULL, score2 = NULL, penalty1 = NULL, penalty2 = NULL, winner_id = NULL, loser_id = NULL, status = 'SCHEDULED' "
+                + "WHERE tournament_id = ? " + (groupId != null ? "AND group_id = ? " : "");
+
+        String resetGroupTeamsSql = "UPDATE gt SET matches_played = 0, wins = 0, draws = 0, losses = 0, "
+                + "goals_scored = 0, goals_conceded = 0, goal_difference = 0, points = 0, rank_in_group = seed_in_group "
+                + "FROM group_teams gt JOIN groups g ON gt.group_id = g.id "
+                + "WHERE g.tournament_id = ? " + (groupId != null ? "AND g.id = ? " : "");
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement psM = conn.prepareStatement(resetMatchesSql)) {
+                psM.setString(1, tournamentId);
+                if (groupId != null) psM.setString(2, groupId);
+                psM.executeUpdate();
+            }
+            try (PreparedStatement psGT = conn.prepareStatement(resetGroupTeamsSql)) {
+                psGT.setString(1, tournamentId);
+                if (groupId != null) psGT.setString(2, groupId);
+                psGT.executeUpdate();
+            }
+            conn.commit();
+            service.RollingWindowPointService.clearAllCaches();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean resetBracketMatches(String tournamentId, int stageOrder) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.penalty1 = NULL, m.penalty2 = NULL, "
+                + "m.winner_id = NULL, m.loser_id = NULL, m.status = 'READY' "
+                + "FROM matches m "
+                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
+
+        String resetGroupTeamsSql = "UPDATE gt SET matches_played = 0, wins = 0, draws = 0, losses = 0, "
+                + "goals_scored = 0, goals_conceded = 0, goal_difference = 0, points = 0, rank_in_group = seed_in_group "
+                + "FROM group_teams gt JOIN groups g ON gt.group_id = g.id "
+                + "JOIN tournament_stages s ON g.stage_id = s.id "
+                + "WHERE s.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1))";
+
+        String resetTourneySql = "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL, stage2_teams = NULL, stage1_status = 'PENDING' WHERE id = ?";
+
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, tournamentId);
+                ps.setInt(2, stageOrder);
+                ps.setInt(3, stageOrder);
+                ps.setInt(4, stageOrder);
+                ps.setInt(5, stageOrder);
+                ps.executeUpdate();
+            }
+
+            try (PreparedStatement psGT = conn.prepareStatement(resetGroupTeamsSql)) {
+                psGT.setString(1, tournamentId);
+                psGT.setInt(2, stageOrder);
+                psGT.setInt(3, stageOrder);
+                psGT.executeUpdate();
+            }
+
+            try (PreparedStatement psT = conn.prepareStatement(resetTourneySql)) {
+                psT.setString(1, tournamentId);
+                psT.executeUpdate();
+            } catch (Exception ignore) {}
+
+            service.RollingWindowPointService.clearAllCaches();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -398,68 +972,29 @@ public class GroupStageDAO extends DBContext {
         return "STAGE_1";
     }
 
-    public boolean resetBracketMatches(String tournamentId, int stageOrder) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.penalty1 = NULL, m.penalty2 = NULL, "
-                + "m.winner_id = NULL, m.loser_id = NULL, m.status = 'READY' "
-                + "FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
-
-        String resetGroupTeamsSql = "UPDATE gt SET matches_played = 0, wins = 0, draws = 0, losses = 0, "
-                + "goals_scored = 0, goals_conceded = 0, goal_difference = 0, points = 0, rank_in_group = seed_in_group "
-                + "FROM group_teams gt JOIN groups g ON gt.group_id = g.id "
-                + "JOIN tournament_stages s ON g.stage_id = s.id "
-                + "WHERE s.tournament_id = ? AND s.stage_order = ?";
-
-        String resetTourneySql = "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL WHERE id = ?";
-
-        try (Connection conn = getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, tournamentId);
-                ps.setInt(2, stageOrder);
-                ps.setInt(3, stageOrder);
-                ps.setInt(4, stageOrder);
-                ps.setInt(5, stageOrder);
-                ps.executeUpdate();
-            }
-
-            try (PreparedStatement psGT = conn.prepareStatement(resetGroupTeamsSql)) {
-                psGT.setString(1, tournamentId);
-                psGT.setInt(2, stageOrder);
-                psGT.executeUpdate();
-            }
-
-            try (PreparedStatement psT = conn.prepareStatement(resetTourneySql)) {
-                psT.setString(1, tournamentId);
-                psT.executeUpdate();
-            } catch (Exception ignore) {}
-
-            try (PreparedStatement psS1 = conn.prepareStatement("UPDATE tournaments SET stage1_status = 'PENDING' WHERE id = ?")) {
-                psS1.setString(1, tournamentId);
-                psS1.executeUpdate();
-            } catch (Exception ignore) {}
-
-            service.RollingWindowPointService.clearAllCaches();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+    private String extractJsonString(String source, String key) {
+        String pattern = "\"" + key + "\":";
+        int idx = source.indexOf(pattern);
+        if (idx == -1) {
+            pattern = key + ":";
+            idx = source.indexOf(pattern);
         }
-    }
+        if (idx == -1) return null;
 
-    private int parseNumericId(String strId, int defaultSeq) {
-        if (strId == null || strId.trim().isEmpty()) return defaultSeq;
-        try {
-            return Integer.parseInt(strId.trim());
-        } catch (Exception e) {
-            int lastUnderscore = strId.lastIndexOf('_');
-            if (lastUnderscore >= 0 && lastUnderscore < strId.length() - 1) {
-                String sub = strId.substring(lastUnderscore + 1);
-                try { return Integer.parseInt(sub); } catch (Exception ignore) {}
-            }
+        int start = idx + pattern.length();
+        while (start < source.length() && (source.charAt(start) == ' ' || source.charAt(start) == '\"')) {
+            start++;
         }
-        return defaultSeq;
+        int end = start;
+        while (end < source.length() && source.charAt(end) != '\"' && source.charAt(end) != ',' && source.charAt(end) != '}') {
+            end++;
+        }
+        if (start < end) {
+            String val = source.substring(start, end).trim();
+            if ("null".equalsIgnoreCase(val)) return null;
+            return val;
+        }
+        return null;
     }
 
     private String escapeJson(String s) {

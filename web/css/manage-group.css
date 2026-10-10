@@ -43,8 +43,9 @@
 
 .mg-workspace {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 340px));
     gap: 1.25rem;
+    align-items: start;
     margin-bottom: 1.5rem;
 }
 
@@ -53,7 +54,8 @@
     border: 1px solid var(--mg-border);
     border-radius: 12px;
     padding: 1rem;
-    min-height: 280px;
+    height: fit-content;
+    min-height: auto;
     transition: border-color 0.2s ease, background 0.2s ease;
 }
 
@@ -198,6 +200,12 @@
     box-shadow: 0 0 20px rgba(45, 212, 191, 0.25);
 }
 
+.mg-unassigned-column.mg-drag-over {
+    border-color: #fbbf24 !important;
+    background: rgba(251, 191, 36, 0.1) !important;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.25);
+}
+
 .mg-team-card[draggable="true"] {
     cursor: grab;
 }
@@ -205,3 +213,4 @@
 .mg-team-card[draggable="true"]:active {
     cursor: grabbing;
 }
+

@@ -76,7 +76,8 @@
                     var rNum = parseInt(m.roundNumber || 1, 10);
                     if (rNum > maxRound) maxRound = rNum;
 
-                    var matchNum = m.matchNumber || (i + 1);
+                    var isBye = (m.isBye === true || m.isBye === 'true');
+                    var matchNum = isBye ? null : ((m.matchNumber !== undefined && m.matchNumber !== null) ? m.matchNumber : null);
 
                     var matchObj = {
                         matchId: mId,
@@ -90,18 +91,23 @@
                         winnerId: m.winnerId || null,
                         nextMatchId: m.nextMatchId ? String(m.nextMatchId) : null,
                         nextMatchSlot: m.nextMatchSlot || 1,
-                        isBye: m.isBye === true || m.isBye === 'true',
+                        isBye: isBye,
                         status: m.status || 'PENDING'
                     };
 
                     this.matchesMap[mId] = matchObj;
+                    if (matchObj.rawId) {
+                        this.matchesMap[String(matchObj.rawId)] = matchObj;
+                    }
+                    if (matchObj.matchNumber !== null && matchObj.matchNumber !== undefined) {
+                        this.matchesMap[String(matchObj.matchNumber)] = matchObj;
+                    }
 
                     if (!roundGroups[rNum]) roundGroups[rNum] = [];
                     roundGroups[rNum].push(matchObj);
                 }
 
-                var getMatchNum = function (m) {
-                    if (m.matchNumber !== undefined && m.matchNumber !== null && !isNaN(Number(m.matchNumber))) return Number(m.matchNumber);
+                var getMatchTreeOrder = function (m) {
                     var s = String(m.rawId || m.matchId || m.id || '');
                     var idx = s.lastIndexOf('_');
                     if (idx !== -1) {
@@ -112,10 +118,10 @@
                     return digits ? parseInt(digits, 10) : 0;
                 };
 
-                // Build ordered roundsList
+                // Build ordered roundsList strictly by bracket tree slot order
                 for (var r = 1; r <= maxRound; r++) {
                     var rMatches = roundGroups[r] || [];
-                    rMatches.sort(function (a, b) { return getMatchNum(a) - getMatchNum(b); });
+                    rMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
                     var rTitle = (window.TourmaBracketAlgorithm && window.TourmaBracketAlgorithm.getRoundTitle)
                         ? window.TourmaBracketAlgorithm.getRoundTitle(r, maxRound, this.cutTarget > 1)
                         : ('Vòng ' + r);
@@ -146,24 +152,37 @@
 
             for (var k in this.matchesMap) {
                 var m = this.matchesMap[k];
+                if (!m) continue;
                 if (m.matchId && String(m.matchId) === strId) return m;
                 if (m.id && String(m.id) === strId) return m;
                 if (m.rawId && String(m.rawId) === strId) return m;
                 if (m.matchNumber && String(m.matchNumber) === strId) return m;
-                if (m.matchId && (String(m.matchId).endsWith('_' + strId) || String(m.matchId).endsWith('_S1_' + strId) || String(m.matchId).endsWith('_S2_' + strId))) return m;
             }
             return null;
         },
 
         findParentMatch: function (targetMatchId, slot) {
             if (!targetMatchId) return null;
-            var targetStr = String(targetMatchId).trim();
+            var targetM = this.findMatch(targetMatchId);
+            var targetIds = [];
+            if (targetM) {
+                if (targetM.id) targetIds.push(String(targetM.id).trim());
+                if (targetM.matchId) targetIds.push(String(targetM.matchId).trim());
+                if (targetM.rawId) targetIds.push(String(targetM.rawId).trim());
+            } else {
+                targetIds.push(String(targetMatchId).trim());
+            }
 
             for (var k in this.matchesMap) {
                 var m = this.matchesMap[k];
+                if (!m) continue;
+                // Never match self!
+                if (targetM && (m === targetM || m.id === targetM.id || m.matchId === targetM.matchId || m.rawId === targetM.rawId)) {
+                    continue;
+                }
                 if (m.nextMatchId) {
                     var nId = String(m.nextMatchId).trim();
-                    var isMatch = (nId === targetStr || targetStr.endsWith('_' + nId) || nId.endsWith('_' + targetStr));
+                    var isMatch = targetIds.indexOf(nId) !== -1;
                     if (isMatch) {
                         var s = (m.nextMatchSlot === 2 || m.nextMatchSlot === '2' || m.nextMatchSlot === 'SLOT_2') ? 2 : 1;
                         if (slot === undefined || s === slot) {

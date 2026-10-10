@@ -27,22 +27,30 @@
          * Ensures top seeds meet as late as possible according to international bracket standards.
          */
         generateSeedPairs: function (pow2) {
-            var rounds = Math.log2(pow2) - 1;
-            var pls = [1, 2];
-
-            for (var i = 0; i < rounds; i++) {
-                var nextPls = [];
-                var sum = Math.pow(2, i + 2) + 1;
-                for (var j = 0; j < pls.length; j++) {
-                    nextPls.push(pls[j]);
-                    nextPls.push(sum - pls[j]);
+            var seeds = [1, 2];
+            while (seeds.length < pow2) {
+                var nextLen = seeds.length * 2;
+                var sum = nextLen + 1;
+                var next = [];
+                for (var i = 0; i < seeds.length; i++) {
+                    var s = seeds[i];
+                    var comp = sum - s;
+                    if (i % 2 === 0) {
+                        next.push(s);
+                        next.push(comp);
+                    } else {
+                        next.push(comp);
+                        next.push(s);
+                    }
                 }
-                pls = nextPls;
+                seeds = next;
             }
 
             var pairs = [];
-            for (var k = 0; k < pls.length; k += 2) {
-                pairs.push([pls[k], pls[k + 1]]);
+            for (var k = 0; k < seeds.length; k += 2) {
+                var a = seeds[k];
+                var b = seeds[k + 1];
+                pairs.push([Math.min(a, b), Math.max(a, b)]);
             }
             return pairs;
         },

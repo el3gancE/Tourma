@@ -118,7 +118,7 @@ public class SingleEliminationDAO extends DBContext {
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
-                + "ORDER BY m.round_number ASC, ISNULL(m.match_order, 999999) ASC, LEN(m.id) ASC, m.id ASC";
+                + "ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
         int count = 0;
@@ -470,17 +470,32 @@ public class SingleEliminationDAO extends DBContext {
     }
 
     private int[] generateSeedingArray(int bracketSize) {
-        int[] rounds = new int[]{1, 2};
-        while (rounds.length < bracketSize) {
-            int nextLen = rounds.length * 2;
+        int[] seeds = new int[]{1, 2};
+        while (seeds.length < bracketSize) {
+            int nextLen = seeds.length * 2;
+            int sum = nextLen + 1;
             int[] next = new int[nextLen];
-            for (int i = 0; i < rounds.length; i++) {
-                next[i * 2] = rounds[i];
-                next[i * 2 + 1] = nextLen + 1 - rounds[i];
+            for (int i = 0; i < seeds.length; i++) {
+                int s = seeds[i];
+                int comp = sum - s;
+                if (i % 2 == 0) {
+                    next[i * 2] = s;
+                    next[i * 2 + 1] = comp;
+                } else {
+                    next[i * 2] = comp;
+                    next[i * 2 + 1] = s;
+                }
             }
-            rounds = next;
+            seeds = next;
         }
-        return rounds;
+        int[] result = new int[bracketSize];
+        for (int i = 0; i < bracketSize / 2; i++) {
+            int a = seeds[i * 2];
+            int b = seeds[i * 2 + 1];
+            result[i * 2] = Math.min(a, b);
+            result[i * 2 + 1] = Math.max(a, b);
+        }
+        return result;
     }
 
     private String lookupOrCreateStageId(String tournamentId, int stageOrder) {

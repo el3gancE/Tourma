@@ -80,6 +80,9 @@
                 <button type="button" class="btn-mg-distribute" onclick="TourmaManageGroup.handleAutoDistribute()">
                     Ngẫu Nhiên
                 </button>
+                <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.clearAllGroups()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; border-color: rgba(244,63,94,0.3); color: #f43f5e;" title="Xóa tất cả các bảng và đưa toàn bộ đội về danh sách chưa xếp">
+                    <i class="fa-solid fa-rotate-left"></i> Xóa Hết Bảng
+                </button>
                 <button type="button" class="btn btn-mint" onclick="TourmaManageGroup.saveAndReturn()" style="font-size: 0.8rem; padding: 0.45rem 0.9rem; font-weight: 700;">
                     Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>
                 </button>
@@ -102,6 +105,16 @@
                 </button>
             </div>
             
+            <!-- Search and Quick Action Bar -->
+            <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; align-items:center;">
+                <div style="position:relative; flex:1;">
+                    <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); font-size:0.75rem; color:#94a3b8;"></i>
+                    <input type="text" id="modalTeamSearchInput" placeholder="Tìm kiếm tên đội..." oninput="TourmaManageGroup.filterModalTeams(this.value)" style="width:100%; box-sizing:border-box; background:#0b0d12; border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:0.4rem 0.6rem 0.4rem 2rem; color:#f8fafc; font-size:0.8rem; font-family:inherit; outline:none;">
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.selectAllModalTeams(true)" style="font-size:0.72rem; padding:0.35rem 0.65rem; white-space:nowrap; background:#181d29; border-color:rgba(255,255,255,0.15);">Chọn Tất Cả</button>
+                <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.selectAllModalTeams(false)" style="font-size:0.72rem; padding:0.35rem 0.65rem; white-space:nowrap; background:#181d29; border-color:rgba(255,255,255,0.15);">Bỏ Chọn</button>
+            </div>
+
             <div style="max-height:280px; overflow-y:auto; padding-right:0.25rem; margin-bottom:1.25rem;" id="modalTeamChecklistContainer">
                 <!-- Checklist items injected via JS -->
             </div>

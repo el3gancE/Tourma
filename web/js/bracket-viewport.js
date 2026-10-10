@@ -128,30 +128,54 @@
         },
 
         /**
-         * Get element position relative to canvas container (independent of scroll/zoom)
+         * Get element position relative to canvas container (independent of scroll/zoom/nesting)
          */
         getRelativePos: function (elem, root) {
-            if (!elem) return { left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 };
+            if (!elem || !root) return { left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 };
             root = root || document.getElementById('bracketViewportCanvas');
 
-            var x = 0, y = 0;
-            var curr = elem;
-            while (curr && curr !== root && curr !== document.body) {
-                x += curr.offsetLeft;
-                y += curr.offsetTop;
-                curr = curr.offsetParent;
+            var elemRect = elem.getBoundingClientRect();
+            var rootRect = root.getBoundingClientRect();
+
+            var scale = 1.0;
+            if (root.style && root.style.zoom) {
+                var z = parseFloat(root.style.zoom);
+                if (!isNaN(z) && z > 0) scale = z;
+            } else if (root.style && root.style.transform && root.style.transform.indexOf('scale(') !== -1) {
+                var match = root.style.transform.match(/scale\(([^)]+)\)/);
+                if (match && match[1]) {
+                    var s = parseFloat(match[1]);
+                    if (!isNaN(s) && s > 0) scale = s;
+                }
             }
 
-            var w = elem.offsetWidth || 200;
-            var h = elem.offsetHeight || 70;
+            var left = (elemRect.left - rootRect.left) / scale;
+            var top = (elemRect.top - rootRect.top) / scale;
+            var width = elemRect.width / scale;
+            var height = elemRect.height / scale;
+
+            // Fallback if element is not rendered / detached
+            if (width === 0 && elem.offsetWidth) {
+                var x = 0, y = 0;
+                var curr = elem;
+                while (curr && curr !== root && curr !== document.body) {
+                    x += curr.offsetLeft;
+                    y += curr.offsetTop;
+                    curr = curr.offsetParent;
+                }
+                left = x;
+                top = y;
+                width = elem.offsetWidth || 220;
+                height = elem.offsetHeight || 70;
+            }
 
             return {
-                left: x,
-                top: y,
-                width: w,
-                height: h,
-                right: x + w,
-                bottom: y + h
+                left: left,
+                top: top,
+                width: width,
+                height: height,
+                right: left + width,
+                bottom: top + height
             };
         },
 
@@ -292,7 +316,7 @@
 
             var self = this;
 
-            // Helper to find a match object by card ID or numeric ID
+            // Helper to find a match object by exact card ID
             var findMatchForCard = function (cardId) {
                 if (!cardId) return null;
                 var strId = String(cardId).trim();
@@ -303,15 +327,6 @@
                     if (m.matchId && String(m.matchId).trim() === strId) return m;
                     if (m.id && String(m.id).trim() === strId) return m;
                     if (m.rawId && String(m.rawId).trim() === strId) return m;
-                    if (m.matchNumber !== undefined && m.matchNumber !== null && String(m.matchNumber).trim() === strId) return m;
-                    if (m.matchCode && String(m.matchCode).trim() === strId) return m;
-                }
-
-                // Suffix / Prefix fallback
-                for (var k = 0; k < allMatches.length; k++) {
-                    var m2 = allMatches[k];
-                    var m2Id = String(m2.matchId || m2.id || m2.rawId || '');
-                    if (m2Id && (m2Id.endsWith('_' + strId) || strId.endsWith('_' + m2Id))) return m2;
                 }
                 return null;
             };
@@ -319,29 +334,21 @@
             // Helper to find the DOM card corresponding to a source match within the current viewport
             var findCardForMatch = function (matchObj) {
                 if (!matchObj) return null;
-                var idsToCheck = [
-                    matchObj.matchId,
-                    matchObj.id,
-                    matchObj.rawId,
-                    (matchObj.matchNumber !== undefined && matchObj.matchNumber !== null) ? String(matchObj.matchNumber) : null,
-                    matchObj.matchCode
+                var exactIds = [
+                    matchObj.matchId ? String(matchObj.matchId).trim() : null,
+                    matchObj.id ? String(matchObj.id).trim() : null,
+                    matchObj.rawId ? String(matchObj.rawId).trim() : null
                 ];
-                for (var i = 0; i < idsToCheck.length; i++) {
-                    var id = idsToCheck[i];
-                    if (id !== undefined && id !== null && id !== '') {
-                        var strId = String(id).trim();
-                        if (cardMap[strId]) return cardMap[strId];
-                    }
+                for (var i = 0; i < exactIds.length; i++) {
+                    var id = exactIds[i];
+                    if (id && cardMap[id]) return cardMap[id];
                 }
                 for (var j = 0; j < cardList.length; j++) {
                     var item = cardList[j];
-                    for (var k = 0; k < idsToCheck.length; k++) {
-                        var checkId = idsToCheck[k];
-                        if (checkId !== undefined && checkId !== null && checkId !== '') {
-                            var sCheck = String(checkId).trim();
-                            if (item.id === sCheck || item.id.endsWith('_' + sCheck) || sCheck.endsWith('_' + item.id)) {
-                                return item.card;
-                            }
+                    for (var k = 0; k < exactIds.length; k++) {
+                        var eId = exactIds[k];
+                        if (eId && item.id === eId) {
+                            return item.card;
                         }
                     }
                 }
@@ -368,18 +375,17 @@
                 // Round 1 matches in SE, UB, and LB have no preceding rounds in their bracket
                 if (rNum <= 1 && !isTargetGf) continue;
 
-                // Find feeder source matches that advance to targetMatch
+                // Find feeder source matches that advance to targetMatch (Exact Match Only!)
                 var tIds = [
                     targetMatch.matchId ? String(targetMatch.matchId).trim() : null,
                     targetMatch.id ? String(targetMatch.id).trim() : null,
-                    targetMatch.rawId ? String(targetMatch.rawId).trim() : null,
-                    (targetMatch.matchNumber !== undefined && targetMatch.matchNumber !== null) ? String(targetMatch.matchNumber).trim() : null
+                    targetMatch.rawId ? String(targetMatch.rawId).trim() : null
                 ];
 
                 var feederMatches = [];
                 for (var m = 0; m < allMatches.length; m++) {
                     var src = allMatches[m];
-                    if (src === targetMatch) continue;
+                    if (src === targetMatch || src.matchId === targetMatch.matchId || src.id === targetMatch.id || src.rawId === targetMatch.rawId) continue;
 
                     var srcNextId = src.nextMatchId || src.next_match_id;
                     if (!srcNextId || srcNextId === 'null' || srcNextId === 'TBD') continue;
@@ -388,7 +394,7 @@
                     var isMatched = false;
                     for (var k = 0; k < tIds.length; k++) {
                         var tId = tIds[k];
-                        if (tId && (sNextStr === tId || sNextStr.endsWith('_' + tId) || tId.endsWith('_' + sNextStr))) {
+                        if (tId && sNextStr === tId) {
                             isMatched = true;
                             break;
                         }

@@ -138,13 +138,15 @@
                     var mId = String(m.matchId || m.id || m.rawId || (i + 1));
                     var rNum = parseInt(m.roundNumber || 1, 10);
                     var bType = (m.bracketType || 'WINNER_BRACKET').toUpperCase();
+                    var isBye = (m.isBye === true || m.isBye === 'true');
+                    var matchNum = isBye ? null : ((m.matchNumber !== undefined && m.matchNumber !== null) ? m.matchNumber : null);
 
                     var matchObj = {
                         matchId: mId,
                         id: mId,
                         rawId: m.rawId || mId,
                         roundNumber: rNum,
-                        matchNumber: m.matchNumber || (i + 1),
+                        matchNumber: matchNum,
                         bracketType: bType,
                         team1: m.team1 || { name: '', seed: '', score: '' },
                         team2: m.team2 || { name: '', seed: '', score: '' },
@@ -155,18 +157,18 @@
                         loserNextSlot: m.loserNextSlot || 1,
                         dropToMatchId: (m.dropToMatchId || m.loserNextMatchId) ? String(m.dropToMatchId || m.loserNextMatchId) : null,
                         dropToMatchSlot: m.dropToMatchSlot || m.loserNextSlot || 1,
-                        isBye: m.isBye === true || m.isBye === 'true',
+                        isBye: isBye,
                         isResetMatch: bType === 'GRAND_FINAL_RESET' || (m.isResetMatch === true),
                         isUnlocked: !(bType === 'GRAND_FINAL_RESET' && !m.winnerId && (!m.team1 || !m.team1.name)),
                         status: m.status || 'SCHEDULED'
                     };
 
                     this.matchesMap[mId] = matchObj;
-                    if (matchObj.matchNumber) {
-                        this.matchesMap[String(matchObj.matchNumber)] = matchObj;
-                    }
                     if (matchObj.rawId) {
                         this.matchesMap[String(matchObj.rawId)] = matchObj;
+                    }
+                    if (matchObj.matchNumber !== null && matchObj.matchNumber !== undefined) {
+                        this.matchesMap[String(matchObj.matchNumber)] = matchObj;
                     }
 
                     if (bType === 'GRAND_FINAL' || bType === 'GRAND_FINALS' || bType === 'GRAND_FINAL_RESET') {
@@ -182,8 +184,7 @@
                     }
                 }
 
-                var getMatchNum = function (m) {
-                    if (m.matchNumber !== undefined && m.matchNumber !== null && !isNaN(Number(m.matchNumber))) return Number(m.matchNumber);
+                var getMatchTreeOrder = function (m) {
                     var s = String(m.rawId || m.matchId || m.id || '');
                     var idx = s.lastIndexOf('_');
                     if (idx !== -1) {
@@ -197,7 +198,7 @@
                 // Build ordered Upper Rounds
                 for (var u = 1; u <= maxUbRound; u++) {
                     var uMatches = upperGroups[u] || [];
-                    uMatches.sort(function (a, b) { return getMatchNum(a) - getMatchNum(b); });
+                    uMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
                     var uTitle = (window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.getUpperRoundTitle === 'function')
                         ? window.TourmaDoubleElimAlgorithm.getUpperRoundTitle(u, maxUbRound)
                         : ('UB Vòng ' + u);
@@ -213,7 +214,7 @@
                 // Build ordered Lower Rounds
                 for (var l = 1; l <= maxLbRound; l++) {
                     var lMatches = lowerGroups[l] || [];
-                    lMatches.sort(function (a, b) { return getMatchNum(a) - getMatchNum(b); });
+                    lMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
                     var lTitle = (window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.getLowerRoundTitle === 'function')
                         ? window.TourmaDoubleElimAlgorithm.getLowerRoundTitle(l, maxLbRound)
                         : ('LB Vòng ' + l);
@@ -228,7 +229,7 @@
 
                 // Build Grand Finals Round
                 if (gfMatches.length > 0) {
-                    gfMatches.sort(function (a, b) { return getMatchNum(a) - getMatchNum(b); });
+                    gfMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
                     this.grandFinalsRound = {
                         roundNumber: 1,
                         bracketType: 'GRAND_FINAL',
@@ -266,66 +267,193 @@
                 var m = this.matchesMap[k];
                 if (!m) continue;
 
-                // 1. Fill Team 1 placeholder if empty
-                if (!m.team1 || !m.team1.name) {
-                    var p1 = this.findParentMatch(m.matchId, 1);
-                    if (p1) {
-                        var p1Winner = this.getMatchWinner(p1);
-                        if (p1Winner && p1Winner.name && p1Winner.name !== 'BYE' && !this.isPlaceholder(p1Winner.name)) {
-                            m.team1 = { name: p1Winner.name, seed: p1Winner.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                var bType = (m.bracketType || '').toUpperCase();
+                var rNum = parseInt(m.roundNumber || 1, 10);
+                var isUb = (bType === 'WINNER_BRACKET' || bType === 'UPPER' || bType === 'MAIN');
+                var isLb = (bType === 'LOSER_BRACKET' || bType === 'LOWER' || bType === 'LB');
+                var isGf = (bType === 'GRAND_FINAL' || bType === 'GRAND_FINALS' || bType === 'GRAND_FINAL_RESET');
+
+                // Case 1: Upper Bracket Round 1
+                if (isUb && rNum === 1) {
+                    if (m.isBye) {
+                        if (!m.team1 || !m.team1.name) m.team1 = { name: 'BYE', seed: '', score: '' };
+                        if (!m.team2 || !m.team2.name) m.team2 = { name: 'BYE', seed: '', score: '' };
+                    }
+                    continue;
+                }
+
+                // Case 2: Upper Bracket Round 2+
+                if (isUb && rNum > 1) {
+                    if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
+                        var p1 = this.findParentMatch(m.matchId, 1);
+                        var w1 = this.getMatchWinner(p1);
+                        if (w1 && w1.name && w1.name !== 'BYE' && !this.isPlaceholder(w1.name)) {
+                            m.team1 = { name: w1.name, seed: w1.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
                         } else {
-                            var t1P = (p1.bracketType === 'UPPER' && m.bracketType === 'GRAND_FINAL') ? 'Winner UB' :
-                                      (p1.bracketType === 'LOWER' && m.bracketType === 'GRAND_FINAL') ? 'Winner LB' :
-                                      (p1.matchNumber ? ('W #' + p1.matchNumber) : 'TBD');
-                            m.team1 = { name: t1P, seed: '', score: '' };
+                            var p1Label = (p1 && p1.matchNumber) ? ('W #' + p1.matchNumber) : (p1 && p1.isBye ? this.getNonByeTeamOrPlaceholder(p1) : 'TBD');
+                            m.team1 = { name: p1Label, seed: '', score: '' };
                         }
-                    } else {
-                        var dropP1 = this.findDropFeederMatch(m.matchId, 1);
-                        if (dropP1) {
-                            var dropP1Loser = this.getMatchLoser(dropP1);
-                            if (dropP1Loser && dropP1Loser.name && dropP1Loser.name !== 'BYE' && !this.isPlaceholder(dropP1Loser.name)) {
-                                m.team1 = { name: dropP1Loser.name, seed: dropP1Loser.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                    }
+                    if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
+                        var p2 = this.findParentMatch(m.matchId, 2);
+                        var w2 = this.getMatchWinner(p2);
+                        if (w2 && w2.name && w2.name !== 'BYE' && !this.isPlaceholder(w2.name)) {
+                            m.team2 = { name: w2.name, seed: w2.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                        } else {
+                            var p2Label = (p2 && p2.matchNumber) ? ('W #' + p2.matchNumber) : (p2 && p2.isBye ? this.getNonByeTeamOrPlaceholder(p2) : 'TBD');
+                            m.team2 = { name: p2Label, seed: '', score: '' };
+                        }
+                    }
+                    continue;
+                }
+
+                // Case 3: Lower Bracket Round 1 (Fed ONLY by Upper Bracket drops, NEVER by parent winners!)
+                if (isLb && rNum === 1) {
+                    if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
+                        var drop1 = this.findDropFeederMatch(m.matchId, 1);
+                        if (!drop1 || drop1.isBye) {
+                            m.team1 = { name: 'BYE', seed: '', score: '' };
+                        } else {
+                            var l1 = this.getMatchLoser(drop1);
+                            if (l1 && l1.name && l1.name !== 'BYE' && !this.isPlaceholder(l1.name)) {
+                                m.team1 = { name: l1.name, seed: l1.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
                             } else {
-                                var l1P = dropP1.matchNumber ? ('L #' + dropP1.matchNumber) : 'TBD';
-                                m.team1 = { name: l1P, seed: '', score: '' };
+                                var drop1Label = drop1.matchNumber ? ('L #' + drop1.matchNumber) : 'TBD';
+                                m.team1 = { name: drop1Label, seed: '', score: '' };
                             }
                         }
                     }
+                    if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
+                        var drop2 = this.findDropFeederMatch(m.matchId, 2);
+                        if (!drop2 || drop2.isBye) {
+                            m.team2 = { name: 'BYE', seed: '', score: '' };
+                        } else {
+                            var l2 = this.getMatchLoser(drop2);
+                            if (l2 && l2.name && l2.name !== 'BYE' && !this.isPlaceholder(l2.name)) {
+                                m.team2 = { name: l2.name, seed: l2.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                            } else {
+                                var drop2Label = drop2.matchNumber ? ('L #' + drop2.matchNumber) : 'TBD';
+                                m.team2 = { name: drop2Label, seed: '', score: '' };
+                            }
+                        }
+                    }
+                    if (m.team1.name === 'BYE' && m.team2.name === 'BYE') {
+                        m.isBye = true;
+                        m.status = 'COMPLETED';
+                    }
+                    continue;
                 }
 
-                // 2. Fill Team 2 placeholder if empty
-                if (!m.team2 || !m.team2.name) {
-                    var p2 = this.findParentMatch(m.matchId, 2);
-                    if (p2) {
-                        var p2Winner = this.getMatchWinner(p2);
-                        if (p2Winner && p2Winner.name && p2Winner.name !== 'BYE' && !this.isPlaceholder(p2Winner.name)) {
-                            m.team2 = { name: p2Winner.name, seed: p2Winner.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                // Case 4: Lower Bracket Major Rounds (Even Rounds: 2, 4, 6...)
+                // Slot 1 = Previous LB Winner; Slot 2 = UB Loser Drop
+                if (isLb && (rNum % 2 === 0)) {
+                    if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
+                        var lbParent = this.findParentMatch(m.matchId, 1);
+                        var lbW = this.getMatchWinner(lbParent);
+                        if (lbW && lbW.name && lbW.name !== 'BYE' && !this.isPlaceholder(lbW.name)) {
+                            m.team1 = { name: lbW.name, seed: lbW.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                        } else if (lbParent && lbParent.isBye) {
+                            var fwd = this.getNonByeTeamOrPlaceholder(lbParent);
+                            m.team1 = { name: fwd, seed: '', score: '' };
                         } else {
-                            var t2P = (p2.bracketType === 'UPPER' && m.bracketType === 'GRAND_FINAL') ? 'Winner UB' :
-                                      (p2.bracketType === 'LOWER' && m.bracketType === 'GRAND_FINAL') ? 'Winner LB' :
-                                      (p2.matchNumber ? ('W #' + p2.matchNumber) : 'TBD');
-                            m.team2 = { name: t2P, seed: '', score: '' };
+                            var lbPLabel = (lbParent && lbParent.matchNumber) ? ('W #' + lbParent.matchNumber) : 'TBD';
+                            m.team1 = { name: lbPLabel, seed: '', score: '' };
                         }
-                    } else {
-                        var dropP2 = this.findDropFeederMatch(m.matchId, 2);
-                        if (dropP2) {
-                            var dropP2Loser = this.getMatchLoser(dropP2);
-                            if (dropP2Loser && dropP2Loser.name && dropP2Loser.name !== 'BYE' && !this.isPlaceholder(dropP2Loser.name)) {
-                                m.team2 = { name: dropP2Loser.name, seed: dropP2Loser.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                    }
+                    if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
+                        var ubDrop = this.findDropFeederMatch(m.matchId, 2);
+                        if (!ubDrop || ubDrop.isBye) {
+                            m.team2 = { name: 'BYE', seed: '', score: '' };
+                        } else {
+                            var ubL = this.getMatchLoser(ubDrop);
+                            if (ubL && ubL.name && ubL.name !== 'BYE' && !this.isPlaceholder(ubL.name)) {
+                                m.team2 = { name: ubL.name, seed: ubL.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
                             } else {
-                                var l2P = dropP2.matchNumber ? ('L #' + dropP2.matchNumber) : 'TBD';
-                                m.team2 = { name: l2P, seed: '', score: '' };
+                                var ubDropLabel = ubDrop.matchNumber ? ('L #' + ubDrop.matchNumber) : 'TBD';
+                                m.team2 = { name: ubDropLabel, seed: '', score: '' };
                             }
+                        }
+                    }
+                    continue;
+                }
+
+                // Case 5: Lower Bracket Minor Rounds (Odd Rounds: 3, 5, 7...)
+                // Both Slot 1 and Slot 2 come from previous LB winners
+                if (isLb && (rNum % 2 !== 0) && rNum > 1) {
+                    if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
+                        var lbP1 = this.findParentMatch(m.matchId, 1);
+                        var lbW1 = this.getMatchWinner(lbP1);
+                        if (lbW1 && lbW1.name && lbW1.name !== 'BYE' && !this.isPlaceholder(lbW1.name)) {
+                            m.team1 = { name: lbW1.name, seed: lbW1.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                        } else if (lbP1 && lbP1.isBye) {
+                            var fwd1 = this.getNonByeTeamOrPlaceholder(lbP1);
+                            m.team1 = { name: fwd1, seed: '', score: '' };
+                        } else {
+                            var lbP1Label = (lbP1 && lbP1.matchNumber) ? ('W #' + lbP1.matchNumber) : 'TBD';
+                            m.team1 = { name: lbP1Label, seed: '', score: '' };
+                        }
+                    }
+                    if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
+                        var lbP2 = this.findParentMatch(m.matchId, 2);
+                        var lbW2 = this.getMatchWinner(lbP2);
+                        if (lbW2 && lbW2.name && lbW2.name !== 'BYE' && !this.isPlaceholder(lbW2.name)) {
+                            m.team2 = { name: lbW2.name, seed: lbW2.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                        } else if (lbP2 && lbP2.isBye) {
+                            var fwd2 = this.getNonByeTeamOrPlaceholder(lbP2);
+                            m.team2 = { name: fwd2, seed: '', score: '' };
+                        } else {
+                            var lbP2Label = (lbP2 && lbP2.matchNumber) ? ('W #' + lbP2.matchNumber) : 'TBD';
+                            m.team2 = { name: lbP2Label, seed: '', score: '' };
+                        }
+                    }
+                    continue;
+                }
+
+                // Case 6: Grand Finals
+                if (isGf) {
+                    if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
+                        var gfUb = this.findParentMatch(m.matchId, 1);
+                        var gfUbW = this.getMatchWinner(gfUb);
+                        if (gfUbW && gfUbW.name && gfUbW.name !== 'BYE' && !this.isPlaceholder(gfUbW.name)) {
+                            m.team1 = { name: gfUbW.name, seed: gfUbW.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                        } else {
+                            m.team1 = { name: 'Winner UB', seed: '', score: '' };
+                        }
+                    }
+                    if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
+                        var gfLb = this.findParentMatch(m.matchId, 2);
+                        var gfLbW = this.getMatchWinner(gfLb);
+                        if (gfLbW && gfLbW.name && gfLbW.name !== 'BYE' && !this.isPlaceholder(gfLbW.name)) {
+                            m.team2 = { name: gfLbW.name, seed: gfLbW.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                        } else {
+                            m.team2 = { name: 'Winner LB', seed: '', score: '' };
                         }
                     }
                 }
             }
         },
 
+        getNonByeTeamOrPlaceholder: function (m) {
+            if (!m) return 'TBD';
+            var t1 = m.team1 ? m.team1.name : '';
+            var t2 = m.team2 ? m.team2.name : '';
+            if (t1 && t1 !== 'BYE') return t1;
+            if (t2 && t2 !== 'BYE') return t2;
+            return 'BYE';
+        },
+
         getMatchWinner: function (m) {
             if (!m) return null;
+            if (m.isBye) {
+                var t1N = (m.team1 && m.team1.name) ? m.team1.name : '';
+                var t2N = (m.team2 && m.team2.name) ? m.team2.name : '';
+                if (t1N && t1N !== 'BYE' && !this.isPlaceholder(t1N)) return m.team1;
+                if (t2N && t2N !== 'BYE' && !this.isPlaceholder(t2N)) return m.team2;
+            }
             if (m.winnerId === 'team1' || m.winnerId === 1 || m.winnerId === '1' || m.winnerId === 'SLOT_1') return m.team1;
             if (m.winnerId === 'team2' || m.winnerId === 2 || m.winnerId === '2' || m.winnerId === 'SLOT_2') return m.team2;
+            if (m.team1 && (m.winnerId === String(m.team1.id) || m.winnerId === String(m.team1.name))) return m.team1;
+            if (m.team2 && (m.winnerId === String(m.team2.id) || m.winnerId === String(m.team2.name))) return m.team2;
             var s1 = parseInt(m.team1 ? m.team1.score : '', 10);
             var s2 = parseInt(m.team2 ? m.team2.score : '', 10);
             if (!isNaN(s1) && !isNaN(s2) && (m.status === 'COMPLETED' || m.status === 'FINISHED' || m.status === 'DONE')) {
@@ -337,8 +465,11 @@
 
         getMatchLoser: function (m) {
             if (!m) return null;
+            if (m.isBye) return null;
             if (m.winnerId === 'team1' || m.winnerId === 1 || m.winnerId === '1' || m.winnerId === 'SLOT_1') return m.team2;
             if (m.winnerId === 'team2' || m.winnerId === 2 || m.winnerId === '2' || m.winnerId === 'SLOT_2') return m.team1;
+            if (m.team1 && (m.winnerId === String(m.team1.id) || m.winnerId === String(m.team1.name))) return m.team2;
+            if (m.team2 && (m.winnerId === String(m.team2.id) || m.winnerId === String(m.team2.name))) return m.team1;
             var s1 = parseInt(m.team1 ? m.team1.score : '', 10);
             var s2 = parseInt(m.team2 ? m.team2.score : '', 10);
             if (!isNaN(s1) && !isNaN(s2) && (m.status === 'COMPLETED' || m.status === 'FINISHED' || m.status === 'DONE')) {
@@ -365,20 +496,33 @@
                 if (m.id && String(m.id) === strId) return m;
                 if (m.rawId && String(m.rawId) === strId) return m;
                 if (m.matchNumber && String(m.matchNumber) === strId) return m;
-                if (m.matchId && (String(m.matchId).endsWith('_' + strId) || String(m.matchId).endsWith('_UB_' + strId) || String(m.matchId).endsWith('_LB_' + strId) || String(m.matchId).endsWith('_GF_' + strId))) return m;
             }
             return null;
         },
 
         findParentMatch: function (targetMatchId, slot) {
             if (!targetMatchId) return null;
-            var targetStr = String(targetMatchId).trim();
+            var targetM = this.findMatch(targetMatchId);
+            var targetIds = [];
+            if (targetM) {
+                if (targetM.id) targetIds.push(String(targetM.id).trim());
+                if (targetM.matchId) targetIds.push(String(targetM.matchId).trim());
+                if (targetM.rawId) targetIds.push(String(targetM.rawId).trim());
+            } else {
+                targetIds.push(String(targetMatchId).trim());
+            }
+
             for (var k in this.matchesMap) {
                 var m = this.matchesMap[k];
                 if (!m) continue;
+                // Never match self!
+                if (targetM && (m === targetM || m.id === targetM.id || m.matchId === targetM.matchId || m.rawId === targetM.rawId)) {
+                    continue;
+                }
                 if (m.nextMatchId) {
                     var nId = String(m.nextMatchId).trim();
-                    if (nId === targetStr || targetStr.endsWith('_' + nId) || nId.endsWith('_' + targetStr)) {
+                    var isMatch = targetIds.indexOf(nId) !== -1;
+                    if (isMatch) {
                         var s = (m.nextMatchSlot === 2 || m.nextMatchSlot === '2' || m.nextMatchSlot === 'SLOT_2') ? 2 : 1;
                         if (slot === undefined || s === slot) return m;
                     }
@@ -389,14 +533,28 @@
 
         findDropFeederMatch: function (targetMatchId, slot) {
             if (!targetMatchId) return null;
-            var targetStr = String(targetMatchId).trim();
+            var targetM = this.findMatch(targetMatchId);
+            var targetIds = [];
+            if (targetM) {
+                if (targetM.id) targetIds.push(String(targetM.id).trim());
+                if (targetM.matchId) targetIds.push(String(targetM.matchId).trim());
+                if (targetM.rawId) targetIds.push(String(targetM.rawId).trim());
+            } else {
+                targetIds.push(String(targetMatchId).trim());
+            }
+
             for (var k in this.matchesMap) {
                 var m = this.matchesMap[k];
                 if (!m) continue;
+                // Never match self!
+                if (targetM && (m === targetM || m.id === targetM.id || m.matchId === targetM.matchId || m.rawId === targetM.rawId)) {
+                    continue;
+                }
                 var dId = m.dropToMatchId || m.loserNextMatchId;
                 if (dId) {
                     var dropStr = String(dId).trim();
-                    if (dropStr === targetStr || targetStr.endsWith('_' + dropStr) || dropStr.endsWith('_' + targetStr)) {
+                    var isMatch = targetIds.indexOf(dropStr) !== -1;
+                    if (isMatch) {
                         var s = (m.dropToMatchSlot === 2 || m.dropToMatchSlot === '2' || m.dropToMatchSlot === 'SLOT_2' || m.loserNextSlot === 2 || m.loserNextSlot === '2' || m.loserNextSlot === 'SLOT_2') ? 2 : 1;
                         if (slot === undefined || s === slot) return m;
                     }

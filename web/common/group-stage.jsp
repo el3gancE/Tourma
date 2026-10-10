@@ -15,6 +15,8 @@
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
     String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
     String dbStage1Status = (tourney != null && tourney.getStage1Status() != null) ? tourney.getStage1Status() : "PENDING";
+    String tournamentType = (tourney != null && tourney.getTournamentType() != null) ? tourney.getTournamentType() : "SINGLE_STAGE";
+    int cutTarget = (tourney != null) ? tourney.getAdvancingSeatsCount() : 0;
 
     ParticipantDAO pDao = new ParticipantDAO();
     List<Team> dbTeamsList = null;
@@ -44,10 +46,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= tourneyName %> - Group Stage - Tourma</title>
 
+    <!-- Google Font Lexend -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <!-- Global Styling & Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-bracket.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
@@ -78,7 +85,7 @@
 
     <main class="container has-sidebar round-robin-container">
         
-        <!-- TOP CONTROL BAR (Round Robin Design Style) -->
+        <!-- TOP CONTROL BAR (Round Robin / Group Stage Design Style) -->
         <div class="rr-control-bar">
             <div class="rr-info-group">
                 <h1 class="rr-tourney-title">
@@ -95,7 +102,7 @@
 
             <div class="rr-actions-group">
                 <button type="button" class="btn-reset-bracket-action" onclick="TourmaGroupStage.resetAllMatches()" title="Xóa toàn bộ kết quả và thiết lập lại từ đầu">
-                    <i class="fa-solid fa-rotate-right"></i> Reset Giải
+                    <i class="fa-solid fa-rotate-right"></i> Reset Bảng Đấu
                 </button>
 
                 <div class="view-mode-toggle-group">
@@ -120,9 +127,14 @@
                 <!-- Dynamic Group Pills (Tất cả các bảng, Bảng A, Bảng B...) -->
             </div>
 
-            <!-- FIXTURES / MATCHES CONTAINER -->
+            <!-- FIXTURES / MATCHES VIEW -->
             <div id="gsMatchesView">
                 <div id="gsMatchesContainer" class="rr-fixtures-container"></div>
+            </div>
+
+            <!-- STANDINGS VIEW (Dynamically toggled) -->
+            <div id="gsStandingsView" style="display: none;">
+                <div id="gsStandingsContainer" class="gst-container" style="padding: 0;"></div>
             </div>
 
         </div>
@@ -147,7 +159,7 @@
                     if (tName == null) tName = "Đội " + (i + 1);
                     String nameEsc = tName.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
             %>
-                { id: "<%= tm.getId() %>", name: "<%= nameEsc %>" }<%= (i < dbTeamsList.size() - 1) ? "," : "" %>
+                { id: "<%= tm.getId() %>", name: "<%= nameEsc %>", seed: <%= tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : (i + 1) %> }<%= (i < dbTeamsList.size() - 1) ? "," : "" %>
             <%  } 
             } %>
         ];

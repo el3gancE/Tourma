@@ -132,7 +132,7 @@ public class DoubleEliminationDAO extends DBContext {
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
-                + "ORDER BY m.round_number ASC, ISNULL(m.match_order, 999999) ASC, LEN(m.id) ASC, m.id ASC";
+                + "ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
         int count = 0;
@@ -152,7 +152,8 @@ public class DoubleEliminationDAO extends DBContext {
 
                     String rawId = rs.getString("id");
                     int matchOrder = rs.getInt("match_order");
-                    int matchNum = (matchOrder > 0) ? matchOrder : seq++;
+                    boolean isOrderNull = rs.wasNull();
+                    boolean isBye = rs.getBoolean("is_bye");
                     int roundNumber = rs.getInt("round_number");
                     String bracketType = rs.getString("bracket_type");
 
@@ -167,6 +168,25 @@ public class DoubleEliminationDAO extends DBContext {
                     String t2Seed = rs.wasNull() ? "" : String.valueOf(t2SeedVal);
                     int s2Val = rs.getInt("score2");
                     String s2 = rs.wasNull() ? "" : String.valueOf(s2Val);
+
+                    if (roundNumber == 1 && ("WINNER_BRACKET".equalsIgnoreCase(bracketType) || "MAIN".equalsIgnoreCase(bracketType))) {
+                        if (t1Name != null && (t2Name == null || t2Name.trim().isEmpty())) {
+                            t2Name = "BYE";
+                            isBye = true;
+                        } else if (t2Name != null && (t1Name == null || t1Name.trim().isEmpty())) {
+                            t1Name = "BYE";
+                            isBye = true;
+                        }
+                    }
+
+                    Integer matchNum = null;
+                    if (!isBye) {
+                        if (!isOrderNull && matchOrder > 0) {
+                            matchNum = matchOrder;
+                        } else {
+                            matchNum = seq++;
+                        }
+                    }
 
                     String winnerIdCol = rs.getString("winner_id");
                     String winnerSlot = "";
@@ -191,7 +211,6 @@ public class DoubleEliminationDAO extends DBContext {
                     String dropSlot = rs.getString("loser_next_slot");
                     int dropSlotNum = "SLOT_2".equalsIgnoreCase(dropSlot) ? 2 : 1;
 
-                    boolean isBye = rs.getBoolean("is_bye");
                     String status = rs.getString("status");
                     if ("FINISHED".equalsIgnoreCase(status) || "DONE".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status) || !winnerSlot.isEmpty() || (!s1.isEmpty() && !s2.isEmpty())) {
                         status = "COMPLETED";
@@ -205,7 +224,7 @@ public class DoubleEliminationDAO extends DBContext {
                             .append("\"rawId\":\"").append(escapeJson(rawId)).append("\",")
                             .append("\"bracketType\":\"").append(escapeJson(bracketType != null ? bracketType : "WINNER_BRACKET")).append("\",")
                             .append("\"roundNumber\":").append(roundNumber).append(",")
-                            .append("\"matchNumber\":").append(matchNum).append(",")
+                            .append("\"matchNumber\":").append(matchNum != null ? matchNum : "null").append(",")
                             .append("\"team1\":{")
                             .append("\"name\":\"").append(escapeJson(t1Name != null ? t1Name : "")).append("\",")
                             .append("\"seed\":\"").append(escapeJson(t1Seed)).append("\",")
@@ -312,7 +331,6 @@ public class DoubleEliminationDAO extends DBContext {
             for (int m = 0; m < currUpperMatches; m++) {
                 DeNode node = new DeNode();
                 node.id = "M_" + tournamentId + "_UB_" + matchSeq;
-                node.matchNumber = matchSeq;
                 node.roundNumber = r;
                 node.tournamentId = tournamentId;
                 node.stageId = stageId;
@@ -324,8 +342,16 @@ public class DoubleEliminationDAO extends DBContext {
                     Team t2 = seedToTeam.get(seeds[m * 2 + 1]);
                     node.team1Id = (t1 != null) ? t1.getId() : null;
                     node.team2Id = (t2 != null) ? t2.getId() : null;
-                    node.status = (node.team1Id != null && node.team2Id != null) ? "READY" : "PENDING";
+                    boolean isBye = (node.team1Id == null || node.team2Id == null);
+                    node.isBye = isBye;
+                    if (isBye) {
+                        node.status = "FINISHED";
+                        node.winnerId = (node.team1Id != null) ? node.team1Id : node.team2Id;
+                    } else {
+                        node.status = (node.team1Id != null && node.team2Id != null) ? "READY" : "PENDING";
+                    }
                 } else {
+                    node.isBye = false;
                     node.status = "PENDING";
                 }
 
@@ -368,13 +394,13 @@ public class DoubleEliminationDAO extends DBContext {
             for (int m = 0; m < mCount; m++) {
                 DeNode node = new DeNode();
                 node.id = "M_" + tournamentId + "_LB_" + matchSeq;
-                node.matchNumber = matchSeq;
                 node.roundNumber = lr;
                 node.tournamentId = tournamentId;
                 node.stageId = stageId;
                 node.matchCode = (lr == totalLowerRounds) ? "LB Final" : ("LB R" + lr + " #" + (m + 1));
                 node.bracketType = "LOSER_BRACKET";
                 node.status = "PENDING";
+                node.isBye = false;
 
                 roundNodes.add(node);
                 allMatches.add(node);
@@ -420,13 +446,30 @@ public class DoubleEliminationDAO extends DBContext {
                 DeNode ubM2 = ubR1.get(totalUbR1 - 1 - k);
                 DeNode lbNode = lbR1.get(k);
 
-                if (ubM1 != null && lbNode != null) {
+                boolean b1 = (ubM1 == null || ubM1.isBye);
+                boolean b2 = (ubM2 == null || ubM2.isBye);
+
+                if (ubM1 != null && lbNode != null && !ubM1.isBye) {
                     ubM1.loserNextMatchId = lbNode.id;
                     ubM1.loserNextSlot = "SLOT_1";
                 }
-                if (ubM2 != null && lbNode != null) {
+                if (ubM2 != null && lbNode != null && !ubM2.isBye) {
                     ubM2.loserNextMatchId = lbNode.id;
                     ubM2.loserNextSlot = "SLOT_2";
+                }
+
+                if (b1 && b2) {
+                    // Double-BYE: no team drops into either slot
+                    lbNode.isBye = true;
+                    lbNode.status = "FINISHED";
+                    lbNode.winnerId = null;
+                } else if (b1 || b2) {
+                    // Single-BYE: exactly 1 team will drop in and auto-advance
+                    lbNode.isBye = true;
+                    lbNode.status = "PENDING";
+                } else {
+                    lbNode.isBye = false;
+                    lbNode.status = "PENDING";
                 }
             }
         }
@@ -436,6 +479,7 @@ public class DoubleEliminationDAO extends DBContext {
             int targetLbRound = (ur - 1) * 2;
             List<DeNode> ubMatches = upperRoundNodes.get(ur);
             List<DeNode> lbMajorMatches = lowerRoundNodes.get(targetLbRound);
+            List<DeNode> prevLbMatches = lowerRoundNodes.get(targetLbRound - 1);
 
             if (ubMatches != null && lbMajorMatches != null) {
                 int mCount = ubMatches.size();
@@ -459,6 +503,16 @@ public class DoubleEliminationDAO extends DBContext {
                         DeNode lbNode = lbMajorMatches.get(targetIdx);
                         ubNode.loserNextMatchId = lbNode.id;
                         ubNode.loserNextSlot = "SLOT_2";
+
+                        // If slot 1 comes from a double-BYE match (no team arrives from previous LB round),
+                        // this major round match is also a single-BYE (the UB loser auto-advances).
+                        if (prevLbMatches != null && targetIdx < prevLbMatches.size()) {
+                            DeNode prevLb = prevLbMatches.get(targetIdx);
+                            if (prevLb != null && prevLb.isBye && prevLb.winnerId == null) {
+                                lbNode.isBye = true;
+                                lbNode.status = "PENDING";
+                            }
+                        }
                     }
                 }
             }
@@ -467,13 +521,13 @@ public class DoubleEliminationDAO extends DBContext {
         // 4. Build Grand Final
         DeNode gf = new DeNode();
         gf.id = "M_" + tournamentId + "_GF_" + matchSeq;
-        gf.matchNumber = matchSeq;
         gf.roundNumber = upperRounds + 1;
         gf.tournamentId = tournamentId;
         gf.stageId = stageId;
         gf.matchCode = "Trận Chung Kết";
         gf.bracketType = "GRAND_FINAL";
         gf.status = "PENDING";
+        gf.isBye = false;
         allMatches.add(gf);
 
         // Winner of Upper Bracket Final goes to GF Slot 1
@@ -490,12 +544,83 @@ public class DoubleEliminationDAO extends DBContext {
             lbFinal.get(0).nextSlot = "SLOT_2";
         }
 
+        // Contiguous numbering: ONLY playable non-BYE matches get match numbers 1, 2, 3...
+        int playableCounter = 1;
+        // 1. UB Round 1
+        if (upperRoundNodes.get(1) != null) {
+            for (DeNode node : upperRoundNodes.get(1)) {
+                if (node.isBye) {
+                    node.matchNumber = null;
+                    node.matchCode = "BYE";
+                } else {
+                    node.matchNumber = playableCounter++;
+                    node.matchCode = "UB R1 #" + node.matchNumber;
+                }
+            }
+        }
+        // 2. LB Round 1
+        if (lowerRoundNodes.get(1) != null) {
+            for (DeNode node : lowerRoundNodes.get(1)) {
+                if (node.isBye) {
+                    node.matchNumber = null;
+                    node.matchCode = "BYE";
+                } else {
+                    node.matchNumber = playableCounter++;
+                    node.matchCode = "LB R1 #" + node.matchNumber;
+                }
+            }
+        }
+        // 3. Subsequent rounds in play order
+        for (int k = 2; k <= upperRounds; k++) {
+            // UB Round k
+            if (upperRoundNodes.get(k) != null) {
+                for (DeNode node : upperRoundNodes.get(k)) {
+                    if (node.isBye) {
+                        node.matchNumber = null;
+                        node.matchCode = "BYE";
+                    } else {
+                        node.matchNumber = playableCounter++;
+                        node.matchCode = (k == upperRounds) ? "UB Final" : ("UB R" + k + " #" + node.matchNumber);
+                    }
+                }
+            }
+            // LB Even Round (receives UB drop)
+            int lbEven = (k - 1) * 2;
+            if (lowerRoundNodes.get(lbEven) != null) {
+                for (DeNode node : lowerRoundNodes.get(lbEven)) {
+                    if (node.isBye) {
+                        node.matchNumber = null;
+                        node.matchCode = "BYE";
+                    } else {
+                        node.matchNumber = playableCounter++;
+                        node.matchCode = (lbEven == totalLowerRounds) ? "LB Final" : ("LB R" + lbEven + " #" + node.matchNumber);
+                    }
+                }
+            }
+            // LB Odd Round (intra-LB round)
+            int lbOdd = (k - 1) * 2 + 1;
+            if (lbOdd <= totalLowerRounds && lowerRoundNodes.get(lbOdd) != null) {
+                for (DeNode node : lowerRoundNodes.get(lbOdd)) {
+                    if (node.isBye) {
+                        node.matchNumber = null;
+                        node.matchCode = "BYE";
+                    } else {
+                        node.matchNumber = playableCounter++;
+                        node.matchCode = (lbOdd == totalLowerRounds) ? "LB Final" : ("LB R" + lbOdd + " #" + node.matchNumber);
+                    }
+                }
+            }
+        }
+        // Grand Final
+        gf.matchNumber = playableCounter++;
+        gf.matchCode = "Trận Chung Kết";
+
         // Insert into database in 2 passes to guarantee zero foreign key constraint conflicts
         String insertSql = "INSERT INTO matches (id, tournament_id, stage_id, round_number, match_order, match_code, bracket_type, "
                 + "team1_id, team2_id, is_bye, status) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        String updateLinksSql = "UPDATE matches SET next_match_id = ?, next_slot = ?, loser_next_match_id = ?, loser_next_slot = ? WHERE id = ?";
+        String updateLinksSql = "UPDATE matches SET next_match_id = ?, next_slot = ?, loser_next_match_id = ?, loser_next_slot = ?, winner_id = ? WHERE id = ?";
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
@@ -507,12 +632,12 @@ public class DoubleEliminationDAO extends DBContext {
                     ps.setString(2, node.tournamentId);
                     ps.setString(3, node.stageId);
                     ps.setInt(4, node.roundNumber);
-                    ps.setInt(5, node.matchNumber);
+                    if (node.matchNumber != null) ps.setInt(5, node.matchNumber); else ps.setNull(5, Types.INTEGER);
                     ps.setString(6, node.matchCode);
                     ps.setString(7, node.bracketType);
                     if (node.team1Id != null) ps.setString(8, node.team1Id); else ps.setNull(8, Types.VARCHAR);
                     if (node.team2Id != null) ps.setString(9, node.team2Id); else ps.setNull(9, Types.VARCHAR);
-                    ps.setBoolean(10, false);
+                    ps.setBoolean(10, node.isBye);
                     ps.setString(11, node.status);
                     ps.addBatch();
                 }
@@ -522,16 +647,31 @@ public class DoubleEliminationDAO extends DBContext {
             // Pass 2: Update next_match_id & loser_next_match_id links now that all match IDs exist in DB
             try (PreparedStatement psUp = conn.prepareStatement(updateLinksSql)) {
                 for (DeNode node : allMatches) {
-                    if (node.nextMatchId != null || node.loserNextMatchId != null) {
+                    if (node.nextMatchId != null || node.loserNextMatchId != null || node.winnerId != null) {
                         if (node.nextMatchId != null) psUp.setString(1, node.nextMatchId); else psUp.setNull(1, Types.VARCHAR);
                         if (node.nextSlot != null) psUp.setString(2, node.nextSlot); else psUp.setNull(2, Types.VARCHAR);
                         if (node.loserNextMatchId != null) psUp.setString(3, node.loserNextMatchId); else psUp.setNull(3, Types.VARCHAR);
                         if (node.loserNextSlot != null) psUp.setString(4, node.loserNextSlot); else psUp.setNull(4, Types.VARCHAR);
-                        psUp.setString(5, node.id);
+                        if (node.winnerId != null) psUp.setString(5, node.winnerId); else psUp.setNull(5, Types.VARCHAR);
+                        psUp.setString(6, node.id);
                         psUp.addBatch();
                     }
                 }
                 psUp.executeBatch();
+            }
+
+            // Pass 3: Propagate BYE winners to next round matches
+            for (DeNode node : allMatches) {
+                if (node.isBye && node.winnerId != null && node.nextMatchId != null) {
+                    String slotCol = ("SLOT_2".equalsIgnoreCase(node.nextSlot)) ? "team2_id" : "team1_id";
+                    String otherSlotCol = ("SLOT_2".equalsIgnoreCase(node.nextSlot)) ? "team1_id" : "team2_id";
+                    String advSql = "UPDATE matches SET " + slotCol + " = ?, status = CASE WHEN (" + otherSlotCol + " IS NOT NULL) THEN 'READY' ELSE status END WHERE id = ?";
+                    try (PreparedStatement psAdv = conn.prepareStatement(advSql)) {
+                        psAdv.setString(1, node.winnerId);
+                        psAdv.setString(2, node.nextMatchId);
+                        psAdv.executeUpdate();
+                    }
+                }
             }
 
             conn.commit();
@@ -542,7 +682,7 @@ public class DoubleEliminationDAO extends DBContext {
 
     private static class DeNode {
         String id;
-        int matchNumber;
+        Integer matchNumber;
         int roundNumber;
         String tournamentId;
         String stageId;
@@ -554,21 +694,38 @@ public class DoubleEliminationDAO extends DBContext {
         String nextSlot;
         String loserNextMatchId;
         String loserNextSlot;
+        boolean isBye;
+        String winnerId;
         String status;
     }
 
     private int[] generateSeedingArray(int bracketSize) {
-        int[] rounds = new int[]{1, 2};
-        while (rounds.length < bracketSize) {
-            int nextLen = rounds.length * 2;
+        int[] seeds = new int[]{1, 2};
+        while (seeds.length < bracketSize) {
+            int nextLen = seeds.length * 2;
+            int sum = nextLen + 1;
             int[] next = new int[nextLen];
-            for (int i = 0; i < rounds.length; i++) {
-                next[i * 2] = rounds[i];
-                next[i * 2 + 1] = nextLen + 1 - rounds[i];
+            for (int i = 0; i < seeds.length; i++) {
+                int s = seeds[i];
+                int comp = sum - s;
+                if (i % 2 == 0) {
+                    next[i * 2] = s;
+                    next[i * 2 + 1] = comp;
+                } else {
+                    next[i * 2] = comp;
+                    next[i * 2 + 1] = s;
+                }
             }
-            rounds = next;
+            seeds = next;
         }
-        return rounds;
+        int[] result = new int[bracketSize];
+        for (int i = 0; i < bracketSize / 2; i++) {
+            int a = seeds[i * 2];
+            int b = seeds[i * 2 + 1];
+            result[i * 2] = Math.min(a, b);
+            result[i * 2 + 1] = Math.max(a, b);
+        }
+        return result;
     }
 
     private String lookupOrCreateStageId(String tournamentId, int stageOrder) {
@@ -600,42 +757,54 @@ public class DoubleEliminationDAO extends DBContext {
 
     public boolean resetBracketMatches(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.penalty1 = NULL, m.penalty2 = NULL, "
-                + "m.winner_id = NULL, m.loser_id = NULL, "
-                + "m.team1_id = CASE WHEN m.bracket_type = 'WINNER_BRACKET' AND m.round_number = 1 THEN m.team1_id ELSE NULL END, "
-                + "m.team2_id = CASE WHEN m.bracket_type = 'WINNER_BRACKET' AND m.round_number = 1 THEN m.team2_id ELSE NULL END, "
-                + "m.status = CASE WHEN m.bracket_type = 'WINNER_BRACKET' AND m.round_number = 1 AND m.team1_id IS NOT NULL AND m.team2_id IS NOT NULL THEN 'READY' ELSE 'PENDING' END "
-                + "FROM matches m "
+        String tId = tournamentId.trim();
+
+        // 1. Break self-referencing foreign keys first
+        String nullLinksSql = "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement psNull = conn.prepareStatement(nullLinksSql)) {
+            psNull.setString(1, tId);
+            psNull.executeUpdate();
+        } catch (Exception ignore) {}
+
+        // 2. Delete all existing matches for this tournament and stage
+        String delSql = "DELETE m FROM matches m "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '_%')";
-
-        String resetTourneySql = "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL WHERE id = ?";
-
-        try (Connection conn = getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, tournamentId);
-                ps.setInt(2, stageOrder);
-                ps.setInt(3, stageOrder);
-                ps.setInt(4, stageOrder);
-                ps.executeUpdate();
-            }
-
-            try (PreparedStatement psT = conn.prepareStatement(resetTourneySql)) {
-                psT.setString(1, tournamentId);
-                psT.executeUpdate();
-            } catch (Exception ignore) {}
-
-            try (PreparedStatement psS1 = conn.prepareStatement("UPDATE tournaments SET stage1_status = 'PENDING' WHERE id = ?")) {
-                psS1.setString(1, tournamentId);
-                psS1.executeUpdate();
-            } catch (Exception ignore) {}
-
-            service.RollingWindowPointService.clearAllCaches();
-            return true;
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR s.stage_order IS NULL OR ? = 1)";
+        try (Connection conn = getConnection();
+             PreparedStatement psDel = conn.prepareStatement(delSql)) {
+            psDel.setString(1, tId);
+            psDel.setInt(2, stageOrder);
+            psDel.setInt(3, stageOrder);
+            psDel.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
+
+        // 3. Reset tournament overall status
+        String resetTourneySql = "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement psT = conn.prepareStatement(resetTourneySql)) {
+            psT.setString(1, tId);
+            psT.executeUpdate();
+        } catch (Exception ignore) {}
+
+        try (Connection conn = getConnection();
+             PreparedStatement psS1 = conn.prepareStatement("UPDATE tournaments SET stage1_status = 'PENDING' WHERE id = ?")) {
+            psS1.setString(1, tId);
+            psS1.executeUpdate();
+        } catch (Exception ignore) {}
+
+        // 4. Rebuild 100% fresh Double Elimination match tree
+        ParticipantDAO pDao = new ParticipantDAO();
+        List<Team> teams = pDao.getTeamsByTournamentId(tId);
+        if (teams != null && !teams.isEmpty()) {
+            initializeDoubleEliminationInDB(tId, stageOrder, teams);
+        }
+
+        service.RollingWindowPointService.clearAllCaches();
+        return true;
     }
 
     private int parseNumericId(String strId, int defaultSeq) {
