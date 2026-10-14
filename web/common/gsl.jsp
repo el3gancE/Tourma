@@ -6,6 +6,16 @@
 <%@page import="model.Tournament"%>
 <%@page import="model.Team"%>
 <%@page import="java.util.List"%>
+<%!
+    public static String escapeJsString(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\")
+                  .replace("'", "\\'")
+                  .replace("\"", "\\\"")
+                  .replace("\r", "\\r")
+                  .replace("\n", "\\n");
+    }
+%>
 <%
     String tourneyId = (String) request.getAttribute("tournamentId");
     if (tourneyId == null || tourneyId.trim().isEmpty()) {
@@ -218,8 +228,8 @@
         <!-- Page Bootstrap Execution -->
         <script>
             document.addEventListener('DOMContentLoaded', function () {
-                var tourneyId = '<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>';
-                var dbTournamentStatus = '<%= dbTournamentStatus %>';
+                var tourneyId = '<%= escapeJsString((tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo") %>';
+                var dbTournamentStatus = '<%= escapeJsString(dbTournamentStatus) %>';
                 if (dbTournamentStatus === 'COMPLETED') {
                     try { localStorage.setItem('tourma_final_locked_' + tourneyId, 'true'); } catch(e) {}
                 } else {
@@ -230,7 +240,7 @@
                     } catch(e) {}
                 }
                 window.TourmaContextPathTourneyId = tourneyId;
-                var tourneyName = '<%= tourneyName %>';
+                var tourneyName = '<%= escapeJsString(tourneyName) %>';
                 var preloadedTeams = <%= gslTeamsJson %>;
                 var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
                 var tournamentType = isMultiStage ? 'MULTI_STAGE' : 'SINGLE_STAGE';

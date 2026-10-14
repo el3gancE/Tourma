@@ -301,7 +301,7 @@
                             };
                         }
                     } else if (!match.team1 || !match.team1.name || this.isPlaceholder(match.team1.name)) {
-                        var t1P = p1 ? ('W #' + (p1.matchNumber || p1.matchId)) : 'TBD';
+                        var t1P = p1 ? (p1.matchNumber ? ('W #' + p1.matchNumber) : (p1.matchCode ? p1.matchCode : 'TBD')) : 'TBD';
                         match.team1 = { name: t1P, seed: '', score: '' };
                     }
 
@@ -314,7 +314,7 @@
                             };
                         }
                     } else if (!match.team2 || !match.team2.name || this.isPlaceholder(match.team2.name)) {
-                        var t2P = p2 ? ('W #' + (p2.matchNumber || p2.matchId)) : 'TBD';
+                        var t2P = p2 ? (p2.matchNumber ? ('W #' + p2.matchNumber) : (p2.matchCode ? p2.matchCode : 'TBD')) : 'TBD';
                         match.team2 = { name: t2P, seed: '', score: '' };
                     }
 
@@ -1083,16 +1083,11 @@
                 return this.roundsList[this.roundsList.length - 1].roundNumber;
             }
             var numTeams = (this.teamsList && this.teamsList.length > 0) ? this.teamsList.length : 16;
-            var current = this.cutTarget;
-            var rounds = 0;
-            while (current * 2 <= numTeams) {
-                current *= 2;
-                rounds++;
-            }
-            if (current < numTeams) {
-                rounds++;
-            }
-            return Math.max(1, rounds);
+            var maxM = Math.ceil(numTeams / this.cutTarget);
+            var pMax = 1;
+            while (pMax < maxM) pMax *= 2;
+            if (pMax < 2) pMax = 2;
+            return Math.max(1, Math.round(Math.log(pMax) / Math.log(2)));
         },
 
         /**

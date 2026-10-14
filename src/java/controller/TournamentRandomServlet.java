@@ -276,8 +276,9 @@ public class TournamentRandomServlet extends HttpServlet {
                         + "AND (m.is_bye IS NULL OR m.is_bye = 0) ");
 
                 List<String> groupPatterns = ("randomGroup".equalsIgnoreCase(action)) ? getGroupFilterPatterns(groupId, rawGroupId) : Collections.emptyList();
+                boolean isGrandFinal = bracketType != null && bracketType.trim().toUpperCase().contains("GRAND");
 
-                if ("randomRound".equalsIgnoreCase(action) && roundNumber != null) {
+                if ("randomRound".equalsIgnoreCase(action) && roundNumber != null && !isGrandFinal) {
                     sql.append("AND m.round_number = ? ");
                 } else if (!groupPatterns.isEmpty()) {
                     sql.append("AND (");
@@ -312,7 +313,7 @@ public class TournamentRandomServlet extends HttpServlet {
                     ps.setInt(pIdx++, stageOrder);
                     ps.setInt(pIdx++, stageOrder);
 
-                    if ("randomRound".equalsIgnoreCase(action) && roundNumber != null) {
+                    if ("randomRound".equalsIgnoreCase(action) && roundNumber != null && !isGrandFinal) {
                         ps.setInt(pIdx++, roundNumber);
                     } else if (!groupPatterns.isEmpty()) {
                         for (String pat : groupPatterns) {
@@ -689,11 +690,14 @@ public class TournamentRandomServlet extends HttpServlet {
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
 
+            boolean isGrandFinal = bracketType != null && bracketType.trim().toUpperCase().contains("GRAND");
+
             // 1. Fetch only playable non-BYE matches of this round to reset
             StringBuilder selSql = new StringBuilder("SELECT m.id, m.is_bye, m.team1_id, m.team2_id, m.next_match_id, m.next_slot, m.loser_next_match_id, m.loser_next_slot, m.group_id "
                     + "FROM matches m "
                     + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                    + "WHERE m.tournament_id = ? AND m.round_number = ? "
+                    + "WHERE m.tournament_id = ? "
+                    + (isGrandFinal ? "" : "AND m.round_number = ? ")
                     + "AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
                     + "AND (m.is_bye IS NULL OR m.is_bye = 0)");
 
@@ -717,7 +721,9 @@ public class TournamentRandomServlet extends HttpServlet {
             try (PreparedStatement psSel = conn.prepareStatement(selSql.toString())) {
                 int p = 1;
                 psSel.setString(p++, tournamentId);
-                psSel.setInt(p++, roundNumber);
+                if (!isGrandFinal) {
+                    psSel.setInt(p++, roundNumber);
+                }
                 psSel.setInt(p++, stageOrder);
                 psSel.setInt(p++, stageOrder);
                 psSel.setInt(p++, stageOrder);

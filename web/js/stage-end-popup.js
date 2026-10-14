@@ -150,7 +150,7 @@
                             stopMatchCount++;
                             var s1 = (sm.team1 && sm.team1.score !== '' && sm.team1.score !== null && !isNaN(Number(sm.team1.score))) ? Number(sm.team1.score) : null;
                             var s2 = (sm.team2 && sm.team2.score !== '' && sm.team2.score !== null && !isNaN(Number(sm.team2.score))) ? Number(sm.team2.score) : null;
-                            var isDone = (sm.winnerId === 'team1' || sm.winnerId === 'team2' || (s1 !== null && s2 !== null && (s1 > s2 || s2 > s1)) || sm.status === 'COMPLETED' || sm.status === 'FINISHED' || sm.status === 'DONE');
+                            var isDone = (Boolean(sm.winnerId) || (s1 !== null && s2 !== null && (s1 > s2 || s2 > s1)) || sm.status === 'COMPLETED' || sm.status === 'FINISHED' || sm.status === 'DONE');
                             if (!isDone) {
                                 allStopMatchesDone = false;
                                 break;

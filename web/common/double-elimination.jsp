@@ -6,6 +6,16 @@
 <%@page import="model.Tournament"%>
 <%@page import="model.Team"%>
 <%@page import="java.util.List"%>
+<%!
+    public static String escapeJsString(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\")
+                  .replace("'", "\\'")
+                  .replace("\"", "\\\"")
+                  .replace("\r", "\\r")
+                  .replace("\n", "\\n");
+    }
+%>
 <%
     String tourneyId = (String) request.getAttribute("tournamentId");
     if (tourneyId == null || tourneyId.trim().isEmpty()) {
@@ -93,7 +103,7 @@
                     if (tName == null || tName.trim().isEmpty()) {
                         tName = "Đội #" + (i + 1);
                     }
-                    sb.append("\"").append(tName.replace("\"", "\\\"")).append("\"");
+                    sb.append("\"").append(tName.replace("\\", "\\\\").replace("\"", "\\\"")).append("\"");
                 }
                 sb.append("]");
                 deTeamsJson = sb.toString();
@@ -272,11 +282,11 @@
         <!-- Context Path Injection for AJAX Operations -->
         <script>
             window.TourmaContextPath = '${pageContext.request.contextPath}';
-            window.TourmaTournamentId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
+            window.TourmaTournamentId = "<%= escapeJsString((tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo") %>";
             window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
-            window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
+            window.TourmaDbStage1Status["<%= escapeJsString((tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo") %>"] = "<%= escapeJsString(dbStage1Status) %>";
             window.TourmaDbTournamentStatus = window.TourmaDbTournamentStatus || {};
-            window.TourmaDbTournamentStatus["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbTournamentStatus %>";
+            window.TourmaDbTournamentStatus["<%= escapeJsString((tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo") %>"] = "<%= escapeJsString(dbTournamentStatus) %>";
         </script>
 
         <!-- Engine Scripts -->
@@ -295,8 +305,8 @@
         <!-- Page Bootstrap Execution -->
         <script>
             document.addEventListener('DOMContentLoaded', function () {
-                var tourneyId = '<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>';
-                var dbTournamentStatus = '<%= dbTournamentStatus %>';
+                var tourneyId = '<%= escapeJsString((tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo") %>';
+                var dbTournamentStatus = '<%= escapeJsString(dbTournamentStatus) %>';
                 if (dbTournamentStatus === 'COMPLETED') {
                     try { localStorage.setItem('tourma_final_locked_' + tourneyId, 'true'); } catch(e) {}
                 } else {
@@ -307,7 +317,7 @@
                     } catch(e) {}
                 }
                 window.TourmaContextPathTourneyId = tourneyId;
-                var tourneyName = '<%= tourneyName %>';
+                var tourneyName = '<%= escapeJsString(tourneyName) %>';
                 var preloadedTeams = <%= deTeamsJson %>;
                 var isMultiStage = <%= "MULTI_STAGE".equals(tournamentType) ? "true" : "false" %>;
                 var tournamentType = isMultiStage ? 'MULTI_STAGE' : 'SINGLE_STAGE';

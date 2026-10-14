@@ -252,13 +252,14 @@
                     });
                 }
 
-                // Build Grand Finals Round
+                // Build Grand Final Round
                 if (gfMatches.length > 0) {
                     gfMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
+                    var gfRoundNum = gfMatches[0].roundNumber || (maxUbRound + 1);
                     this.grandFinalsRound = {
-                        roundNumber: 1,
+                        roundNumber: gfRoundNum,
                         bracketType: 'GRAND_FINAL',
-                        title: 'Grand Finals',
+                        title: 'Grand Final',
                         matches: gfMatches
                     };
                 }
@@ -802,19 +803,20 @@
                 container.appendChild(col);
             }
 
-            // Render Grand Finals Column in Upper Bracket if present
+            // Render Grand Final Column in Upper Bracket if present
             if (this.grandFinalsRound && this.grandFinalsRound.matches && this.grandFinalsRound.matches.length > 0 && !(this.cutTarget > 1)) {
+                var gfRoundNum = this.grandFinalsRound.roundNumber || (this.upperRounds.length + 1);
                 var gfCol = document.createElement('div');
                 gfCol.className = 'de-round-column single-round-column grand-finals';
-                gfCol.setAttribute('data-round', '1');
+                gfCol.setAttribute('data-round', gfRoundNum);
                 gfCol.setAttribute('data-bracket-type', 'GRAND_FINAL');
 
                 var gfHeader = document.createElement('div');
                 gfHeader.className = 'de-round-header single-round-header gf';
                 var gfCtrlHtml = (window.TourmaRoundControls && typeof window.TourmaRoundControls.renderHeaderControlsHtml === 'function')
-                    ? window.TourmaRoundControls.renderHeaderControlsHtml(1, 'Grand Finals', 'GRAND_FINAL')
+                    ? window.TourmaRoundControls.renderHeaderControlsHtml(gfRoundNum, 'Grand Final', 'GRAND_FINAL')
                     : '';
-                gfHeader.innerHTML = '<div class="round-header-title">Grand Finals</div>' + gfCtrlHtml;
+                gfHeader.innerHTML = '<div class="round-header-title">Grand Final</div>' + gfCtrlHtml;
                 gfCol.appendChild(gfHeader);
 
                 var gfStack = document.createElement('div');

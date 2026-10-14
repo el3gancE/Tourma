@@ -22,16 +22,12 @@ public class CountAdvanceTeamService {
             return 1;
         }
 
-        int current = cutTarget;
-        int rounds = 0;
-        while (current * 2 <= totalTeams) {
-            current *= 2;
-            rounds++;
-        }
-        if (current < totalTeams) {
-            rounds++;
-        }
+        int maxM = (int) Math.ceil((double) totalTeams / cutTarget);
+        int pMax = 1;
+        while (pMax < maxM) pMax *= 2;
+        if (pMax < 2) pMax = 2;
 
+        int rounds = (int) (Math.log(pMax) / Math.log(2));
         return Math.max(1, rounds);
     }
 
