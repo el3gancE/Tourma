@@ -206,9 +206,17 @@ public class RoundRobinDAO extends DBContext {
             return;
         }
 
-        ParticipantDAO pDao = new ParticipantDAO();
-        List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
-        if (teams == null || teams.size() < 2) return;
+        List<Team> teams;
+        if (stageOrder > 1) {
+            teams = new SingleEliminationDAO().getStage2TeamsList(tournamentId);
+            if (teams == null || teams.size() < 2) {
+                return;
+            }
+        } else {
+            ParticipantDAO pDao = new ParticipantDAO();
+            teams = pDao.getTeamsByTournamentId(tournamentId);
+            if (teams == null || teams.size() < 2) return;
+        }
 
         initializeRoundRobinScheduleInDB(tournamentId, stageOrder, teams);
     }

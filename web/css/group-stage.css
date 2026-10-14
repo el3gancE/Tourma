@@ -177,6 +177,7 @@
     font-size: 0.7rem;
     font-weight: 700;
     color: var(--gs-accent-teal);
+}
 /* Group Stage Matches View Section - Frameless List Layout Matching SE/DE/Swiss */
 .gs-matches-container {
     width: 100%;

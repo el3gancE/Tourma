@@ -105,7 +105,7 @@ public class CutStageServlet extends HttpServlet {
                 int stoppingRound = CountAdvanceTeamService.calculateStoppingRoundSE(totalTeams, cutTarget);
 
                 // 3. Fetch Stage 1 SE matches
-                List<Match> matchesList = singleEliminationDAO.getMatchesByTournamentId(intTourneyId);
+                List<Match> matchesList = singleEliminationDAO.getMatchesByTournamentId(tournamentId);
 
                 // 4. Check if stopping round is finished
                 boolean roundFinished = SECutService.isStoppingRoundFinished(matchesList, stoppingRound);
@@ -133,15 +133,30 @@ public class CutStageServlet extends HttpServlet {
                 json.append("\"qualifiedCount\":").append(stage2ShuffledTeams.size()).append(",");
                 json.append("\"qualifiedTeams\":[");
 
+                StringBuilder s2TeamsJson = new StringBuilder("[");
                 for (int i = 0; i < stage2ShuffledTeams.size(); i++) {
                     Team t = stage2ShuffledTeams.get(i);
+                    int origSeed = t.getOriginalSeed() > 0 ? t.getOriginalSeed() : (i + 1);
                     json.append("{");
                     json.append("\"id\":\"").append(t.getId() != null ? t.getId() : "").append("\",");
-                    json.append("\"name\":\"").append(t.getName() != null ? t.getName() : "").append("\",");
-                    json.append("\"seed\":").append(i + 1);
+                    json.append("\"name\":\"").append(t.getName() != null ? t.getName().replace("\"", "\\\"") : "").append("\",");
+                    json.append("\"seed\":").append(origSeed).append(",");
+                    json.append("\"originalSeed\":").append(origSeed);
                     json.append("}");
                     if (i < stage2ShuffledTeams.size() - 1) json.append(",");
+
+                    if (i > 0) s2TeamsJson.append(",");
+                    s2TeamsJson.append("{\"id\":\"").append(t.getId() != null ? t.getId() : "")
+                               .append("\",\"name\":\"").append(t.getName() != null ? t.getName().replace("\"", "\\\"") : "")
+                               .append("\",\"seed\":").append(origSeed)
+                               .append(",\"originalSeed\":").append(origSeed)
+                               .append("}");
                 }
+                s2TeamsJson.append("]");
+
+                // Save to Database
+                tournamentDAO.saveStage2Teams(tournamentId, s2TeamsJson.toString());
+                tournamentDAO.saveStage1Status(tournamentId, "LOCKED");
 
                 json.append("]");
                 json.append("}");

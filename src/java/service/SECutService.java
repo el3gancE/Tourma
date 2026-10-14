@@ -40,7 +40,12 @@ public class SECutService {
         for (Match m : matches) {
             if (m.getRoundNumber() == stoppingRound) {
                 matchCountInRound++;
-                if ("COMPLETED".equalsIgnoreCase(m.getStatus()) || "DONE".equalsIgnoreCase(m.getStatus())) {
+                boolean isDone = "COMPLETED".equalsIgnoreCase(m.getStatus())
+                        || "DONE".equalsIgnoreCase(m.getStatus())
+                        || "FINISHED".equalsIgnoreCase(m.getStatus())
+                        || (m.getWinnerTeamId() != null && m.getWinnerTeamId() > 0)
+                        || (m.getTeam1Score() != null && m.getTeam2Score() != null && !m.getTeam1Score().equals(m.getTeam2Score()));
+                if (isDone) {
                     completedCount++;
                 }
             }
@@ -64,19 +69,44 @@ public class SECutService {
         }
 
         for (Match m : matches) {
-            if (m.getRoundNumber() == stoppingRound && ("COMPLETED".equalsIgnoreCase(m.getStatus()) || "DONE".equalsIgnoreCase(m.getStatus()))) {
+            if (m.getRoundNumber() == stoppingRound) {
+                boolean isDone = "COMPLETED".equalsIgnoreCase(m.getStatus()) || "DONE".equalsIgnoreCase(m.getStatus()) || "FINISHED".equalsIgnoreCase(m.getStatus())
+                        || (m.getTeam1Score() != null && m.getTeam2Score() != null) || (m.getWinnerTeamId() != null && m.getWinnerTeamId() > 0);
+                if (!isDone) continue;
+
                 Integer winnerId = m.getWinnerTeamId();
-                if (winnerId != null) {
+                boolean isTeam1Winner = false;
+                boolean isTeam2Winner = false;
+
+                if (winnerId != null && (winnerId == 1 || winnerId.equals(m.getTeam1Id()))) {
+                    isTeam1Winner = true;
+                } else if (winnerId != null && (winnerId == 2 || winnerId.equals(m.getTeam2Id()))) {
+                    isTeam2Winner = true;
+                } else if (m.getTeam1Score() != null && m.getTeam2Score() != null) {
+                    if (m.getTeam1Score() > m.getTeam2Score()) isTeam1Winner = true;
+                    else if (m.getTeam2Score() > m.getTeam1Score()) isTeam2Winner = true;
+                }
+
+                if (isTeam1Winner && m.getTeam1Name() != null && !m.getTeam1Name().trim().isEmpty() && !"BYE".equalsIgnoreCase(m.getTeam1Name())) {
                     Team team = new Team();
-                    if (winnerId.equals(m.getTeam1Id())) {
-                        team.setId(String.valueOf(m.getTeam1Id()));
-                        team.setRawName(m.getTeam1Name());
-                        team.setOriginalSeed(m.getTeam1Seed() != null ? m.getTeam1Seed() : 0);
-                    } else if (winnerId.equals(m.getTeam2Id())) {
-                        team.setId(String.valueOf(m.getTeam2Id()));
-                        team.setRawName(m.getTeam2Name());
-                        team.setOriginalSeed(m.getTeam2Seed() != null ? m.getTeam2Seed() : 0);
+                    String tId = m.getTeam1StringId();
+                    if (tId == null || tId.isEmpty()) {
+                        tId = m.getTeam1Id() != null ? String.valueOf(m.getTeam1Id()) : ("T_" + m.getTeam1Name());
                     }
+                    team.setId(tId);
+                    team.setRawName(m.getTeam1Name());
+                    team.setOriginalSeed(m.getTeam1Seed() != null ? m.getTeam1Seed() : 0);
+                    team.setStatus("QUALIFIED");
+                    qualifiedTeams.add(team);
+                } else if (isTeam2Winner && m.getTeam2Name() != null && !m.getTeam2Name().trim().isEmpty() && !"BYE".equalsIgnoreCase(m.getTeam2Name())) {
+                    Team team = new Team();
+                    String tId = m.getTeam2StringId();
+                    if (tId == null || tId.isEmpty()) {
+                        tId = m.getTeam2Id() != null ? String.valueOf(m.getTeam2Id()) : ("T_" + m.getTeam2Name());
+                    }
+                    team.setId(tId);
+                    team.setRawName(m.getTeam2Name());
+                    team.setOriginalSeed(m.getTeam2Seed() != null ? m.getTeam2Seed() : 0);
                     team.setStatus("QUALIFIED");
                     qualifiedTeams.add(team);
                 }

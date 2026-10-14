@@ -118,12 +118,23 @@
                     } catch (e) {}
                 }
 
-                if (cutTarget && cutTarget > 1 && teamsList && teamsList.length > 0) {
-                    var pow2 = 1;
-                    while (pow2 < teamsList.length) pow2 *= 2;
-                    var totalRounds = Math.log2(pow2);
-                    var diff = Math.round(Math.log2(cutTarget));
-                    var stoppingRound = Math.max(1, totalRounds - diff);
+                if (cutTarget && cutTarget > 1) {
+                    var stoppingRound = 0;
+                    if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.getStoppingRound === 'function') {
+                        stoppingRound = window.SingleEliminationEngine.getStoppingRound();
+                    }
+                    if (!stoppingRound && teamsList && teamsList.length > 0) {
+                        var numTeams = teamsList.length;
+                        var current = cutTarget;
+                        while (current * 2 <= numTeams) {
+                            current *= 2;
+                            stoppingRound++;
+                        }
+                        if (current < numTeams) {
+                            stoppingRound++;
+                        }
+                    }
+                    stoppingRound = Math.max(1, stoppingRound);
 
                     var allStopMatchesDone = true;
                     var stopMatchCount = 0;
@@ -139,7 +150,7 @@
                             stopMatchCount++;
                             var s1 = (sm.team1 && sm.team1.score !== '' && sm.team1.score !== null && !isNaN(Number(sm.team1.score))) ? Number(sm.team1.score) : null;
                             var s2 = (sm.team2 && sm.team2.score !== '' && sm.team2.score !== null && !isNaN(Number(sm.team2.score))) ? Number(sm.team2.score) : null;
-                            var isDone = (s1 !== null && s2 !== null && (s1 > s2 || s2 > s1));
+                            var isDone = (sm.winnerId === 'team1' || sm.winnerId === 'team2' || (s1 !== null && s2 !== null && (s1 > s2 || s2 > s1)) || sm.status === 'COMPLETED' || sm.status === 'FINISHED' || sm.status === 'DONE');
                             if (!isDone) {
                                 allStopMatchesDone = false;
                                 break;
@@ -460,6 +471,42 @@
         },
 
         /**
+         * Safely extract advancing teams from current Stage 1 engine
+         */
+        getAdvancingTeamsFromCurrentEngine: function () {
+            var tid = this.tournamentId;
+            var teams = null;
+
+            try {
+                if (window.TourmaGroupStage && typeof window.TourmaGroupStage.getAdvancingTeams === 'function') {
+                    teams = window.TourmaGroupStage.getAdvancingTeams();
+                } else if (window.TourmaSwiss && typeof window.TourmaSwiss.getAdvancingTeams === 'function') {
+                    teams = window.TourmaSwiss.getAdvancingTeams();
+                } else if (window.TourmaGSL && typeof window.TourmaGSL.getAdvancingTeams === 'function') {
+                    teams = window.TourmaGSL.getAdvancingTeams();
+                } else if (window.TourmaRoundRobin && typeof window.TourmaRoundRobin.getAdvancingTeams === 'function') {
+                    teams = window.TourmaRoundRobin.getAdvancingTeams();
+                } else if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.getAdvancingTeams === 'function') {
+                    teams = window.SingleEliminationEngine.getAdvancingTeams();
+                } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.getAdvancingTeams === 'function') {
+                    teams = window.TourmaDoubleElimination.getAdvancingTeams();
+                }
+            } catch (e) {
+                console.warn('[StageEndPopup] getAdvancingTeams error:', e);
+            }
+
+            // Fallback: check localStorage for tourma_stage2_teams_
+            if (!teams || !Array.isArray(teams) || teams.length === 0) {
+                try {
+                    var raw = localStorage.getItem('tourma_stage2_teams_' + tid) || localStorage.getItem('tourma_advance_teams_' + tid);
+                    if (raw) teams = JSON.parse(raw);
+                } catch (e) {}
+            }
+
+            return (teams && Array.isArray(teams)) ? teams : null;
+        },
+
+        /**
          * Handle Confirm End Stage: Lock and immediately transition to Stage 2
          */
         confirmStageEnd: function () {
@@ -479,14 +526,12 @@
                 modalBtn.style.pointerEvents = 'none';
                 modalBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang chuyển Vòng 2...';
             }
-            this.showTransitionLoader('Đang xác nhận kết quả và chuyển sang Vòng 2...');
+            this.showTransitionLoader('Đang xác nhận kết quả và lưu vào cơ sở dữ liệu...');
 
             try {
-                // 1. Set Lock flag — BOTH localStorage (compat) AND DB
+                // 1. Set Lock flag in localStorage for instant frontend reactivity
                 try { localStorage.setItem('tourma_stage1_locked_' + tid, 'true'); } catch (e) {}
                 try { localStorage.setItem('tourma_stage1_completed_' + tid, 'true'); } catch (e) {}
-                // Persist to DB (fire-and-forget, we redirect shortly after)
-                window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'LOCKED');
 
                 // 2. Trigger Stage 2 cut generation across format engines
                 if (window.TourmaGroupStage && typeof window.TourmaGroupStage.checkAndTriggerStage2Cut === 'function') {
@@ -505,15 +550,31 @@
                     window.TourmaSwiss.checkSwissStageCompletion();
                 }
 
-                // 3. Resolve Stage 2 URL
+                // 3. Extract advancing teams (if available)
+                var advTeams = this.getAdvancingTeamsFromCurrentEngine();
+                if (advTeams && advTeams.length > 0) {
+                    try { localStorage.setItem('tourma_stage2_teams_' + tid, JSON.stringify(advTeams)); } catch (e) {}
+                }
+
+                // 4. Persist to DB simultaneously and WAIT for completion before redirect
+                var self = this;
+                var saveStatusPromise = window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'LOCKED');
+                var saveTeamsPromise = (advTeams && advTeams.length > 0)
+                    ? window.TourmaStageEndPopup_saveStage2TeamsToDB(tid, advTeams)
+                    : Promise.resolve(null);
+
                 var s2Url = this.resolveStage2Url(tid);
 
-                // 4. Redirect to Stage 2 (short timeout ensures background AJAX sync to DB flushes)
-                setTimeout(function () {
+                Promise.all([saveStatusPromise, saveTeamsPromise]).then(function () {
+                    console.log('[StageEndPopup] DB sync complete! Navigating to Stage 2:', s2Url);
                     window.location.href = s2Url;
-                }, 100);
+                }).catch(function (err) {
+                    console.warn('[StageEndPopup] DB sync error, redirecting gracefully:', err);
+                    window.location.href = s2Url;
+                });
             } catch (e) {
                 console.error('[StageEndPopup] confirmStageEnd error:', e);
+                window.location.href = this.resolveStage2Url(tid);
             }
         },
 
@@ -539,9 +600,14 @@
             var page = 'single-elimination.jsp';
 
             try {
-                var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tid);
-                if (multiCfgRaw) {
-                    var mCfg = JSON.parse(multiCfgRaw);
+                var mCfg = window.TourmaMultiStageConfig;
+                if (!mCfg) {
+                    var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tid);
+                    if (multiCfgRaw) {
+                        mCfg = (typeof multiCfgRaw === 'string') ? JSON.parse(multiCfgRaw) : multiCfgRaw;
+                    }
+                }
+                if (mCfg) {
                     var s2Fmt = mCfg.stage2Format || 'SINGLE_ELIMINATION';
                     if (s2Fmt === 'SINGLE_ELIMINATION') page = 'single-elimination.jsp';
                     else if (s2Fmt === 'DOUBLE_ELIMINATION') page = 'double-elimination.jsp';
@@ -595,27 +661,29 @@
             var modal = document.getElementById('stageEndUnlockModal');
             if (modal) modal.remove();
 
+            var tid = this.tournamentId;
             try {
                 // BOTH localStorage (compat) AND DB
-                try { localStorage.setItem('tourma_stage1_locked_' + this.tournamentId, 'false'); } catch (e) {}
-                window.TourmaStageEndPopup_saveStage1StatusToDB(this.tournamentId, 'PENDING');
+                try { localStorage.setItem('tourma_stage1_locked_' + tid, 'false'); } catch (e) {}
 
-                var banner = document.getElementById('stageEndPopupBanner');
-                if (banner) {
-                    banner.classList.remove('is-locked');
-                    var titleLine = document.getElementById('stageEndTitleLine');
-                    if (titleLine) {
-                        titleLine.textContent = 'Khi bạn xác nhận hoàn thành vòng 1, kết quả sẽ bị khóa và bạn sẽ được chuyển sang vòng tiếp theo.';
+                var self = this;
+                window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'PENDING').then(function () {
+                    var banner = document.getElementById('stageEndPopupBanner');
+                    if (banner) {
+                        banner.classList.remove('is-locked');
+                        var titleLine = document.getElementById('stageEndTitleLine');
+                        if (titleLine) {
+                            titleLine.textContent = 'Khi bạn xác nhận hoàn thành vòng 1, kết quả sẽ bị khóa và bạn sẽ được chuyển sang vòng tiếp theo.';
+                        }
+                        var confirmBtn = document.getElementById('stageEndConfirmBtn');
+                        if (confirmBtn) confirmBtn.style.display = 'inline-flex';
+                        var nextBtn = document.getElementById('stageEndNextBtn');
+                        if (nextBtn) nextBtn.style.display = 'none';
+                        var unlockBtn = document.getElementById('stageEndUnlockBtn');
+                        if (unlockBtn) unlockBtn.style.display = 'none';
                     }
-                    var confirmBtn = document.getElementById('stageEndConfirmBtn');
-                    if (confirmBtn) confirmBtn.style.display = 'inline-flex';
-                    var nextBtn = document.getElementById('stageEndNextBtn');
-                    if (nextBtn) nextBtn.style.display = 'none';
-                    var unlockBtn = document.getElementById('stageEndUnlockBtn');
-                    if (unlockBtn) unlockBtn.style.display = 'none';
-                }
-
-                this.applyLockToUI(false);
+                    self.applyLockToUI(false);
+                });
             } catch (e) {
                 console.error('[StageEndPopup] confirmUnlock error:', e);
             }
@@ -708,31 +776,38 @@
     };
 
     /**
-     * Helper to persist Stage 1 status (PENDING, LOCKED, COMPLETED) to DB via AJAX
+     * Helper to resolve standard API endpoint for stage actions
      */
-    window.TourmaStageEndPopup_saveStage1StatusToDB = function (tournamentId, status) {
-        if (!tournamentId || tournamentId === 'demo') return;
+    function resolveStageApiEndpoint() {
         var contextPath = window.TourmaContextPath || '';
         var path = window.location.pathname || '';
-        var endpoint = contextPath + '/single-elimination';
         if (path.indexOf('/double-elimination') !== -1) {
-            endpoint = contextPath + '/double-elimination';
+            return contextPath + '/double-elimination';
         } else if (path.indexOf('/swiss-stage') !== -1) {
-            endpoint = contextPath + '/swiss-stage';
+            return contextPath + '/swiss-stage';
         } else if (path.indexOf('/group-stage') !== -1) {
-            endpoint = contextPath + '/group-stage';
+            return contextPath + '/group-stage';
         } else if (path.indexOf('/round-robin') !== -1) {
-            endpoint = contextPath + '/round-robin';
+            return contextPath + '/round-robin';
         } else if (path.indexOf('/gsl') !== -1) {
-            endpoint = contextPath + '/gsl';
+            return contextPath + '/gsl';
         }
+        return contextPath + '/single-elimination';
+    }
+
+    /**
+     * Helper to persist Stage 1 status (PENDING, LOCKED, COMPLETED) to DB via AJAX (Returns Promise)
+     */
+    window.TourmaStageEndPopup_saveStage1StatusToDB = function (tournamentId, status) {
+        if (!tournamentId || tournamentId === 'demo') return Promise.resolve(null);
+        var endpoint = resolveStageApiEndpoint();
 
         var params = new URLSearchParams();
         params.append('action', 'saveStage1Status');
         params.append('tournamentId', tournamentId);
         params.append('stage1Status', status || 'PENDING');
 
-        fetch(endpoint, {
+        return fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
             body: params.toString()
@@ -741,8 +816,39 @@
             console.log('[STAGE1 STATUS AJAX] Saved status to DB:', status, data);
             if (!window.TourmaDbStage1Status) window.TourmaDbStage1Status = {};
             window.TourmaDbStage1Status[tournamentId] = status;
+            return data;
         }).catch(function (err) {
             console.warn('[STAGE1 STATUS AJAX] Failed to save stage1 status:', err);
+            return null;
+        });
+    };
+
+    /**
+     * Helper to persist Stage 2 qualified teams to DB via AJAX (Returns Promise)
+     */
+    window.TourmaStageEndPopup_saveStage2TeamsToDB = function (tournamentId, stage2Teams) {
+        if (!tournamentId || tournamentId === 'demo' || !stage2Teams || stage2Teams.length === 0) {
+            return Promise.resolve(null);
+        }
+        var endpoint = resolveStageApiEndpoint();
+
+        var teamsPayload = (typeof stage2Teams === 'string') ? stage2Teams : JSON.stringify(stage2Teams);
+        var params = new URLSearchParams();
+        params.append('action', 'saveStage2Teams');
+        params.append('tournamentId', tournamentId);
+        params.append('stage2Teams', teamsPayload);
+
+        return fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: params.toString()
+        }).then(function (res) { return res.json(); })
+        .then(function (data) {
+            console.log('[STAGE2 TEAMS AJAX] Saved to DB:', data);
+            return data;
+        }).catch(function (err) {
+            console.warn('[STAGE2 TEAMS AJAX] Failed saving to DB:', err);
+            return null;
         });
     };
 

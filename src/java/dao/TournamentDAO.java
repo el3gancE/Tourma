@@ -652,18 +652,7 @@ public class TournamentDAO {
     }
 
     public boolean updateTournamentStage1Status(String tournamentId, String stage1Status) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE tournaments SET stage1_status = ? WHERE id = ?";
-        DBContext db = new DBContext();
-        try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, stage1Status);
-            ps.setString(2, tournamentId.trim());
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        return saveStage1Status(tournamentId, stage1Status);
     }
 
     public boolean saveGroupAssignments(String tournamentId, String groupAssignmentsJson) {

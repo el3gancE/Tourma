@@ -79,16 +79,11 @@
                     dbMultiStageConfig = t.getMultiStageConfig();
                 }
             }
-            if (plist != null && !plist.isEmpty()) {
-                int takeCount = plist.size();
-                if ("MULTI_STAGE".equals(tournamentType) && currentStage == 2 && t != null) {
-                    int advSeats = t.getAdvancingSeatsCount();
-                    if (advSeats > 1 && advSeats < takeCount) {
-                        takeCount = advSeats;
-                    }
-                }
+            if (currentStage == 2 && dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) {
+                deTeamsJson = dbStage2Teams;
+            } else if (plist != null && !plist.isEmpty()) {
                 StringBuilder sb = new StringBuilder("[");
-                for (int i = 0; i < takeCount; i++) {
+                for (int i = 0; i < plist.size(); i++) {
                     if (i > 0) sb.append(",");
                     Team tm = plist.get(i);
                     String tName = tm != null ? tm.getName() : null;
@@ -358,21 +353,19 @@
 
                 // Resolve team list
                 var finalTeams = [];
-                if (currentStage === 2 && stage2TeamsRaw && stage2TeamsRaw.length > 0) {
-                    finalTeams = stage2TeamsRaw;
-                } else if (preloadedTeams && preloadedTeams.length > 0) {
-                    finalTeams = preloadedTeams;
-                } else if (stage2TeamsRaw && stage2TeamsRaw.length > 0) {
-                    finalTeams = stage2TeamsRaw;
-                }
-
-                // For Stage 2: enforce advanceCount
                 if (currentStage === 2) {
-                    var advCount = <%= cutTarget %>;
-                    if (advCount && advCount > 1 && finalTeams.length > advCount) {
-                        finalTeams = finalTeams.slice(0, advCount);
+                    var s2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
+                    if (!s2TeamsRaw || s2TeamsRaw.length === 0) {
+                        try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
+                    }
+                    if (s2TeamsRaw && s2TeamsRaw.length > 0) {
+                        finalTeams = s2TeamsRaw;
+                    } else if (preloadedTeams && preloadedTeams.length > 0) {
+                        finalTeams = preloadedTeams;
                     }
                     cutTarget = 0; // Stage 2 plays to Grand Final champion!
+                } else {
+                    finalTeams = preloadedTeams;
                 }
 
                 var dbMatches = <%= dbMatchesJson %>;

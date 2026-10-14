@@ -369,12 +369,12 @@
                                                                 <label class="form-label"
                                                                     style="font-size: 0.78rem; color: var(--text-muted);">Số
                                                                     Đội Đi Tiếp
-                                                                    <span style="color: #f43f5e;">*</span></label>
+                                                                    <span style="color: #f43f5e;">*</span> (Tối thiểu 4 đội)</label>
                                                                 <input type="number" id="stage1AdvanceRR"
                                                                     name="stage1AdvanceRR" class="form-control"
                                                                     style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
-                                                                    value="" min="1"
-                                                                    placeholder="Nhập số đội đi tiếp...">
+                                                                    value="" min="4"
+                                                                    placeholder="Nhập số đội đi tiếp (tối thiểu 4)...">
                                                             </div>
                                                             <div
                                                                 style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.85rem;">
@@ -436,12 +436,12 @@
                                                                 <label class="form-label"
                                                                     style="font-size: 0.78rem; color: var(--text-muted);">Tổng
                                                                     Số Đội Đi
-                                                                    Tiếp <span style="color: #f43f5e;">*</span></label>
+                                                                    Tiếp <span style="color: #f43f5e;">*</span> (Tối thiểu 4 đội)</label>
                                                                 <input type="number" id="stage1AdvanceGR"
                                                                     name="stage1AdvanceGR" class="form-control"
                                                                     style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
-                                                                    value="" min="1"
-                                                                    placeholder="Nhập tổng số đội đi tiếp...">
+                                                                    value="" min="4"
+                                                                    placeholder="Nhập tổng số đội đi tiếp (tối thiểu 4)...">
                                                             </div>
                                                             <div
                                                                 style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.85rem;">
@@ -502,31 +502,31 @@
                                                             <label class="form-label"
                                                                 style="font-size: 0.78rem; color: var(--text-muted);">Số
                                                                 Đội Đi Tiếp
-                                                                <span style="color: #f43f5e;">*</span></label>
+                                                                <span style="color: #f43f5e;">*</span> (Tối thiểu 4 đội)</label>
                                                             <input type="number" id="stage1AdvanceSE"
                                                                 name="stage1AdvanceSE" class="form-control"
                                                                 style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
-                                                                value="" min="1" placeholder="Nhập số đội đi tiếp...">
+                                                                value="" min="4" placeholder="Nhập số đội đi tiếp (tối thiểu 4)...">
                                                         </div>
 
-                                                        <!-- 4. Double Elimination Fields (Must be Power of 2) -->
+                                                        <!-- 4. Double Elimination Fields (Must be Power of 2, Min 4) -->
                                                         <div id="stage1FieldsDE" style="display: none;">
                                                             <label class="form-label"
                                                                 style="font-size: 0.78rem; color: var(--text-muted);">Số
                                                                 Đội Đi Tiếp
                                                                 <span style="color: #f43f5e;">*</span> <span
                                                                     style="font-size: 0.72rem; color: #94a3b8;">Bắt buộc
-                                                                    là số mũ của 2: 2, 4, 8, 16</span></label>
+                                                                    là số mũ của 2 (tối thiểu 4): 4, 8, 16</span></label>
                                                             <input type="number" id="stage1AdvanceDE"
                                                                 name="stage1AdvanceDE" class="form-control"
                                                                 style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
-                                                                value="" min="2" step="2"
-                                                                placeholder="Ví dụ 2, 4, 8, 16"
+                                                                value="" min="4" step="2"
+                                                                placeholder="Ví dụ: 4, 8, 16"
                                                                 onchange="validatePowerOfTwoInput(this)">
                                                             <div id="dePowerErrorMsg1"
                                                                 style="display: none; color: #f43f5e; font-size: 0.75rem; margin-top: 0.4rem; font-weight: 600;">
                                                                 Số đội đi tiếp của Double Elimination bắt buộc phải là
-                                                                số mũ của 2: 2, 4, 8, 16
+                                                                số mũ của 2 và tối thiểu là 4: 4, 8, 16
                                                             </div>
                                                         </div>
 
@@ -558,17 +558,17 @@
                                                                 Số Đội Đi Tiếp
                                                                 <span style="color: #f43f5e;">*</span> <span
                                                                     style="font-size: 0.72rem; color: #94a3b8;">Bắt buộc
-                                                                    là số mũ của 2: 2, 4, 8, 16</span></label>
+                                                                    là số mũ của 2 (tối thiểu 4): 4, 8, 16</span></label>
                                                             <input type="number" id="stage1AdvanceGSL"
                                                                 name="stage1AdvanceGSL" class="form-control"
                                                                 style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
-                                                                value="" min="2" step="2"
-                                                                placeholder="Ví dụ: 2, 4, 8, 16..."
+                                                                value="" min="4" step="2"
+                                                                placeholder="Ví dụ: 4, 8, 16..."
                                                                 onchange="validatePowerOfTwoInput(this)">
                                                             <div id="gslStage1PowerErrorMsg"
                                                                 style="display: none; color: #f43f5e; font-size: 0.75rem; margin-top: 0.4rem; font-weight: 600;">
                                                                 Tổng số đội đi tiếp của GSL bắt buộc phải là số mũ của
-                                                                2: 2, 4, 8, 16
+                                                                2 và tối thiểu là 4: 4, 8, 16
                                                             </div>
                                                         </div>
 
@@ -1162,11 +1162,13 @@
 
                             function validatePowerOfTwoInput(inputEl) {
                                 var val = Number(inputEl.value);
-                                var isErr = inputEl && inputEl.value.trim() !== '' && !isPowerOfTwo(val);
+                                var isErr = inputEl && inputEl.value.trim() !== '' && (!isPowerOfTwo(val) || val < 4);
                                 var err1 = document.getElementById('dePowerErrorMsg1');
                                 var err2 = document.getElementById('dePowerErrorMsg2');
+                                var errGsl = document.getElementById('gslStage1PowerErrorMsg');
                                 if (err1) err1.style.display = isErr ? 'block' : 'none';
                                 if (err2) err2.style.display = isErr ? 'block' : 'none';
+                                if (errGsl) errGsl.style.display = isErr ? 'block' : 'none';
                                 return !isErr;
                             }
 
@@ -1347,12 +1349,13 @@
 
                                 s1Inputs.forEach(function (inp) {
                                     if (!inp) return;
+                                    inp.setAttribute('min', '4');
                                     if (isStage2RR) {
                                         inp.setAttribute('max', '24');
-                                        inp.title = 'Stage 2 là Vòng Tròn: Tối đa 24 đội đi tiếp';
+                                        inp.title = 'Stage 2 là Vòng Tròn: Từ 4 đến 24 đội đi tiếp';
                                     } else {
                                         inp.removeAttribute('max');
-                                        inp.title = '';
+                                        inp.title = 'Tối thiểu 4 đội đi tiếp';
                                     }
                                 });
                             }
@@ -1555,9 +1558,9 @@
                                 if (formatVal === 'ROUND_ROBIN') {
                                     var el = document.getElementById(prefix + 'AdvanceRR');
                                     var val = el ? el.value.trim() : '';
-                                    if (!val || Number(val) <= 0) {
+                                    if (!val || Number(val) < 4) {
                                         if (e && e.preventDefault) e.preventDefault();
-                                        alert('Vui lòng nhập số đội đi tiếp ở ' + stageName + '!');
+                                        alert('Số đội đi tiếp ở ' + stageName + ' tối thiểu là 4 đội!');
                                         if (el) el.focus();
                                         return false;
                                     }
@@ -1566,9 +1569,9 @@
                                     var advG = document.getElementById(prefix + 'AdvanceGR');
                                     var advGVal = advG ? advG.value.trim() : '';
 
-                                    if (!advGVal || Number(advGVal) <= 0) {
+                                    if (!advGVal || Number(advGVal) < 4) {
                                         if (e && e.preventDefault) e.preventDefault();
-                                        alert('Vui lòng nhập tổng số đội đi tiếp ở ' + stageName + '!');
+                                        alert('Tổng số đội đi tiếp ở ' + stageName + ' tối thiểu là 4 đội!');
                                         if (advG) advG.focus();
                                         return false;
                                     }
@@ -1576,9 +1579,9 @@
                                 } else if (formatVal === 'SINGLE_ELIMINATION') {
                                     var el = document.getElementById(prefix + 'AdvanceSE');
                                     var val = el ? el.value.trim() : '';
-                                    if (!val || Number(val) <= 0) {
+                                    if (!val || Number(val) < 4) {
                                         if (e && e.preventDefault) e.preventDefault();
-                                        alert('Vui lòng nhập số đội đi tiếp ở ' + stageName + '!');
+                                        alert('Số đội đi tiếp ở ' + stageName + ' tối thiểu là 4 đội!');
                                         if (el) el.focus();
                                         return false;
                                     }
@@ -1586,32 +1589,32 @@
                                 } else if (formatVal === 'DOUBLE_ELIMINATION') {
                                     var deInp = document.getElementById(prefix + 'AdvanceDE');
                                     var val = deInp ? deInp.value.trim() : '';
-                                    if (!val || Number(val) <= 0) {
+                                    if (!val || Number(val) < 4) {
                                         if (e && e.preventDefault) e.preventDefault();
-                                        alert('Vui lòng nhập số đội đi tiếp ở ' + stageName + '!');
+                                        alert('Số đội đi tiếp ở ' + stageName + ' tối thiểu là 4 đội!');
                                         if (deInp) deInp.focus();
                                         return false;
                                     }
                                     if (!validateAdvCountLessThanTotal(val, deInp, e, stageName)) return false;
                                     if (!validatePowerOfTwoInput(deInp)) {
                                         if (e && e.preventDefault) e.preventDefault();
-                                        alert('Số đội đi tiếp của thể thức Double Elimination ở ' + stageName + ' bắt buộc phải là số mũ của 2 (ví dụ: 2, 4, 8, 16...)');
+                                        alert('Số đội đi tiếp của thể thức Double Elimination ở ' + stageName + ' bắt buộc phải là số mũ của 2 và tối thiểu là 4 (ví dụ: 4, 8, 16...)');
                                         if (deInp) deInp.focus();
                                         return false;
                                     }
                                 } else if (formatVal === 'GSL') {
                                     var gslInp = document.getElementById(prefix + 'AdvanceGSL');
                                     var val = gslInp ? gslInp.value.trim() : '';
-                                    if (!val || Number(val) <= 0) {
+                                    if (!val || Number(val) < 4) {
                                         if (e && e.preventDefault) e.preventDefault();
-                                        alert('Vui lòng nhập tổng số đội đi tiếp ở ' + stageName + '!');
+                                        alert('Tổng số đội đi tiếp ở ' + stageName + ' tối thiểu là 4 đội!');
                                         if (gslInp) gslInp.focus();
                                         return false;
                                     }
                                     if (!validateAdvCountLessThanTotal(val, gslInp, e, stageName)) return false;
                                     if (!validatePowerOfTwoInput(gslInp)) {
                                         if (e && e.preventDefault) e.preventDefault();
-                                        alert('Tổng số đội đi tiếp của thể thức GSL ở ' + stageName + ' bắt buộc phải là số mũ của 2 (ví dụ: 2, 4, 8, 16...)');
+                                        alert('Tổng số đội đi tiếp của thể thức GSL ở ' + stageName + ' bắt buộc phải là số mũ của 2 và tối thiểu là 4 (ví dụ: 4, 8, 16...)');
                                         if (gslInp) gslInp.focus();
                                         return false;
                                     }
@@ -1631,7 +1634,7 @@
                                     var s2F = document.getElementById('stage2Format').value;
                                     if (!validateStageInputs(1, s1F, e)) return false;
 
-                                    // If Stage 2 is ROUND_ROBIN, advancing teams from Stage 1 MUST be <= 24 and >= 2!
+                                    // If Stage 2 is ROUND_ROBIN, advancing teams from Stage 1 MUST be <= 24 and >= 4!
                                     if (s2F === 'ROUND_ROBIN') {
                                         var s1AdvCount = 0;
                                         var advInputEl = null;
@@ -1652,9 +1655,9 @@
                                             if (advInputEl) advInputEl.focus();
                                             return false;
                                         }
-                                        if (s1AdvCount < 2 && s1F !== 'SWISS_LITE') {
+                                        if (s1AdvCount < 4 && s1F !== 'SWISS_LITE') {
                                             if (e && e.preventDefault) e.preventDefault();
-                                            alert('⚠️ Thể thức Vòng Tròn (Round Robin) ở Stage 2 yêu cầu ít nhất 2 đội tham gia!');
+                                            alert('⚠️ Số đội đi tiếp từ Stage 1 tối thiểu là 4 đội!');
                                             if (advInputEl) advInputEl.focus();
                                             return false;
                                         }

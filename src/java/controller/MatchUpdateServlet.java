@@ -69,6 +69,32 @@ public class MatchUpdateServlet extends HttpServlet {
                 return;
             }
 
+            if ("saveStage1Status".equalsIgnoreCase(action)) {
+                String stage1Status = params.get("stage1Status");
+                if (stage1Status == null) stage1Status = params.get("status");
+                TournamentDAO tDao = new TournamentDAO();
+                boolean ok = tDao.updateTournamentStage1Status(tournamentId, stage1Status != null ? stage1Status : "LOCKED");
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã cập nhật trạng thái Stage 1!" : "Lỗi cập nhật Stage 1!") + "\"}");
+                return;
+            }
+
+            if ("saveStage2Teams".equalsIgnoreCase(action)) {
+                String stage2TeamsJson = params.get("stage2Teams");
+                if (stage2TeamsJson == null) stage2TeamsJson = params.get("teams");
+                TournamentDAO tDao = new TournamentDAO();
+                boolean ok = tDao.saveStage2Teams(tournamentId, stage2TeamsJson);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu danh sách Vòng 2 vào CSDL!" : "Lỗi lưu Vòng 2!") + "\"}");
+                return;
+            }
+
+            if ("saveMultiStageConfig".equalsIgnoreCase(action)) {
+                String multiConfigJson = params.get("multiConfig");
+                TournamentDAO tDao = new TournamentDAO();
+                boolean ok = tDao.saveMultiStageConfig(tournamentId, multiConfigJson);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu cấu hình Multi-Stage!" : "Lỗi lưu cấu hình!") + "\"}");
+                return;
+            }
+
             if ("resetMatch".equalsIgnoreCase(action)) {
                 String matchId = params.get("matchId");
                 if (matchId == null) matchId = params.get("id");

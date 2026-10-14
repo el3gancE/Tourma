@@ -238,6 +238,7 @@
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/stage-end-popup.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/single-elimination.js?v=<%= System.currentTimeMillis() %>"></script>
 
         <script>
@@ -247,6 +248,9 @@
             window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
             window.TourmaDbTournamentStatus = window.TourmaDbTournamentStatus || {};
             window.TourmaDbTournamentStatus["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbTournamentStatus %>";
+            window.TourmaTournamentType = "<%= tournamentType %>";
+            window.TourmaCurrentStage = <%= currentStage %>;
+            window.TourmaMultiStageConfig = <%= (dbMultiStageConfig != null && !dbMultiStageConfig.trim().isEmpty() && !dbMultiStageConfig.trim().equals("{}")) ? dbMultiStageConfig : "null" %>;
             
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";

@@ -143,14 +143,25 @@
                 var upperGroups = {};
                 var lowerGroups = {};
                 var gfMatches = [];
-                var maxUbRound = 1;
-                var maxLbRound = 1;
+                var maxUbRound = 0;
+                var maxLbRound = 0;
 
                 for (var i = 0; i < dbMatches.length; i++) {
                     var m = dbMatches[i];
                     var mId = String(m.matchId || m.id || m.rawId || (i + 1));
                     var rNum = parseInt(m.roundNumber || 1, 10);
-                    var bType = (m.bracketType || 'WINNER_BRACKET').toUpperCase();
+                    var rawBType = String(m.bracketType || '').toUpperCase();
+
+                    // Comprehensive detection of bracketType (supports raw string, ID prefix, and standard aliases)
+                    var bType = 'WINNER_BRACKET';
+                    if (rawBType === 'GRAND_FINAL' || rawBType === 'GRAND_FINALS' || rawBType === 'GRAND_FINAL_RESET' || rawBType === 'GF' || rawBType.indexOf('GRAND') !== -1 || mId.indexOf('_GF_') !== -1) {
+                        bType = (rawBType === 'GRAND_FINAL_RESET') ? 'GRAND_FINAL_RESET' : 'GRAND_FINAL';
+                    } else if (rawBType === 'LOSER_BRACKET' || rawBType === 'LOWER' || rawBType === 'LB' || rawBType === 'LOSER' || rawBType === 'LOSERS' || rawBType.indexOf('LOSER') !== -1 || mId.indexOf('_LB_') !== -1) {
+                        bType = 'LOSER_BRACKET';
+                    } else {
+                        bType = 'WINNER_BRACKET';
+                    }
+
                     var isBye = (m.isBye === true || m.isBye === 'true');
                     var matchNum = isBye ? null : ((m.matchNumber !== undefined && m.matchNumber !== null) ? m.matchNumber : null);
 
@@ -186,7 +197,7 @@
 
                     if (bType === 'GRAND_FINAL' || bType === 'GRAND_FINALS' || bType === 'GRAND_FINAL_RESET') {
                         gfMatches.push(matchObj);
-                    } else if (bType === 'LOSER_BRACKET' || bType === 'LOWER') {
+                    } else if (bType === 'LOSER_BRACKET') {
                         if (rNum > maxLbRound) maxLbRound = rNum;
                         if (!lowerGroups[rNum]) lowerGroups[rNum] = [];
                         lowerGroups[rNum].push(matchObj);
@@ -209,6 +220,7 @@
                 };
 
                 // Build ordered Upper Rounds
+                if (maxUbRound === 0 && Object.keys(upperGroups).length > 0) maxUbRound = 1;
                 for (var u = 1; u <= maxUbRound; u++) {
                     var uMatches = upperGroups[u] || [];
                     uMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
