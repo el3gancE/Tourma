@@ -722,28 +722,35 @@ public class DoubleEliminationDAO extends DBContext {
     }
 
     private int[] generateSeedingArray(int bracketSize) {
-        int[] seeds = new int[]{1, 2};
-        while (seeds.length < bracketSize) {
-            int nextLen = seeds.length * 2;
-            int sum = nextLen + 1;
-            int[] next = new int[nextLen];
-            for (int i = 0; i < seeds.length; i++) {
-                int s = seeds[i];
-                int comp = sum - s;
-                if (i % 2 == 0) {
-                    next[i * 2] = s;
-                    next[i * 2 + 1] = comp;
-                } else {
-                    next[i * 2] = comp;
-                    next[i * 2 + 1] = s;
-                }
+        boolean isPow2 = (bracketSize > 0 && (bracketSize & (bracketSize - 1)) == 0);
+        if (!isPow2 && bracketSize % 2 == 0) {
+            int[] result = new int[bracketSize];
+            for (int i = 0; i < bracketSize / 2; i++) {
+                result[i * 2] = i + 1;
+                result[i * 2 + 1] = bracketSize - i;
             }
-            seeds = next;
+            return result;
         }
+
+        int rounds = (int) (Math.log(bracketSize) / Math.log(2)) - 1;
+        List<Integer> pls = new ArrayList<>();
+        pls.add(1);
+        pls.add(2);
+
+        for (int i = 0; i < rounds; i++) {
+            List<Integer> nextPls = new ArrayList<>();
+            int sum = (int) Math.pow(2, i + 2) + 1;
+            for (int val : pls) {
+                nextPls.add(val);
+                nextPls.add(sum - val);
+            }
+            pls = nextPls;
+        }
+
         int[] result = new int[bracketSize];
         for (int i = 0; i < bracketSize / 2; i++) {
-            int a = seeds[i * 2];
-            int b = seeds[i * 2 + 1];
+            int a = pls.get(i * 2);
+            int b = pls.get(i * 2 + 1);
             result[i * 2] = Math.min(a, b);
             result[i * 2 + 1] = Math.max(a, b);
         }

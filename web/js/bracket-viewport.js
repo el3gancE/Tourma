@@ -316,7 +316,7 @@
 
             var self = this;
 
-            // Helper to find a match object by exact card ID
+            // Helper to find a match object by exact card ID (with suffix tolerance)
             var findMatchForCard = function (cardId) {
                 if (!cardId) return null;
                 var strId = String(cardId).trim();
@@ -324,9 +324,12 @@
 
                 for (var j = 0; j < allMatches.length; j++) {
                     var m = allMatches[j];
-                    if (m.matchId && String(m.matchId).trim() === strId) return m;
-                    if (m.id && String(m.id).trim() === strId) return m;
-                    if (m.rawId && String(m.rawId).trim() === strId) return m;
+                    var mId = m.matchId ? String(m.matchId).trim() : null;
+                    var id = m.id ? String(m.id).trim() : null;
+                    var rawId = m.rawId ? String(m.rawId).trim() : null;
+                    if (mId && (mId === strId || mId.endsWith('_' + strId) || strId.endsWith('_' + mId))) return m;
+                    if (id && (id === strId || id.endsWith('_' + strId) || strId.endsWith('_' + id))) return m;
+                    if (rawId && (rawId === strId || rawId.endsWith('_' + strId) || strId.endsWith('_' + rawId))) return m;
                 }
                 return null;
             };
@@ -347,7 +350,7 @@
                     var item = cardList[j];
                     for (var k = 0; k < exactIds.length; k++) {
                         var eId = exactIds[k];
-                        if (eId && item.id === eId) {
+                        if (eId && (item.id === eId || item.id.endsWith('_' + eId) || eId.endsWith('_' + item.id))) {
                             return item.card;
                         }
                     }
@@ -375,7 +378,7 @@
                 // Round 1 matches in SE, UB, and LB have no preceding rounds in their bracket
                 if (rNum <= 1 && !isTargetGf) continue;
 
-                // Find feeder source matches that advance to targetMatch (Exact Match Only!)
+                // Find feeder source matches that advance to targetMatch (Exact & Suffix Match)
                 var tIds = [
                     targetMatch.matchId ? String(targetMatch.matchId).trim() : null,
                     targetMatch.id ? String(targetMatch.id).trim() : null,
@@ -394,7 +397,7 @@
                     var isMatched = false;
                     for (var k = 0; k < tIds.length; k++) {
                         var tId = tIds[k];
-                        if (tId && sNextStr === tId) {
+                        if (tId && (sNextStr === tId || sNextStr.endsWith('_' + tId) || tId.endsWith('_' + sNextStr))) {
                             isMatched = true;
                             break;
                         }

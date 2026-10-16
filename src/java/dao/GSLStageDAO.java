@@ -226,6 +226,7 @@ public class GSLStageDAO extends DBContext {
         }
 
         if (alreadyInitialized) {
+            healMissingLinks(tournamentId);
             return;
         }
 
@@ -779,6 +780,43 @@ public class GSLStageDAO extends DBContext {
         if (matchSlot == 4)
             return totalSlots / 2 + 1;
         return matchSlot;
+    }
+
+    public void healMissingLinks(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty())
+            return;
+        String sql1 = "UPDATE m SET m.next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'UB_R2_M1', "
+                + "m.next_slot = 'SLOT_1', "
+                + "m.loser_next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'LB_R1_M1', "
+                + "m.loser_next_slot = 'SLOT_1' "
+                + "FROM matches m "
+                + "WHERE m.tournament_id = ? AND m.id LIKE '%_UB_R1_M1' AND (m.next_match_id IS NULL OR m.loser_next_match_id IS NULL)";
+
+        String sql2 = "UPDATE m SET m.next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'UB_R2_M1', "
+                + "m.next_slot = 'SLOT_2', "
+                + "m.loser_next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'LB_R1_M1', "
+                + "m.loser_next_slot = 'SLOT_2' "
+                + "FROM matches m "
+                + "WHERE m.tournament_id = ? AND m.id LIKE '%_UB_R1_M2' AND (m.next_match_id IS NULL OR m.loser_next_match_id IS NULL)";
+
+        String sql3 = "UPDATE m SET m.loser_next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R2_M', m.id)) + 'LB_R2_M1', "
+                + "m.loser_next_slot = 'SLOT_1' "
+                + "FROM matches m "
+                + "WHERE m.tournament_id = ? AND m.id LIKE '%_UB_R2_M1' AND m.loser_next_match_id IS NULL";
+
+        String sql4 = "UPDATE m SET m.next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_LB_R1_M', m.id)) + 'LB_R2_M1', "
+                + "m.next_slot = 'SLOT_2' "
+                + "FROM matches m "
+                + "WHERE m.tournament_id = ? AND m.id LIKE '%_LB_R1_M1' AND m.next_match_id IS NULL";
+
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement ps1 = conn.prepareStatement(sql1)) { ps1.setString(1, tournamentId); ps1.executeUpdate(); }
+            try (PreparedStatement ps2 = conn.prepareStatement(sql2)) { ps2.setString(1, tournamentId); ps2.executeUpdate(); }
+            try (PreparedStatement ps3 = conn.prepareStatement(sql3)) { ps3.setString(1, tournamentId); ps3.executeUpdate(); }
+            try (PreparedStatement ps4 = conn.prepareStatement(sql4)) { ps4.setString(1, tournamentId); ps4.executeUpdate(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private String escapeJson(Object val) {

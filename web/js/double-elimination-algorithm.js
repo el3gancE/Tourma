@@ -24,32 +24,35 @@
         },
 
         /**
-         * Standard International Seeding Pairs
+         * Standard International Seeding Pairs:
+         * Seed #1 is at top of upper branch, Seed #2 is at top of lower branch.
          */
         generateSeedPairs: function (pow2) {
-            var seeds = [1, 2];
-            while (seeds.length < pow2) {
-                var nextLen = seeds.length * 2;
-                var sum = nextLen + 1;
-                var next = [];
-                for (var i = 0; i < seeds.length; i++) {
-                    var s = seeds[i];
-                    var comp = sum - s;
-                    if (i % 2 == 0) {
-                        next.push(s);
-                        next.push(comp);
-                    } else {
-                        next.push(comp);
-                        next.push(s);
-                    }
+            var isPow2 = (pow2 > 0 && (pow2 & (pow2 - 1)) === 0);
+            if (!isPow2 && pow2 % 2 === 0) {
+                var pairs = [];
+                for (var i = 1; i <= pow2 / 2; i++) {
+                    pairs.push([i, pow2 - i + 1]);
                 }
-                seeds = next;
+                return pairs;
+            }
+
+            var rounds = Math.log2(pow2) - 1;
+            var pls = [1, 2];
+            for (var i = 0; i < rounds; i++) {
+                var nextPls = [];
+                var sum = Math.pow(2, i + 2) + 1;
+                for (var j = 0; j < pls.length; j++) {
+                    nextPls.push(pls[j]);
+                    nextPls.push(sum - pls[j]);
+                }
+                pls = nextPls;
             }
 
             var pairs = [];
-            for (var k = 0; k < seeds.length; k += 2) {
-                var a = seeds[k];
-                var b = seeds[k + 1];
+            for (var k = 0; k < pls.length; k += 2) {
+                var a = pls[k];
+                var b = pls[k + 1];
                 pairs.push([Math.min(a, b), Math.max(a, b)]);
             }
             return pairs;

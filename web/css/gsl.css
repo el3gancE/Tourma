@@ -8,7 +8,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
 
 /* Global Font Enforcement */
-body, button, input, select, textarea, .gsl-viewport-title, .gsl-group-title, .de-viewport-title, .gsl-branch-header {
+body,
+button,
+input,
+select,
+textarea,
+.gsl-viewport-title,
+.gsl-group-title,
+.de-viewport-title,
+.gsl-branch-header {
     font-family: 'Lexend', sans-serif !important;
 }
 
@@ -388,7 +396,7 @@ body, button, input, select, textarea, .gsl-viewport-title, .gsl-group-title, .d
 .gsl-single-viewport-wrapper .de-round-header,
 .gsl-single-viewport-wrapper .single-round-header {
     background: #181d29 !important;
-    border: 1px solid var(--grp-color, rgba(45, 212, 191, 0.35)) !important;
+    border: 1px solid var(--grp-border, rgba(255, 255, 255, 0.2)) !important;
     border-radius: 8px !important;
     padding: 0.4rem 0.55rem !important;
     font-size: 0.78rem !important;

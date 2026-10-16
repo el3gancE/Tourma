@@ -369,11 +369,113 @@
 
                     // Clean display numbers #1..#5 within each group for standard UI aesthetics
                     this.assignIntraGroupMatchNumbers(grp);
+                    this.autoLinkIntraGroupMatches(grp);
                     this.fillMissingPlaceholdersForGroup(grp);
                 }
             } else {
                 // Algorithmic generation from teamsList if DB empty
                 this.generateGSLBracketsFromTeams();
+            }
+        },
+
+        /**
+         * Auto-link feeder matches within a group to guarantee bracket connectors are always drawn
+         */
+        autoLinkIntraGroupMatches: function (grp) {
+            if (!grp || !grp.matchesMap) return;
+
+            // 1. Auto-link Upper Bracket (Round 1 -> Round 2, etc.)
+            if (grp.upperRounds && grp.upperRounds.length > 1) {
+                for (var u = 0; u < grp.upperRounds.length - 1; u++) {
+                    var currMatches = grp.upperRounds[u].matches || [];
+                    var nextMatches = grp.upperRounds[u + 1].matches || [];
+                    for (var mIdx = 0; mIdx < currMatches.length; mIdx++) {
+                        var curM = currMatches[mIdx];
+                        var targetIdx = Math.floor(mIdx / 2);
+                        var targetM = nextMatches[targetIdx];
+                        if (curM && targetM) {
+                            if (!curM.nextMatchId || curM.nextMatchId === 'null') {
+                                curM.nextMatchId = String(targetM.matchId || targetM.id || targetM.rawId);
+                                curM.nextMatchSlot = (mIdx % 2 === 0) ? 1 : 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Auto-link Lower Bracket (Round 1 -> Round 2, etc.)
+            if (grp.lowerRounds && grp.lowerRounds.length > 1) {
+                for (var l = 0; l < grp.lowerRounds.length - 1; l++) {
+                    var currLbMatches = grp.lowerRounds[l].matches || [];
+                    var nextLbMatches = grp.lowerRounds[l + 1].matches || [];
+                    var roundNum = l + 1;
+                    for (var lbIdx = 0; lbIdx < currLbMatches.length; lbIdx++) {
+                        var curLbM = currLbMatches[lbIdx];
+                        var targetLbIdx = (roundNum % 2 === 1) ? lbIdx : Math.floor(lbIdx / 2);
+                        var targetLbM = nextLbMatches[targetLbIdx];
+                        if (curLbM && targetLbM) {
+                            if (!curLbM.nextMatchId || curLbM.nextMatchId === 'null') {
+                                curLbM.nextMatchId = String(targetLbM.matchId || targetLbM.id || targetLbM.rawId);
+                                curLbM.nextMatchSlot = (roundNum % 2 === 1) ? 2 : ((lbIdx % 2 === 0) ? 1 : 2);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Auto-link Drop Feeders (UB to LB)
+            if (grp.upperRounds && grp.lowerRounds && grp.upperRounds.length > 0 && grp.lowerRounds.length > 0) {
+                // Round 1 drops: UB R1 -> LB R1
+                var ubR1 = grp.upperRounds[0].matches || [];
+                var lbR1 = grp.lowerRounds[0].matches || [];
+                for (var i = 0; i < ubR1.length; i++) {
+                    var ubM = ubR1[i];
+                    var targetDropM = lbR1[Math.floor(i / 2)];
+                    if (ubM && targetDropM) {
+                        if (!ubM.loserNextMatchId || ubM.loserNextMatchId === 'null') {
+                            ubM.loserNextMatchId = String(targetDropM.matchId || targetDropM.id || targetDropM.rawId);
+                            ubM.loserNextSlot = (i % 2 === 0) ? 1 : 2;
+                            ubM.dropToMatchId = ubM.loserNextMatchId;
+                            ubM.dropToMatchSlot = ubM.loserNextSlot;
+                        }
+                    }
+                }
+                // UB Round 2 drop: in 4-team GSL, UB R2 M1 loser drops to LB R2 M1 (Slot 1)
+                if (grp.upperRounds.length >= 2 && grp.lowerRounds.length >= 2) {
+                    var ubR2 = grp.upperRounds[1].matches || [];
+                    var lbR2 = grp.lowerRounds[1].matches || [];
+                    if (ubR2.length > 0 && lbR2.length > 0) {
+                        var ubFin = ubR2[0];
+                        var lbFin = lbR2[0];
+                        if (ubFin && lbFin) {
+                            if (!ubFin.loserNextMatchId || ubFin.loserNextMatchId === 'null') {
+                                ubFin.loserNextMatchId = String(lbFin.matchId || lbFin.id || lbFin.rawId);
+                                ubFin.loserNextSlot = 1;
+                                ubFin.dropToMatchId = ubFin.loserNextMatchId;
+                                ubFin.dropToMatchSlot = 1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Synchronize with matchesMap aliases (both on grp and globally)
+            for (var k in grp.matchesMap) {
+                var m = grp.matchesMap[k];
+                if (m) {
+                    if (m.matchId) {
+                        grp.matchesMap[String(m.matchId)] = m;
+                        this.matchesMap[String(m.matchId)] = m;
+                    }
+                    if (m.id) {
+                        grp.matchesMap[String(m.id)] = m;
+                        this.matchesMap[String(m.id)] = m;
+                    }
+                    if (m.rawId) {
+                        grp.matchesMap[String(m.rawId)] = m;
+                        this.matchesMap[String(m.rawId)] = m;
+                    }
+                }
             }
         },
 
@@ -574,14 +676,15 @@
                     var groupMap = {};
                     for (var rawMId in generated.matchesMap) {
                         var originalM = generated.matchesMap[rawMId];
-                        var scopedId = (this.tournamentId || 'demo') + '_' + safeGPrefix + '_' + originalM.matchId;
+                        var origId = originalM.matchId || originalM.id || rawMId;
+                        var scopedId = (this.tournamentId || 'demo') + '_' + safeGPrefix + '_' + origId;
                         var scopedNextId = originalM.nextMatchId ? ((this.tournamentId || 'demo') + '_' + safeGPrefix + '_' + originalM.nextMatchId) : null;
-                        var scopedDropId = originalM.dropToMatchId ? ((this.tournamentId || 'demo') + '_' + safeGPrefix + '_' + originalM.dropToMatchId) : null;
+                        var scopedDropId = (originalM.dropToMatchId || originalM.loserNextMatchId) ? ((this.tournamentId || 'demo') + '_' + safeGPrefix + '_' + (originalM.dropToMatchId || originalM.loserNextMatchId)) : null;
 
                         var scopedMatch = Object.assign({}, originalM, {
                             matchId: scopedId,
                             id: scopedId,
-                            rawId: scopedId,
+                            rawId: origId,
                             groupId: k,
                             nextMatchId: scopedNextId,
                             dropToMatchId: scopedDropId,
@@ -589,7 +692,54 @@
                         });
 
                         groupMap[scopedId] = scopedMatch;
+                        groupMap[String(origId)] = scopedMatch;
+                        groupMap[String(rawMId)] = scopedMatch;
+                        if (originalM.matchId) groupMap[String(originalM.matchId)] = scopedMatch;
+                        if (originalM.id) groupMap[String(originalM.id)] = scopedMatch;
+
                         this.matchesMap[scopedId] = scopedMatch;
+                        this.matchesMap[String(origId)] = scopedMatch;
+                        this.matchesMap[String(rawMId)] = scopedMatch;
+                        if (originalM.matchId) this.matchesMap[String(originalM.matchId)] = scopedMatch;
+                        if (originalM.id) this.matchesMap[String(originalM.id)] = scopedMatch;
+                    }
+
+                    // Update match references inside upperRounds and lowerRounds
+                    if (generated.upperRounds) {
+                        generated.upperRounds.forEach(function (r) {
+                            if (r.matches) {
+                                r.matches = r.matches.map(function (m) {
+                                    var found = groupMap[m.matchId] || groupMap[String(m.matchId)] || groupMap[m.id] || groupMap[String(m.id)] || groupMap[m.rawId] || m;
+                                    if (found && found.matchId) {
+                                        m.matchId = found.matchId;
+                                        m.id = found.id;
+                                        m.rawId = found.rawId;
+                                        m.nextMatchId = found.nextMatchId;
+                                        m.loserNextMatchId = found.loserNextMatchId;
+                                        m.dropToMatchId = found.dropToMatchId;
+                                    }
+                                    return found;
+                                });
+                            }
+                        });
+                    }
+                    if (generated.lowerRounds) {
+                        generated.lowerRounds.forEach(function (r) {
+                            if (r.matches) {
+                                r.matches = r.matches.map(function (m) {
+                                    var found = groupMap[m.matchId] || groupMap[String(m.matchId)] || groupMap[m.id] || groupMap[String(m.id)] || groupMap[m.rawId] || m;
+                                    if (found && found.matchId) {
+                                        m.matchId = found.matchId;
+                                        m.id = found.id;
+                                        m.rawId = found.rawId;
+                                        m.nextMatchId = found.nextMatchId;
+                                        m.loserNextMatchId = found.loserNextMatchId;
+                                        m.dropToMatchId = found.dropToMatchId;
+                                    }
+                                    return found;
+                                });
+                            }
+                        });
                     }
 
                     this.groupsMap[k] = {
@@ -601,6 +751,7 @@
                     };
 
                     this.assignIntraGroupMatchNumbers(this.groupsMap[k]);
+                    this.autoLinkIntraGroupMatches(this.groupsMap[k]);
                     this.fillMissingPlaceholdersForGroup(this.groupsMap[k]);
                 }
             }
@@ -895,6 +1046,8 @@
                 sec.className = 'gsl-group-section';
                 sec.id = 'gslGroupSection_' + safeGId;
                 sec.style.setProperty('--grp-color', gColor);
+                sec.style.setProperty('--grp-rgb', gRgb);
+                sec.style.setProperty('--grp-border', 'rgba(' + gRgb + ', 0.22)');
                 sec.style.setProperty('--grp-hover', 'rgba(' + gRgb + ', 0.18)');
                 sec.style.setProperty('--grp-glow', 'rgba(' + gRgb + ', 0.45)');
                 sec.setAttribute('data-group-color', gColor);
@@ -965,12 +1118,20 @@
                 vpCanvas.id = 'viewportCanvas_' + safeGId;
                 vpCanvas.setAttribute('data-group-color', gColor);
                 vpCanvas.style.setProperty('--grp-color', gColor);
+                vpCanvas.style.setProperty('--grp-rgb', gRgb);
+                vpCanvas.style.setProperty('--grp-border', 'rgba(' + gRgb + ', 0.22)');
+                vpCanvas.style.setProperty('--grp-hover', 'rgba(' + gRgb + ', 0.18)');
+                vpCanvas.style.setProperty('--grp-glow', 'rgba(' + gRgb + ', 0.45)');
 
                 var singleWrapper = document.createElement('div');
                 singleWrapper.className = 'gsl-single-viewport-wrapper';
                 singleWrapper.id = 'columnsWrapper_' + safeGId;
                 singleWrapper.setAttribute('data-group-color', gColor);
                 singleWrapper.style.setProperty('--grp-color', gColor);
+                singleWrapper.style.setProperty('--grp-rgb', gRgb);
+                singleWrapper.style.setProperty('--grp-border', 'rgba(' + gRgb + ', 0.22)');
+                singleWrapper.style.setProperty('--grp-hover', 'rgba(' + gRgb + ', 0.18)');
+                singleWrapper.style.setProperty('--grp-glow', 'rgba(' + gRgb + ', 0.45)');
 
                 // ------------------------------------------------------------
                 // 1. UPPER BRACKET BRANCH
@@ -1758,11 +1919,25 @@
          */
         drawGroupSvgConnectors: function (groupId) {
             var grp = this.groupsMap[groupId];
+            if (!grp) {
+                var disp = this.formatDisplayGroupName(groupId);
+                grp = this.groupsMap[disp];
+            }
+            if (!grp) {
+                for (var gk in this.groupsMap) {
+                    if (gk === groupId || this.formatDisplayGroupName(gk) === this.formatDisplayGroupName(groupId)) {
+                        grp = this.groupsMap[gk];
+                        break;
+                    }
+                }
+            }
             if (!grp) return;
-            var safeGId = groupId.replace(/[^a-zA-Z0-9]/g, '_');
+            var safeGId = (grp.groupId || groupId).replace(/[^a-zA-Z0-9]/g, '_');
             var canvas = document.getElementById('viewportCanvas_' + safeGId);
             var wrapper = document.getElementById('columnsWrapper_' + safeGId);
             if (!canvas || !wrapper) return;
+
+            this.autoLinkIntraGroupMatches(grp);
 
             if (window.TourmaViewport && typeof window.TourmaViewport.drawConnectors === 'function') {
                 window.TourmaViewport.drawConnectors(canvas, wrapper, grp.matchesMap, 1.0);
