@@ -588,6 +588,16 @@ public class TournamentDAO {
         TOURNAMENT_BY_ID_CACHE.clear();
     }
 
+    public static void clearTournamentCache(String tournamentId) {
+        if (tournamentId == null) return;
+        String tid = tournamentId.trim();
+        TOURNAMENT_BY_ID_CACHE.remove(tid);
+        STAGE_FORMATS_CACHE.remove(tid);
+        for (Map<String, List<String>> map : SERIES_STAGE_FORMATS_CACHE.values()) {
+            map.remove(tid);
+        }
+    }
+
     public Map<String, List<String>> getStageFormatsBySeriesId(String seriesId) {
         if (seriesId == null || seriesId.trim().isEmpty()) return new HashMap<>();
         String sid = seriesId.trim();
@@ -657,6 +667,7 @@ public class TournamentDAO {
 
     public boolean saveGroupAssignments(String tournamentId, String groupAssignmentsJson) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        clearTournamentCache(tournamentId);
         String sql = "UPDATE tournaments SET group_assignments = ? WHERE id = ?";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
@@ -665,8 +676,20 @@ public class TournamentDAO {
             ps.setString(2, tournamentId.trim());
             boolean ok = ps.executeUpdate() > 0;
             if (ok) {
+                clearTournamentCache(tournamentId);
                 try {
-                    new dao.GroupStageDAO().syncGroupsAndGroupTeams(tournamentId.trim(), 1, groupAssignmentsJson);
+                    Tournament t = getTournamentById(tournamentId.trim());
+                    String fmt = t != null ? t.getTournamentType() : "";
+                    if (fmt == null) fmt = "";
+                    String s1Format = getStage1Format(tournamentId.trim());
+                    if (s1Format != null && !s1Format.isEmpty()) {
+                        fmt = s1Format;
+                    }
+                    if (fmt.toUpperCase().contains("GSL")) {
+                        new dao.GSLStageDAO().ensureGSLInitialized(tournamentId.trim(), 1);
+                    } else if (fmt.toUpperCase().contains("GROUP")) {
+                        new dao.GroupStageDAO().syncGroupsAndGroupTeams(tournamentId.trim(), 1, groupAssignmentsJson);
+                    }
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -676,6 +699,23 @@ public class TournamentDAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public String getStage1Format(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return "";
+        String sql = "SELECT format FROM tournament_stages WHERE tournament_id = ? AND stage_order = 1";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String f = rs.getString("format");
+                    return f != null ? f.trim() : "";
+                }
+            }
+        } catch (Exception ignore) {}
+        return "";
     }
 
     public String getSeriesIdByTournamentId(String tournamentId) {
@@ -712,13 +752,16 @@ public class TournamentDAO {
 
     public boolean saveStage2Teams(String tournamentId, String stage2TeamsJson) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        clearTournamentCache(tournamentId);
         String sql = "UPDATE tournaments SET stage2_teams = ? WHERE id = ?";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, stage2TeamsJson);
             ps.setString(2, tournamentId.trim());
-            return ps.executeUpdate() > 0;
+            boolean ok = ps.executeUpdate() > 0;
+            if (ok) clearTournamentCache(tournamentId);
+            return ok;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -743,13 +786,16 @@ public class TournamentDAO {
 
     public boolean saveMultiStageConfig(String tournamentId, String multiStageConfigJson) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        clearTournamentCache(tournamentId);
         String sql = "UPDATE tournaments SET multi_stage_config = ? WHERE id = ?";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, multiStageConfigJson);
             ps.setString(2, tournamentId.trim());
-            return ps.executeUpdate() > 0;
+            boolean ok = ps.executeUpdate() > 0;
+            if (ok) clearTournamentCache(tournamentId);
+            return ok;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -839,13 +885,16 @@ public class TournamentDAO {
      */
     public boolean saveTeamsJson(String tournamentId, String teamsJson) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        clearTournamentCache(tournamentId);
         String sql = "UPDATE tournaments SET teams_json = ? WHERE id = ?";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, teamsJson);
             ps.setString(2, tournamentId.trim());
-            return ps.executeUpdate() > 0;
+            boolean ok = ps.executeUpdate() > 0;
+            if (ok) clearTournamentCache(tournamentId);
+            return ok;
         } catch (Exception e) {
             System.err.println("[TournamentDAO] saveTeamsJson failed: " + e.getMessage());
         }

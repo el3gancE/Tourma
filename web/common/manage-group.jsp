@@ -17,6 +17,11 @@
 
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
     String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
+    String s1Format = tDao.getStage1Format(tournamentId);
+    if ((s1Format == null || s1Format.trim().isEmpty()) && tourney != null) {
+        s1Format = tourney.getFormat();
+    }
+    if (s1Format == null) s1Format = "";
 
     ParticipantDAO pDao = new ParticipantDAO();
     List<Team> dbTeams = pDao.getTeamsByTournamentId(tournamentId);
@@ -27,9 +32,11 @@
             Team tm = dbTeams.get(i);
             String tName = (tm.getRawName() != null && !tm.getRawName().isEmpty()) ? tm.getRawName() : tm.getName();
             if (tName == null) tName = "Team " + (i + 1);
+            int seedVal = tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : (i + 1);
             teamsJsonBuilder.append("{\"id\":\"").append(tm.getId() != null ? tm.getId() : String.valueOf(i + 1))
                             .append("\",\"name\":\"").append(tName.replace("\\", "\\\\").replace("\"", "\\\""))
-                            .append("\"}");
+                            .append("\",\"seed\":").append(seedVal)
+                            .append("}");
         }
     }
     teamsJsonBuilder.append("]");
@@ -177,6 +184,7 @@
 
     <script>
         window.contextPath = '${pageContext.request.contextPath}';
+        window.STAGE1_FORMAT = '<%= s1Format %>';
         window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
         window.DB_TEAMS = <%= teamsJsonBuilder.toString() %>;
     </script>

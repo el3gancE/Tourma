@@ -25,50 +25,67 @@
         },
 
         loadData: function () {
-            // Load teams list from localStorage first, then DB_TEAMS fallback
-            var rawTeams = localStorage.getItem('tourma_teams_' + this.tournamentId);
-            if (rawTeams) {
-                try { 
-                    var parsed = JSON.parse(rawTeams);
-                    this.teamsList = parsed.map(function (item, idx) {
-                        if (typeof item === 'string') {
-                            return { id: idx + 1, name: item };
-                        }
-                        if (item && !item.id) {
-                            item.id = idx + 1;
-                        }
-                        return item;
-                    });
-                } catch (e) { this.teamsList = []; }
-            }
-
-            if ((!this.teamsList || this.teamsList.length === 0) && window.DB_TEAMS && Array.isArray(window.DB_TEAMS) && window.DB_TEAMS.length > 0) {
+            // Prioritize window.DB_TEAMS to ensure exact database team IDs (TM_...)
+            if (window.DB_TEAMS && Array.isArray(window.DB_TEAMS) && window.DB_TEAMS.length > 0) {
                 this.teamsList = window.DB_TEAMS.map(function (item, idx) {
                     if (typeof item === 'string') {
-                        return { id: idx + 1, name: item };
+                        return { id: idx + 1, name: item, seed: idx + 1 };
                     }
                     if (item && !item.id) {
                         item.id = idx + 1;
+                    }
+                    if (item && !item.seed) {
+                        item.seed = idx + 1;
                     }
                     return item;
                 });
                 try {
                     localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
                 } catch (e) {}
+            } else {
+                var rawTeams = localStorage.getItem('tourma_teams_' + this.tournamentId);
+                if (rawTeams) {
+                    try { 
+                        var parsed = JSON.parse(rawTeams);
+                        this.teamsList = parsed.map(function (item, idx) {
+                            if (typeof item === 'string') {
+                                return { id: idx + 1, name: item, seed: idx + 1 };
+                            }
+                            if (item && !item.id) {
+                                item.id = idx + 1;
+                            }
+                            if (item && !item.seed) {
+                                item.seed = idx + 1;
+                            }
+                            return item;
+                        });
+                    } catch (e) { this.teamsList = []; }
+                }
             }
 
-            // Load Group Assignments from DB if saved
+            // Load Group Assignments: Prefer DB assignments, fallback to localStorage
             if (window.DB_GROUP_ASSIGNMENTS && typeof window.DB_GROUP_ASSIGNMENTS === 'object' && Object.keys(window.DB_GROUP_ASSIGNMENTS).length > 0) {
                 this.groups = window.DB_GROUP_ASSIGNMENTS;
                 try {
                     localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
                 } catch (e) {}
             } else {
-                // If DB has no saved group assignments, start with a 100% clean empty workspace
-                this.groups = {};
+                var localGroups = null;
                 try {
-                    localStorage.removeItem('tourma_group_assignments_' + this.tournamentId);
+                    var rawG = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
+                    if (rawG) {
+                        var parsedG = JSON.parse(rawG);
+                        if (parsedG && typeof parsedG === 'object' && Object.keys(parsedG).length > 0) {
+                            localGroups = parsedG;
+                        }
+                    }
                 } catch (e) {}
+
+                if (localGroups && Object.keys(localGroups).length > 0) {
+                    this.groups = localGroups;
+                } else {
+                    this.groups = {};
+                }
             }
 
             // Clean workspace: Groups are strictly created manually by user, or via "Ngẫu Nhiên" button.
@@ -78,14 +95,28 @@
         },
 
         getTeamSeedNumber: function (team) {
+            if (!team) return 1;
+            if (typeof team === 'object') {
+                if (team.seed && team.seed > 0) return team.seed;
+                if (team.originalSeed && team.originalSeed > 0) return team.originalSeed;
+            }
             var tid = (typeof team === 'object') ? team.id : team;
+            var tName = (typeof team === 'object') ? (team.name || team.rawName) : String(team);
+
             for (var i = 0; i < this.teamsList.length; i++) {
                 var item = this.teamsList[i];
                 var itemTid = (typeof item === 'object') ? item.id : item;
-                if (itemTid == tid) {
+                var itemName = (typeof item === 'object') ? (item.name || item.rawName) : String(item);
+                if (String(itemTid) === String(tid) || (tName && itemName && tName.trim().toLowerCase() === itemName.trim().toLowerCase())) {
+                    if (item.seed && item.seed > 0) return item.seed;
+                    if (item.originalSeed && item.originalSeed > 0) return item.originalSeed;
                     return i + 1;
                 }
             }
+
+            if (typeof tid === 'number' && tid > 0) return tid;
+            var num = parseInt(tName, 10);
+            if (!isNaN(num) && num > 0) return num;
             return 1;
         },
 
@@ -696,7 +727,8 @@
         saveAndReturn: function () {
             var urlParams = new URLSearchParams(window.location.search);
             var formatParam = urlParams.get('format') || '';
-            var isGsl = (formatParam.toUpperCase().indexOf('GSL') !== -1);
+            var s1Format = window.STAGE1_FORMAT || '';
+            var isGsl = (formatParam.toUpperCase().indexOf('GSL') !== -1) || (s1Format.toUpperCase().indexOf('GSL') !== -1);
             if (!isGsl && this.tournamentId) {
                 var storedFmt = localStorage.getItem('tourma_format_' + this.tournamentId) || '';
                 if (storedFmt.toUpperCase().indexOf('GSL') !== -1) isGsl = true;
@@ -754,6 +786,12 @@
                 target += '&seriesId=' + encodeURIComponent(seriesId);
             }
 
+            var nextBtn = document.querySelector('button[onclick*="saveAndReturn"]');
+            if (nextBtn) {
+                nextBtn.disabled = true;
+                nextBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+            }
+
             // Ensure DB persistence completes before redirect
             try {
                 var cPath = window.contextPath || '';
@@ -767,7 +805,22 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                     body: params.toString()
-                }).finally(function() {
+                })
+                .then(function(res) {
+                    return res.json();
+                })
+                .then(function(data) {
+                    if (data && data.status === 'error') {
+                        alert('⚠️ Không thể lưu chia bảng: ' + (data.message || 'Lỗi hệ thống'));
+                        if (nextBtn) {
+                            nextBtn.disabled = false;
+                            nextBtn.innerHTML = 'Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>';
+                        }
+                        return;
+                    }
+                    window.location.href = target;
+                })
+                .catch(function(err) {
                     window.location.href = target;
                 });
             } catch (e) {

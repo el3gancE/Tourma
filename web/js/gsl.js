@@ -395,6 +395,11 @@
                         var targetIdx = Math.floor(mIdx / 2);
                         var targetM = nextMatches[targetIdx];
                         if (curM && targetM) {
+                            // If targetM is already set to receive the LOSER of curM (e.g. Decider match),
+                            // do NOT link curM.nextMatchId (winner) here! Winner of UB Final qualifies or goes to GF only.
+                            if (curM.loserNextMatchId && (String(curM.loserNextMatchId) === String(targetM.matchId) || String(curM.loserNextMatchId) === String(targetM.rawId) || String(curM.loserNextMatchId) === String(targetM.id))) {
+                                continue;
+                            }
                             if (!curM.nextMatchId || curM.nextMatchId === 'null') {
                                 curM.nextMatchId = String(targetM.matchId || targetM.id || targetM.rawId);
                                 curM.nextMatchSlot = (mIdx % 2 === 0) ? 1 : 2;
@@ -1066,9 +1071,16 @@
                 var headerCard = document.createElement('div');
                 headerCard.className = 'gsl-group-main-header';
                 
-                var teamCount = 4;
-                if (grp.upperRounds && grp.upperRounds[0] && grp.upperRounds[0].matches) {
-                    teamCount = grp.upperRounds[0].matches.length * 2;
+                var groupTeamSet = {};
+                for (var mid in grp.matchesMap) {
+                    var gm = grp.matchesMap[mid];
+                    if (gm && gm.team1 && gm.team1.name && !self.isPlaceholder(gm.team1.name) && gm.team1.name !== 'BYE') groupTeamSet[gm.team1.name] = true;
+                    if (gm && gm.team2 && gm.team2.name && !self.isPlaceholder(gm.team2.name) && gm.team2.name !== 'BYE') groupTeamSet[gm.team2.name] = true;
+                }
+                var uniqueTeamCount = Object.keys(groupTeamSet).length;
+                var teamCount = uniqueTeamCount > 0 ? uniqueTeamCount : 4;
+                if (grp.upperRounds && grp.upperRounds[0] && grp.upperRounds[0].matches && grp.upperRounds[0].matches.length > 0) {
+                    teamCount = Math.max(teamCount, grp.upperRounds[0].matches.length * 2);
                 }
                 var advCount = Math.max(1, Math.floor(self.cutTarget / groupKeys.length)) || 2;
 
@@ -2068,9 +2080,282 @@
             return null;
         },
 
+        /**
+         * Extract exact advancing teams for a specific GSL group (Double Elimination mini-bracket)
+         */
+        getGroupQualifiers: function (grp, advancePerGroup) {
+            var self = this;
+            if (!grp || !grp.matchesMap) return [];
+
+            var matches = [];
+            var seen = {};
+            for (var k in grp.matchesMap) {
+                var m = grp.matchesMap[k];
+                var mKey = m ? (m.rawId || m.matchId || m.id) : null;
+                if (m && mKey && !seen[mKey]) {
+                    seen[mKey] = true;
+                    matches.push(m);
+                }
+            }
+            if (matches.length === 0) return [];
+
+            var getMNum = function (m) {
+                if (m.matchNumber !== undefined && m.matchNumber !== null && !isNaN(Number(m.matchNumber))) return Number(m.matchNumber);
+                var s = String(m.rawId || m.matchId || m.id || '');
+                var idx = s.lastIndexOf('_');
+                if (idx !== -1) {
+                    var n = parseInt(s.substring(idx + 1), 10);
+                    if (!isNaN(n)) return n;
+                }
+                var digits = s.replace(/[^0-9]/g, '');
+                return digits ? parseInt(digits, 10) : 0;
+            };
+            matches.sort(function (a, b) { return getMNum(a) - getMNum(b); });
+
+            // 1. Grand Final match (if exists): bracketType contains GRAND or ID contains GF
+            var gfMatch = matches.find(function (m) {
+                var b = (m.bracketType || '').toUpperCase();
+                var s = String(m.rawId || m.matchId || m.id || '').toUpperCase();
+                return b.indexOf('GRAND') !== -1 || s.indexOf('_GF_') !== -1;
+            });
+
+            // 2. UB Final match:
+            // Strictly the highest round upper bracket match (excluding Grand Final / Decider)
+            var ubMatches = matches.filter(function (m) {
+                var b = (m.bracketType || '').toUpperCase();
+                var s = String(m.rawId || m.matchId || m.id || '').toUpperCase();
+                return (b.indexOf('UPPER') !== -1 || b.indexOf('WINNER') !== -1) && s.indexOf('_GF_') === -1 && b.indexOf('GRAND') === -1;
+            });
+            ubMatches.sort(function (a, b) { return (a.roundNumber || 1) - (b.roundNumber || 1); });
+            var ubFinalMatch = ubMatches.length > 0 ? ubMatches[ubMatches.length - 1] : null;
+
+            // 3. Decider match (LB Final / Match #5 in standard 4-team GSL):
+            var deciderMatch = null;
+            if (gfMatch && advancePerGroup === 2 && matches.length <= 5) {
+                // In 5-match bracket if match #5 was named GF in DB
+                deciderMatch = gfMatch;
+            } else {
+                var lbMatches = matches.filter(function (m) {
+                    var b = (m.bracketType || '').toUpperCase();
+                    var s = String(m.rawId || m.matchId || m.id || '').toUpperCase();
+                    return b.indexOf('LOWER') !== -1 || b.indexOf('LOSER') !== -1 || s.indexOf('_LB_') !== -1;
+                });
+                lbMatches.sort(function (a, b) { return (a.roundNumber || 1) - (b.roundNumber || 1); });
+                deciderMatch = lbMatches.length > 0 ? lbMatches[lbMatches.length - 1] : null;
+
+                // Fallback: in 5-match bracket, if deciderMatch is LB R1, use match #5
+                if (matches.length === 5) {
+                    var m5 = matches[4];
+                    if (m5 && m5 !== ubFinalMatch) {
+                        deciderMatch = m5;
+                    }
+                }
+            }
+
+            var cleanTeam = function (teamObj, rank) {
+                if (!teamObj || !teamObj.name || self.isPlaceholder(teamObj.name) || teamObj.name === 'BYE') return null;
+                var res = Object.assign({}, teamObj);
+                res.groupId = grp.groupId || grp.title || '';
+                res.groupName = grp.title || grp.groupId || '';
+                res.rankInGroup = rank;
+                return res;
+            };
+
+            // CASE 1: Exactly 1 team advances per group (Group Champion)
+            if (advancePerGroup === 1) {
+                if (gfMatch) {
+                    var wGf = self.getMatchWinnerTeam(gfMatch);
+                    var tGf = cleanTeam(wGf, 1);
+                    if (tGf) return [tGf];
+                }
+                if (ubFinalMatch) {
+                    var wUb = self.getMatchWinnerTeam(ubFinalMatch);
+                    var tUb = cleanTeam(wUb, 1);
+                    if (tUb) return [tUb];
+                }
+                return [];
+            }
+
+            // CASE 2: Exactly 2 teams advance per group (Standard 4-team GSL: 1st UB Final, 2nd Decider)
+            if (advancePerGroup === 2 && matches.length <= 6) {
+                var qualifiers = [];
+                var w1 = ubFinalMatch ? self.getMatchWinnerTeam(ubFinalMatch) : null;
+                var t1 = cleanTeam(w1, 1);
+                if (t1) qualifiers.push(t1);
+
+                var w2 = deciderMatch ? self.getMatchWinnerTeam(deciderMatch) : null;
+                var t2 = cleanTeam(w2, 2);
+                if (t2) {
+                    // Safety check: ensure 2nd place is not the same team as 1st place
+                    if (!t1 || (t1.name !== t2.name && String(t1.id) !== String(t2.id))) {
+                        qualifiers.push(t2);
+                    }
+                }
+                return qualifiers;
+            }
+
+            // CASE 3: Scaled Double Elimination Cut Stage (e.g. 16/8, 32/8, 8/4, 16/4...)
+            // Strict 50/50 quota guarantee: exactly half from UB and half from LB
+            var ubTarget = Math.floor(advancePerGroup / 2);
+            var lbTarget = advancePerGroup - ubTarget;
+
+            var ubQualifiers = [];
+            var lbQualifiers = [];
+
+            // Extract from terminal UB round (highest round in upperRounds) -> Top Seeds (rank 1)
+            if (grp.upperRounds && grp.upperRounds.length > 0) {
+                var lastUbRound = grp.upperRounds[grp.upperRounds.length - 1];
+                var ubMatchesInRound = lastUbRound ? (lastUbRound.matches || []) : [];
+                for (var uIdx = 0; uIdx < ubMatchesInRound.length && ubQualifiers.length < ubTarget; uIdx++) {
+                    var w = self.getMatchWinnerTeam(ubMatchesInRound[uIdx]);
+                    var t = cleanTeam(w, 1);
+                    if (t) ubQualifiers.push(t);
+                }
+            }
+
+            // Extract from terminal LB round (highest round in lowerRounds) -> Lower Seeds (rank 2)
+            if (grp.lowerRounds && grp.lowerRounds.length > 0) {
+                var lastLbRound = grp.lowerRounds[grp.lowerRounds.length - 1];
+                var lbMatchesInRound = lastLbRound ? (lastLbRound.matches || []) : [];
+                for (var lIdx = 0; lIdx < lbMatchesInRound.length && lbQualifiers.length < lbTarget; lIdx++) {
+                    var w = self.getMatchWinnerTeam(lbMatchesInRound[lIdx]);
+                    var t = cleanTeam(w, 2);
+                    if (t) lbQualifiers.push(t);
+                }
+            }
+
+            return ubQualifiers.concat(lbQualifiers);
+        },
+
+        /**
+         * Generate standard inverted single-elimination seed pairing array (1 vs K, 4 vs K-3, 2 vs K-1, 3 vs K-2...)
+         */
+        getStandardBracketSeeds: function (bracketSize) {
+            var isPow2 = (bracketSize > 0 && (bracketSize & (bracketSize - 1)) === 0);
+            if (!isPow2 && bracketSize % 2 === 0) {
+                var resLinear = [];
+                for (var i = 0; i < bracketSize / 2; i++) {
+                    resLinear.push(i + 1);
+                    resLinear.push(bracketSize - i);
+                }
+                return resLinear;
+            }
+            var rounds = Math.round(Math.log(bracketSize) / Math.log(2)) - 1;
+            var pls = [1, 2];
+            for (var r = 0; r < rounds; r++) {
+                var nextPls = [];
+                var sum = Math.pow(2, r + 2) + 1;
+                for (var v = 0; v < pls.length; v++) {
+                    nextPls.push(pls[v]);
+                    nextPls.push(sum - pls[v]);
+                }
+                pls = nextPls;
+            }
+            var res = [];
+            for (var m = 0; m < bracketSize / 2; m++) {
+                var a = pls[m * 2];
+                var b = pls[m * 2 + 1];
+                res.push(Math.min(a, b));
+                res.push(Math.max(a, b));
+            }
+            return res;
+        },
+
+        /**
+         * Two-Pot Random Draw for Stage 2:
+         * 1. 100% Guaranteed UB vs LB pairings in Round 1
+         * 2. Completely randomized draw
+         * 3. Zero Same-Group Conflict: teams from the same GSL group NEVER meet in Round 1 of Stage 2
+         */
+        pairForStage2RandomCrossover: function (firstPlaceTeams, secondPlaceTeams) {
+            var k = firstPlaceTeams.length + secondPlaceTeams.length;
+            var m = firstPlaceTeams.length;
+
+            var potUB = firstPlaceTeams.slice();
+            var potLB = secondPlaceTeams.slice();
+
+            // 1. Randomize Pot UB (Nhánh Thắng)
+            for (var i = potUB.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var tU = potUB[i]; potUB[i] = potUB[j]; potUB[j] = tU;
+            }
+
+            // 2. Randomize Pot LB (Nhánh Thua)
+            for (var i = potLB.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var tL = potLB[i]; potLB[i] = potLB[j]; potLB[j] = tL;
+            }
+
+            // 3. Resolve same-group conflicts so teams from the same GSL group do NOT meet in Round 1
+            if (potUB.length > 1 && potUB.length === potLB.length) {
+                var seeds = this.getStandardBracketSeeds(k);
+                for (var attempt = 0; attempt < 100; attempt++) {
+                    var conflictFound = false;
+                    for (var matchIdx = 0; matchIdx < m; matchIdx++) {
+                        var topSeed = seeds[matchIdx * 2];
+                        var botSeed = seeds[matchIdx * 2 + 1];
+                        var topIdx = topSeed - 1;
+                        var botIdx = botSeed - 1 - m;
+
+                        var tUb = potUB[topIdx];
+                        var tLb = potLB[botIdx];
+
+                        var gUb = tUb ? (tUb.groupId || tUb.groupName || '') : '';
+                        var gLb = tLb ? (tLb.groupId || tLb.groupName || '') : '';
+
+                        if (gUb && gLb && gUb === gLb) {
+                            conflictFound = true;
+                            var swapped = false;
+                            for (var alt = 0; alt < m; alt++) {
+                                if (alt !== botIdx) {
+                                    var altSeed = seeds[alt * 2];
+                                    var altTopIdx = altSeed - 1;
+                                    var altUb = potUB[altTopIdx];
+                                    var altGUb = altUb ? (altUb.groupId || altUb.groupName || '') : '';
+                                    var altLb = potLB[alt];
+                                    var altGLb = altLb ? (altLb.groupId || altLb.groupName || '') : '';
+
+                                    // Swap if neither match will have a same-group conflict
+                                    if (altGLb !== gUb && altGUb !== gLb) {
+                                        var tmp = potLB[botIdx];
+                                        potLB[botIdx] = potLB[alt];
+                                        potLB[alt] = tmp;
+                                        swapped = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!swapped) {
+                                var randAlt = (botIdx + 1) % m;
+                                var tmp = potLB[botIdx];
+                                potLB[botIdx] = potLB[randAlt];
+                                potLB[randAlt] = tmp;
+                            }
+                            break;
+                        }
+                    }
+                    if (!conflictFound) break;
+                }
+            }
+
+            // 4. Combine: Pot UB occupies slots 1..m, Pot LB occupies slots m+1..k
+            var ordered = potUB.concat(potLB);
+            for (var idx = 0; idx < ordered.length; idx++) {
+                ordered[idx].seed = idx + 1;
+                ordered[idx].originalSeed = idx + 1;
+            }
+            return ordered;
+        },
+
         getAdvancingTeams: function () {
             var self = this;
             var groupKeys = Object.keys(this.groupsMap).sort(self.compareGroupKeys);
+            if (groupKeys.length === 0) return [];
+
+            var totalCut = (this.cutTarget && this.cutTarget > 0) ? this.cutTarget : (groupKeys.length * 2);
+            var advancePerGroup = Math.max(1, Math.round(totalCut / groupKeys.length));
+            if (!advancePerGroup) advancePerGroup = 2;
+
             var firstPlaceTeams = [];
             var secondPlaceTeams = [];
 
@@ -2078,41 +2363,41 @@
                 var grp = self.groupsMap[gKey];
                 if (!grp) return;
 
-                // Find UB Final match (UB round 2 or last round)
-                var ubFinal = null;
-                if (grp.upperRounds && grp.upperRounds.length > 0) {
-                    var lastUbRound = grp.upperRounds[grp.upperRounds.length - 1];
-                    if (lastUbRound && lastUbRound.matches && lastUbRound.matches.length > 0) {
-                        ubFinal = lastUbRound.matches[0];
+                var qList = self.getGroupQualifiers(grp, advancePerGroup);
+                qList.forEach(function (t) {
+                    if (t.rankInGroup === 1) {
+                        firstPlaceTeams.push(t);
+                    } else {
+                        secondPlaceTeams.push(t);
                     }
-                }
-
-                // Find Decider match (LB round 2 or last round)
-                var decider = null;
-                if (grp.lowerRounds && grp.lowerRounds.length > 0) {
-                    var lastLbRound = grp.lowerRounds[grp.lowerRounds.length - 1];
-                    if (lastLbRound && lastLbRound.matches && lastLbRound.matches.length > 0) {
-                        decider = lastLbRound.matches[0];
-                    }
-                }
-
-                if (ubFinal) {
-                    var w1 = self.getMatchWinnerTeam(ubFinal);
-                    if (w1 && w1.name && !self.isPlaceholder(w1.name) && w1.name !== 'BYE') {
-                        firstPlaceTeams.push(w1);
-                    }
-                }
-
-                if (decider) {
-                    var w2 = self.getMatchWinnerTeam(decider);
-                    if (w2 && w2.name && !self.isPlaceholder(w2.name) && w2.name !== 'BYE') {
-                        secondPlaceTeams.push(w2);
-                    }
-                }
+                });
             });
 
-            // Seeding order for Stage 2 (Standard crossover: 1st places first, then 2nd places)
-            return firstPlaceTeams.concat(secondPlaceTeams);
+            // If we have both UB and LB qualifiers, execute Two-Pot Random Draw with Zero Same-Group Conflict
+            if (firstPlaceTeams.length > 0 && secondPlaceTeams.length > 0) {
+                return self.pairForStage2RandomCrossover(firstPlaceTeams, secondPlaceTeams);
+            }
+
+            // If only 1 team per group (all 1st places), randomize them
+            if (firstPlaceTeams.length > 0) {
+                var singlePot = firstPlaceTeams.slice();
+                for (var i = singlePot.length - 1; i > 0; i--) {
+                    var j = Math.floor(Math.random() * (i + 1));
+                    var tmp = singlePot[i]; singlePot[i] = singlePot[j]; singlePot[j] = tmp;
+                }
+                for (var i = 0; i < singlePot.length; i++) {
+                    singlePot[i].seed = i + 1;
+                    singlePot[i].originalSeed = i + 1;
+                }
+                return singlePot;
+            }
+
+            var result = firstPlaceTeams.concat(secondPlaceTeams);
+            for (var i = 0; i < result.length; i++) {
+                result[i].seed = i + 1;
+                result[i].originalSeed = i + 1;
+            }
+            return result;
         },
 
         checkAndTriggerStage2Cut: function () {

@@ -10,9 +10,11 @@ import java.sql.ResultSet;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * High-Performance, Database-Driven DAO for GSL Format (Dual Tournament /
@@ -243,14 +245,20 @@ public class GSLStageDAO extends DBContext {
 
                 // Clear any incomplete / stale matches before generating new GSL bracket
                 try (PreparedStatement psUnlink = conn.prepareStatement(
-                        "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ?")) {
+                        "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ? AND (stage_id = ? OR stage_id IS NULL OR stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR))")) {
                     psUnlink.setString(1, tournamentId);
+                    psUnlink.setString(2, stageId);
+                    psUnlink.setInt(3, stageOrder);
+                    psUnlink.setInt(4, stageOrder);
                     psUnlink.executeUpdate();
                 }
 
                 try (PreparedStatement psDel = conn.prepareStatement(
-                        "DELETE FROM matches WHERE tournament_id = ?")) {
+                        "DELETE FROM matches WHERE tournament_id = ? AND (stage_id = ? OR stage_id IS NULL OR stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR))")) {
                     psDel.setString(1, tournamentId);
+                    psDel.setString(2, stageId);
+                    psDel.setInt(3, stageOrder);
+                    psDel.setInt(4, stageOrder);
                     psDel.executeUpdate();
                 }
 
@@ -385,16 +393,17 @@ public class GSLStageDAO extends DBContext {
             return result;
         }
 
-        Map<String, Team> teamLookup = new HashMap<>();
+        Map<String, Team> teamById = new HashMap<>();
+        Map<String, Team> teamByName = new HashMap<>();
         for (Team t : allTeams) {
             if (t.getId() != null) {
-                teamLookup.put(String.valueOf(t.getId()).trim().toLowerCase(), t);
+                teamById.put(t.getId().trim().toLowerCase(), t);
             }
-            if (t.getName() != null) {
-                teamLookup.put(t.getName().trim().toLowerCase(), t);
+            if (t.getName() != null && !t.getName().trim().isEmpty()) {
+                teamByName.put(t.getName().trim().toLowerCase(), t);
             }
-            if (t.getRawName() != null) {
-                teamLookup.put(t.getRawName().trim().toLowerCase(), t);
+            if (t.getRawName() != null && !t.getRawName().trim().isEmpty()) {
+                teamByName.put(t.getRawName().trim().toLowerCase(), t);
             }
         }
 
@@ -412,6 +421,7 @@ public class GSLStageDAO extends DBContext {
 
                 String arrayContent = matcher.group(2).trim();
                 List<Team> groupTeams = new ArrayList<>();
+                Set<String> addedTeamIds = new HashSet<>();
 
                 if (!arrayContent.isEmpty()) {
                     if (arrayContent.contains("{")) {
@@ -426,12 +436,16 @@ public class GSLStageDAO extends DBContext {
 
                             Team found = null;
                             if (teamId != null)
-                                found = teamLookup.get(teamId.toLowerCase());
+                                found = teamById.get(teamId.toLowerCase());
                             if (found == null && teamName != null)
-                                found = teamLookup.get(teamName.toLowerCase());
+                                found = teamByName.get(teamName.toLowerCase());
 
                             if (found != null) {
-                                groupTeams.add(found);
+                                String uId = (found.getId() != null) ? found.getId() : (found.getName() != null ? found.getName() : "");
+                                if (!addedTeamIds.contains(uId.toLowerCase())) {
+                                    addedTeamIds.add(uId.toLowerCase());
+                                    groupTeams.add(found);
+                                }
                             } else if (teamName != null && !teamName.isEmpty()) {
                                 Team placeholder = new Team();
                                 placeholder.setId(teamId);
@@ -446,9 +460,15 @@ public class GSLStageDAO extends DBContext {
                             String cleanTk = tk.replace("\"", "").replace("'", "").trim();
                             if (cleanTk.isEmpty())
                                 continue;
-                            Team found = teamLookup.get(cleanTk.toLowerCase());
+                            Team found = teamById.get(cleanTk.toLowerCase());
+                            if (found == null)
+                                found = teamByName.get(cleanTk.toLowerCase());
                             if (found != null) {
-                                groupTeams.add(found);
+                                String uId = (found.getId() != null) ? found.getId() : (found.getName() != null ? found.getName() : "");
+                                if (!addedTeamIds.contains(uId.toLowerCase())) {
+                                    addedTeamIds.add(uId.toLowerCase());
+                                    groupTeams.add(found);
+                                }
                             } else {
                                 Team placeholder = new Team();
                                 placeholder.setRawName(cleanTk);
@@ -497,163 +517,229 @@ public class GSLStageDAO extends DBContext {
         String loserNextSlot;
         boolean isBye;
         String status;
-    }
-
-    private GslMatchNode createNode(String id, String tournamentId, String stageId, String groupId,
-            int roundNumber, String bracketType, int matchOrder, String team1Id, String team2Id,
-            String nextMatchId, String nextSlot, String loserNextMatchId, String loserNextSlot, boolean isBye) {
-        GslMatchNode node = new GslMatchNode();
-        node.id = id;
-        node.tournamentId = tournamentId;
-        node.stageId = stageId;
-        node.groupId = groupId;
-        node.roundNumber = roundNumber;
-        node.bracketType = bracketType;
-        node.matchOrder = matchOrder;
-        node.team1Id = team1Id;
-        node.team2Id = team2Id;
-        node.nextMatchId = nextMatchId;
-        node.nextSlot = nextSlot;
-        node.loserNextMatchId = loserNextMatchId;
-        node.loserNextSlot = loserNextSlot;
-        node.isBye = isBye;
-        node.status = isBye ? "FINISHED" : "PENDING";
-        return node;
+        String winnerId;
     }
 
     private int generateAndInsertGSLGroupMatches(Connection conn, String tournamentId, String stageId,
             String groupId, String groupName, List<Team> teams, int advanceCount, int startSeq) throws Exception {
-        int n = teams.size();
+        int n = teams != null ? teams.size() : 0;
         int bracketSize = nextPowerOfTwo(n);
-        if (bracketSize < 4)
-            bracketSize = 4;
+        if (bracketSize < 4) bracketSize = 4;
         String gPrefix = groupName.replaceAll("[^a-zA-Z0-9]", "_").toUpperCase();
-        if (gPrefix.isEmpty())
-            gPrefix = "GA";
+        if (gPrefix.isEmpty()) gPrefix = "GA";
 
-        List<GslMatchNode> groupNodes = new ArrayList<>();
+        int ubRounds = (int) (Math.log(bracketSize) / Math.log(2));
+        boolean isSingleWinner = (advanceCount <= 1);
+        int ubQualifiers = (advanceCount > 1) ? Math.floorDiv(advanceCount, 2) : 1;
+        if (ubQualifiers > bracketSize / 2) ubQualifiers = bracketSize / 2;
 
-        if (bracketSize == 4 && advanceCount <= 1) {
-            String m1Id = tournamentId + "_" + gPrefix + "_UB_R1_M1";
-            String m2Id = tournamentId + "_" + gPrefix + "_UB_R1_M2";
-            String m3Id = tournamentId + "_" + gPrefix + "_UB_R2_M1";
-            String m4Id = tournamentId + "_" + gPrefix + "_LB_R1_M1";
-            String m5Id = tournamentId + "_" + gPrefix + "_LB_R2_M1";
-            String m6Id = tournamentId + "_" + gPrefix + "_GF_R1_M1";
+        int cutUbRounds = isSingleWinner ? ubRounds : (int) (Math.log((double) bracketSize / ubQualifiers) / Math.log(2));
+        if (cutUbRounds < 1) cutUbRounds = 1;
 
-            Team t1 = n > 0 ? teams.get(0) : null;
-            Team t2 = n > 1 ? teams.get(1) : null;
-            Team t3 = n > 2 ? teams.get(2) : null;
-            Team t4 = n > 3 ? teams.get(3) : null;
+        // Sort group teams by relative seed so teams.get(0) is seed 1 of the group, etc.
+        if (teams != null) {
+            teams.sort((a, b) -> {
+                int sa = a.getOriginalSeed() > 0 ? a.getOriginalSeed() : 9999;
+                int sb = b.getOriginalSeed() > 0 ? b.getOriginalSeed() : 9999;
+                return Integer.compare(sa, sb);
+            });
+        }
 
-            groupNodes.add(createNode(m1Id, tournamentId, stageId, groupId, 1, "WINNER_BRACKET", startSeq++,
-                    t1 != null ? t1.getId() : null, t4 != null ? t4.getId() : null,
-                    m3Id, "SLOT_1", m4Id, "SLOT_1", (t1 == null || t4 == null)));
-            groupNodes.add(createNode(m2Id, tournamentId, stageId, groupId, 1, "WINNER_BRACKET", startSeq++,
-                    t2 != null ? t2.getId() : null, t3 != null ? t3.getId() : null,
-                    m3Id, "SLOT_2", m4Id, "SLOT_2", (t2 == null || t3 == null)));
-            groupNodes.add(createNode(m3Id, tournamentId, stageId, groupId, 2, "WINNER_BRACKET", startSeq++,
-                    null, null, m6Id, "SLOT_1", m5Id, "SLOT_1", false));
-            groupNodes.add(createNode(m4Id, tournamentId, stageId, groupId, 1, "LOSER_BRACKET", startSeq++,
-                    null, null, m5Id, "SLOT_2", null, null, false));
-            groupNodes.add(createNode(m5Id, tournamentId, stageId, groupId, 2, "LOSER_BRACKET", startSeq++,
-                    null, null, m6Id, "SLOT_2", null, null, false));
-            groupNodes.add(createNode(m6Id, tournamentId, stageId, groupId, 3, "GRAND_FINAL", startSeq++,
-                    null, null, null, null, null, null, false));
-        } else if (bracketSize == 4) {
-            String m1Id = tournamentId + "_" + gPrefix + "_UB_R1_M1";
-            String m2Id = tournamentId + "_" + gPrefix + "_UB_R1_M2";
-            String m3Id = tournamentId + "_" + gPrefix + "_UB_R2_M1";
-            String m4Id = tournamentId + "_" + gPrefix + "_LB_R1_M1";
-            String m5Id = tournamentId + "_" + gPrefix + "_LB_R2_M1";
+        int[] seeds = generateSeedingArray(bracketSize);
+        List<GslMatchNode> allGroupNodes = new ArrayList<>();
 
-            Team t1 = n > 0 ? teams.get(0) : null;
-            Team t2 = n > 1 ? teams.get(1) : null;
-            Team t3 = n > 2 ? teams.get(2) : null;
-            Team t4 = n > 3 ? teams.get(3) : null;
+        // 1. Build Upper Bracket
+        Map<Integer, List<GslMatchNode>> upperRoundNodes = new HashMap<>();
+        int curUbMatches = bracketSize / 2;
+        for (int r = 1; r <= cutUbRounds; r++) {
+            List<GslMatchNode> roundNodes = new ArrayList<>();
+            for (int m = 1; m <= curUbMatches; m++) {
+                String mId = tournamentId + "_" + gPrefix + "_UB_R" + r + "_M" + m;
+                GslMatchNode node = new GslMatchNode();
+                node.id = mId;
+                node.tournamentId = tournamentId;
+                node.stageId = stageId;
+                node.groupId = groupId;
+                node.roundNumber = r;
+                node.bracketType = "WINNER_BRACKET";
+                node.matchOrder = startSeq++;
 
-            groupNodes.add(createNode(m1Id, tournamentId, stageId, groupId, 1, "WINNER_BRACKET", startSeq++,
-                    t1 != null ? t1.getId() : null, t4 != null ? t4.getId() : null,
-                    m3Id, "SLOT_1", m4Id, "SLOT_1", (t1 == null || t4 == null)));
-            groupNodes.add(createNode(m2Id, tournamentId, stageId, groupId, 1, "WINNER_BRACKET", startSeq++,
-                    t2 != null ? t2.getId() : null, t3 != null ? t3.getId() : null,
-                    m3Id, "SLOT_2", m4Id, "SLOT_2", (t2 == null || t3 == null)));
-            groupNodes.add(createNode(m3Id, tournamentId, stageId, groupId, 2, "WINNER_BRACKET", startSeq++,
-                    null, null, null, null, m5Id, "SLOT_1", false));
-            groupNodes.add(createNode(m4Id, tournamentId, stageId, groupId, 1, "LOSER_BRACKET", startSeq++,
-                    null, null, m5Id, "SLOT_2", null, null, false));
-            groupNodes.add(createNode(m5Id, tournamentId, stageId, groupId, 2, "LOSER_BRACKET", startSeq++,
-                    null, null, null, null, null, null, false));
-        } else {
-            // Scaled Double Elimination for 8, 16, 32 teams per group
-            int ubRounds = (int) (Math.log(bracketSize) / Math.log(2));
-            int cutRoundsToPlay = (advanceCount > 0 && advanceCount < bracketSize)
-                    ? (int) (Math.log(bracketSize / advanceCount) / Math.log(2))
-                    : ubRounds;
-            if (cutRoundsToPlay < 1)
-                cutRoundsToPlay = 1;
+                if (r == 1) {
+                    int s1 = seeds[(m - 1) * 2];
+                    int s2 = seeds[(m - 1) * 2 + 1];
+                    Team t1 = (s1 <= n && s1 - 1 < teams.size()) ? teams.get(s1 - 1) : null;
+                    Team t2 = (s2 <= n && s2 - 1 < teams.size()) ? teams.get(s2 - 1) : null;
 
-            int matchesInUbRound = bracketSize / 2;
-            for (int r = 1; r <= cutRoundsToPlay; r++) {
-                for (int m = 1; m <= matchesInUbRound; m++) {
-                    String mId = tournamentId + "_" + gPrefix + "_UB_R" + r + "_M" + m;
-                    String nextMId = (r < cutRoundsToPlay)
-                            ? (tournamentId + "_" + gPrefix + "_UB_R" + (r + 1) + "_M" + ((m + 1) / 2))
-                            : null;
-                    String nextSlot = (m % 2 == 1) ? "SLOT_1" : "SLOT_2";
-                    String dropMId = tournamentId + "_" + gPrefix + "_LB_R" + r + "_M" + m;
-                    String dropSlot = "SLOT_1";
-
-                    String t1Id = null;
-                    String t2Id = null;
-                    boolean isBye = false;
-
-                    if (r == 1) {
-                        int seed1 = getSeedingIndex(m * 2 - 1, bracketSize);
-                        int seed2 = getSeedingIndex(m * 2, bracketSize);
-                        Team tm1 = (seed1 <= n) ? teams.get(seed1 - 1) : null;
-                        Team tm2 = (seed2 <= n) ? teams.get(seed2 - 1) : null;
-                        t1Id = tm1 != null ? String.valueOf(tm1.getId()) : null;
-                        t2Id = tm2 != null ? String.valueOf(tm2.getId()) : null;
-                        isBye = (tm1 == null || tm2 == null);
+                    node.team1Id = (t1 != null) ? t1.getId() : null;
+                    node.team2Id = (t2 != null) ? t2.getId() : null;
+                    boolean isBye = (node.team1Id == null || node.team2Id == null);
+                    node.isBye = isBye;
+                    node.status = isBye ? "FINISHED" : "PENDING";
+                    if (isBye) {
+                        node.winnerId = (node.team1Id != null) ? node.team1Id : node.team2Id;
                     }
-
-                    groupNodes.add(createNode(mId, tournamentId, stageId, groupId, r, "WINNER_BRACKET", startSeq++,
-                            t1Id, t2Id, nextMId, nextSlot, dropMId, dropSlot, isBye));
+                } else {
+                    node.isBye = false;
+                    node.status = "PENDING";
                 }
-                matchesInUbRound /= 2;
-            }
 
-            int totalLbRounds = (cutRoundsToPlay * 2) - 1;
-            int lbMatchesInRound = bracketSize / 4;
-            if (lbMatchesInRound < 1)
-                lbMatchesInRound = 1;
+                roundNodes.add(node);
+                allGroupNodes.add(node);
+            }
+            upperRoundNodes.put(r, roundNodes);
+            curUbMatches /= 2;
+        }
+
+        // Link Upper Bracket Winners
+        for (int r = 1; r < cutUbRounds; r++) {
+            List<GslMatchNode> cur = upperRoundNodes.get(r);
+            List<GslMatchNode> nxt = upperRoundNodes.get(r + 1);
+            for (int i = 0; i < cur.size(); i++) {
+                int nextIdx = i / 2;
+                if (nextIdx < nxt.size()) {
+                    cur.get(i).nextMatchId = nxt.get(nextIdx).id;
+                    cur.get(i).nextSlot = (i % 2 == 0) ? "SLOT_1" : "SLOT_2";
+                }
+            }
+        }
+
+        // 2. Build Lower Bracket
+        int totalLbRounds = (cutUbRounds - 1) * 2;
+        Map<Integer, List<GslMatchNode>> lowerRoundNodes = new HashMap<>();
+
+        if (totalLbRounds > 0) {
+            int curLbMatches = bracketSize / 4;
+            if (curLbMatches < 1) curLbMatches = 1;
 
             for (int lr = 1; lr <= totalLbRounds; lr++) {
-                for (int lm = 1; lm <= lbMatchesInRound; lm++) {
+                List<GslMatchNode> roundNodes = new ArrayList<>();
+                for (int lm = 1; lm <= curLbMatches; lm++) {
                     String lbId = tournamentId + "_" + gPrefix + "_LB_R" + lr + "_M" + lm;
-                    String nextLbId = (lr < totalLbRounds)
-                            ? (tournamentId + "_" + gPrefix + "_LB_R" + (lr + 1) + "_M"
-                                    + (lr % 2 == 1 ? lm : ((lm + 1) / 2)))
-                            : null;
-                    String nextLbSlot = (lr % 2 == 1) ? "SLOT_2" : ((lm % 2 == 1) ? "SLOT_1" : "SLOT_2");
+                    GslMatchNode node = new GslMatchNode();
+                    node.id = lbId;
+                    node.tournamentId = tournamentId;
+                    node.stageId = stageId;
+                    node.groupId = groupId;
+                    node.roundNumber = lr;
+                    node.bracketType = "LOSER_BRACKET";
+                    node.matchOrder = startSeq++;
+                    node.status = "PENDING";
+                    node.isBye = false;
 
-                    groupNodes.add(createNode(lbId, tournamentId, stageId, groupId, lr, "LOSER_BRACKET", startSeq++,
-                            null, null, nextLbId, nextLbSlot, null, null, false));
+                    roundNodes.add(node);
+                    allGroupNodes.add(node);
                 }
-                if (lr % 2 == 0)
-                    lbMatchesInRound /= 2;
-                if (lbMatchesInRound < 1)
-                    lbMatchesInRound = 1;
+                lowerRoundNodes.put(lr, roundNodes);
+
+                if (lr % 2 == 0) {
+                    curLbMatches = Math.max(1, curLbMatches / 2);
+                }
+            }
+
+            // Link LB Internal Winners
+            for (int lr = 1; lr < totalLbRounds; lr++) {
+                List<GslMatchNode> cur = lowerRoundNodes.get(lr);
+                List<GslMatchNode> nxt = lowerRoundNodes.get(lr + 1);
+                boolean isMajorNext = ((lr + 1) % 2 == 0); // next round is Major (even)
+
+                if (isMajorNext) {
+                    for (int i = 0; i < cur.size(); i++) {
+                        if (i < nxt.size()) {
+                            cur.get(i).nextMatchId = nxt.get(i).id;
+                            cur.get(i).nextSlot = "SLOT_1";
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < cur.size(); i++) {
+                        int nextIdx = i / 2;
+                        if (nextIdx < nxt.size()) {
+                            cur.get(i).nextMatchId = nxt.get(nextIdx).id;
+                            cur.get(i).nextSlot = (i % 2 == 0) ? "SLOT_1" : "SLOT_2";
+                        }
+                    }
+                }
+            }
+
+            // 3. Link Drops from Upper to Lower
+            // UB R1 losers drop into LB R1
+            List<GslMatchNode> ubR1 = upperRoundNodes.get(1);
+            List<GslMatchNode> lbR1 = lowerRoundNodes.get(1);
+            if (ubR1 != null && lbR1 != null) {
+                int totalUb = ubR1.size();
+                for (int k = 0; k < lbR1.size(); k++) {
+                    GslMatchNode ubM1 = ubR1.get(k);
+                    GslMatchNode ubM2 = ubR1.get(totalUb - 1 - k);
+                    ubM1.loserNextMatchId = lbR1.get(k).id;
+                    ubM1.loserNextSlot = "SLOT_1";
+                    ubM2.loserNextMatchId = lbR1.get(k).id;
+                    ubM2.loserNextSlot = "SLOT_2";
+                }
+            }
+
+            // UB Round 2+ losers drop into Major LB rounds
+            for (int ur = 2; ur <= cutUbRounds; ur++) {
+                int targetLbR = (ur - 1) * 2;
+                List<GslMatchNode> ubMatches = upperRoundNodes.get(ur);
+                List<GslMatchNode> lbMatches = lowerRoundNodes.get(targetLbR);
+
+                if (ubMatches != null && lbMatches != null) {
+                    int mCount = ubMatches.size();
+                    for (int u = 0; u < mCount; u++) {
+                        int targetIdx = u;
+                        if (mCount >= 4) {
+                            int halfM = mCount / 2;
+                            targetIdx = (u < halfM) ? (halfM - 1 - u) : u;
+                        } else if (mCount == 2) {
+                            targetIdx = (u == 0) ? 1 : 0; // Cross-over
+                        } else {
+                            targetIdx = 0;
+                        }
+
+                        if (targetIdx < lbMatches.size()) {
+                            ubMatches.get(u).loserNextMatchId = lbMatches.get(targetIdx).id;
+                            ubMatches.get(u).loserNextSlot = "SLOT_2";
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Grand Final for isSingleWinner
+        if (isSingleWinner) {
+            String gfId = tournamentId + "_" + gPrefix + "_GF_R1_M1";
+            GslMatchNode gfNode = new GslMatchNode();
+            gfNode.id = gfId;
+            gfNode.tournamentId = tournamentId;
+            gfNode.stageId = stageId;
+            gfNode.groupId = groupId;
+            gfNode.roundNumber = cutUbRounds + 1;
+            gfNode.bracketType = "GRAND_FINAL";
+            gfNode.matchOrder = startSeq++;
+            gfNode.status = "PENDING";
+            gfNode.isBye = false;
+            allGroupNodes.add(gfNode);
+
+            List<GslMatchNode> lastUbRound = upperRoundNodes.get(cutUbRounds);
+            if (lastUbRound != null && !lastUbRound.isEmpty()) {
+                lastUbRound.get(0).nextMatchId = gfId;
+                lastUbRound.get(0).nextSlot = "SLOT_1";
+            }
+
+            if (totalLbRounds > 0) {
+                List<GslMatchNode> lastLbRound = lowerRoundNodes.get(totalLbRounds);
+                if (lastLbRound != null && !lastLbRound.isEmpty()) {
+                    lastLbRound.get(0).nextMatchId = gfId;
+                    lastLbRound.get(0).nextSlot = "SLOT_2";
+                }
             }
         }
 
         // Pass 1: Insert all match records with next/loser IDs as NULL to prevent foreign key conflicts
         String insertSql = "INSERT INTO matches (id, tournament_id, stage_id, group_id, round_number, bracket_type, match_order, "
-                + "team1_id, team2_id, is_bye, status) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "team1_id, team2_id, is_bye, status, winner_id) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
-            for (GslMatchNode node : groupNodes) {
+            for (GslMatchNode node : allGroupNodes) {
                 ps.setString(1, node.id);
                 ps.setString(2, node.tournamentId);
                 ps.setString(3, node.stageId);
@@ -671,16 +757,20 @@ public class GSLStageDAO extends DBContext {
                     ps.setNull(9, Types.VARCHAR);
                 ps.setBoolean(10, node.isBye);
                 ps.setString(11, node.status);
+                if (node.winnerId != null)
+                    ps.setString(12, node.winnerId);
+                else
+                    ps.setNull(12, Types.VARCHAR);
                 ps.addBatch();
             }
             ps.executeBatch();
         }
 
         // Pass 2: Update next_match_id & loser_next_match_id links now that all match IDs exist in DB
-        String updateLinksSql = "UPDATE matches SET next_match_id = ?, next_slot = ?, loser_next_match_id = ?, loser_next_slot = ? WHERE id = ?";
+        String updateLinksSql = "UPDATE matches SET next_match_id = ?, next_slot = ?, loser_next_match_id = ?, loser_next_slot = ?, winner_id = ? WHERE id = ?";
         try (PreparedStatement psUp = conn.prepareStatement(updateLinksSql)) {
-            for (GslMatchNode node : groupNodes) {
-                if (node.nextMatchId != null || node.loserNextMatchId != null) {
+            for (GslMatchNode node : allGroupNodes) {
+                if (node.nextMatchId != null || node.loserNextMatchId != null || node.winnerId != null) {
                     if (node.nextMatchId != null)
                         psUp.setString(1, node.nextMatchId);
                     else
@@ -697,7 +787,11 @@ public class GSLStageDAO extends DBContext {
                         psUp.setString(4, node.loserNextSlot);
                     else
                         psUp.setNull(4, Types.VARCHAR);
-                    psUp.setString(5, node.id);
+                    if (node.winnerId != null)
+                        psUp.setString(5, node.winnerId);
+                    else
+                        psUp.setNull(5, Types.VARCHAR);
+                    psUp.setString(6, node.id);
                     psUp.addBatch();
                 }
             }
@@ -713,16 +807,22 @@ public class GSLStageDAO extends DBContext {
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // Delete all matches for this GSL tournament and re-initialize
+                String stageId = getOrCreateStageId(conn, tournamentId, stageOrder);
                 try (PreparedStatement psUnlink = conn.prepareStatement(
-                        "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ?")) {
+                        "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ? AND (stage_id = ? OR stage_id IS NULL OR stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR))")) {
                     psUnlink.setString(1, tournamentId);
+                    psUnlink.setString(2, stageId);
+                    psUnlink.setInt(3, stageOrder);
+                    psUnlink.setInt(4, stageOrder);
                     psUnlink.executeUpdate();
                 }
 
                 try (PreparedStatement psDel = conn.prepareStatement(
-                        "DELETE FROM matches WHERE tournament_id = ?")) {
+                        "DELETE FROM matches WHERE tournament_id = ? AND (stage_id = ? OR stage_id IS NULL OR stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR))")) {
                     psDel.setString(1, tournamentId);
+                    psDel.setString(2, stageId);
+                    psDel.setInt(3, stageOrder);
+                    psDel.setInt(4, stageOrder);
                     psDel.executeUpdate();
                 }
 
@@ -752,11 +852,12 @@ public class GSLStageDAO extends DBContext {
         } catch (Exception ignore) {
         }
 
-        String insertSql = "INSERT INTO tournament_stages (id, tournament_id, stage_order, format, status) VALUES (?, ?, ?, 'GSL', 'ACTIVE')";
+        String insertSql = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format, status) VALUES (?, ?, ?, ?, 'GSL', 'PENDING')";
         try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
             ps.setString(1, stageId);
             ps.setString(2, tournamentId);
             ps.setInt(3, stageOrder);
+            ps.setString(4, "Giai đoạn " + stageOrder);
             ps.executeUpdate();
         } catch (Exception ignore) {
         }
@@ -770,16 +871,37 @@ public class GSLStageDAO extends DBContext {
         return count;
     }
 
-    private int getSeedingIndex(int matchSlot, int totalSlots) {
-        if (matchSlot == 1)
-            return 1;
-        if (matchSlot == 2)
-            return totalSlots;
-        if (matchSlot == 3)
-            return totalSlots / 2;
-        if (matchSlot == 4)
-            return totalSlots / 2 + 1;
-        return matchSlot;
+    private int[] generateSeedingArray(int bracketSize) {
+        boolean isPow2 = (bracketSize > 0 && (bracketSize & (bracketSize - 1)) == 0);
+        if (!isPow2 && bracketSize % 2 == 0) {
+            int[] result = new int[bracketSize];
+            for (int i = 0; i < bracketSize / 2; i++) {
+                result[i * 2] = i + 1;
+                result[i * 2 + 1] = bracketSize - i;
+            }
+            return result;
+        }
+
+        int rounds = (int) (Math.log(bracketSize) / Math.log(2)) - 1;
+        List<Integer> pls = new ArrayList<>();
+        pls.add(1);
+        pls.add(2);
+
+        for (int i = 0; i < rounds; i++) {
+            List<Integer> nextPls = new ArrayList<>();
+            int sum = (int) Math.pow(2, i + 2) + 1;
+            for (int val : pls) {
+                nextPls.add(val);
+                nextPls.add(sum - val);
+            }
+            pls = nextPls;
+        }
+
+        int[] result = new int[pls.size()];
+        for (int i = 0; i < pls.size(); i++) {
+            result[i] = pls.get(i);
+        }
+        return result;
     }
 
     public void healMissingLinks(String tournamentId) {

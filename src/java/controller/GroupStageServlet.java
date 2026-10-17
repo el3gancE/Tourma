@@ -87,11 +87,28 @@ public class GroupStageServlet extends HttpServlet {
                 String groupAssignmentsJson = request.getParameter("groupAssignments");
                 if (tournamentId != null && !tournamentId.trim().isEmpty()) {
                     tournamentId = tournamentId.trim();
+                    Tournament tourneyObj = tournamentDAO.getTournamentById(tournamentId);
+                    String fmt = tourneyObj != null ? tourneyObj.getTournamentType() : "";
+                    if (fmt == null) fmt = "";
+                    String s1Format = tournamentDAO.getStage1Format(tournamentId);
+                    if (s1Format != null && !s1Format.isEmpty()) {
+                        fmt = s1Format;
+                    }
+                    boolean isGsl = fmt.toUpperCase().contains("GSL");
+
                     boolean ok = tournamentDAO.saveGroupAssignments(tournamentId, groupAssignmentsJson);
                     if (ok && groupAssignmentsJson != null && !groupAssignmentsJson.trim().isEmpty() && !groupAssignmentsJson.trim().equals("{}")) {
-                        groupStageDAO.syncGroupsAndGroupTeams(tournamentId, stage, groupAssignmentsJson);
+                        if (isGsl) {
+                            new dao.GSLStageDAO().ensureGSLInitialized(tournamentId, stage);
+                        } else {
+                            groupStageDAO.syncGroupsAndGroupTeams(tournamentId, stage, groupAssignmentsJson);
+                        }
                     } else {
-                        groupStageDAO.resetBracketMatches(tournamentId, stage);
+                        if (isGsl) {
+                            new dao.GSLStageDAO().resetBracketMatches(tournamentId, stage);
+                        } else {
+                            groupStageDAO.resetBracketMatches(tournamentId, stage);
+                        }
                     }
                     out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\""
                             + (ok ? "Đã lưu chia bảng thành công!" : "Lỗi lưu chia bảng!") + "\"}");

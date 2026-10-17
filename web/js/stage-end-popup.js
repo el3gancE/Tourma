@@ -308,32 +308,68 @@
                 if (!gslData) return false;
                 var gKeys = Object.keys(gslData);
                 if (gKeys.length === 0) return false;
+
+                var engine = window.TourmaGSL || window.GSLEngine;
+                var cutTarget = (config && config.cutTarget) ? config.cutTarget : (engine ? engine.cutTarget : 0);
+                var advancePerGroup = cutTarget > 0 ? Math.max(1, Math.round(cutTarget / gKeys.length)) : 2;
+
                 var allGroupsDone = true;
-                var totalGslMatches = 0;
+                var totalQualifiers = 0;
+
                 for (var gIdx = 0; gIdx < gKeys.length; gIdx++) {
                     var grp = gslData[gKeys[gIdx]];
                     if (!grp || !grp.matchesMap) { allGroupsDone = false; break; }
+
+                    // 1. Verify group has required qualifiers determined
+                    if (engine && typeof engine.getGroupQualifiers === 'function') {
+                        var qList = engine.getGroupQualifiers(grp, advancePerGroup);
+                        if (!qList || qList.length < advancePerGroup) {
+                            allGroupsDone = false;
+                            break;
+                        }
+                        totalQualifiers += qList.length;
+                    }
+
+                    // 2. Verify all active matches in this group are actually completed
                     var mMap = grp.matchesMap;
                     var mKeys = Object.keys(mMap);
+                    var checkedMatches = {};
+
                     for (var mk = 0; mk < mKeys.length; mk++) {
                         var gm = mMap[mKeys[mk]];
                         if (!gm) continue;
+                        var rawId = gm.rawId || gm.matchId || gm.id;
+                        if (checkedMatches[rawId]) continue;
+                        checkedMatches[rawId] = true;
+
+                        if (gm.isBye || gm.status === 'BYE') continue;
+
                         var t1 = gm.team1 ? (gm.team1.name || gm.team1) : '';
                         var t2 = gm.team2 ? (gm.team2.name || gm.team2) : '';
-                        if (!t1 || !t2 || t1 === 'BYE' || t2 === 'BYE' || t1 === 'TBD' || t2 === 'TBD') continue;
-                        if (typeof t1 === 'string' && (t1.indexOf('#') !== -1 || t1.indexOf('Winner') !== -1 || t1.indexOf('Loser') !== -1)) continue;
-                        if (typeof t2 === 'string' && (t2.indexOf('#') !== -1 || t2.indexOf('Winner') !== -1 || t2.indexOf('Loser') !== -1)) continue;
-                        totalGslMatches++;
+
+                        // If any match still has placeholder or unresolved teams, group is definitely NOT done
+                        if (!t1 || !t2 || t1 === 'TBD' || t2 === 'TBD' ||
+                            (typeof t1 === 'string' && (t1.indexOf('#') !== -1 || t1.indexOf('Winner') !== -1 || t1.indexOf('Loser') !== -1)) ||
+                            (typeof t2 === 'string' && (t2.indexOf('#') !== -1 || t2.indexOf('Winner') !== -1 || t2.indexOf('Loser') !== -1))) {
+                            allGroupsDone = false;
+                            break;
+                        }
+
                         var s1 = (gm.team1 && gm.team1.score !== '' && gm.team1.score !== null && !isNaN(Number(gm.team1.score))) ? Number(gm.team1.score) : null;
                         var s2 = (gm.team2 && gm.team2.score !== '' && gm.team2.score !== null && !isNaN(Number(gm.team2.score))) ? Number(gm.team2.score) : null;
-                        if (s1 === null || s2 === null || s1 === s2) {
+                        var hasWinner = (gm.winnerId === 'team1' || gm.winnerId === 'team2' || (gm.winnerId && (String(gm.winnerId) === String(gm.team1.id) || String(gm.winnerId) === String(gm.team2.id))));
+                        var hasFinishedScore = (s1 !== null && s2 !== null && s1 !== s2);
+
+                        if (!hasWinner && !hasFinishedScore) {
                             allGroupsDone = false;
                             break;
                         }
                     }
                     if (!allGroupsDone) break;
                 }
-                return (totalGslMatches > 0 && allGroupsDone);
+
+                var requiredTotal = cutTarget > 0 ? cutTarget : (gKeys.length * advancePerGroup);
+                return (allGroupsDone && totalQualifiers >= requiredTotal);
             }
 
             return false;
