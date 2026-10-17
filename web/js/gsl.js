@@ -290,6 +290,7 @@
                         matchId: mId,
                         id: mId,
                         rawId: m.rawId || mId,
+                        tournamentId: this.tournamentId,
                         groupId: gId,
                         roundNumber: rNum,
                         matchNumber: m.matchNumber || (i + 1),
@@ -975,7 +976,16 @@
 
             var groupKeys = Object.keys(this.groupsMap).sort(self.compareGroupKeys);
             if (groupKeys.length === 0) {
-                workspace.innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8;">Chưa có dữ liệu bảng đấu GSL.</div>';
+                var cPath = this.getContextPath();
+                var manageUrl = (cPath ? cPath : '') + '/common/manage-group.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GSL';
+                workspace.innerHTML = '<div style="text-align: center; padding: 3rem 1.5rem; background: #121620; border: 1px dashed rgba(45,212,191,0.3); border-radius: 12px; margin: 2rem auto; max-width: 560px;">' +
+                    '<i class="fa-solid fa-layer-group" style="font-size: 2.8rem; color: #2dd4bf; margin-bottom: 1rem;"></i>' +
+                    '<h3 style="font-size: 1.15rem; font-weight: 800; color: #f8fafc; margin: 0 0 0.5rem 0;">Chưa thiết lập chia bảng GSL</h3>' +
+                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.5rem 0;">Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
+                    '<a href="' + manageUrl + '" class="btn btn-mint" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; padding: 0.55rem 1.35rem; text-decoration: none; border-radius: 8px;">' +
+                    '<i class="fa-solid fa-pen-to-square"></i> Quản Lý & Chia Bảng Đấu' +
+                    '</a>' +
+                    '</div>';
                 return;
             }
 
@@ -1169,6 +1179,10 @@
                     if (roundObj.matches) {
                         roundObj.matches.forEach(function (m) {
                             var liveM = grp.matchesMap[m.matchId] || m;
+                            liveM.tournamentId = self.tournamentId;
+                            liveM.onClick = function (e) {
+                                self.openMatchScoreModal(liveM);
+                            };
                             var card = window.TourmaBracketCard ? window.TourmaBracketCard.createNodeElement(liveM) : self.createFallbackCard(liveM);
                             if (card) {
                                 self.attachCardClickListener(card, liveM);
@@ -1218,6 +1232,10 @@
                     if (roundObj.matches) {
                         roundObj.matches.forEach(function (m) {
                             var liveM = grp.matchesMap[m.matchId] || m;
+                            liveM.tournamentId = self.tournamentId;
+                            liveM.onClick = function (e) {
+                                self.openMatchScoreModal(liveM);
+                            };
                             var card = window.TourmaBracketCard ? window.TourmaBracketCard.createNodeElement(liveM) : self.createFallbackCard(liveM);
                             if (card) {
                                 self.attachCardClickListener(card, liveM);
@@ -1282,7 +1300,16 @@
 
             var groupKeys = Object.keys(this.groupsMap).sort(self.compareGroupKeys);
             if (groupKeys.length === 0) {
-                container.innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8;">Chưa có trận đấu nào.</div>';
+                var cPath = this.getContextPath();
+                var manageUrl = (cPath ? cPath : '') + '/common/manage-group.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GSL';
+                container.innerHTML = '<div style="text-align: center; padding: 3rem 1.5rem; background: #121620; border: 1px dashed rgba(45,212,191,0.3); border-radius: 12px; margin: 2rem auto; max-width: 560px;">' +
+                    '<i class="fa-solid fa-layer-group" style="font-size: 2.8rem; color: #2dd4bf; margin-bottom: 1rem;"></i>' +
+                    '<h3 style="font-size: 1.15rem; font-weight: 800; color: #f8fafc; margin: 0 0 0.5rem 0;">Chưa thiết lập chia bảng GSL</h3>' +
+                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.5rem 0;">Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
+                    '<a href="' + manageUrl + '" class="btn btn-mint" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; padding: 0.55rem 1.35rem; text-decoration: none; border-radius: 8px;">' +
+                    '<i class="fa-solid fa-pen-to-square"></i> Quản Lý & Chia Bảng Đấu' +
+                    '</a>' +
+                    '</div>';
                 return;
             }
 
@@ -1406,6 +1433,10 @@
                         if (roundObj.matches) {
                             roundObj.matches.forEach(function (m) {
                                 var liveMatch = grp.matchesMap[m.matchId] || m;
+                                liveMatch.tournamentId = self.tournamentId;
+                                liveMatch.onClick = function (e) {
+                                    self.openMatchScoreModal(liveMatch);
+                                };
                                 var listCard = window.TourmaMatchCard ? window.TourmaMatchCard.createCardElement(liveMatch) : self.createFallbackCard(liveMatch);
                                 if (listCard) {
                                     self.attachCardClickListener(listCard, liveMatch);
@@ -1446,6 +1477,10 @@
                         if (roundObj.matches) {
                             roundObj.matches.forEach(function (m) {
                                 var liveMatch = grp.matchesMap[m.matchId] || m;
+                                liveMatch.tournamentId = self.tournamentId;
+                                liveMatch.onClick = function (e) {
+                                    self.openMatchScoreModal(liveMatch);
+                                };
                                 var listCard = window.TourmaMatchCard ? window.TourmaMatchCard.createCardElement(liveMatch) : self.createFallbackCard(liveMatch);
                                 if (listCard) {
                                     self.attachCardClickListener(listCard, liveMatch);
@@ -1467,6 +1502,51 @@
         },
 
         /**
+         * Open Score Editing Modal for a match
+         */
+        openMatchScoreModal: function (matchData) {
+            var self = this;
+            if (!matchData) return;
+
+            // If Quick Mode is active, NEVER open modal on card click!
+            if (window.TourmaQuickMode || self.isQuickMode) return;
+            if (matchData.isBye || matchData.status === 'BYE') return;
+
+            var isPlayable = (matchData.team1 && matchData.team1.name && !self.isPlaceholder(matchData.team1.name) &&
+                matchData.team2 && matchData.team2.name && !self.isPlaceholder(matchData.team2.name));
+            if (!isPlayable) return;
+
+            var modal = window.TourmaScoreModal || window.TourmaPopup;
+            if (modal && typeof modal.open === 'function') {
+                modal.open({
+                    matchId: matchData.matchId || matchData.id,
+                    tournamentId: self.tournamentId,
+                    roundName: matchData.roundName || matchData.title || (matchData.groupId ? (matchData.groupId + ' - Trận #' + (matchData.matchNumber || matchData.matchId)) : ('Trận #' + (matchData.matchNumber || matchData.matchId))),
+                    team1Name: matchData.team1 ? matchData.team1.name : '',
+                    team1Seed: matchData.team1 ? matchData.team1.seed : '',
+                    team1Score: (matchData.team1 && matchData.team1.score !== undefined && matchData.team1.score !== null) ? matchData.team1.score : '',
+                    team2Name: matchData.team2 ? matchData.team2.name : '',
+                    team2Seed: matchData.team2 ? matchData.team2.seed : '',
+                    team2Score: (matchData.team2 && matchData.team2.score !== undefined && matchData.team2.score !== null) ? matchData.team2.score : '',
+                    winnerId: matchData.winnerId,
+                    status: matchData.status,
+                    allowDraw: false
+                }, function (resultData) {
+                    var s1 = (resultData.team1Score !== undefined) ? resultData.team1Score : resultData.score1;
+                    var s2 = (resultData.team2Score !== undefined) ? resultData.team2Score : resultData.score2;
+                    self.saveMatchScore(
+                        matchData.matchId,
+                        s1,
+                        s2,
+                        resultData.penalty1,
+                        resultData.penalty2,
+                        resultData.winner
+                    );
+                });
+            }
+        },
+
+        /**
          * Attach Click Event on Node/List Cards to open Score Entry Modal
          */
         attachCardClickListener: function (cardElement, matchData) {
@@ -1477,44 +1557,11 @@
                 // If Quick Mode is active, NEVER open modal on card click!
                 if (window.TourmaQuickMode || self.isQuickMode) return;
 
-                if (e.target.closest('.bracket-team-row, .match-team-side, .btn-round-random, .btn-round-reset, input, button')) {
-                    if (window.TourmaQuickMode || self.isQuickMode) return;
+                if (e.target.closest('.btn-round-random, .btn-round-reset, input, button')) {
+                    return;
                 }
 
-                if (matchData.isBye || matchData.status === 'BYE') return;
-
-                var isPlayable = (matchData.team1 && matchData.team1.name && !self.isPlaceholder(matchData.team1.name) &&
-                    matchData.team2 && matchData.team2.name && !self.isPlaceholder(matchData.team2.name));
-                if (!isPlayable) return;
-
-                var modal = window.TourmaScoreModal || window.TourmaPopup;
-                if (modal && typeof modal.open === 'function') {
-                    modal.open({
-                        matchId: matchData.matchId || matchData.id,
-                        tournamentId: self.tournamentId,
-                        roundName: matchData.roundName || matchData.title || (matchData.groupId ? (matchData.groupId + ' - Trận #' + (matchData.matchNumber || matchData.matchId)) : ('Trận #' + (matchData.matchNumber || matchData.matchId))),
-                        team1Name: matchData.team1 ? matchData.team1.name : '',
-                        team1Seed: matchData.team1 ? matchData.team1.seed : '',
-                        team1Score: (matchData.team1 && matchData.team1.score !== undefined && matchData.team1.score !== null) ? matchData.team1.score : '',
-                        team2Name: matchData.team2 ? matchData.team2.name : '',
-                        team2Seed: matchData.team2 ? matchData.team2.seed : '',
-                        team2Score: (matchData.team2 && matchData.team2.score !== undefined && matchData.team2.score !== null) ? matchData.team2.score : '',
-                        winnerId: matchData.winnerId,
-                        status: matchData.status,
-                        allowDraw: false
-                    }, function (resultData) {
-                        var s1 = (resultData.team1Score !== undefined) ? resultData.team1Score : resultData.score1;
-                        var s2 = (resultData.team2Score !== undefined) ? resultData.team2Score : resultData.score2;
-                        self.saveMatchScore(
-                            matchData.matchId,
-                            s1,
-                            s2,
-                            resultData.penalty1,
-                            resultData.penalty2,
-                            resultData.winner
-                        );
-                    });
-                }
+                self.openMatchScoreModal(matchData);
             });
         },
 

@@ -72,7 +72,43 @@ public class SaveTeamsServlet extends HttpServlet {
             }
         }
 
+        // Determine effective format and seriesId
+        String effectiveFormat = format;
+        String seriesId = request.getParameter("seriesId");
+        if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+            try {
+                dao.TournamentDAO tDao = new dao.TournamentDAO();
+                model.Tournament t = tDao.getTournamentById(tournamentId);
+                if (t != null) {
+                    if (seriesId == null || seriesId.trim().isEmpty()) {
+                        seriesId = t.getSeriesId();
+                    }
+                    if (effectiveFormat == null || effectiveFormat.trim().isEmpty()) {
+                        if ("MULTI_STAGE".equalsIgnoreCase(t.getTournamentType())) {
+                            List<String> sFmts = tDao.getStageFormats(tournamentId);
+                            if (sFmts != null && !sFmts.isEmpty()) {
+                                effectiveFormat = sFmts.get(0);
+                            }
+                        }
+                        if (effectiveFormat == null || effectiveFormat.trim().isEmpty()) {
+                            effectiveFormat = t.getFormat();
+                        }
+                    }
+                }
+            } catch (Exception ignore) {}
+        }
+
+        // For formats that require group division (GROUP_STAGE and GSL), proceed to manage-group.jsp
+        if (effectiveFormat != null && ("GROUP_STAGE".equalsIgnoreCase(effectiveFormat) || "GSL".equalsIgnoreCase(effectiveFormat))) {
+            String redirectUrl = request.getContextPath() + "/common/manage-group.jsp?id=" + tournamentId + "&format=" + effectiveFormat.trim().toUpperCase();
+            if (seriesId != null && !seriesId.trim().isEmpty()) {
+                redirectUrl += "&seriesId=" + seriesId.trim();
+            }
+            response.sendRedirect(redirectUrl);
+            return;
+        }
+
         // Forward or redirect to tournament bracket view
-        response.sendRedirect(request.getContextPath() + "/tournament-bracket.jsp?id=" + tournamentId + "&format=" + format);
+        response.sendRedirect(request.getContextPath() + "/tournament-bracket.jsp?id=" + tournamentId + "&format=" + (effectiveFormat != null ? effectiveFormat : format));
     }
 }

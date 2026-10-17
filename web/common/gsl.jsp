@@ -94,6 +94,13 @@
                 gslTeamsJson = tb.toString();
             }
 
+            String dbGroupAssignments = (t != null) ? t.getGroupAssignments() : null;
+            if (currentStage == 1 && (dbGroupAssignments == null || dbGroupAssignments.trim().isEmpty() || dbGroupAssignments.trim().equals("{}")) && plist != null && plist.size() >= 2) {
+                String sParam = (seriesIdVal != null && !seriesIdVal.trim().isEmpty()) ? ("&seriesId=" + seriesIdVal.trim()) : "";
+                response.sendRedirect(request.getContextPath() + "/common/manage-group.jsp?id=" + tourneyId + "&format=GSL" + sParam);
+                return;
+            }
+
             GSLStageDAO gslDao = new GSLStageDAO();
             gslDao.ensureGSLInitialized(tourneyId, currentStage);
             dbMatchesJson = gslDao.getMatchesJsonForFrontend(tourneyId, currentStage);

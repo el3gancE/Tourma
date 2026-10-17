@@ -8,10 +8,11 @@
     String seriesId = request.getParameter("seriesId");
     String stageParam = request.getParameter("stage");
 
+    Tournament t = null;
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
-            Tournament t = tDao.getTournamentById(tournamentId);
+            t = tDao.getTournamentById(tournamentId);
             if (t != null) {
                 if (seriesId == null || seriesId.trim().isEmpty()) {
                     seriesId = t.getSeriesId();
@@ -33,15 +34,20 @@
 
     if (format != null && !format.trim().isEmpty()) {
         String cleanFmt = format.trim().toUpperCase();
+        boolean hasGroupAssignments = false;
+        if (t != null && t.getGroupAssignments() != null && !t.getGroupAssignments().trim().isEmpty() && !t.getGroupAssignments().trim().equals("{}")) {
+            hasGroupAssignments = true;
+        }
+
         String targetPage = "single-elimination.jsp";
         if ("DOUBLE_ELIMINATION".equals(cleanFmt)) {
             targetPage = "double-elimination.jsp";
         } else if ("ROUND_ROBIN".equals(cleanFmt)) {
             targetPage = "round-robin.jsp";
         } else if ("GROUP_STAGE".equals(cleanFmt)) {
-            targetPage = "group-stage.jsp";
+            targetPage = hasGroupAssignments ? "group-stage.jsp" : "manage-group.jsp";
         } else if ("GSL".equals(cleanFmt)) {
-            targetPage = "gsl.jsp";
+            targetPage = hasGroupAssignments ? "gsl.jsp" : "manage-group.jsp";
         } else if ("SWISS_LITE".equals(cleanFmt) || "SWISS".equals(cleanFmt)) {
             targetPage = "swiss-stage.jsp";
         }
@@ -94,11 +100,17 @@
             }
 
             targetFormat = targetFormat.toUpperCase();
+            var hasGroupAssignments = false;
+            try {
+                var localGroups = localStorage.getItem('tourma_group_assignments_' + tid);
+                if (localGroups && localGroups !== '{}' && localGroups !== 'null') hasGroupAssignments = true;
+            } catch(e) {}
+
             var targetPage = 'single-elimination.jsp';
             if (targetFormat === 'DOUBLE_ELIMINATION') targetPage = 'double-elimination.jsp';
             else if (targetFormat === 'ROUND_ROBIN') targetPage = 'round-robin.jsp';
-            else if (targetFormat === 'GROUP_STAGE') targetPage = 'group-stage.jsp';
-            else if (targetFormat === 'GSL') targetPage = 'gsl.jsp';
+            else if (targetFormat === 'GROUP_STAGE') targetPage = hasGroupAssignments ? 'group-stage.jsp' : 'manage-group.jsp';
+            else if (targetFormat === 'GSL') targetPage = hasGroupAssignments ? 'gsl.jsp' : 'manage-group.jsp';
             else if (targetFormat === 'SWISS_LITE' || targetFormat === 'SWISS') targetPage = 'swiss-stage.jsp';
 
             window.location.replace(ctx + '/common/' + targetPage + '?id=' + encodeURIComponent(tid) + '&format=' + targetFormat + sParam);

@@ -509,8 +509,9 @@
                     e.stopPropagation();
                     var rNum = parseInt(this.getAttribute('data-round'), 10);
                     var bType = this.getAttribute('data-bracket-type') || (this.closest('[data-bracket-type]') ? this.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
+                    var gId = this.getAttribute('data-group-id') || (this.closest('[data-group-id]') ? this.closest('[data-group-id]').getAttribute('data-group-id') : null);
                     if (!isNaN(rNum)) {
-                        self.executeRandomRound(activeEngine, rNum, bType);
+                        self.executeRandomRound(activeEngine, rNum, bType, gId);
                     }
                 };
             });
@@ -523,8 +524,9 @@
                     e.stopPropagation();
                     var rNum = parseInt(this.getAttribute('data-round'), 10);
                     var bType = this.getAttribute('data-bracket-type') || (this.closest('[data-bracket-type]') ? this.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
+                    var gId = this.getAttribute('data-group-id') || (this.closest('[data-group-id]') ? this.closest('[data-group-id]').getAttribute('data-group-id') : null);
                     if (!isNaN(rNum)) {
-                        self.executeResetRound(activeEngine, rNum, bType);
+                        self.executeResetRound(activeEngine, rNum, bType, gId);
                     }
                 };
             });
@@ -535,12 +537,13 @@
                 inp.oninput = function () {
                     var rNum = this.getAttribute('data-round');
                     var bType = this.getAttribute('data-bracket-type') || (this.closest('[data-bracket-type]') ? this.closest('[data-bracket-type]').getAttribute('data-bracket-type') : null);
+                    var gId = this.getAttribute('data-group-id') || (this.closest('[data-group-id]') ? this.closest('[data-group-id]').getAttribute('data-group-id') : null);
                     var val = this.value;
                     if (rNum) {
                         self.saveCustomScoreForRound(rNum, val, null, bType);
                         var sel = bType 
-                            ? ('.round-random-input[data-round="' + rNum + '"][data-bracket-type="' + bType + '"]')
-                            : ('.round-random-input[data-round="' + rNum + '"]');
+                            ? ('.round-random-input[data-round="' + rNum + '"][data-bracket-type="' + bType + '"]' + (gId ? '[data-group-id="' + gId + '"]' : ''))
+                            : ('.round-random-input[data-round="' + rNum + '"]' + (gId ? '[data-group-id="' + gId + '"]' : ''));
                         var siblings = document.querySelectorAll(sel);
                         siblings.forEach(function (other) {
                             if (other !== inp) {

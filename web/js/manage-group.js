@@ -142,6 +142,57 @@
             this.renderWorkspace();
         },
 
+        toggleQuickDropdown: function (e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            var menu = document.getElementById('quickGroupDropdownMenu');
+            var btn = document.getElementById('btnQuickGroupDropdown');
+            if (!menu) return;
+            var isOpen = menu.classList.contains('show');
+            if (isOpen) {
+                menu.classList.remove('show');
+                if (btn) btn.classList.remove('active');
+            } else {
+                menu.classList.add('show');
+                if (btn) btn.classList.add('active');
+            }
+        },
+
+        closeQuickDropdown: function () {
+            var menu = document.getElementById('quickGroupDropdownMenu');
+            var btn = document.getElementById('btnQuickGroupDropdown');
+            if (menu) menu.classList.remove('show');
+            if (btn) btn.classList.remove('active');
+        },
+
+        getGroupNameByIndex: function (i) {
+            var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            if (i < 26) {
+                return letters.charAt(i);
+            }
+            var first = letters.charAt(Math.floor((i - 26) / 26));
+            var second = letters.charAt((i - 26) % 26);
+            return first + second;
+        },
+
+        quickCreateGroups: function (targetCount) {
+            targetCount = parseInt(targetCount, 10);
+            if (isNaN(targetCount) || targetCount < 1) return;
+
+            // Close dropdown immediately
+            this.closeQuickDropdown();
+
+            // Tạo ngay lập tức số bảng trống (chỉ tạo bảng chứ KHÔNG chia đội)
+            // Toàn bộ đội bóng đều nằm ở danh sách chưa xếp để người dùng tự phân bổ
+            this.groups = {};
+            for (var i = 0; i < targetCount; i++) {
+                var gName = this.getGroupNameByIndex(i);
+                this.groups[gName] = [];
+            }
+
+            this.saveGroupsState();
+            this.renderWorkspace();
+        },
+
         deleteGroup: function (gKey) {
             if (!this.groups[gKey]) return;
 
@@ -465,9 +516,19 @@
 
                 emptyNotice.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size: 2.8rem; color: #2dd4bf; margin-bottom: 1rem;"></i>' +
                     '<h3 style="font-size: 1.15rem; font-weight: 800; color: #f8fafc; margin: 0 0 0.5rem 0;">Chưa có bảng đấu nào</h3>' +
-                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.5rem 0; max-width: 460px;">Vui lòng bấm <strong>"+ Thêm Bảng Mới"</strong> để tạo các bảng đấu (Bảng A, Bảng B...), sau đó chọn đội vào từng bảng.</p>' +
-                    '<div style="display:flex; gap: 0.75rem;">' +
-                    '<button type="button" class="btn-mg-add" onclick="TourmaManageGroup.addNewGroup()" style="padding: 0.55rem 1.25rem;"><i class="fa-solid fa-plus"></i> Thêm Bảng Mới</button>' +
+                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.25rem 0; max-width: 520px;">Chọn nhanh số lượng bảng rỗng muốn tạo (chỉ tạo bảng, các đội vẫn giữ nguyên ở danh sách chưa xếp):</p>' +
+                    '<div style="display:flex; gap: 0.5rem; justify-content: center; align-items: center; flex-wrap: wrap; max-width: 650px; margin-bottom: 1.25rem;">' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(2)"><i class="fa-solid fa-bolt"></i> 2 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(4)"><i class="fa-solid fa-bolt"></i> 4 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(6)"><i class="fa-solid fa-bolt"></i> 6 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(8)"><i class="fa-solid fa-bolt"></i> 8 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(12)"><i class="fa-solid fa-bolt"></i> 12 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(16)"><i class="fa-solid fa-bolt"></i> 16 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(24)"><i class="fa-solid fa-bolt"></i> 24 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(32)"><i class="fa-solid fa-bolt"></i> 32 Bảng</button>' +
+                    '</div>' +
+                    '<div>' +
+                    '<button type="button" class="btn-mg-add" onclick="TourmaManageGroup.addNewGroup()" style="padding: 0.5rem 1.25rem;"><i class="fa-solid fa-plus"></i> Hoặc Tạo Từng Bảng (+1)</button>' +
                     '</div>';
 
                 container.appendChild(emptyNotice);
@@ -719,5 +780,14 @@
         if (document.getElementById('mgWorkspace')) {
             window.TourmaManageGroup.init();
         }
+
+        document.addEventListener('click', function (e) {
+            var container = document.getElementById('quickGroupDropdownContainer');
+            if (container && !container.contains(e.target)) {
+                if (window.TourmaManageGroup && typeof window.TourmaManageGroup.closeQuickDropdown === 'function') {
+                    window.TourmaManageGroup.closeQuickDropdown();
+                }
+            }
+        });
     });
 })();

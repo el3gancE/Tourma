@@ -45,8 +45,8 @@
     <title>Quản Lý Chia Bảng - <%= tourneyName %></title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manage-group.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manage-group.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body style="background: #0b0d12; color: #f8fafc;">
 
@@ -73,9 +73,51 @@
                 </p>
             </div>
 
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <!-- Custom Quick Create Dropdown Menu -->
+                <div class="mg-dropdown-container" id="quickGroupDropdownContainer">
+                    <button type="button" class="btn-mg-quick-dropdown" id="btnQuickGroupDropdown" onclick="TourmaManageGroup.toggleQuickDropdown(event)" title="Tạo nhanh số lượng bảng đấu">
+                        <i class="fa-solid fa-bolt text-teal"></i>
+                        <span>Tạo nhanh số bảng</span>
+                        <i class="fa-solid fa-chevron-down mg-dd-arrow" id="quickGroupDropdownArrow"></i>
+                    </button>
+                    <div class="mg-dropdown-menu" id="quickGroupDropdownMenu">
+                        <div class="mg-dropdown-item" onclick="TourmaManageGroup.quickCreateGroups(2)">
+                            <span class="mg-dd-count"><i class="fa-solid fa-layer-group text-teal"></i> 2 Bảng</span>
+                            <span class="mg-dd-desc">Bảng A, B</span>
+                        </div>
+                        <div class="mg-dropdown-item" onclick="TourmaManageGroup.quickCreateGroups(4)">
+                            <span class="mg-dd-count"><i class="fa-solid fa-layer-group text-teal"></i> 4 Bảng</span>
+                            <span class="mg-dd-desc">Bảng A - D</span>
+                        </div>
+                        <div class="mg-dropdown-item" onclick="TourmaManageGroup.quickCreateGroups(6)">
+                            <span class="mg-dd-count"><i class="fa-solid fa-layer-group text-teal"></i> 6 Bảng</span>
+                            <span class="mg-dd-desc">Bảng A - F</span>
+                        </div>
+                        <div class="mg-dropdown-item" onclick="TourmaManageGroup.quickCreateGroups(8)">
+                            <span class="mg-dd-count"><i class="fa-solid fa-layer-group text-teal"></i> 8 Bảng</span>
+                            <span class="mg-dd-desc">Bảng A - H</span>
+                        </div>
+                        <div class="mg-dropdown-item" onclick="TourmaManageGroup.quickCreateGroups(12)">
+                            <span class="mg-dd-count"><i class="fa-solid fa-layer-group text-teal"></i> 12 Bảng</span>
+                            <span class="mg-dd-desc">Bảng A - L</span>
+                        </div>
+                        <div class="mg-dropdown-item" onclick="TourmaManageGroup.quickCreateGroups(16)">
+                            <span class="mg-dd-count"><i class="fa-solid fa-layer-group text-teal"></i> 16 Bảng</span>
+                            <span class="mg-dd-desc">Bảng A - P</span>
+                        </div>
+                        <div class="mg-dropdown-item" onclick="TourmaManageGroup.quickCreateGroups(24)">
+                            <span class="mg-dd-count"><i class="fa-solid fa-layer-group text-teal"></i> 24 Bảng</span>
+                            <span class="mg-dd-desc">Bảng A - X</span>
+                        </div>
+                        <div class="mg-dropdown-item" onclick="TourmaManageGroup.quickCreateGroups(32)">
+                            <span class="mg-dd-count"><i class="fa-solid fa-layer-group text-teal"></i> 32 Bảng</span>
+                            <span class="mg-dd-desc">Bảng A - AF</span>
+                        </div>
+                    </div>
+                </div>
                 <button type="button" class="btn-mg-add" onclick="TourmaManageGroup.addNewGroup()">
-                    <i class="fa-solid fa-plus"></i> Thêm Bảng Mới
+                    <i class="fa-solid fa-plus"></i> Thêm Bảng
                 </button>
                 <button type="button" class="btn-mg-distribute" onclick="TourmaManageGroup.handleAutoDistribute()">
                     Ngẫu Nhiên
@@ -138,6 +180,6 @@
         window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
         window.DB_TEAMS = <%= teamsJsonBuilder.toString() %>;
     </script>
-    <script src="${pageContext.request.contextPath}/js/manage-group.js"></script>
+    <script src="${pageContext.request.contextPath}/js/manage-group.js?v=<%= System.currentTimeMillis() %>"></script>
 </body>
 </html>

@@ -179,7 +179,6 @@ public class TournamentRandomServlet extends HttpServlet {
             java.util.regex.Matcher m = java.util.regex.Pattern.compile("([A-Za-z0-9]+)$").matcher(g);
             if (m.find()) {
                 String suf = m.group(1).toUpperCase();
-                if (!patterns.contains(suf)) patterns.add(suf);
                 String bng = "B_NG_" + suf;
                 if (!patterns.contains(bng)) patterns.add(bng);
                 String grpName = "Bảng " + suf;
@@ -193,6 +192,8 @@ public class TournamentRandomServlet extends HttpServlet {
             if (!patterns.contains(r)) patterns.add(r);
             String rDisp = formatDisplayGroupName(r);
             if (!patterns.contains(rDisp)) patterns.add(rDisp);
+            String rPrefix = r.replaceAll("[^a-zA-Z0-9]", "_").toUpperCase();
+            if (!patterns.contains(rPrefix)) patterns.add(rPrefix);
         }
         return patterns;
     }
@@ -275,12 +276,13 @@ public class TournamentRandomServlet extends HttpServlet {
                         + "AND (m.score1 IS NULL OR m.status != 'FINISHED') "
                         + "AND (m.is_bye IS NULL OR m.is_bye = 0) ");
 
-                List<String> groupPatterns = ("randomGroup".equalsIgnoreCase(action)) ? getGroupFilterPatterns(groupId, rawGroupId) : Collections.emptyList();
+                List<String> groupPatterns = (groupId != null && !groupId.trim().isEmpty()) ? getGroupFilterPatterns(groupId, rawGroupId) : Collections.emptyList();
                 boolean isGrandFinal = bracketType != null && bracketType.trim().toUpperCase().contains("GRAND");
 
                 if ("randomRound".equalsIgnoreCase(action) && roundNumber != null && !isGrandFinal) {
                     sql.append("AND m.round_number = ? ");
-                } else if (!groupPatterns.isEmpty()) {
+                }
+                if (!groupPatterns.isEmpty()) {
                     sql.append("AND (");
                     for (int gi = 0; gi < groupPatterns.size(); gi++) {
                         if (gi > 0) sql.append(" OR ");
@@ -292,7 +294,11 @@ public class TournamentRandomServlet extends HttpServlet {
                 if (bracketType != null && !bracketType.trim().isEmpty()) {
                     String bt = bracketType.trim().toUpperCase();
                     if (bt.contains("UPPER") || bt.contains("WINNER")) {
-                        sql.append("AND (m.bracket_type LIKE '%WINNER%' OR m.bracket_type LIKE '%UPPER%' OR m.bracket_type = 'MAIN') ");
+                        if (format.contains("GSL")) {
+                            sql.append("AND (m.bracket_type LIKE '%WINNER%' OR m.bracket_type LIKE '%UPPER%' OR m.bracket_type = 'MAIN' OR m.bracket_type LIKE '%GRAND%') ");
+                        } else {
+                            sql.append("AND (m.bracket_type LIKE '%WINNER%' OR m.bracket_type LIKE '%UPPER%' OR m.bracket_type = 'MAIN') ");
+                        }
                     } else if (bt.contains("LOWER") || bt.contains("LOSER")) {
                         sql.append("AND (m.bracket_type LIKE '%LOSER%' OR m.bracket_type LIKE '%LOWER%') ");
                     } else if (bt.contains("GRAND")) {
@@ -315,13 +321,15 @@ public class TournamentRandomServlet extends HttpServlet {
 
                     if ("randomRound".equalsIgnoreCase(action) && roundNumber != null && !isGrandFinal) {
                         ps.setInt(pIdx++, roundNumber);
-                    } else if (!groupPatterns.isEmpty()) {
+                    }
+                    if (!groupPatterns.isEmpty()) {
                         for (String pat : groupPatterns) {
+                            String safeLikePat = pat.replace("_", "[_]");
                             ps.setString(pIdx++, pat);
                             ps.setString(pIdx++, pat);
                             ps.setString(pIdx++, pat);
-                            ps.setString(pIdx++, "%" + pat + "%");
-                            ps.setString(pIdx++, "%" + pat + "%");
+                            ps.setString(pIdx++, "%[_]" + safeLikePat + "%");
+                            ps.setString(pIdx++, "%[_]" + safeLikePat + "[_]%");
                         }
                     }
 
@@ -690,24 +698,35 @@ public class TournamentRandomServlet extends HttpServlet {
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
 
+            List<String> groupPatterns = (groupId != null && !groupId.trim().isEmpty()) ? getGroupFilterPatterns(groupId, null) : Collections.emptyList();
             boolean isGrandFinal = bracketType != null && bracketType.trim().toUpperCase().contains("GRAND");
 
             // 1. Fetch only playable non-BYE matches of this round to reset
             StringBuilder selSql = new StringBuilder("SELECT m.id, m.is_bye, m.team1_id, m.team2_id, m.next_match_id, m.next_slot, m.loser_next_match_id, m.loser_next_slot, m.group_id "
                     + "FROM matches m "
                     + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
+                    + "LEFT JOIN groups g ON (m.group_id = g.id OR m.group_id = g.group_name) "
                     + "WHERE m.tournament_id = ? "
                     + (isGrandFinal ? "" : "AND m.round_number = ? ")
                     + "AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
                     + "AND (m.is_bye IS NULL OR m.is_bye = 0)");
 
-            if (groupId != null && !groupId.trim().isEmpty()) {
-                selSql.append(" AND m.group_id = ?");
+            if (!groupPatterns.isEmpty()) {
+                selSql.append(" AND (");
+                for (int gi = 0; gi < groupPatterns.size(); gi++) {
+                    if (gi > 0) selSql.append(" OR ");
+                    selSql.append("(m.group_id = ? OR g.group_name = ? OR g.id = ? OR m.group_id LIKE ? OR m.id LIKE ?)");
+                }
+                selSql.append(")");
             }
             if (bracketType != null && !bracketType.trim().isEmpty()) {
                 String bt = bracketType.trim().toUpperCase();
                 if (bt.contains("UPPER") || bt.contains("WINNER")) {
-                    selSql.append(" AND (m.bracket_type LIKE '%WINNER%' OR m.bracket_type LIKE '%UPPER%' OR m.bracket_type = 'MAIN')");
+                    if (format.contains("GSL")) {
+                        selSql.append(" AND (m.bracket_type LIKE '%WINNER%' OR m.bracket_type LIKE '%UPPER%' OR m.bracket_type = 'MAIN' OR m.bracket_type LIKE '%GRAND%')");
+                    } else {
+                        selSql.append(" AND (m.bracket_type LIKE '%WINNER%' OR m.bracket_type LIKE '%UPPER%' OR m.bracket_type = 'MAIN')");
+                    }
                 } else if (bt.contains("LOWER") || bt.contains("LOSER")) {
                     selSql.append(" AND (m.bracket_type LIKE '%LOSER%' OR m.bracket_type LIKE '%LOWER%')");
                 } else if (bt.contains("GRAND")) {
@@ -728,8 +747,16 @@ public class TournamentRandomServlet extends HttpServlet {
                 psSel.setInt(p++, stageOrder);
                 psSel.setInt(p++, stageOrder);
                 psSel.setInt(p++, stageOrder);
-                if (groupId != null && !groupId.trim().isEmpty())
-                    psSel.setString(p++, groupId.trim());
+                if (!groupPatterns.isEmpty()) {
+                    for (String pat : groupPatterns) {
+                        String safeLikePat = pat.replace("_", "[_]");
+                        psSel.setString(p++, pat);
+                        psSel.setString(p++, pat);
+                        psSel.setString(p++, pat);
+                        psSel.setString(p++, "%[_]" + safeLikePat + "%");
+                        psSel.setString(p++, "%[_]" + safeLikePat + "[_]%");
+                    }
+                }
                 if (bracketType != null && !bracketType.trim().isEmpty()) {
                     String bt = bracketType.trim().toUpperCase();
                     if (!bt.contains("UPPER") && !bt.contains("WINNER") && !bt.contains("LOWER") && !bt.contains("LOSER") && !bt.contains("GRAND")) {
