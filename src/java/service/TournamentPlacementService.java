@@ -1,323 +1,305 @@
 package service;
 
 import dao.DBContext;
-import model.Team;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-/**
- * High-Performance, Database-Driven Service for calculating tournament placements (1st, 2nd, Top 4, Top 8...)
- * directly from the 'matches' table in SQL Server.
- */
+/** Resolves actual elimination rounds and final standings from persisted matches. */
 public class TournamentPlacementService {
+    private static final TournamentPlacementService INSTANCE = new TournamentPlacementService();
+    private static final Map<String, Map<String, PlacementResult>> RESULTS = new ConcurrentHashMap<>();
+    public static TournamentPlacementService getInstance() { return INSTANCE; }
+    public static void clearCaches() { RESULTS.clear(); }
 
-    private static TournamentPlacementService instance;
-
-    private TournamentPlacementService() {}
-
-    public static synchronized TournamentPlacementService getInstance() {
-        if (instance == null) {
-            instance = new TournamentPlacementService();
-        }
-        return instance;
+    public static class PlacementResult {
+        public final int rank;
+        public final String pointKey;
+        public PlacementResult(int rank, String pointKey) { this.rank = rank; this.pointKey = pointKey; }
     }
-
+    private static class TeamInfo {
+        String id, name, norm;
+        int seed;
+    }
     private static class MatchInfo {
-        String id;
-        int stageOrder;
-        String stageFormat;
-        int roundNumber;
-        String bracketType;
-        String team1Id;
-        String team2Id;
-        String t1Name;
-        String t2Name;
-        String t1Norm;
-        String t2Norm;
-        String winnerId;
-        String winnerName;
-        String winnerNorm;
-        String loserId;
-        String loserName;
-        String loserNorm;
-        Integer score1;
-        Integer score2;
-        String status;
+        String id, groupId, bracketType, team1Id, team2Id, winnerId, loserId, status;
+        int stageOrder, roundNumber;
+        Integer score1, score2;
+        boolean bye;
     }
-
-    /**
-     * Preloads placements for all tournaments in a series in a single bulk query.
-     */
-    public Map<String, Map<String, Integer>> preloadSeriesPlacements(String seriesId) {
-        Map<String, Map<String, Integer>> seriesPlacements = new HashMap<>();
-        if (seriesId == null || seriesId.trim().isEmpty()) return seriesPlacements;
-        String sid = seriesId.trim();
-
-        DBContext db = new DBContext();
-        String sql = "SELECT m.*, ts.stage_order, ts.format AS stage_format, "
-                + "t1.raw_name AS t1_name, t1.normalized_name AS t1_norm, "
-                + "t2.raw_name AS t2_name, t2.normalized_name AS t2_norm, "
-                + "tw.raw_name AS winner_name, tw.normalized_name AS winner_norm, "
-                + "tl.raw_name AS loser_name, tl.normalized_name AS loser_norm "
-                + "FROM matches m "
-                + "LEFT JOIN tournament_stages ts ON m.stage_id = ts.id "
-                + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "LEFT JOIN teams tl ON m.loser_id = tl.id "
-                + "WHERE m.tournament_id IN (SELECT id FROM tournaments WHERE series_id = ?) "
-                + "ORDER BY m.tournament_id, ISNULL(ts.stage_order, 1) DESC, m.round_number DESC";
-
-        Map<String, List<MatchInfo>> tourneyMatches = new HashMap<>();
-        try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, sid);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String tid = rs.getString("tournament_id");
-                    if (tid == null) continue;
-                    MatchInfo m = parseMatchInfo(rs);
-                    tourneyMatches.computeIfAbsent(tid.trim(), k -> new ArrayList<>()).add(m);
-                }
-            }
-
-            for (Map.Entry<String, List<MatchInfo>> entry : tourneyMatches.entrySet()) {
-                String tid = entry.getKey();
-                Map<String, Integer> pMap = computePlacements(tid, entry.getValue(), conn);
-                seriesPlacements.put(tid, pMap);
-                RollingWindowPointService.getInstance().putCachedTournamentPlacements(tid, pMap);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return seriesPlacements;
+    private static class StageInfo {
+        String format;
+        int winPoints = 3, drawPoints = 1, lossPoints = 0;
     }
-
-    /**
-     * Calculates placements for a single tournament from DB matches.
-     */
-    public Map<String, Integer> getTournamentPlacements(String tournamentId) {
-        Map<String, Integer> placementMap = new HashMap<>();
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return placementMap;
-        String tid = tournamentId.trim();
-
-        DBContext db = new DBContext();
-        String sql = "SELECT m.*, ts.stage_order, ts.format AS stage_format, "
-                + "t1.raw_name AS t1_name, t1.normalized_name AS t1_norm, "
-                + "t2.raw_name AS t2_name, t2.normalized_name AS t2_norm, "
-                + "tw.raw_name AS winner_name, tw.normalized_name AS winner_norm, "
-                + "tl.raw_name AS loser_name, tl.normalized_name AS loser_norm "
-                + "FROM matches m "
-                + "LEFT JOIN tournament_stages ts ON m.stage_id = ts.id "
-                + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "LEFT JOIN teams tl ON m.loser_id = tl.id "
-                + "WHERE m.tournament_id = ? "
-                + "ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC";
-
+    private static class Context {
+        boolean multi;
+        int cut;
+        Map<String, TeamInfo> teams = new LinkedHashMap<>();
+        Map<Integer, StageInfo> stages = new TreeMap<>();
         List<MatchInfo> matches = new ArrayList<>();
-        try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tid);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    matches.add(parseMatchInfo(rs));
-                }
-            }
-            placementMap = computePlacements(tid, matches, conn);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return placementMap;
+        Set<String> qualified = new HashSet<>();
+        Map<String, PlacementResult> results = new HashMap<>();
     }
 
-    private MatchInfo parseMatchInfo(ResultSet rs) throws Exception {
-        MatchInfo m = new MatchInfo();
-        m.id = rs.getString("id");
-        m.stageOrder = rs.getInt("stage_order");
-        if (rs.wasNull()) m.stageOrder = 1;
-        m.stageFormat = rs.getString("stage_format");
-        m.roundNumber = rs.getInt("round_number");
-        m.bracketType = rs.getString("bracket_type");
-        m.team1Id = rs.getString("team1_id");
-        m.team2Id = rs.getString("team2_id");
-        m.t1Name = rs.getString("t1_name");
-        m.t2Name = rs.getString("t2_name");
-        m.t1Norm = rs.getString("t1_norm");
-        m.t2Norm = rs.getString("t2_norm");
-        m.winnerId = rs.getString("winner_id");
-        m.winnerName = rs.getString("winner_name");
-        m.winnerNorm = rs.getString("winner_norm");
-        m.loserId = rs.getString("loser_id");
-        m.loserName = rs.getString("loser_name");
-        m.loserNorm = rs.getString("loser_norm");
-        int s1 = rs.getInt("score1");
-        m.score1 = rs.wasNull() ? null : s1;
-        int s2 = rs.getInt("score2");
-        m.score2 = rs.wasNull() ? null : s2;
-        m.status = rs.getString("status");
-        return m;
+    public Map<String, Map<String, Integer>> preloadSeriesPlacements(String seriesId) {
+        Map<String, Map<String, Integer>> result = new HashMap<>();
+        if (seriesId == null || seriesId.trim().isEmpty()) return result;
+        List<String> ids = new ArrayList<>();
+        try (Connection conn = new DBContext().getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT id FROM tournaments WHERE series_id = ?")) {
+            ps.setString(1, seriesId.trim());
+            try (ResultSet rs = ps.executeQuery()) { while (rs.next()) ids.add(rs.getString(1)); }
+        } catch (Exception e) { throw new IllegalStateException("Cannot load series results", e); }
+        for (String id : ids) {
+            Map<String, Integer> placements = getTournamentPlacements(id);
+            result.put(id, placements);
+            RollingWindowPointService.getInstance().putCachedTournamentPlacements(id, placements);
+        }
+        return result;
     }
 
-    private Map<String, Integer> computePlacements(String tournamentId, List<MatchInfo> matches, Connection conn) {
-        Map<String, Integer> placements = new HashMap<>();
-        if (matches == null || matches.isEmpty()) return placements;
-
-        // Group matches by stage
-        int maxStage = 1;
-        for (MatchInfo m : matches) {
-            if (m.stageOrder > maxStage) maxStage = m.stageOrder;
-        }
-
-        // Process final stage knockout / round robin
-        int maxRound = 0;
-        MatchInfo grandFinal = null;
-        MatchInfo thirdPlaceMatch = null;
-        List<MatchInfo> finalStageMatches = new ArrayList<>();
-
-        for (MatchInfo m : matches) {
-            if (m.stageOrder == maxStage) {
-                finalStageMatches.add(m);
-                if (m.roundNumber > maxRound) maxRound = m.roundNumber;
-                if ("GRAND_FINAL".equalsIgnoreCase(m.bracketType) || "GRAND_FINAL_RESET".equalsIgnoreCase(m.bracketType)) {
-                    grandFinal = m;
-                }
-                if ("THIRD_PLACE".equalsIgnoreCase(m.bracketType)) {
-                    thirdPlaceMatch = m;
-                }
-            }
-        }
-
-        // 1. Double Elimination handling
-        boolean isDE = finalStageMatches.stream().anyMatch(m -> "LOSER_BRACKET".equalsIgnoreCase(m.bracketType));
-        if (isDE) {
-            computeDoubleEliminationPlacements(finalStageMatches, placements);
-        } else {
-            // 2. Single Elimination handling
-            computeSingleEliminationPlacements(finalStageMatches, maxRound, grandFinal, thirdPlaceMatch, placements);
-        }
-
-        // Fill remaining active teams with base placement if not placed
-        fillRemainingTeams(tournamentId, placements, conn);
-
-        return placements;
+    public Map<String, Integer> getTournamentPlacements(String tournamentId) {
+        Map<String, Integer> ranks = new HashMap<>();
+        getTournamentResults(tournamentId).forEach((key, result) -> ranks.put(key, result.rank));
+        return ranks;
     }
 
-    private void computeSingleEliminationPlacements(List<MatchInfo> matches, int maxRound, MatchInfo grandFinal, MatchInfo thirdPlace, Map<String, Integer> placements) {
-        // Find champion and runner-up from the highest round match
-        MatchInfo finalMatch = grandFinal;
-        if (finalMatch == null) {
-            for (MatchInfo m : matches) {
-                if (m.roundNumber == maxRound && !"THIRD_PLACE".equalsIgnoreCase(m.bracketType)) {
-                    finalMatch = m;
-                    break;
-                }
-            }
-        }
-
-        if (finalMatch != null && finalMatch.winnerNorm != null) {
-            putPlacement(placements, finalMatch.winnerNorm, 1);
-            if (finalMatch.loserNorm != null) {
-                putPlacement(placements, finalMatch.loserNorm, 2);
-            }
-        }
-
-        // 3rd place match if exists
-        if (thirdPlace != null && thirdPlace.winnerNorm != null) {
-            putPlacement(placements, thirdPlace.winnerNorm, 3);
-            if (thirdPlace.loserNorm != null) {
-                putPlacement(placements, thirdPlace.loserNorm, 4);
-            }
-        }
-
-        // Losers of each preceding round
-        for (MatchInfo m : matches) {
-            if ("THIRD_PLACE".equalsIgnoreCase(m.bracketType)) continue;
-            int r = m.roundNumber;
-            int roundsFromFinal = maxRound - r;
-
-            int rankForLoser;
-            if (roundsFromFinal == 1) {
-                rankForLoser = 3; // Semi-final losers (Top 4)
-            } else if (roundsFromFinal == 2) {
-                rankForLoser = 5; // Quarter-final losers (Top 8)
-            } else if (roundsFromFinal == 3) {
-                rankForLoser = 9; // Round of 16 losers (Top 16)
-            } else {
-                rankForLoser = (int) Math.pow(2, roundsFromFinal) + 1;
-            }
-
-            if (m.loserNorm != null && !placements.containsKey(m.loserNorm.toLowerCase())) {
-                putPlacement(placements, m.loserNorm, rankForLoser);
-            }
-        }
+    public Map<String, PlacementResult> getTournamentResults(String tournamentId) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return Collections.emptyMap();
+        return RESULTS.computeIfAbsent(tournamentId.trim(), this::loadResults);
     }
 
-    private void computeDoubleEliminationPlacements(List<MatchInfo> matches, Map<String, Integer> placements) {
-        // Grand Final
-        for (MatchInfo m : matches) {
-            if ("GRAND_FINAL".equalsIgnoreCase(m.bracketType) || "GRAND_FINAL_RESET".equalsIgnoreCase(m.bracketType)) {
-                if (m.winnerNorm != null) putPlacement(placements, m.winnerNorm, 1);
-                if (m.loserNorm != null) putPlacement(placements, m.loserNorm, 2);
-            }
-        }
-
-        // Lower Bracket rounds descending
-        int maxLowerRound = 0;
-        for (MatchInfo m : matches) {
-            if ("LOSER_BRACKET".equalsIgnoreCase(m.bracketType) && m.roundNumber > maxLowerRound) {
-                maxLowerRound = m.roundNumber;
-            }
-        }
-
-        for (MatchInfo m : matches) {
-            if ("LOSER_BRACKET".equalsIgnoreCase(m.bracketType)) {
-                int dist = maxLowerRound - m.roundNumber;
-                int rankForLoser;
-                if (dist == 0) rankForLoser = 3; // Loser Finals loser = 3rd
-                else if (dist <= 2) rankForLoser = 4; // Top 4
-                else if (dist <= 4) rankForLoser = 5; // Top 6 / Top 8
-                else rankForLoser = 9; // Top 12+
-
-                if (m.loserNorm != null && !placements.containsKey(m.loserNorm.toLowerCase())) {
-                    putPlacement(placements, m.loserNorm, rankForLoser);
-                }
-            }
-        }
-    }
-
-    private void fillRemainingTeams(String tournamentId, Map<String, Integer> placements, Connection conn) {
-        try {
-            String sql = "SELECT raw_name, normalized_name, original_seed FROM teams WHERE tournament_id = ?";
+    private Map<String, PlacementResult> loadResults(String id) {
+        try (Connection conn = new DBContext().getConnection()) {
+            Context ctx = new Context();
+            String config = "CASE WHEN ISJSON(t.multi_stage_config)=1 THEN t.multi_stage_config ELSE '{}' END";
+            String sql = "SELECT t.tournament_type, t.advancing_seats_count, s.stage_order, s.format, "
+                + "JSON_VALUE(" + config + ", '$.stage1Config.winPoints') AS w1, "
+                + "JSON_VALUE(" + config + ", '$.stage1Config.drawPoints') AS d1, "
+                + "JSON_VALUE(" + config + ", '$.stage1Config.lossPoints') AS l1, "
+                + "JSON_VALUE(" + config + ", '$.stage2Config.winPoints') AS w2, "
+                + "JSON_VALUE(" + config + ", '$.stage2Config.drawPoints') AS d2, "
+                + "JSON_VALUE(" + config + ", '$.stage2Config.lossPoints') AS l2 "
+                + "FROM tournaments t LEFT JOIN tournament_stages s ON s.tournament_id=t.id WHERE t.id=?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, tournamentId);
+                ps.setString(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
-                        String norm = rs.getString("normalized_name");
-                        if (norm != null && !placements.containsKey(norm.trim().toLowerCase())) {
-                            int seed = rs.getInt("original_seed");
-                            placements.put(norm.trim().toLowerCase(), seed > 0 ? Math.max(seed, 16) : 16);
+                        ctx.multi = "MULTI_STAGE".equalsIgnoreCase(rs.getString("tournament_type"));
+                        ctx.cut = rs.getInt("advancing_seats_count");
+                        int order = rs.getInt("stage_order");
+                        if (order < 1) continue;
+                        StageInfo stage = new StageInfo();
+                        stage.format = rs.getString("format");
+                        String suffix = order == 1 ? "1" : "2";
+                        stage.winPoints = intOr(rs.getString("w" + suffix), 3);
+                        stage.drawPoints = intOr(rs.getString("d" + suffix), 1);
+                        stage.lossPoints = intOr(rs.getString("l" + suffix), 0);
+                        ctx.stages.put(order, stage);
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement("SELECT id, raw_name, normalized_name, original_seed FROM teams WHERE tournament_id=? ORDER BY original_seed,id")) {
+                ps.setString(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        TeamInfo team = new TeamInfo();
+                        team.id = rs.getString("id"); team.name = rs.getString("raw_name");
+                        team.norm = rs.getString("normalized_name"); team.seed = rs.getInt("original_seed");
+                        ctx.teams.put(team.id, team);
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement("SELECT m.*, ISNULL(s.stage_order,1) AS stage_order FROM matches m LEFT JOIN tournament_stages s ON s.id=m.stage_id WHERE m.tournament_id=? ORDER BY s.stage_order,m.round_number,m.match_order,m.id")) {
+                ps.setString(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        MatchInfo m = new MatchInfo();
+                        m.id=rs.getString("id"); m.groupId=rs.getString("group_id");
+                        m.stageOrder=rs.getInt("stage_order"); m.roundNumber=rs.getInt("round_number");
+                        m.bracketType=rs.getString("bracket_type"); m.status=rs.getString("status");
+                        m.team1Id=rs.getString("team1_id"); m.team2Id=rs.getString("team2_id");
+                        m.winnerId=rs.getString("winner_id"); m.loserId=rs.getString("loser_id");
+                        m.score1=(Integer)rs.getObject("score1"); m.score2=(Integer)rs.getObject("score2");
+                        m.bye=rs.getBoolean("is_bye");
+                        if (m.winnerId == null && finished(m) && m.score1 != null && m.score2 != null && !m.score1.equals(m.score2)) {
+                            m.winnerId=m.score1 > m.score2 ? m.team1Id : m.team2Id;
+                        }
+                        if (m.winnerId != null && m.loserId == null) {
+                            m.loserId=m.winnerId.equals(m.team1Id) ? m.team2Id : m.team1Id;
+                        }
+                        ctx.matches.add(m);
+                        if (m.stageOrder == 2) {
+                            if (ctx.teams.containsKey(m.team1Id)) ctx.qualified.add(m.team1Id);
+                            if (ctx.teams.containsKey(m.team2Id)) ctx.qualified.add(m.team2Id);
                         }
                     }
                 }
             }
-        } catch (Exception ignore) {}
+            if (ctx.multi) {
+                try (PreparedStatement ps = conn.prepareStatement("SELECT j.team_id FROM tournaments t CROSS APPLY OPENJSON(CASE WHEN ISJSON(t.stage2_teams)=1 THEN t.stage2_teams ELSE '[]' END) WITH (team_id nvarchar(100) '$.id') j WHERE t.id=?")) {
+                    ps.setString(1, id);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) if (ctx.teams.containsKey(rs.getString(1))) ctx.qualified.add(rs.getString(1));
+                    }
+                }
+            }
+            for (Map.Entry<Integer, StageInfo> entry : ctx.stages.entrySet()) {
+                int order=entry.getKey(); StageInfo stage=entry.getValue();
+                List<MatchInfo> games=new ArrayList<>();
+                for (MatchInfo m:ctx.matches) if(m.stageOrder==order) games.add(m);
+                boolean cut=ctx.multi && order==1;
+                String format=stage.format==null ? "" : stage.format.toUpperCase(Locale.ROOT);
+                if ("SINGLE_ELIMINATION".equals(format)) knockout(ctx,games,cut,false,false,order);
+                else if ("DOUBLE_ELIMINATION".equals(format)) knockout(ctx,games,cut,true,false,order);
+                else if ("GSL".equals(format) && cut) knockout(ctx,games,true,true,true,order);
+                else if (format.contains("SWISS") && cut) swiss(ctx,games);
+                else if ("ROUND_ROBIN".equals(format)) roundRobin(ctx,games,stage,cut,order);
+                else if ("GROUP_STAGE".equals(format) && cut) groups(ctx,games,conn,id);
+            }
+            return Collections.unmodifiableMap(ctx.results);
+        } catch (Exception e) { throw new IllegalStateException("Cannot calculate tournament results: " + id, e); }
     }
 
-    private void putPlacement(Map<String, Integer> map, String teamNorm, int rank) {
-        if (teamNorm == null || teamNorm.trim().isEmpty()) return;
-        String key = teamNorm.trim().toLowerCase();
-        if (!map.containsKey(key) || map.get(key) > rank) {
-            map.put(key, rank);
+    private static void knockout(Context ctx,List<MatchInfo> games,boolean cut,boolean de,boolean gsl,int order) {
+        Map<String,List<MatchInfo>> brackets=new LinkedHashMap<>();
+        for(MatchInfo m:games) brackets.computeIfAbsent(gsl ? String.valueOf(m.groupId) : "main", k->new ArrayList<>()).add(m);
+        int groupCount=Math.max(1,brackets.size());
+        for(List<MatchInfo> bracket:brackets.values()) {
+            Set<String> participants=participants(bracket);
+            int count=gsl ? participants.size() : order==1 ? ctx.teams.size() : Math.max(ctx.cut,participants.size());
+            int size=gsl ? Math.max(4,powerOfTwo(count)) : powerOfTwo(count);
+            int ubRounds=log2(size), lbRounds=Math.max(0,2*(ubRounds-1));
+            for(MatchInfo m:bracket) {
+                if(m.bye || m.winnerId==null || !ctx.teams.containsKey(m.winnerId)) continue;
+                String type=type(m);
+                if("THIRD_PLACE".equals(type)) {
+                    if(!cut) {put(ctx,m.winnerId,3,"3");put(ctx,m.loserId,4,"4");}
+                    continue;
+                }
+                if(grandFinal(m)) {
+                    if(cut && gsl) put(ctx,m.loserId,groupCount+1,"s1_gsl_final");
+                    else if(!cut) {put(ctx,m.winnerId,1,"1");put(ctx,m.loserId,2,"2");}
+                    continue;
+                }
+                if(de) {
+                    if(!lower(m)) continue; // An upper bracket loss is not elimination.
+                    int distance=lbRounds-m.roundNumber;
+                    if(distance<0) throw new IllegalStateException("Invalid lower bracket round: "+m.id);
+                    int rank=deRank(distance);
+                    String key=cut ? (gsl ? "s1_gsl_lb_r" : "s1_lb_r")+m.roundNumber : rangeKey(rank,deWidth(distance));
+                    put(ctx,m.loserId,gsl ? groupCount*(rank-1)+1 : rank,key);
+                } else {
+                    int remaining=ubRounds-m.roundNumber;
+                    if(remaining<0) throw new IllegalStateException("Invalid elimination round: "+m.id);
+                    int rank=(1<<remaining)+1;
+                    put(ctx,m.loserId,rank,rangeKey(rank,Math.max(1,1<<remaining)));
+                    if(!cut && m.roundNumber==ubRounds) put(ctx,m.winnerId,1,"1");
+                }
+            }
         }
     }
+
+    private static int deRank(int distance) {
+        return (distance%2==0 ? 1<<(distance/2+1) : 3*(1<<((distance-1)/2)))+1;
+    }
+    private static int deWidth(int distance) {return 1<<(distance/2);}
+    private static String rangeKey(int rank,int width) {return width<=1 ? String.valueOf(rank) : rank+"-"+(rank+width-1);}
+
+    private static void swiss(Context ctx,List<MatchInfo> games) {
+        Map<String,int[]> records=new HashMap<>();
+        for(MatchInfo m:games) {
+            if(m.winnerId==null) continue;
+            records.computeIfAbsent(m.winnerId,k->new int[2])[0]++;
+            if(!m.bye && m.loserId!=null) records.computeIfAbsent(m.loserId,k->new int[2])[1]++;
+        }
+        for(Map.Entry<String,int[]> entry:records.entrySet()) {
+            int wins=entry.getValue()[0],losses=entry.getValue()[1];
+            if(losses!=3 || wins>2) continue;
+            int rank=ctx.cut+1;
+            for(int[] other:records.values()) if(other[1]==3 && other[0]>wins) rank++;
+            put(ctx,entry.getKey(),rank,"swiss_"+wins+"-3");
+        }
+    }
+
+    private static class RRRow {
+        String id; int points,scored,conceded,seed;
+    }
+    private static void roundRobin(Context ctx,List<MatchInfo> games,StageInfo stage,boolean cut,int order) {
+        if(games.isEmpty() || !complete(games,true)) return;
+        Map<String,RRRow> rows=new LinkedHashMap<>();
+        Set<String> ids=order==1 ? ctx.teams.keySet() : participants(games);
+        for(String id:ids) {
+            TeamInfo team=ctx.teams.get(id); if(team==null) continue;
+            RRRow row=new RRRow();row.id=id;row.seed=team.seed;rows.put(id,row);
+        }
+        for(MatchInfo m:games) {
+            if(m.bye) continue;
+            RRRow a=rows.get(m.team1Id),b=rows.get(m.team2Id);
+            if(a==null||b==null) continue;
+            a.scored+=m.score1;a.conceded+=m.score2;b.scored+=m.score2;b.conceded+=m.score1;
+            a.points+=m.score1>m.score2?stage.winPoints:m.score1.equals(m.score2)?stage.drawPoints:stage.lossPoints;
+            b.points+=m.score2>m.score1?stage.winPoints:m.score1.equals(m.score2)?stage.drawPoints:stage.lossPoints;
+        }
+        List<RRRow> sorted=new ArrayList<>(rows.values());
+        sorted.sort(Comparator.comparingInt((RRRow r)->r.points).reversed()
+            .thenComparing(Comparator.comparingInt((RRRow r)->r.scored-r.conceded).reversed())
+            .thenComparing(Comparator.comparingInt((RRRow r)->r.scored).reversed())
+            .thenComparingInt(r->r.seed).thenComparing(r->r.id));
+        for(int i=0;i<sorted.size();i++) {
+            if(cut) {
+                boolean eliminated=ctx.qualified.size()==ctx.cut ? !ctx.qualified.contains(sorted.get(i).id) : i>=ctx.cut;
+                if(eliminated) put(ctx,sorted.get(i).id,ctx.cut+1,"stage1_eliminated");
+            }
+            else put(ctx,sorted.get(i).id,i+1,String.valueOf(i+1));
+        }
+    }
+
+    private static void groups(Context ctx,List<MatchInfo> games,Connection conn,String id)throws SQLException {
+        if(games.isEmpty() || !complete(games,true)) return;
+        Map<String,Map<String,Integer>> groups=new LinkedHashMap<>();
+        try(PreparedStatement ps=conn.prepareStatement("SELECT g.id, gt.team_id, gt.rank_in_group FROM groups g JOIN tournament_stages s ON s.id=g.stage_id JOIN group_teams gt ON gt.group_id=g.id WHERE s.tournament_id=? AND s.stage_order=1")) {
+            ps.setString(1,id);
+            try(ResultSet rs=ps.executeQuery()) {while(rs.next()) groups.computeIfAbsent(rs.getString(1),k->new HashMap<>()).put(rs.getString(2),rs.getInt(3));}
+        }
+        if (ctx.cut > 0 && ctx.qualified.size() == ctx.cut) {
+            for (Map<String,Integer> group : groups.values()) for (String teamId : group.keySet()) {
+                if (!ctx.qualified.contains(teamId)) put(ctx, teamId, ctx.cut+1, "stage1_eliminated");
+            }
+            return;
+        }
+        if(groups.isEmpty()||ctx.cut<=0||ctx.cut%groups.size()!=0) return;
+        int quota=ctx.cut/groups.size();
+        for(Map<String,Integer> group:groups.values()) for(Map.Entry<String,Integer> row:group.entrySet()) {
+            if(row.getValue()>quota) put(ctx,row.getKey(),ctx.cut+1,"stage1_eliminated");
+        }
+    }
+
+    private static void put(Context ctx,String id,int rank,String key) {
+        TeamInfo team=ctx.teams.get(id);if(team==null) return;
+        PlacementResult result=new PlacementResult(rank,key);
+        ctx.results.put(id,result);
+        if(team.name!=null) ctx.results.put(team.name.trim().toLowerCase(Locale.ROOT),result);
+        if(team.norm!=null) ctx.results.put(team.norm.trim().toLowerCase(Locale.ROOT),result);
+    }
+    private static Set<String> participants(List<MatchInfo> games) {
+        Set<String> ids=new HashSet<>();
+        for(MatchInfo m:games) {if(m.team1Id!=null)ids.add(m.team1Id);if(m.team2Id!=null)ids.add(m.team2Id);}
+        return ids;
+    }
+    private static boolean complete(List<MatchInfo> games,boolean scoresRequired) {
+        for(MatchInfo m:games) {
+            if(m.bye) continue;
+            if(m.team1Id==null||m.team2Id==null||!finished(m)) return false;
+            if(scoresRequired&&(m.score1==null||m.score2==null)) return false;
+        }
+        return true;
+    }
+    private static boolean finished(MatchInfo m) {return "FINISHED".equalsIgnoreCase(m.status)||"COMPLETED".equalsIgnoreCase(m.status)||"DONE".equalsIgnoreCase(m.status);}
+    private static String type(MatchInfo m) {return m.bracketType==null?"":m.bracketType.toUpperCase(Locale.ROOT);}
+    private static boolean lower(MatchInfo m) {return Arrays.asList("LOSER_BRACKET","LOWER","LB").contains(type(m));}
+    private static boolean grandFinal(MatchInfo m) {return type(m).contains("GRAND_FINAL")||"GF".equals(type(m));}
+    private static int powerOfTwo(int n) {int size=2;while(size<n)size*=2;return size;}
+    private static int log2(int n) {return Integer.numberOfTrailingZeros(n);}
+    private static int intOr(String value,int fallback) {try{return Integer.parseInt(value);}catch(Exception ignored){return fallback;}}
 }

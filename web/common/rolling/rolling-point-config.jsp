@@ -51,7 +51,7 @@
     String s2Format = (reqS2F != null && !reqS2F.trim().isEmpty()) ? reqS2F.trim().toUpperCase() : "SINGLE_ELIMINATION";
 
     int cutTarget = (tournament != null && tournament.getAdvancingSeatsCount() > 1) ? tournament.getAdvancingSeatsCount() : 0;
-    if (s1Format.contains("SWISS")) {
+    if (s1Format.contains("SWISS") && cutTarget <= 1) {
         cutTarget = 8;
     } else if (cutTarget <= 1) {
         int pow2 = 2;
@@ -61,6 +61,8 @@
         cutTarget = Math.max(2, pow2);
     }
     int s2Teams = cutTarget;
+    int gslGroupCount = request.getAttribute("gslGroupCount") == null ? 1 : (Integer)request.getAttribute("gslGroupCount");
+    int gslGroupSize = request.getAttribute("gslGroupSize") == null ? 4 : (Integer)request.getAttribute("gslGroupSize");
 
     if (isMultiStage) {
         String s2Header = "STAGE 2: " + s2Format + " (" + s2Teams + " Đội)";
@@ -88,7 +90,7 @@
         } else if ("ROUND_ROBIN".equals(s2Format)) {
             posList.add(new PositionItem("1", "Champion", s2Header));
             if (s2Teams >= 2) posList.add(new PositionItem("2", "Runner-up"));
-            for (int p = 3; p <= Math.min(s2Teams, 32); p++) {
+            for (int p = 3; p <= s2Teams; p++) {
                 posList.add(new PositionItem(String.valueOf(p), "Hạng " + p));
             }
         } else {
@@ -96,7 +98,7 @@
             posList.add(new PositionItem("1", "Champion", s2Header));
             if (s2Teams >= 2) posList.add(new PositionItem("2", "Runner-up"));
             int curLim = 4;
-            while (curLim <= s2Teams) {
+            while (curLim / 2 < s2Teams) {
                 int sR = (curLim / 2) + 1;
                 int eR = curLim;
                 String label = (curLim == 4) ? "Semi-final" : ((curLim == 8) ? "Quarter-final" : ("Round of " + curLim));
@@ -120,6 +122,18 @@
                 String key = "s1_lb_r" + lr;
                 String headerToUse = (lr == lbStopRound) ? s1Header : null;
                 posList.add(new PositionItem(key, label, headerToUse));
+            }
+        } else if ("GSL".equals(s1Format)) {
+            int groupBracketSize = 4;
+            while (groupBracketSize < gslGroupSize) groupBracketSize *= 2;
+            int groupAdvance = Math.max(1, cutTarget / gslGroupCount);
+            int groupUpperRounds = (int)(Math.log(groupBracketSize) / Math.log(2));
+            int groupLowerStop = groupAdvance == 1 ? 2 * (groupUpperRounds - 1)
+                : 2 * (groupUpperRounds - (int)(Math.log(groupAdvance / 2) / Math.log(2)) - 1);
+            if (groupAdvance == 1) posList.add(new PositionItem("s1_gsl_final", "GSL — thua Final của bảng", s1Header));
+            for (int lr = groupLowerStop; lr >= 1; lr--) {
+                posList.add(new PositionItem("s1_gsl_lb_r" + lr, "GSL — loại tại LB Round " + lr,
+                    groupAdvance > 1 && lr == groupLowerStop ? s1Header : null));
             }
         } else if ("SINGLE_ELIMINATION".equals(s1Format)) {
             int cur = 4;
@@ -152,12 +166,10 @@
     } else if ("SINGLE_ELIMINATION".equals(tourneyFormat)) {
         posList.add(new PositionItem("1", "Champion"));
         if (nTeams >= 2) posList.add(new PositionItem("2", "Runner-up"));
-        if (nTeams >= 4) posList.add(new PositionItem("3-4", "Semi-final"));
-        if (nTeams >= 8) posList.add(new PositionItem("5-8", "Quarter-final"));
-        if (nTeams >= 16) posList.add(new PositionItem("9-16", "Round of 16"));
-        if (nTeams >= 32) posList.add(new PositionItem("17-32", "Round of 32"));
-        if (nTeams >= 64) posList.add(new PositionItem("33-64", "Round of 64"));
-        if (nTeams >= 128) posList.add(new PositionItem("65-128", "Round of 128"));
+        for (int fieldSize = 4; fieldSize / 2 < nTeams; fieldSize *= 2) {
+            String label = fieldSize == 4 ? "Semi-final" : fieldSize == 8 ? "Quarter-final" : "Round of " + fieldSize;
+            posList.add(new PositionItem((fieldSize / 2 + 1) + "-" + fieldSize, label));
+        }
     } else if ("DOUBLE_ELIMINATION".equals(tourneyFormat)) {
         posList.add(new PositionItem("1", "Champion"));
         if (nTeams >= 2) posList.add(new PositionItem("2", "Runner-up"));
@@ -195,7 +207,7 @@
         posList.add(new PositionItem("swiss_1-3", "Swiss 1-3"));
         posList.add(new PositionItem("swiss_0-3", "Swiss 0-3"));
     } else if ("ROUND_ROBIN".equals(tourneyFormat)) {
-        for (int p = 1; p <= Math.min(nTeams, 16); p++) {
+        for (int p = 1; p <= nTeams; p++) {
             String label = "Rank " + p;
             if (p == 1) label = "Champion";
             else if (p == 2) label = "Runner-up";
@@ -255,7 +267,7 @@
                     <i class="fa-solid fa-star text-gold"></i> Thiết Lập Điểm Thưởng Giải Con
                 </h1>
                 <p class="text-muted" style="margin-bottom: 1rem; font-size: 0.82rem;">
-                    Bước 4 / 5: Dựa trên số đội (<strong><%= nTeams %> Đội</strong>), Cấp độ <strong>Tier <%= tierName %></strong> và Thể thức <strong id="fmtHeaderDisplay"><%= tourneyFormat %></strong>, các vị trí bên dưới đã được sinh ra tự động. Bạn vui lòng tự nhập tay số điểm thưởng cho từng vị trí:
+                    Bước 4 / 5: Dựa trên số đội (<strong><%= nTeams %> Đội</strong>), Cấp độ <strong>Tier <%= tierName %></strong> và Thể thức <strong id="fmtHeaderDisplay"><%= isMultiStage ? (s1Format + " → " + s2Format) : tourneyFormat %></strong>, các vị trí bên dưới đã được sinh ra tự động. Bạn vui lòng tự nhập tay số điểm thưởng cho từng vị trí:
                 </p>
 
                 <!-- RULE NOTICE ALERT BOX -->
@@ -352,327 +364,5 @@
 
         </main>
 
-        <script>
-            function syncLocalFormatWithForm() {
-                var tid = "<%= tourneyId %>";
-                if (!tid) return;
-
-                var localFmt = localStorage.getItem("tourma_format_" + tid);
-                var localType = localStorage.getItem("tourma_type_" + tid);
-                var multiConfigRaw = localStorage.getItem("tourma_multi_config_" + tid);
-
-                var fmt = (localFmt || "<%= tourneyFormat %>").toUpperCase();
-                var isMulti = (localType === 'MULTI_STAGE' || multiConfigRaw !== null || "<%= tournamentType %>" === 'MULTI_STAGE');
-
-                var s1Format = "<%= s1Format %>";
-                var s2Format = "<%= s2Format %>";
-
-                if (multiConfigRaw) {
-                    try {
-                        var mc = JSON.parse(multiConfigRaw);
-                        if (mc.stage1Format) s1Format = mc.stage1Format.toUpperCase();
-                        if (mc.stage2Format) s2Format = mc.stage2Format.toUpperCase();
-                    } catch(e) {}
-                }
-
-                var fmtHeader = document.getElementById("fmtHeaderDisplay");
-                if (fmtHeader) {
-                    fmtHeader.innerText = isMulti ? ("MULTI_STAGE (" + s1Format + " ➔ " + s2Format + ")") : fmt;
-                }
-
-                var clientFmtEl = document.getElementById("clientFormatInput");
-                if (clientFmtEl) clientFmtEl.value = fmt;
-                var clientS1FmtEl = document.getElementById("clientStage1FormatInput");
-                if (clientS1FmtEl) clientS1FmtEl.value = isMulti ? s1Format : fmt;
-
-                // Re-render inputs dynamically if local format differs or is non-SE
-                var container = document.querySelector("#pointConfigForm div[style*='flex-direction: column']");
-                if (!container) return;
-
-                var nTeams = <%= nTeams %>;
-                var localTeams = null;
-                try {
-                    localTeams = JSON.parse(localStorage.getItem('tourma_teams_' + tid));
-                } catch(e) {}
-                if (localTeams && Array.isArray(localTeams) && localTeams.length > 0) {
-                    nTeams = localTeams.length;
-                }
-
-                var advCount = 0;
-                if (multiConfigRaw) {
-                    try {
-                        var mc = JSON.parse(multiConfigRaw);
-                        if (mc && mc.stage1Config) {
-                            advCount = mc.stage1Config.advanceCount || mc.stage1Config.totalAdvanceCount || 0;
-                        }
-                    } catch(e) {}
-                }
-                if (s1Format.indexOf('SWISS') !== -1) {
-                    advCount = 8;
-                } else {
-                    if (!advCount || advCount <= 1) {
-                        var rawCut = localStorage.getItem('tourma_advance_count_' + tid) ||
-                                     localStorage.getItem('tourma_cut_target_' + tid);
-                        if (rawCut) advCount = parseInt(rawCut, 10);
-                    }
-                    if (!advCount || advCount <= 1) {
-                        advCount = <%= cutTarget %>;
-                    }
-                    if (!advCount || advCount <= 1) {
-                        var pow2 = 2;
-                        while (pow2 * 2 < nTeams) {
-                            pow2 *= 2;
-                        }
-                        advCount = Math.max(2, pow2);
-                    }
-                }
-                var cutTarget = advCount;
-                var s2Teams = cutTarget;
-
-                var teamCountDisplay = document.querySelector("p.text-muted strong");
-                if (teamCountDisplay && nTeams > 0) {
-                    teamCountDisplay.innerText = nTeams + " Đội";
-                }
-
-                var fmtHeader = document.getElementById('fmtHeaderDisplay');
-                if (fmtHeader) {
-                    if (isMulti) {
-                        fmtHeader.innerText = "MULTI_STAGE (" + s1Format + " → " + s2Format + ")";
-                    } else if (localFmt) {
-                        fmtHeader.innerText = localFmt;
-                    }
-                }
-
-                var serverSavedJson = <%= (savedJson != null && !savedJson.trim().isEmpty() && !savedJson.equals("{}")) ? savedJson : "{}" %>;
-                var localPointsJson = null;
-                try {
-                    var rawLocal = localStorage.getItem('tourma_points_config_' + tid);
-                    if (rawLocal) localPointsJson = JSON.parse(rawLocal);
-                } catch(e) {}
-
-                var savedPointsJson = Object.assign({}, serverSavedJson || {}, localPointsJson || {});
-
-                var posItems = [];
-
-                if (isMulti) {
-                    var s2Header = "STAGE 2: " + s2Format + " (" + s2Teams + " Đội)";
-                    var s1Header = "STAGE 1: " + s1Format + " (" + nTeams + " Đội → " + cutTarget + " Đi Tiếp)";
-
-                    // Stage 2 Finishing Placements (based on s2Teams = cutTarget)
-                    if (s2Format === 'DOUBLE_ELIMINATION') {
-                        posItems.push({ key: "1", label: "Champion", isChamp: true, stageHeader: s2Header });
-                        if (s2Teams >= 2) posItems.push({ key: "2", label: "Runner-up" });
-                        if (s2Teams >= 3) posItems.push({ key: "3", label: "Losers Final" });
-                        if (s2Teams >= 4) posItems.push({ key: "4", label: "Losers Semi-final" });
-                        var s2Pow2 = 4;
-                        while (s2Pow2 < s2Teams && s2Pow2 < 2048) s2Pow2 *= 2;
-                        var s2UbRounds = Math.round(Math.log2(s2Pow2));
-                        var s2LbRounds = (s2UbRounds - 1) * 2;
-                        for (var offset = 2; offset < s2LbRounds; offset++) {
-                            var lrNum = s2LbRounds - offset;
-                            var k = Math.floor((offset - 2) / 2);
-                            var tierStart = Math.pow(2, k + 2) + 1;
-                            var halfSize = Math.pow(2, k + 1);
-                            var tierEnd = Math.pow(2, k + 3);
-                            var posKey = (offset % 2 === 0) ? (tierStart + "-" + (tierStart + halfSize - 1)) : ((tierStart + halfSize) + "-" + tierEnd);
-                            posItems.push({ key: posKey, label: "Losers Round " + lrNum });
-                        }
-                    } else if (s2Format === 'ROUND_ROBIN') {
-                        posItems.push({ key: "1", label: "Champion", isChamp: true, stageHeader: s2Header });
-                        if (s2Teams >= 2) posItems.push({ key: "2", label: "Runner-up" });
-                        for (var p = 3; p <= Math.min(s2Teams, 32); p++) {
-                            posItems.push({ key: String(p), label: "Hạng " + p });
-                        }
-                    } else {
-                        // SINGLE_ELIMINATION (Dynamic for any number of advancing teams)
-                        posItems.push({ key: "1", label: "Champion", isChamp: true, stageHeader: s2Header });
-                        if (s2Teams >= 2) posItems.push({ key: "2", label: "Runner-up" });
-                        var curLim = 4;
-                        while (curLim <= s2Teams) {
-                            var sR = Math.floor(curLim / 2) + 1;
-                            var eR = curLim;
-                            var label = (curLim === 4) ? "Semi-final" : ((curLim === 8) ? "Quarter-final" : ("Round of " + curLim));
-                            posItems.push({ key: sR + "-" + eR, label: label });
-                            curLim *= 2;
-                        }
-                    }
-
-                    // Stage 1 Eliminated Placements
-                    if (s1Format === 'DOUBLE_ELIMINATION') {
-                        var pow2 = 4;
-                        while (pow2 < nTeams && pow2 < 2048) pow2 *= 2;
-                        var totalUbRounds = Math.round(Math.log2(pow2));
-                        var ubQualifiers = Math.max(1, Math.round(cutTarget / 2));
-                        var ubStopRound = totalUbRounds - Math.round(Math.log2(ubQualifiers));
-                        var lbStopRound = Math.max(1, (ubStopRound - 1) * 2);
-
-                        for (var lr = lbStopRound; lr >= 1; lr--) {
-                            var isFinalLbRound = (lr === lbStopRound);
-                            var label = isFinalLbRound ? "Loser's Qualification (LQ)" : ("Losers Round " + lr);
-                            var key = "s1_lb_r" + lr;
-                            var headerToUse = (lr === lbStopRound) ? s1Header : null;
-                            posItems.push({ key: key, label: label, stageHeader: headerToUse });
-                        }
-                    } else if (s1Format === 'SINGLE_ELIMINATION') {
-                        var cur = 4;
-                        while (cur < nTeams && cur < 2048) cur *= 2;
-                        var seRounds = [];
-                        while (cur > cutTarget) {
-                            var nextCur = cur / 2;
-                            var posKey = (nextCur + 1) + "-" + cur;
-                            var label = (cur === 8) ? "Quarter-final" : ((cur === 16) ? "Round of 16" : ((cur === 32) ? "Round of 32" : ((cur === 64) ? "Round of 64" : ("Round of " + cur))));
-                            seRounds.push({ key: posKey, label: label });
-                            cur = nextCur;
-                        }
-                        for (var sr = seRounds.length - 1; sr >= 0; sr--) {
-                            var itm = seRounds[sr];
-                            if (sr === seRounds.length - 1) itm.stageHeader = s1Header;
-                            posItems.push(itm);
-                        }
-                        if (seRounds.length === 0) {
-                            posItems.push({ key: "stage1_eliminated", label: "Vòng loại SE", stageHeader: s1Header });
-                        }
-                    } else if (s1Format === 'ROUND_ROBIN') {
-                        posItems.push({ key: "stage1_eliminated", label: "Vòng loại RR", stageHeader: s1Header });
-                    } else if (s1Format === 'SWISS_LITE' || s1Format === 'SWISS') {
-                        posItems.push({ key: "swiss_2-3", label: "Swiss 2-3", stageHeader: s1Header });
-                        posItems.push({ key: "swiss_1-3", label: "Swiss 1-3" });
-                        posItems.push({ key: "swiss_0-3", label: "Swiss 0-3" });
-                    } else {
-                        posItems.push({ key: "stage1_eliminated", label: "Vòng bảng", stageHeader: s1Header });
-                    }
-                } else if (fmt === 'DOUBLE_ELIMINATION') {
-                    posItems.push({ key: "1", label: "Champion", isChamp: true });
-                    if (nTeams >= 2) posItems.push({ key: "2", label: "Runner-up" });
-                    if (nTeams >= 3) posItems.push({ key: "3", label: "Losers Final" });
-                    if (nTeams >= 4) posItems.push({ key: "4", label: "Losers Semi-final" });
-
-                    var pow2 = 4;
-                    while (pow2 < nTeams && pow2 < 2048) {
-                        pow2 *= 2;
-                    }
-                    var totalUbRounds = Math.round(Math.log2(pow2));
-                    var totalLbRounds = (totalUbRounds - 1) * 2;
-
-                    for (var offset = 2; offset < totalLbRounds; offset++) {
-                        var lrNum = totalLbRounds - offset;
-                        var k = Math.floor((offset - 2) / 2);
-                        var tierStart = Math.pow(2, k + 2) + 1;
-                        var halfSize = Math.pow(2, k + 1);
-                        var tierEnd = Math.pow(2, k + 3);
-
-                        var posKey = "";
-                        if (offset % 2 === 0) {
-                            var sR = tierStart;
-                            var eR = tierStart + halfSize - 1;
-                            posKey = sR + "-" + eR;
-                        } else {
-                            var sR = tierStart + halfSize;
-                            var eR = tierEnd;
-                            posKey = sR + "-" + eR;
-                        }
-                        posItems.push({ key: posKey, label: "Losers Round " + lrNum });
-                    }
-                } else if (fmt === 'SWISS_LITE' || fmt === 'SWISS') {
-                    posItems.push({ key: "swiss_2-3", label: "Swiss 2-3" });
-                    posItems.push({ key: "swiss_1-3", label: "Swiss 1-3" });
-                    posItems.push({ key: "swiss_0-3", label: "Swiss 0-3" });
-                } else if (fmt === 'ROUND_ROBIN') {
-                    for (var p = 1; p <= Math.min(nTeams, 16); p++) {
-                        var lbl = "Rank " + p;
-                        if (p === 1) lbl = "Champion";
-                        else if (p === 2) lbl = "Runner-up";
-                        posItems.push({ key: String(p), label: lbl, isChamp: (p === 1) });
-                    }
-                } else if (fmt === 'GROUP_STAGE') {
-                    posItems.push({ key: "1", label: "Nhất Bảng / Vô Địch", isChamp: true });
-                    posItems.push({ key: "2", label: "Nhì Bảng / Á Quân" });
-                    posItems.push({ key: "3-4", label: "Hạng 3-4" });
-                    posItems.push({ key: "stage1_eliminated", label: "Vòng bảng" });
-                } else if (fmt === 'SINGLE_ELIMINATION' || !isMulti) {
-                    posItems.push({ key: "1", label: "Champion", isChamp: true });
-                    if (nTeams >= 2) posItems.push({ key: "2", label: "Runner-up" });
-                    var curLim = 4;
-                    while (curLim <= nTeams) {
-                        var sR = Math.floor(curLim / 2) + 1;
-                        var eR = curLim;
-                        var label = (curLim === 4) ? "Semi-final" : ((curLim === 8) ? "Quarter-final" : ("Round of " + curLim));
-                        posItems.push({ key: sR + "-" + eR, label: label });
-                        curLim *= 2;
-                    }
-                }
-
-                if (posItems.length > 0) {
-                    var html = "";
-                    posItems.forEach(function(item) {
-                        var rawVal = savedPointsJson[item.key];
-                        var val = (rawVal !== undefined && rawVal !== null && Number(rawVal) > 0) ? rawVal : "";
-                        if (item.stageHeader) {
-                            var isS2 = item.stageHeader.indexOf("STAGE 2") !== -1;
-                            var badgeColor = isS2 ? "#fbbf24" : "#2dd4bf";
-                            var badgeBg = isS2 ? "rgba(251, 191, 36, 0.12)" : "rgba(45, 212, 191, 0.12)";
-                            var badgeBorder = isS2 ? "rgba(251, 191, 36, 0.3)" : "rgba(45, 212, 191, 0.3)";
-                            var icon = isS2 ? "fa-trophy" : "fa-diagram-project";
-
-                            html += '<div style="margin-top: ' + (isS2 ? '0.25rem' : '1.25rem') + '; margin-bottom: 0.5rem; padding-bottom: 0.35rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">' +
-                                '<span style="font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: ' + badgeColor + '; background: ' + badgeBg + '; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid ' + badgeBorder + '; display: inline-flex; align-items: center; gap: 0.4rem;">' +
-                                '<i class="fa-solid ' + icon + '"></i> ' + item.stageHeader + '</span></div>';
-                        }
-                        if (item.isChamp) {
-                            var champVal = (savedPointsJson["1"] !== undefined && savedPointsJson["1"] !== null && Number(savedPointsJson["1"]) > 0) ? savedPointsJson["1"] : ("<%= (savedChampPoints != null && savedChampPoints > 0) ? savedChampPoints : "" %>" || val);
-                            html += '<div style="display: flex; align-items: center; justify-content: space-between; background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.25); padding: 0.75rem 1rem; border-radius: 8px;">' +
-                                '<div style="font-weight: 800; color: #fbbf24; font-size: 0.9rem;"><i class="fa-solid fa-trophy" style="margin-right: 0.35rem;"></i> ' + item.label + '</div>' +
-                                '<div style="display: flex; align-items: center; gap: 0.35rem;"><input type="number" name="champPoints" value="' + champVal + '" placeholder="0" min="0" onfocus="this.select()" class="form-control" style="width: 110px; font-size: 0.95rem; font-weight: 800; color: #fbbf24; text-align: right; border-color: rgba(251, 191, 36, 0.4);"><span style="font-size: 0.8rem; font-weight: 700; color: #fbbf24;">pts</span></div></div>';
-                        } else {
-                            html += '<div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.65rem 1rem; border-radius: 8px;">' +
-                                '<div style="font-weight: 700; color: #f8fafc; font-size: 0.85rem;">' + item.label + '</div>' +
-                                '<div style="display: flex; align-items: center; gap: 0.35rem;"><input type="number" name="point_pos_' + item.key + '" value="' + val + '" placeholder="0" min="0" onfocus="this.select()" class="form-control" style="width: 100px; font-size: 0.88rem; font-weight: 700; text-align: right;"><span style="font-size: 0.78rem; font-weight: 600; color: #94a3b8;">pts</span></div></div>';
-                        }
-                    });
-                    container.innerHTML = html;
-
-                    container.addEventListener('input', function () {
-                        var cfg = {};
-                        var allInputs = container.querySelectorAll('input[type="number"]');
-                        allInputs.forEach(function (inp) {
-                            var n = inp.name;
-                            var v = parseInt(inp.value, 10);
-                            if (!isNaN(v)) {
-                                if (n === 'champPoints') cfg["1"] = v;
-                                else if (n.startsWith('point_pos_')) cfg[n.replace('point_pos_', '')] = v;
-                            }
-                        });
-                        try {
-                            localStorage.setItem('tourma_points_config_' + tid, JSON.stringify(cfg));
-                        } catch (e) {}
-                    });
-                }
-            }
-
-            document.addEventListener('DOMContentLoaded', syncLocalFormatWithForm);
-            syncLocalFormatWithForm();
-
-            document.getElementById('pointConfigForm').addEventListener('submit', function () {
-                var tourneyId = '<%= tourneyId %>';
-                if (!tourneyId) return;
-
-                var config = {};
-                var inputs = this.querySelectorAll('input[type="number"]');
-                inputs.forEach(function (inp) {
-                    var name = inp.name;
-                    var val = parseInt(inp.value, 10) || 0;
-                    if (name === 'champPoints') {
-                        config["1"] = val;
-                    } else if (name.startsWith('point_pos_')) {
-                        var key = name.replace('point_pos_', '');
-                        config[key] = val;
-                    }
-                });
-
-                try {
-                    localStorage.setItem('tourma_points_config_' + tourneyId, JSON.stringify(config));
-                } catch (e) {}
-            });
-        </script>
     </body>
 </html>

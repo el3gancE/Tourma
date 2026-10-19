@@ -67,6 +67,21 @@ public class RollingPointConfigServlet extends HttpServlet {
         request.setAttribute("stage1Format", s1F);
         request.setAttribute("stage2Format", s2F);
 
+        if ("GSL".equalsIgnoreCase(s1F)) {
+            int groupCount = 0, groupSize = 0;
+            try (java.sql.Connection conn = new dao.DBContext().getConnection();
+                 java.sql.PreparedStatement ps = conn.prepareStatement("SELECT g.id, COUNT(gt.team_id) FROM groups g JOIN tournament_stages s ON s.id=g.stage_id LEFT JOIN group_teams gt ON gt.group_id=g.id WHERE s.tournament_id=? AND s.stage_order=1 GROUP BY g.id")) {
+                ps.setString(1, tournament.getId());
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) { groupCount++; groupSize = Math.max(groupSize, rs.getInt(2)); }
+                }
+            } catch (Exception e) { throw new ServletException("Cannot load GSL point categories", e); }
+            if (groupSize < 2) groupSize = Math.max(4, tournament.getMaxTeamsPerGroup());
+            if (groupCount == 0) groupCount = Math.max(1, (teamCount + groupSize - 1) / groupSize);
+            request.setAttribute("gslGroupCount", groupCount);
+            request.setAttribute("gslGroupSize", groupSize);
+        }
+
         request.getRequestDispatcher("/common/rolling/rolling-point-config.jsp").forward(request, response);
     }
 
@@ -116,7 +131,10 @@ public class RollingPointConfigServlet extends HttpServlet {
         }
         json.append("}");
 
-        saveTournamentPointsConfigSafe(tournamentId, champPoints, json.toString());
+        if (!saveTournamentPointsConfigSafe(tournamentId, champPoints, json.toString())) {
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Không thể lưu cấu hình điểm vào DB.");
+            return;
+        }
 
         dao.SeriesDAO.clearSeriesCaches();
         service.RollingWindowPointService.clearAllCaches();

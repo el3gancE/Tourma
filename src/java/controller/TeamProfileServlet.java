@@ -492,7 +492,7 @@ public class TeamProfileServlet extends HttpServlet {
                             // Points calculation for this tournament
                             int ptsEarned = 0;
                             try {
-                                ptsEarned = calculatePointsForTournament(t, tourneyRank);
+                                ptsEarned = calculatePointsForTournament(t, teamInTourney == null ? null : teamInTourney.getId());
                             } catch (Exception ignore) {}
                             totalAccumulatedPoints += ptsEarned;
 
@@ -767,19 +767,8 @@ public class TeamProfileServlet extends HttpServlet {
         return url.toString();
     }
 
-    private int calculatePointsForTournament(Tournament t, int rank) {
-        if (t == null) return 0;
-        RollingWindowPointService svc = RollingWindowPointService.getInstance();
-        Map<String, Integer> config = svc.parsePointsConfigJson(t.getSeriesPointsConfig());
-        if (!config.isEmpty()) {
-            return svc.resolvePointsForPosition(rank, config);
-        }
-        int champPts = (t.getSeriesRewardPoints() > 0) ? t.getSeriesRewardPoints() : 100;
-        if (rank == 1) return champPts;
-        if (rank == 2) return (int) Math.round(champPts * 0.70);
-        if (rank <= 4) return (int) Math.round(champPts * 0.40);
-        if (rank <= 8) return (int) Math.round(champPts * 0.20);
-        return (int) Math.round(champPts * 0.10);
+    private int calculatePointsForTournament(Tournament t, String teamId) {
+        return RollingWindowPointService.getInstance().getTournamentTeamPoints(t, teamId);
     }
 
     private String getFormatShortCode(String fmt) {
