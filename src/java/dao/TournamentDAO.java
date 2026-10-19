@@ -7,12 +7,257 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
+import java.util.StringJoiner;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import model.Tournament;
 
 /**
  * Data Access Object for Tournaments table
  */
 public class TournamentDAO {
+    /** Reset the selected stage and its dependants without touching earlier stages. */
+    public boolean resetStageMatches(String tournamentId, int stage) {
+        if (tournamentId == null || (stage != 1 && stage != 2)) return false;
+        try (Connection conn = new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            lockCutTournament(conn, tournamentId);
+            String scope = "tournament_id = ? AND (stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id = ? AND stage_order >= ?) OR (stage_id IS NULL AND ? = 1))";
+            try (PreparedStatement ps = conn.prepareStatement("UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE " + scope)) {
+                bindResetScope(ps, tournamentId, stage); ps.executeUpdate();
+            }
+            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM matches WHERE " + scope)) {
+                bindResetScope(ps, tournamentId, stage); ps.executeUpdate();
+            }
+            String sql = stage == 1
+                ? "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL, stage1_status = 'PENDING', stage2_teams = NULL WHERE id = ?"
+                : "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL WHERE id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) { ps.setString(1, tournamentId); ps.executeUpdate(); }
+            conn.commit();
+            clearTournamentCache(tournamentId);
+            service.RollingWindowPointService.clearAllCaches();
+            return true; // Each format initializes its bracket on the next GET.
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    private static void bindResetScope(PreparedStatement ps, String id, int stage) throws java.sql.SQLException {
+        ps.setString(1, id); ps.setString(2, id); ps.setInt(3, stage); ps.setInt(4, stage);
+    }
+
+    /** Trim only unused tail matches, and refuse to discard any recorded result. */
+    public void trimCutMatches(String id, int upperStop, int lowerStop) {
+        String stageScope = "m.tournament_id = ? AND (s.stage_order = 1 OR m.stage_id IS NULL)";
+        String tail = lowerStop < 0 ? "m.round_number > ?"
+            : "((m.bracket_type IN ('WINNER_BRACKET', 'UPPER', 'MAIN') AND m.round_number > ?) "
+                + "OR (m.bracket_type IN ('LOSER_BRACKET', 'LOWER', 'LB') AND m.round_number > ?) "
+                + "OR m.bracket_type IN ('GRAND_FINAL', 'GRAND_FINALS', 'GRAND_FINAL_RESET'))";
+        String select = "SELECT m.id, m.score1, m.score2, m.winner_id, m.is_bye FROM matches m WITH (UPDLOCK, HOLDLOCK) "
+            + "LEFT JOIN tournament_stages s ON s.id = m.stage_id WHERE " + stageScope + " AND (" + tail + ")";
+        try (Connection conn = new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            lockCutTournament(conn, id);
+            List<String> remove = new ArrayList<>();
+            try (PreparedStatement ps = conn.prepareStatement(select)) {
+                ps.setString(1, id); ps.setInt(2, upperStop); if (lowerStop >= 0) ps.setInt(3, lowerStop);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        if (rs.getObject(2) != null || rs.getObject(3) != null || (rs.getString(4) != null && !rs.getBoolean(5))) {
+                            throw new IllegalStateException("Nhánh cũ đã có kết quả sau vòng dừng. Cần reset rõ ràng trước khi chuyển sang nhánh cut.");
+                        }
+                        remove.add(rs.getString(1));
+                    }
+                }
+            }
+            for (String match : remove) {
+                try (PreparedStatement ps = conn.prepareStatement("UPDATE matches SET next_match_id = CASE WHEN next_match_id = ? THEN NULL ELSE next_match_id END, loser_next_match_id = CASE WHEN loser_next_match_id = ? THEN NULL ELSE loser_next_match_id END WHERE tournament_id = ? AND (stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id = ? AND stage_order = 1) OR stage_id IS NULL)")) {
+                    ps.setString(1, match); ps.setString(2, match); ps.setString(3, id); ps.setString(4, id); ps.executeUpdate();
+                }
+            }
+            for (String match : remove) {
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM matches WHERE id = ? AND tournament_id = ?")) {
+                    ps.setString(1, match); ps.setString(2, id); ps.executeUpdate();
+                }
+            }
+            conn.commit();
+        } catch (Exception e) { throw new IllegalStateException("Không thể chuyển nhánh cũ sang nhánh cut mà vẫn bảo toàn kết quả.", e); }
+    }
+
+    private static void lockCutTournament(Connection conn, String id) throws java.sql.SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT id FROM tournaments WITH (UPDLOCK, HOLDLOCK) WHERE id = ?")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw new IllegalStateException("Không tìm thấy giải đấu."); }
+        }
+    }
+
+    /** Validate winners from DB and persist the draw and stage lock in one transaction. */
+    public boolean saveCutStageTeams(String id, String payload, boolean lockStage) {
+        try (Connection conn = new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            lockCutTournament(conn, id);
+            List<CutTeam> qualified = qualifiedCutTeams(conn, id);
+            Map<String, CutTeam> byId = new LinkedHashMap<>();
+            for (CutTeam team : qualified) {
+                if (byId.put(team.id, team) != null) throw new IllegalStateException("Đội đi tiếp bị trùng.");
+            }
+            List<CutTeam> ordered = new ArrayList<>();
+            Set<String> supplied = new LinkedHashSet<>();
+            if (payload == null || !payload.trim().startsWith("[") || !payload.trim().endsWith("]")) return false;
+            Matcher matcher = Pattern.compile("\"id\"\\s*:\\s*\"([A-Za-z0-9_-]+)\"").matcher(payload);
+            while (matcher.find()) {
+                String teamId = matcher.group(1);
+                if (!supplied.add(teamId) || !byId.containsKey(teamId)) throw new IllegalArgumentException("Đội đi tiếp không hợp lệ.");
+                ordered.add(byId.get(teamId));
+            }
+            if (!supplied.equals(byId.keySet())) throw new IllegalArgumentException("Danh sách đội không khớp kết quả thi đấu.");
+            String canonical = cutTeamsJson(ordered);
+            try (PreparedStatement ps = conn.prepareStatement("SELECT stage2_teams FROM tournaments WHERE id = ? AND (stage1_status IN ('LOCKED', 'COMPLETED') OR EXISTS (SELECT 1 FROM matches m JOIN tournament_stages s ON s.id = m.stage_id WHERE m.tournament_id = ? AND s.stage_order > 1))")) {
+                ps.setString(1, id); ps.setString(2, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && !canonical.equals(rs.getString(1))) throw new IllegalStateException("Stage 2 đã có trận. Không thể thay danh sách hoặc bốc thăm lại.");
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement("UPDATE tournaments SET stage2_teams = ?" + (lockStage ? ", stage1_status = 'LOCKED'" : "") + " WHERE id = ?")) {
+                ps.setString(1, canonical); ps.setString(2, id); ps.executeUpdate();
+            }
+            conn.commit();
+            clearTournamentCache(id);
+            return true;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    public String getQualifiedCutTeamsJson(String id) {
+        try (Connection conn = new DBContext().getConnection()) {
+            return cutTeamsJson(qualifiedCutTeams(conn, id));
+        } catch (Exception e) { throw new IllegalStateException("Chưa xác định đủ đội đi tiếp từ kết quả đã lưu.", e); }
+    }
+
+    private static class CutTeam {
+        String id, name;
+        int seed;
+    }
+
+    private static class CutMatch {
+        String bracket, group, team1, team2, winner, status;
+        int round;
+    }
+
+    private static String cutBracket(String value) {
+        String b = value == null ? "" : value.toUpperCase(Locale.ROOT);
+        if (b.contains("GRAND") || "GF".equals(b)) return "GF";
+        if (b.contains("LOSER") || b.contains("LOWER") || "LB".equals(b)) return "LB";
+        return "UB";
+    }
+
+    private List<CutTeam> qualifiedCutTeams(Connection conn, String id) throws java.sql.SQLException {
+        String format;
+        int target;
+        try (PreparedStatement ps = conn.prepareStatement("SELECT t.advancing_seats_count, s.format FROM tournaments t JOIN tournament_stages s ON s.tournament_id = t.id AND s.stage_order = 1 WHERE t.id = ? AND t.tournament_type = 'MULTI_STAGE'")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw new IllegalStateException("Giải không phải multistage.");
+                target = rs.getInt(1); format = rs.getString(2).toUpperCase(Locale.ROOT);
+            }
+        }
+        Map<String, CutTeam> teams = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement("SELECT id, raw_name, original_seed FROM teams WITH (HOLDLOCK) WHERE tournament_id = ?")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) { CutTeam team = new CutTeam(); team.id = rs.getString(1); team.name = rs.getString(2); team.seed = rs.getInt(3); teams.put(team.id, team); }
+            }
+        }
+        List<CutMatch> games = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement("SELECT m.* FROM matches m WITH (UPDLOCK, HOLDLOCK) LEFT JOIN tournament_stages s ON s.id = m.stage_id WHERE m.tournament_id = ? AND (s.stage_order = 1 OR m.stage_id IS NULL) ORDER BY m.round_number, m.match_order, m.id")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    CutMatch game = new CutMatch(); game.bracket = cutBracket(rs.getString("bracket_type")); game.round = rs.getInt("round_number");
+                    game.group = rs.getString("group_id"); game.team1 = rs.getString("team1_id"); game.team2 = rs.getString("team2_id");
+                    game.winner = rs.getString("winner_id"); game.status = rs.getString("status"); games.add(game);
+                }
+            }
+        }
+        if ("GSL".equals(format)) {
+            Set<String> expectedGroups = new LinkedHashSet<>();
+            try (PreparedStatement ps = conn.prepareStatement("SELECT g.id FROM groups g JOIN tournament_stages s ON s.id = g.stage_id WHERE s.tournament_id = ? AND s.stage_order = 1")) {
+                ps.setString(1, id);
+                try (ResultSet rs = ps.executeQuery()) { while (rs.next()) expectedGroups.add(rs.getString(1)); }
+            }
+            Set<String> actualGroups = new LinkedHashSet<>();
+            for (CutMatch game : games) actualGroups.add(game.group);
+            if (expectedGroups.isEmpty() || !actualGroups.equals(expectedGroups)) throw new IllegalStateException("Nhánh GSL chưa đủ các bảng đã cấu hình.");
+        }
+        Set<String> winners = cutWinners(format, teams.size(), target, games);
+        List<CutTeam> qualified = new ArrayList<>();
+        for (String winner : winners) {
+            if (!teams.containsKey(winner)) throw new IllegalStateException("Đội không thuộc giải đấu.");
+            qualified.add(teams.get(winner));
+        }
+        return qualified;
+    }
+
+    private static Set<String> cutWinners(String format, int total, int target, List<CutMatch> games) {
+        if (target < 1 || target >= total || games.isEmpty()) throw new IllegalStateException("Cấu hình hoặc nhánh đấu chưa hợp lệ.");
+        Set<String> result = new LinkedHashSet<>();
+        if ("SINGLE_ELIMINATION".equals(format)) {
+            collectCutWinners(games, "UB", service.CountAdvanceTeamService.calculateStoppingRoundSE(total, target), target, result);
+        } else if ("DOUBLE_ELIMINATION".equals(format)) {
+            if (!service.CountAdvanceTeamService.isValidDECutTarget(total, target)) throw new IllegalStateException("Số đội đi tiếp DE không hợp lệ.");
+            int ub = service.DECutService.calculateUbStoppingRound(total, target);
+            collectCutWinners(games, "UB", ub, target / 2, result);
+            collectCutWinners(games, "LB", service.DECutService.calculateLbStoppingRound(ub), target / 2, result);
+        } else if ("GSL".equals(format)) {
+            Map<String, List<CutMatch>> groups = new LinkedHashMap<>();
+            for (CutMatch game : games) {
+                if (game.group == null) throw new IllegalStateException("Trận GSL chưa có bảng.");
+                groups.computeIfAbsent(game.group, k -> new ArrayList<>()).add(game);
+            }
+            if (target % groups.size() != 0) throw new IllegalStateException("Số suất không khớp số bảng.");
+            int perGroup = target / groups.size();
+            for (List<CutMatch> group : groups.values()) {
+                if (perGroup == 1) {
+                    String source = group.stream().anyMatch(g -> "GF".equals(g.bracket)) ? "GF" : "UB";
+                    collectCutWinners(group, source, lastCutRound(group, source), 1, result);
+                } else {
+                    if (perGroup % 2 != 0) throw new IllegalStateException("Số suất mỗi bảng không hợp lệ.");
+                    collectCutWinners(group, "UB", lastCutRound(group, "UB"), perGroup / 2, result);
+                    collectCutWinners(group, "LB", lastCutRound(group, "LB"), perGroup / 2, result);
+                }
+            }
+        } else throw new IllegalArgumentException("Thể thức chưa được hỗ trợ.");
+        if (result.size() != target) throw new IllegalStateException("Chưa đủ đội đi tiếp.");
+        return result;
+    }
+
+    private static int lastCutRound(List<CutMatch> games, String source) {
+        return games.stream().filter(g -> source.equals(g.bracket)).mapToInt(g -> g.round).max().orElse(0);
+    }
+
+    private static void collectCutWinners(List<CutMatch> games, String source, int round, int expected, Set<String> result) {
+        int count = 0;
+        for (CutMatch game : games) {
+            if (game.round != round || !source.equals(game.bracket)) continue;
+            if (game.team1 == null && game.team2 == null && "FINISHED".equalsIgnoreCase(game.status)) continue;
+            if (game.winner == null || (!game.winner.equals(game.team1) && !game.winner.equals(game.team2))) throw new IllegalStateException("Trận quyết định chưa hoàn tất.");
+            if (!result.add(game.winner)) throw new IllegalStateException("Đội đi tiếp bị trùng.");
+            count++;
+        }
+        if (count != expected) throw new IllegalStateException("Số đội ở vòng dừng chưa đúng cấu hình.");
+    }
+
+    private static String cutTeamsJson(List<CutTeam> teams) {
+        StringJoiner json = new StringJoiner(",", "[", "]");
+        for (CutTeam team : teams) json.add("{\"id\":\"" + cutEscape(team.id) + "\",\"name\":\"" + cutEscape(team.name) + "\",\"seed\":" + team.seed + ",\"originalSeed\":" + team.seed + "}");
+        return json.toString();
+    }
+
+    private static String cutEscape(String value) {
+        if (value == null) return "";
+        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t");
+    }
 
     public static final String TOURNAMENT_SELECT_QUERY =
         "SELECT t.*, " +
@@ -805,6 +1050,13 @@ public class TournamentDAO {
     }
 
     public boolean saveStage2Teams(String tournamentId, String stage2TeamsJson) {
+        Tournament tournament = getTournamentById(tournamentId);
+        if (tournament != null && "MULTI_STAGE".equalsIgnoreCase(tournament.getTournamentType())
+                && ("SINGLE_ELIMINATION".equalsIgnoreCase(tournament.getFormat())
+                    || "DOUBLE_ELIMINATION".equalsIgnoreCase(tournament.getFormat())
+                    || "GSL".equalsIgnoreCase(tournament.getFormat()))) {
+            return saveCutStageTeams(tournamentId, stage2TeamsJson, false);
+        }
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
         clearTournamentCache(tournamentId);
         String sql = "UPDATE tournaments SET stage2_teams = ? WHERE id = ?";
@@ -979,6 +1231,15 @@ public class TournamentDAO {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
         // Validate allowed values
         if (!"PENDING".equals(status) && !"LOCKED".equals(status) && !"COMPLETED".equals(status)) return false;
+        if (!"PENDING".equals(status)) {
+            Tournament tournament = getTournamentById(tournamentId);
+            if (tournament != null && "MULTI_STAGE".equalsIgnoreCase(tournament.getTournamentType())
+                    && ("SINGLE_ELIMINATION".equalsIgnoreCase(tournament.getFormat())
+                        || "DOUBLE_ELIMINATION".equalsIgnoreCase(tournament.getFormat())
+                        || "GSL".equalsIgnoreCase(tournament.getFormat()))) {
+                return saveCutStageTeams(tournamentId, getStage2Teams(tournamentId), true);
+            }
+        }
         String sql = "UPDATE tournaments SET stage1_status = ? WHERE id = ?";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();

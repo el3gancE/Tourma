@@ -44,7 +44,7 @@ public class DoubleEliminationServlet extends HttpServlet {
         }
 
         String dbMatchesJson = doubleEliminationDAO.getMatchesJsonForFrontend(tournamentId, currentStage);
-        Map<String, Object> deData = doubleEliminationDAO.getDoubleEliminationData(tournamentId);
+        Map<String, Object> deData = doubleEliminationDAO.getDoubleEliminationData(tournamentId, currentStage);
 
         request.setAttribute("tournament", tournament);
         request.setAttribute("tournamentId", tournamentId);

@@ -237,58 +237,9 @@
                 }
                 if (!cutTarget || cutTarget <= 1) return false;
 
-                // Check actual matches in UB stop round and LB stop round
-                if (teamsList && teamsList.length > 0) {
-                    var pow2 = 1;
-                    while (pow2 < teamsList.length) pow2 *= 2;
-                    var totalUbRounds = Math.log2(pow2);
-                    var ubQualifiersCount = cutTarget / 2;
-                    var ubStopRound = Math.max(1, totalUbRounds - Math.round(Math.log2(ubQualifiersCount)));
-                    var lbStopRound = Math.max(1, (ubStopRound - 1) * 2);
-
-                    var mKeys = Object.keys(matchesMap);
-                    var ubCutDone = true;
-                    var lbCutDone = true;
-                    var hasUbCut = false;
-                    var hasLbCut = false;
-
-                    for (var mIdx = 0; mIdx < mKeys.length; mIdx++) {
-                        var mat = matchesMap[mKeys[mIdx]];
-                        if (!mat) continue;
-                        var bType = (mat.bracketType || '').toUpperCase();
-                        var rNum = mat.roundNumber;
-
-                        if (bType === 'UPPER' && rNum === ubStopRound) {
-                            var t1 = mat.team1 ? mat.team1.name : '';
-                            var t2 = mat.team2 ? mat.team2.name : '';
-                            if (t1 === 'BYE' || t2 === 'BYE' || mat.isBye) continue;
-                            hasUbCut = true;
-                            if (!mat.winnerId || (mat.winnerId !== 'team1' && mat.winnerId !== 'team2')) {
-                                ubCutDone = false;
-                            }
-                        } else if (bType === 'LOWER' && rNum === lbStopRound) {
-                            var lt1 = mat.team1 ? mat.team1.name : '';
-                            var lt2 = mat.team2 ? mat.team2.name : '';
-                            if (lt1 === 'BYE' || lt2 === 'BYE' || mat.isBye) continue;
-                            hasLbCut = true;
-                            if (!mat.winnerId || (mat.winnerId !== 'team1' && mat.winnerId !== 'team2')) {
-                                lbCutDone = false;
-                            }
-                        }
-                    }
-
-                    if (hasUbCut && ubCutDone && hasLbCut && lbCutDone) {
-                        return true;
-                    }
-                    if (hasUbCut || hasLbCut) {
-                        return false;
-                    }
-                }
-
-                // Fallback signal: check tourma_stage1_completed_
-                try {
-                    if (localStorage.getItem('tourma_stage1_completed_' + tid) === 'true') return true;
-                } catch(e) {}
+                var engine = window.TourmaDoubleElimination;
+                return !!(engine && typeof engine.getAdvancingTeams === 'function'
+                    && engine.getAdvancingTeams().length === Number(cutTarget));
             }
 
             // 6. GSL (Dual Tournament) Stage 1
@@ -530,6 +481,8 @@
                 }
             } catch (e) {
                 console.warn('[StageEndPopup] getAdvancingTeams error:', e);
+                // A failed GSL draw must not be replaced with an old cached draw.
+                if (this.format === 'GSL') throw e;
             }
 
             // Fallback: check localStorage for tourma_stage2_teams_
@@ -546,6 +499,23 @@
         /**
          * Handle Confirm End Stage: Lock and immediately transition to Stage 2
          */
+        resetStage: function (tid, stage, contextPath) {
+            return fetch(contextPath + '/api/cut-stage', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                body: new URLSearchParams({action: 'resetStage', tournamentId: tid, stage: stage}).toString()
+            }).then(function (res) { return res.json(); }).then(function (data) {
+                if (!data || data.status !== 'success') throw new Error('Không reset được stage. Dữ liệu chưa được thay đổi.');
+                var keys = ['tourma_final_locked_', 'tourma_champion_', 'tourma_final_champion_'];
+                if (Number(stage) === 1) {
+                    keys = keys.concat(['tourma_stage2_teams_', 'tourma_advance_teams_', 'tourma_stage1_locked_',
+                        'tourma_stage1_completed_', 'tourma_bracket_stage2_', 'tourma_matches_stage2_']);
+                }
+                try { keys.forEach(function (key) { localStorage.removeItem(key + tid); }); } catch (e) {}
+                window.location.reload();
+            }).catch(function (error) { window.alert(error.message || 'Không reset được stage. Vui lòng thử lại.'); });
+        },
+
         confirmStageEnd: function () {
             var tid = this.tournamentId;
             if (!tid || this.transitionInProgress) return;
@@ -595,21 +565,29 @@
                     }
                     var s2Url = this.resolveStage2Url(tid);
                     // GSL returns seed order. DE consumes consecutive pairs instead.
-                    if (this.format === 'GSL' && s2Url.indexOf('double-elimination') !== -1) {
+                    if ((this.format === 'GSL' || this.format === 'DOUBLE_ELIMINATION') && s2Url.indexOf('double-elimination') !== -1) {
                         var gsl = window.TourmaGSL || window.GSLEngine;
-                        var seeds = gsl.getStandardBracketSeeds(advTeams.length);
+                        var seeds = gsl ? gsl.getStandardBracketSeeds(advTeams.length)
+                            : window.TourmaBracketAlgorithm.generateSeedPairs(advTeams.length).reduce(function (all, pair) { return all.concat(pair); }, []);
                         advTeams = seeds.map(function (seed) { return advTeams[seed - 1]; });
                     }
                     this.pendingStage2Teams = advTeams;
                 }
                 var teams = this.pendingStage2Teams;
-                // Persist teams before locking; do not navigate on either save failure.
-                window.TourmaStageEndPopup_saveStage2TeamsToDB(tid, teams)
-                    .then(requireSuccess)
-                    .then(function () {
-                        return window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'LOCKED');
-                    })
-                    .then(requireSuccess)
+                var save;
+                if (['SINGLE_ELIMINATION', 'GSL', 'DOUBLE_ELIMINATION'].indexOf(this.format) !== -1) {
+                    save = fetch((window.TourmaContextPath || '') + '/api/cut-stage', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                        body: new URLSearchParams({action: 'finalizeStage1', tournamentId: tid, stage2Teams: JSON.stringify(teams)}).toString()
+                    }).then(function (res) { return res.json(); }).then(requireSuccess);
+                } else {
+                    save = window.TourmaStageEndPopup_saveStage2TeamsToDB(tid, teams)
+                        .then(requireSuccess).then(function () {
+                            return window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'LOCKED');
+                        }).then(requireSuccess);
+                }
+                save
                     .then(function () {
                         try {
                             localStorage.setItem('tourma_stage2_teams_' + tid, JSON.stringify(teams));

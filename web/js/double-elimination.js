@@ -1244,30 +1244,42 @@
          * Reset entire Double Elimination bracket via POST to servlet
          */
         resetBracket: function (skipConfirm) {
-            var self = this;
-            var tid = this.tournamentId || window.TourmaTournamentId || 'demo';
-            fetch((this.contextPath || '') + '/api/match-update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                body: new URLSearchParams({
-                    action: 'resetBracket',
-                    tournamentId: tid,
-                    stage: this.currentStage || 1
-                }).toString()
-            })
-                .then(function (res) { return res.json(); })
-                .then(function (data) {
-                    window.location.reload();
-                })
-                .catch(function (err) {
-                    console.error('[DoubleEliminationEngine] Reset error:', err);
-                    window.location.reload();
-                });
+            return window.StageEndPopup.resetStage(this.tournamentId, this.currentStage || 1, this.contextPath || window.TourmaContextPath || '');
         },
 
         /**
          * Check if stage or entire tournament has completed
          */
+        getAdvancingTeams: function () {
+            if (this.currentStage !== 1 || this.cutTarget <= 1) return [];
+            var size = 1;
+            while (size < this.teamsList.length) size *= 2;
+            var ubStop = Math.max(1, Math.log2(size) - Math.log2(this.cutTarget / 2));
+            var lbStop = (ubStop - 1) * 2;
+            var upper = [], lower = [], seen = {};
+            var keys = Object.keys(this.matchesMap);
+            for (var i = 0; i < keys.length; i++) {
+                var match = this.matchesMap[keys[i]];
+                var type = String(match.bracketType || '').toUpperCase();
+                var isUpper = type === 'UPPER' || type === 'WINNER_BRACKET' || type === 'MAIN';
+                var isLower = type === 'LOWER' || type === 'LOSER_BRACKET' || type === 'LB';
+                if (!((isUpper && Number(match.roundNumber) === ubStop) || (isLower && Number(match.roundNumber) === lbStop))) continue;
+                var team = match.winnerId === 'team1' ? match.team1 : (match.winnerId === 'team2' ? match.team2 : null);
+                if (!team || this.isPlaceholder(team.name) || !team.id || seen[team.id]) continue;
+                seen[team.id] = true;
+                var seed = parseInt(String(team.originalSeed || team.seed || '').replace('#', ''), 10) || 0;
+                (isUpper ? upper : lower).push({id: team.id, name: team.name, seed: seed, originalSeed: seed});
+            }
+            if (upper.length !== this.cutTarget / 2 || lower.length !== this.cutTarget / 2) return [];
+            [upper, lower].forEach(function (pot) {
+                for (var j = pot.length - 1; j > 0; j--) {
+                    var index = Math.floor(Math.random() * (j + 1));
+                    var value = pot[j]; pot[j] = pot[index]; pot[index] = value;
+                }
+            });
+            return upper.concat(lower);
+        },
+
         checkTournamentCompletion: function () {
             var self = this;
             // 1. Qualifier/Cut Stages (Cut Top N)

@@ -1000,38 +1000,7 @@
          * Reset entire Single Elimination bracket via POST to servlet
          */
         resetBracket: function (skipConfirm) {
-            var self = this;
-            var tid = this.tournamentId || window.TourmaTournamentId || 'demo';
-            fetch((this.contextPath || '') + '/api/match-update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                },
-                body: new URLSearchParams({
-                    action: 'resetBracket',
-                    tournamentId: tid,
-                    stage: this.currentStage || 1
-                }).toString()
-            })
-                .then(function (res) { return res.json(); })
-                .then(function (data) {
-                    if (data && data.status === 'success') {
-                        window.location.reload();
-                    } else {
-                        // Fallback to /single-elimination
-                        fetch((self.contextPath || '') + '/single-elimination', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                            body: new URLSearchParams({ action: 'reset', tournamentId: tid, stage: self.currentStage || 1 }).toString()
-                        })
-                            .then(function () { window.location.reload(); })
-                            .catch(function () { window.location.reload(); });
-                    }
-                })
-                .catch(function (err) {
-                    console.error('[SingleEliminationEngine] Reset error:', err);
-                    window.location.reload();
-                });
+            return window.StageEndPopup.resetStage(this.tournamentId, this.currentStage || 1, this.contextPath || window.TourmaContextPath || '');
         },
 
         /**

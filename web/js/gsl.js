@@ -1950,27 +1950,7 @@
          * Reset entire GSL bracket via POST to servlet
          */
         resetBracket: function (skipConfirm) {
-            var self = this;
-            var tid = this.tournamentId || window.TourmaTournamentId || 'demo';
-            var ctx = self.getContextPath();
-            var apiUrl = (ctx ? ctx : '') + '/api/match-update';
-            fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                body: new URLSearchParams({
-                    action: 'resetBracket',
-                    tournamentId: tid,
-                    stage: this.currentStage || 1
-                }).toString()
-            })
-                .then(function (res) { return res.json(); })
-                .then(function () {
-                    window.location.reload();
-                })
-                .catch(function (err) {
-                    console.error('[TourmaGSL] Reset error:', err);
-                    window.location.reload();
-                });
+            return window.StageEndPopup.resetStage(this.tournamentId, this.currentStage || 1, this.contextPath || window.TourmaContextPath || '');
         },
 
         /**
@@ -2155,6 +2135,13 @@
             var cleanTeam = function (teamObj, rank) {
                 if (!teamObj || !teamObj.name || self.isPlaceholder(teamObj.name) || teamObj.name === 'BYE') return null;
                 var res = Object.assign({}, teamObj);
+                // Older match payloads omitted IDs; recover identity from the registered teams.
+                if (!res.id) {
+                    var registered = (self.teamsList || []).find(function (team) {
+                        return team && typeof team === 'object' && (team.name || team.rawName) === res.name;
+                    });
+                    if (registered && registered.id) res.id = registered.id;
+                }
                 res.groupId = grp.groupId || grp.title || '';
                 res.groupName = grp.title || grp.groupId || '';
                 res.rankInGroup = rank;
@@ -2187,7 +2174,10 @@
                 var t2 = cleanTeam(w2, 2);
                 if (t2) {
                     // Safety check: ensure 2nd place is not the same team as 1st place
-                    if (!t1 || (t1.name !== t2.name && String(t1.id) !== String(t2.id))) {
+                    var sameTeam = t1 && ((t1.id && t2.id)
+                        ? String(t1.id) === String(t2.id)
+                        : t1.name === t2.name);
+                    if (!sameTeam) {
                         qualifiers.push(t2);
                     }
                 }
@@ -2262,84 +2252,72 @@
         },
 
         /**
-         * Two-Pot Random Draw for Stage 2:
-         * 1. 100% Guaranteed UB vs LB pairings in Round 1
-         * 2. Completely randomized draw
-         * 3. Zero Same-Group Conflict: teams from the same GSL group NEVER meet in Round 1 of Stage 2
+         * Randomized UB/LB draw with a complete cross-group matching.
+         * Return seed order for SE; the transition controller converts it to pairs for DE.
          */
         pairForStage2RandomCrossover: function (firstPlaceTeams, secondPlaceTeams) {
-            var k = firstPlaceTeams.length + secondPlaceTeams.length;
-            var m = firstPlaceTeams.length;
-
-            var potUB = firstPlaceTeams.slice();
-            var potLB = secondPlaceTeams.slice();
-
-            // 1. Randomize Pot UB (Nhánh Thắng)
-            for (var i = potUB.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var tU = potUB[i]; potUB[i] = potUB[j]; potUB[j] = tU;
+            if (firstPlaceTeams.length !== secondPlaceTeams.length) {
+                throw new Error('Số đội đi tiếp từ nhánh thắng và nhánh thua chưa bằng nhau.');
             }
-
-            // 2. Randomize Pot LB (Nhánh Thua)
-            for (var i = potLB.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var tL = potLB[i]; potLB[i] = potLB[j]; potLB[j] = tL;
-            }
-
-            // 3. Resolve same-group conflicts so teams from the same GSL group do NOT meet in Round 1
-            if (potUB.length > 1 && potUB.length === potLB.length) {
-                var seeds = this.getStandardBracketSeeds(k);
-                for (var attempt = 0; attempt < 100; attempt++) {
-                    var conflictFound = false;
-                    for (var matchIdx = 0; matchIdx < m; matchIdx++) {
-                        var topSeed = seeds[matchIdx * 2];
-                        var botSeed = seeds[matchIdx * 2 + 1];
-                        var topIdx = topSeed - 1;
-                        var botIdx = botSeed - 1 - m;
-
-                        var tUb = potUB[topIdx];
-                        var tLb = potLB[botIdx];
-
-                        var gUb = tUb ? (tUb.groupId || tUb.groupName || '') : '';
-                        var gLb = tLb ? (tLb.groupId || tLb.groupName || '') : '';
-
-                        if (gUb && gLb && gUb === gLb) {
-                            conflictFound = true;
-                            var swapped = false;
-                            for (var alt = 0; alt < m; alt++) {
-                                if (alt !== botIdx) {
-                                    var altSeed = seeds[alt * 2];
-                                    var altTopIdx = altSeed - 1;
-                                    var altUb = potUB[altTopIdx];
-                                    var altGUb = altUb ? (altUb.groupId || altUb.groupName || '') : '';
-                                    var altLb = potLB[alt];
-                                    var altGLb = altLb ? (altLb.groupId || altLb.groupName || '') : '';
-
-                                    // Swap if neither match will have a same-group conflict
-                                    if (altGLb !== gUb && altGUb !== gLb) {
-                                        var tmp = potLB[botIdx];
-                                        potLB[botIdx] = potLB[alt];
-                                        potLB[alt] = tmp;
-                                        swapped = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (!swapped) {
-                                var randAlt = (botIdx + 1) % m;
-                                var tmp = potLB[botIdx];
-                                potLB[botIdx] = potLB[randAlt];
-                                potLB[randAlt] = tmp;
-                            }
-                            break;
-                        }
+            var shuffle = function (items) {
+                for (var i = items.length - 1; i > 0; i--) {
+                    var j = Math.floor(Math.random() * (i + 1));
+                    var value = items[i]; items[i] = items[j]; items[j] = value;
+                }
+                return items;
+            };
+            var groupOf = function (team) {
+                var group = String(team.groupId || team.groupName || '').trim();
+                if (!group) throw new Error('Thiếu thông tin bảng của đội đi tiếp.');
+                return group;
+            };
+            // Clone teams so assigning draw seeds cannot change the source qualifiers.
+            var potUB = shuffle(firstPlaceTeams.map(function (team) { return Object.assign({}, team); }));
+            var potLB = shuffle(secondPlaceTeams.map(function (team) { return Object.assign({}, team); }));
+            var count = potUB.length;
+            if (count === 0) return [];
+            var upperGroups = potUB.map(groupOf);
+            var lowerGroups = potLB.map(groupOf);
+            var candidates = upperGroups.map(function (group) {
+                var allowed = [];
+                for (var i = 0; i < count; i++) {
+                    if (group !== lowerGroups[i]) allowed.push(i);
+                }
+                return shuffle(allowed);
+            });
+            var lowerOwner = new Array(count).fill(-1);
+            // An augmenting path can reassign earlier pairs, so a local conflict cannot
+            // prevent a complete draw when a valid matching exists.
+            var assign = function (upper, visited) {
+                for (var i = 0; i < candidates[upper].length; i++) {
+                    var lower = candidates[upper][i];
+                    if (visited[lower]) continue;
+                    visited[lower] = true;
+                    if (lowerOwner[lower] === -1 || assign(lowerOwner[lower], visited)) {
+                        lowerOwner[lower] = upper;
+                        return true;
                     }
-                    if (!conflictFound) break;
+                }
+                return false;
+            };
+            for (var upper = 0; upper < count; upper++) {
+                if (!assign(upper, new Array(count).fill(false))) {
+                    throw new Error('Không thể ghép UB–LB khác bảng với danh sách đội đi tiếp hiện tại.');
                 }
             }
+            var upperPartner = new Array(count);
+            for (var lower = 0; lower < count; lower++) upperPartner[lowerOwner[lower]] = lower;
 
-            // 4. Combine: Pot UB occupies slots 1..m, Pot LB occupies slots m+1..k
-            var ordered = potUB.concat(potLB);
+            // Matching indices and seed positions are separate: place each matched LB
+            // team into the seed slot that will face its UB partner in the real bracket.
+            var seeds = this.getStandardBracketSeeds(count * 2);
+            var seededLower = new Array(count);
+            for (var match = 0; match < count; match++) {
+                var top = seeds[match * 2] - 1;
+                var bottom = seeds[match * 2 + 1] - 1 - count;
+                seededLower[bottom] = potLB[upperPartner[top]];
+            }
+            var ordered = potUB.concat(seededLower);
             for (var idx = 0; idx < ordered.length; idx++) {
                 ordered[idx].seed = idx + 1;
                 ordered[idx].originalSeed = idx + 1;

@@ -141,11 +141,13 @@ public class GSLStageDAO extends DBContext {
                             .append("\"roundNumber\":").append(roundNumber).append(",")
                             .append("\"matchNumber\":").append(matchNum).append(",")
                             .append("\"team1\":{")
+                            .append("\"id\":\"").append(escapeJson(rs.getString("team1_id") != null ? rs.getString("team1_id") : "")).append("\",")
                             .append("\"name\":\"").append(escapeJson(t1Name != null ? t1Name : "")).append("\",")
                             .append("\"seed\":\"").append(escapeJson(t1Seed)).append("\",")
                             .append("\"score\":\"").append(escapeJson(s1)).append("\"")
                             .append("},")
                             .append("\"team2\":{")
+                            .append("\"id\":\"").append(escapeJson(rs.getString("team2_id") != null ? rs.getString("team2_id") : "")).append("\",")
                             .append("\"name\":\"").append(escapeJson(t2Name != null ? t2Name : "")).append("\",")
                             .append("\"seed\":\"").append(escapeJson(t2Seed)).append("\",")
                             .append("\"score\":\"").append(escapeJson(s2)).append("\"")
@@ -243,23 +245,13 @@ public class GSLStageDAO extends DBContext {
             try {
                 String stageId = getOrCreateStageId(conn, tournamentId, stageOrder);
 
-                // Clear any incomplete / stale matches before generating new GSL bracket
-                try (PreparedStatement psUnlink = conn.prepareStatement(
-                        "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ? AND (stage_id = ? OR stage_id IS NULL OR stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR))")) {
-                    psUnlink.setString(1, tournamentId);
-                    psUnlink.setString(2, stageId);
-                    psUnlink.setInt(3, stageOrder);
-                    psUnlink.setInt(4, stageOrder);
-                    psUnlink.executeUpdate();
-                }
-
-                try (PreparedStatement psDel = conn.prepareStatement(
-                        "DELETE FROM matches WHERE tournament_id = ? AND (stage_id = ? OR stage_id IS NULL OR stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR))")) {
-                    psDel.setString(1, tournamentId);
-                    psDel.setString(2, stageId);
-                    psDel.setInt(3, stageOrder);
-                    psDel.setInt(4, stageOrder);
-                    psDel.executeUpdate();
+                // Existing results are only removed by an explicit reset, never by opening a page.
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT COUNT(*) FROM matches WHERE tournament_id = ? AND (stage_id = ? OR (stage_id IS NULL AND ? = 1))")) {
+                    ps.setString(1, tournamentId); ps.setString(2, stageId); ps.setInt(3, stageOrder);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) throw new IllegalStateException("Nhánh GSL hiện tại chưa khớp cấu hình. Cần reset rõ ràng để tạo lại.");
+                    }
                 }
 
                 int globalMatchSeq = 1;
@@ -802,41 +794,7 @@ public class GSLStageDAO extends DBContext {
     }
 
     public boolean resetBracketMatches(String tournamentId, int stageOrder) {
-        if (tournamentId == null || tournamentId.trim().isEmpty())
-            return false;
-        try (Connection conn = getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                String stageId = getOrCreateStageId(conn, tournamentId, stageOrder);
-                try (PreparedStatement psUnlink = conn.prepareStatement(
-                        "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ? AND (stage_id = ? OR stage_id IS NULL OR stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR))")) {
-                    psUnlink.setString(1, tournamentId);
-                    psUnlink.setString(2, stageId);
-                    psUnlink.setInt(3, stageOrder);
-                    psUnlink.setInt(4, stageOrder);
-                    psUnlink.executeUpdate();
-                }
-
-                try (PreparedStatement psDel = conn.prepareStatement(
-                        "DELETE FROM matches WHERE tournament_id = ? AND (stage_id = ? OR stage_id IS NULL OR stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR))")) {
-                    psDel.setString(1, tournamentId);
-                    psDel.setString(2, stageId);
-                    psDel.setInt(3, stageOrder);
-                    psDel.setInt(4, stageOrder);
-                    psDel.executeUpdate();
-                }
-
-                conn.commit();
-                ensureGSLInitialized(tournamentId, stageOrder);
-                return true;
-            } catch (Exception ex) {
-                conn.rollback();
-                ex.printStackTrace();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        return new TournamentDAO().resetStageMatches(tournamentId, stageOrder);
     }
 
     private String getOrCreateStageId(Connection conn, String tournamentId, int stageOrder) {

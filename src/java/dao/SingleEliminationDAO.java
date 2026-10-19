@@ -144,34 +144,7 @@ public class SingleEliminationDAO extends DBContext {
     }
 
     public void cleanupOrphanedCutMatches(String tournamentId, int stageOrder, int stoppingRound) {
-        if (tournamentId == null || tournamentId.trim().isEmpty() || stoppingRound <= 0) return;
-
-        // 1. Break FK links on matches at or above stopping round for this specific stage
-        String unlinkSql = "UPDATE matches SET next_match_id = NULL, next_slot = NULL, loser_next_match_id = NULL "
-                + "WHERE tournament_id = ? AND (stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR) OR (stage_id IS NULL AND ? = 1)) AND round_number >= ?";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(unlinkSql)) {
-            ps.setString(1, tournamentId);
-            ps.setInt(2, stageOrder);
-            ps.setInt(3, stageOrder);
-            ps.setInt(4, stageOrder);
-            ps.setInt(5, stoppingRound);
-            ps.executeUpdate();
-        } catch (Exception ignore) {}
-
-        // 2. Delete matches that belong to rounds beyond stopping round for this specific stage
-        String delSql = "DELETE FROM matches WHERE tournament_id = ? AND (stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR stage_id = 'STAGE_' + CAST(? AS VARCHAR) OR (stage_id IS NULL AND ? = 1)) AND round_number > ?";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(delSql)) {
-            ps.setString(1, tournamentId);
-            ps.setInt(2, stageOrder);
-            ps.setInt(3, stageOrder);
-            ps.setInt(4, stageOrder);
-            ps.setInt(5, stoppingRound);
-            ps.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        if (stageOrder == 1 && stoppingRound > 0) new TournamentDAO().trimCutMatches(tournamentId, stoppingRound, -1);
     }
 
     public String getMatchesJsonForFrontend(String tournamentId, int stageOrder) {
@@ -825,74 +798,7 @@ public class SingleEliminationDAO extends DBContext {
     }
 
     public boolean resetBracketMatches(String tournamentId, int stageOrder) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String tId = tournamentId.trim();
-
-        // 1. Break self-referencing foreign keys first so SQL Server won't throw FK violation on delete
-        String nullLinksSql = "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ?";
-        try (Connection conn = getConnection();
-             PreparedStatement psNull = conn.prepareStatement(nullLinksSql)) {
-            psNull.setString(1, tId);
-            psNull.executeUpdate();
-        } catch (Exception ignore) {}
-
-        // 2. Delete all existing matches for this tournament and stage
-        String delSql = "DELETE m FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id LIKE '%STAGE_' + CAST(? AS VARCHAR) + '%')";
-        try (Connection conn = getConnection();
-             PreparedStatement psDel = conn.prepareStatement(delSql)) {
-            psDel.setString(1, tId);
-            psDel.setInt(2, stageOrder);
-            psDel.setInt(3, stageOrder);
-            psDel.setInt(4, stageOrder);
-            psDel.setInt(5, stageOrder);
-            psDel.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        // 3. Reset tournament overall status and champion in tournaments table
-        String resetTourneySql = "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL WHERE id = ?";
-        try (Connection conn = getConnection();
-             PreparedStatement psT = conn.prepareStatement(resetTourneySql)) {
-            psT.setString(1, tId);
-            psT.executeUpdate();
-        } catch (Exception ignore) {}
-
-        // 4. Reset stage1_status & clear downstream Stage 2 if resetting Stage 1
-        if (stageOrder == 1) {
-            String delS2Sql = "DELETE FROM matches WHERE tournament_id = ? AND (stage_id LIKE '%_S2%' OR stage_id LIKE '%STAGE_2%')";
-            try (Connection conn = getConnection();
-                 PreparedStatement psDelS2 = conn.prepareStatement(delS2Sql)) {
-                psDelS2.setString(1, tId);
-                psDelS2.executeUpdate();
-            } catch (Exception ignore) {}
-
-            try (Connection conn = getConnection();
-                 PreparedStatement psS1 = conn.prepareStatement("UPDATE tournaments SET stage1_status = 'PENDING', stage2_teams = NULL WHERE id = ?")) {
-                psS1.setString(1, tId);
-                psS1.executeUpdate();
-            } catch (Exception ignore) {}
-        }
-
-        // 5. Rebuild 100% fresh, pristine Single Elimination match tree
-        if (stageOrder > 1) {
-            List<Team> s2Teams = getStage2TeamsList(tId);
-            if (s2Teams != null && s2Teams.size() >= 2) {
-                initializeBracketTreeInDB(tId, stageOrder, s2Teams);
-            }
-        } else {
-            ParticipantDAO pDao = new ParticipantDAO();
-            List<Team> teams = pDao.getTeamsByTournamentId(tId);
-            if (teams != null && !teams.isEmpty()) {
-                initializeBracketTreeInDB(tId, stageOrder, teams);
-            }
-        }
-
-        service.RollingWindowPointService.clearAllCaches();
-        return true;
+        return new TournamentDAO().resetStageMatches(tournamentId, stageOrder);
     }
 
     private int parseNumericId(String strId, int defaultSeq) {
