@@ -257,6 +257,25 @@
         /**
          * Construct Groups & Bracket Data Structures from database records
          */
+        setGroupRoundTitles: function (group) {
+            var isFinal = function (match) {
+                return match && (match.isGrandFinal || String(match.bracketType || '').indexOf('GRAND') !== -1
+                    || /_GF(?:_|$)/i.test(String(match.rawId || match.matchId || match.id || '')));
+            };
+            var hasFinal = Object.keys(group.matchesMap || {}).some(function (key) {
+                return isFinal(group.matchesMap[key]);
+            });
+            var isCut = this.currentStage === 1 && this.cutTarget > 0 && !hasFinal
+                && (this.tournamentType === 'MULTI_STAGE' || window.TourmaTournamentType === 'MULTI_STAGE');
+            (group.upperRounds || []).forEach(function (round, index, rounds) {
+                round.title = (round.matches || []).some(isFinal) ? 'Final'
+                    : isCut && index === rounds.length - 1 ? "Winner's Qualification" : 'UB Round ' + round.roundNumber;
+            });
+            (group.lowerRounds || []).forEach(function (round, index, rounds) {
+                round.title = isCut && index === rounds.length - 1 ? "Loser's Qualification" : 'LB Round ' + round.roundNumber;
+            });
+        },
+
         hydrateGroupsModel: function (dbMatches) {
             this.matchesMap = {};
             this.groupsMap = {};
@@ -305,6 +324,7 @@
                         dropToMatchId: (m.dropToMatchId || m.loserNextMatchId) ? String(m.dropToMatchId || m.loserNextMatchId) : null,
                         dropToMatchSlot: m.dropToMatchSlot || m.loserNextSlot || 1,
                         isBye: m.isBye === true || m.isBye === 'true',
+                        isGrandFinal: bType.indexOf('GRAND') !== -1 || bType === 'GF',
                         status: m.status || 'SCHEDULED'
                     };
 
@@ -367,6 +387,8 @@
                             matches: lMatches
                         });
                     }
+
+                    this.setGroupRoundTitles(grp);
 
                     // Clean display numbers #1..#5 within each group for standard UI aesthetics
                     this.assignIntraGroupMatchNumbers(grp);
@@ -756,6 +778,7 @@
                         matchesMap: groupMap
                     };
 
+                    this.setGroupRoundTitles(this.groupsMap[k]);
                     this.assignIntraGroupMatchNumbers(this.groupsMap[k]);
                     this.autoLinkIntraGroupMatches(this.groupsMap[k]);
                     this.fillMissingPlaceholdersForGroup(this.groupsMap[k]);

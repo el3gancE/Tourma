@@ -171,9 +171,9 @@
                 for (var r = 1; r <= maxRound; r++) {
                     var rMatches = roundGroups[r] || [];
                     rMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
-                    var isSEStage1 = (this.currentStage === 1 && (this.cutTarget > 0 || window.TourmaTournamentType === 'MULTI_STAGE' || (window.TourmaDbStage1Status && window.TourmaDbStage1Status[this.tournamentId] !== undefined)));
+                    var isSEStage1 = this.currentStage === 1 && this.cutTarget > 1;
                     var rTitle = isSEStage1
-                        ? ('Round ' + r)
+                        ? (r === maxRound ? "Winner's Qualification" : 'Round ' + r)
                         : ((window.TourmaBracketAlgorithm && window.TourmaBracketAlgorithm.getRoundTitle)
                             ? window.TourmaBracketAlgorithm.getRoundTitle(r, maxRound, this.cutTarget > 1)
                             : ('Round ' + r));

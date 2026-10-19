@@ -66,7 +66,7 @@
             var teamsInRound = Math.pow(2, diff + 1);
 
             if (isCutStage) {
-                return 'Round ' + r;
+                return r === totalRounds ? "Winner's Qualification" : 'Round ' + r;
             }
 
             if (diff === 0) return 'Final';

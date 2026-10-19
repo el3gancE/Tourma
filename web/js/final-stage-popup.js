@@ -144,6 +144,13 @@
                         return null;
                     }
 
+                    // With one final, the stored winner also covers a tied score
+                    // decided by penalties or an explicit winner selection.
+                    if (!gfReset) {
+                        if (gfMain.winnerId === 'team1' || (gfT1.id && String(gfMain.winnerId) === String(gfT1.id))) return gft1Name;
+                        if (gfMain.winnerId === 'team2' || (gfT2.id && String(gfMain.winnerId) === String(gfT2.id))) return gft2Name;
+                    }
+
                     var gfS1 = (gfT1.score !== '' && gfT1.score !== null && !isNaN(Number(gfT1.score))) ? Number(gfT1.score) : null;
                     var gfS2 = (gfT2.score !== '' && gfT2.score !== null && !isNaN(Number(gfT2.score))) ? Number(gfT2.score) : null;
 

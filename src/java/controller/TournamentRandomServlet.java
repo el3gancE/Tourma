@@ -235,8 +235,8 @@ public class TournamentRandomServlet extends HttpServlet {
         // 1. Resolve Tournament format
         TournamentDAO tourneyDao = new TournamentDAO();
         Tournament t = tourneyDao.getTournamentById(tournamentId);
-        String format = (t != null && t.getFormat() != null) ? t.getFormat().trim().toUpperCase()
-                : "SINGLE_ELIMINATION";
+        String stageFormat = new TournamentDAO().getStageFormat(tournamentId, stageOrder);
+        String format = stageFormat == null ? "SINGLE_ELIMINATION" : stageFormat.trim().toUpperCase();
 
         if (format.contains("SWISS")) {
             SwissSystemDAO swissDao = new SwissSystemDAO();
@@ -265,6 +265,7 @@ public class TournamentRandomServlet extends HttpServlet {
                     + "WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? OR CAST(match_order AS VARCHAR) = ?)";
 
             while (maxPasses-- > 0) {
+                if (format.contains("DOUBLE")) new DoubleEliminationDAO().syncByeAdvancementsInDB(conn, tournamentId, stageOrder);
                 StringBuilder sql = new StringBuilder("SELECT m.id, m.round_number, m.bracket_type, m.team1_id, m.team2_id, "
                         + "m.next_match_id, m.next_slot, m.loser_next_match_id, m.loser_next_slot, m.group_id "
                         + "FROM matches m WITH (NOLOCK) "
@@ -461,6 +462,7 @@ public class TournamentRandomServlet extends HttpServlet {
                 }
             }
 
+            if (format.contains("DOUBLE")) new DoubleEliminationDAO().syncByeAdvancementsInDB(conn, tournamentId, stageOrder);
             conn.commit();
             service.RollingWindowPointService.clearAllCaches();
 
@@ -520,8 +522,8 @@ public class TournamentRandomServlet extends HttpServlet {
 
         TournamentDAO tourneyDao = new TournamentDAO();
         Tournament t = tourneyDao.getTournamentById(tournamentId);
-        String format = (t != null && t.getFormat() != null) ? t.getFormat().trim().toUpperCase()
-                : "SINGLE_ELIMINATION";
+        String stageFormat = new TournamentDAO().getStageFormat(tournamentId, stageOrder);
+        String format = stageFormat == null ? "SINGLE_ELIMINATION" : stageFormat.trim().toUpperCase();
 
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection()) {
@@ -642,6 +644,7 @@ public class TournamentRandomServlet extends HttpServlet {
             } catch (Exception ignore) {
             }
 
+            if (format.contains("DOUBLE")) new DoubleEliminationDAO().syncByeAdvancementsInDB(conn, tournamentId, stageOrder);
             conn.commit();
             service.RollingWindowPointService.clearAllCaches();
 
@@ -682,8 +685,8 @@ public class TournamentRandomServlet extends HttpServlet {
 
         TournamentDAO tourneyDao = new TournamentDAO();
         Tournament t = tourneyDao.getTournamentById(tournamentId);
-        String format = (t != null && t.getFormat() != null) ? t.getFormat().trim().toUpperCase()
-                : "SINGLE_ELIMINATION";
+        String stageFormat = new TournamentDAO().getStageFormat(tournamentId, stageOrder);
+        String format = stageFormat == null ? "SINGLE_ELIMINATION" : stageFormat.trim().toUpperCase();
 
         if (format.contains("SWISS")) {
             SwissSystemDAO swissDao = new SwissSystemDAO();
@@ -825,6 +828,7 @@ public class TournamentRandomServlet extends HttpServlet {
             } catch (Exception ignore) {
             }
 
+            if (format.contains("DOUBLE")) new DoubleEliminationDAO().syncByeAdvancementsInDB(conn, tournamentId, stageOrder);
             conn.commit();
             service.RollingWindowPointService.clearAllCaches();
 

@@ -960,6 +960,13 @@ public class TournamentDAO {
         return list;
     }
 
+    public String getStageFormat(String tournamentId, int stageOrder) {
+        List<String> formats = getStageFormats(tournamentId);
+        if (stageOrder > 0 && stageOrder <= formats.size()) return formats.get(stageOrder - 1);
+        Tournament tournament = getTournamentById(tournamentId);
+        return tournament == null ? null : tournament.getFormat();
+    }
+
     public boolean updateTournamentStage1Status(String tournamentId, String stage1Status) {
         return saveStage1Status(tournamentId, stage1Status);
     }

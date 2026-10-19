@@ -59,18 +59,18 @@
         },
 
         /**
-         * Standard Round Titles for Upper Bracket: UB Round 1, UB Round 2, ... UB Final
+         * Standard Round Titles for Upper Bracket: UB Round 1, UB Round 2, ...; qualification only at a cut
          */
-        getUpperRoundTitle: function (r, totalUbRounds) {
-            if (r === totalUbRounds) return 'UB Final';
+        getUpperRoundTitle: function (r, totalUbRounds, isCutStage) {
+            if (isCutStage && r === totalUbRounds) return "Winner's Qualification";
             return 'UB Round ' + r;
         },
 
         /**
-         * Standard Round Titles for Lower Bracket: LB Round 1, LB Round 2, ... LB Final
+         * Standard Round Titles for Lower Bracket: LB Round 1, LB Round 2, ...; qualification only at a cut
          */
-        getLowerRoundTitle: function (r, totalLbRounds) {
-            if (r === totalLbRounds) return 'LB Final';
+        getLowerRoundTitle: function (r, totalLbRounds, isCutStage) {
+            if (isCutStage && r === totalLbRounds) return "Loser's Qualification";
             return 'LB Round ' + r;
         },
 
@@ -144,8 +144,8 @@
                     bracketType: 'UPPER',
                     roundNumber: 1,
                     status: isBye ? 'COMPLETED' : 'SCHEDULED',
-                    team1: { name: t1Name, seed: t1Seed, score: '' },
-                    team2: { name: t2Name, seed: t2Seed, score: '' },
+                    team1: { id: item1 && typeof item1 === 'object' ? (item1.id || '') : '', name: t1Name, seed: t1Seed, score: '' },
+                    team2: { id: item2 && typeof item2 === 'object' ? (item2.id || '') : '', name: t2Name, seed: t2Seed, score: '' },
                     winnerId: null,
                     nextMatchId: null,
                     nextMatchSlot: (i % 2 === 0) ? 1 : 2,
@@ -401,7 +401,6 @@
                 var lbFinalMatch = (lowerRounds.length > 0) ? lowerRounds[lowerRounds.length - 1].matches[0] : null;
 
                 var gf1Id = internalIdCounter++;
-                var gf2Id = internalIdCounter++;
 
                 var grandFinal1 = {
                     matchId: gf1Id,
@@ -412,24 +411,9 @@
                     team1: { name: 'Winner UB', seed: '', score: '' },
                     team2: { name: lbFinalMatch ? 'Winner LB' : 'Loser UB', seed: '', score: '' },
                     winnerId: null,
-                    nextMatchId: gf2Id,
-                    nextMatchSlot: 1,
-                    isResetMatch: false
-                };
-
-                var grandFinalReset = {
-                    matchId: gf2Id,
-                    matchNumber: null,
-                    bracketType: 'GRAND_FINAL',
-                    roundNumber: totalUbRounds + 1,
-                    status: 'SCHEDULED',
-                    team1: { name: 'Winner UB', seed: '', score: '' },
-                    team2: { name: lbFinalMatch ? 'Winner LB' : 'Loser UB', seed: '', score: '' },
-                    winnerId: null,
                     nextMatchId: null,
                     nextMatchSlot: 1,
-                    isResetMatch: true,
-                    isUnlocked: false
+                    isResetMatch: false
                 };
 
                 if (ubFinalMatch) {
@@ -446,13 +430,12 @@
                 }
 
                 matchesMap[gf1Id] = grandFinal1;
-                matchesMap[gf2Id] = grandFinalReset;
 
                 grandFinalsRound = {
                     roundNumber: totalUbRounds + 1,
                     bracketType: 'GRAND_FINAL',
-                    title: 'Grand Final',
-                    matches: [grandFinal1, grandFinalReset]
+                    title: 'Final',
+                    matches: [grandFinal1]
                 };
             }
 
@@ -522,7 +505,8 @@
                     else if ((t1 === 'BYE' && t2 && t2 !== 'BYE' && !String(t2).startsWith('W #') && !String(t2).startsWith('L #') && !String(t2).startsWith('Winner')) ||
                              (t2 === 'BYE' && t1 && t1 !== 'BYE' && !String(t1).startsWith('W #') && !String(t1).startsWith('L #') && !String(t1).startsWith('Winner'))) {
                         var realWinnerSlot = (t1 === 'BYE') ? 'team2' : 'team1';
-                        var realWinnerName = (t1 === 'BYE') ? t2 : t1;
+                        var realWinner = (t1 === 'BYE') ? m.team2 : m.team1;
+                    var realWinnerName = realWinner.name;
                         var realWinnerSeed = (t1 === 'BYE') ? (m.team2 ? m.team2.seed : '') : (m.team1 ? m.team1.seed : '');
 
                         if (m.status !== 'COMPLETED' || m.winnerId !== realWinnerSlot) {
@@ -538,11 +522,9 @@
                             var currSlotName = (slot === 1) ? nextM.team1.name : nextM.team2.name;
                             if (currSlotName !== realWinnerName) {
                                 if (slot === 1) {
-                                    nextM.team1.name = realWinnerName;
-                                    nextM.team1.seed = realWinnerSeed;
+                                    nextM.team1 = Object.assign({}, realWinner, {score: ''});
                                 } else {
-                                    nextM.team2.name = realWinnerName;
-                                    nextM.team2.seed = realWinnerSeed;
+                                    nextM.team2 = Object.assign({}, realWinner, {score: ''});
                                 }
                                 changed = true;
                             }
@@ -794,7 +776,9 @@
             var currMatch = this.findMatchInMap(matchesMap, matchId);
             if (!currMatch) return;
 
-            var winnerName = isT1Winner ? currMatch.team1.name : currMatch.team2.name;
+            var winnerTeam = isT1Winner ? currMatch.team1 : currMatch.team2;
+            var loserTeam = isT1Winner ? currMatch.team2 : currMatch.team1;
+            var winnerName = winnerTeam.name;
             var winnerSeed = isT1Winner ? currMatch.team1.seed : currMatch.team2.seed;
             var loserName = isT1Winner ? currMatch.team2.name : currMatch.team1.name;
             var loserSeed = isT1Winner ? currMatch.team2.seed : currMatch.team1.seed;
@@ -805,11 +789,9 @@
             if (nextM) {
                 var slot = currMatch.nextMatchSlot || 1;
                 if (slot === 1) {
-                    nextM.team1.name = winnerName;
-                    nextM.team1.seed = winnerSeed;
+                    nextM.team1 = Object.assign({}, winnerTeam, {score: ''});
                 } else {
-                    nextM.team2.name = winnerName;
-                    nextM.team2.seed = winnerSeed;
+                    nextM.team2 = Object.assign({}, winnerTeam, {score: ''});
                 }
                 nextM.team1.score = '';
                 nextM.team2.score = '';
@@ -827,11 +809,9 @@
 
             if (dropM && loserName && loserName !== 'BYE') {
                 if (dropSlot === 1) {
-                    dropM.team1.name = loserName;
-                    dropM.team1.seed = loserSeed;
+                    dropM.team1 = Object.assign({}, loserTeam, {score: ''});
                 } else {
-                    dropM.team2.name = loserName;
-                    dropM.team2.seed = loserSeed;
+                    dropM.team2 = Object.assign({}, loserTeam, {score: ''});
                 }
                 dropM.team1.score = '';
                 dropM.team2.score = '';

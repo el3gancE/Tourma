@@ -163,6 +163,7 @@ public class MatchUpdateServlet extends HttpServlet {
                         + "\"nextSlot\":\"" + escapeJson(result.nextSlot != null ? result.nextSlot : "") + "\","
                         + "\"loserNextMatchId\":\"" + escapeJson(result.loserNextMatchId != null ? result.loserNextMatchId : "") + "\","
                         + "\"loserNextSlot\":\"" + escapeJson(result.loserNextSlot != null ? result.loserNextSlot : "") + "\""
+                        + (result.matchesJson != null ? ",\"matchesData\":" + result.matchesJson : "")
                         + "}");
             } else {
                 out.print("{\"status\":\"error\",\"message\":\"" + escapeJson(result.errorMessage) + "\"}");
@@ -185,6 +186,7 @@ public class MatchUpdateServlet extends HttpServlet {
         public String nextSlot = null;
         public String loserNextMatchId = null;
         public String loserNextSlot = null;
+        public String matchesJson = null;
     }
 
     /**
@@ -263,7 +265,8 @@ public class MatchUpdateServlet extends HttpServlet {
             if (tournamentId != null && !tournamentId.trim().isEmpty()) {
                 try {
                     Tournament tourney = new TournamentDAO().getTournamentById(tournamentId.trim());
-                    String fmt = (tourney != null && tourney.getFormat() != null) ? tourney.getFormat().trim().toUpperCase() : "";
+                    String selectedFormat = new TournamentDAO().getStageFormat(tournamentId.trim(), currentStage);
+                    String fmt = selectedFormat == null ? "" : selectedFormat.trim().toUpperCase();
                     if (fmt.contains("GSL")) {
                         new dao.GSLStageDAO().ensureGSLInitialized(tournamentId.trim(), currentStage);
                     } else if (fmt.contains("DOUBLE") || fmt.contains("DE")) {
@@ -498,6 +501,30 @@ public class MatchUpdateServlet extends HttpServlet {
                 }
             }
 
+            boolean isDoubleElimination = false;
+            int resolvedStageOrder = currentStage;
+            String previousWinner = null;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT m.winner_id, s.format, s.stage_order, t.stage1_status FROM matches m WITH (UPDLOCK, HOLDLOCK) LEFT JOIN tournament_stages s ON s.id = m.stage_id JOIN tournaments t ON t.id = m.tournament_id WHERE m.id = ? AND m.tournament_id = ?")) {
+                ps.setString(1, dbMatchId); ps.setString(2, resolvedTourneyId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        previousWinner = rs.getString(1);
+                        isDoubleElimination = "DOUBLE_ELIMINATION".equalsIgnoreCase(rs.getString(2));
+                        if (rs.getObject(3) != null) resolvedStageOrder = rs.getInt(3);
+                        if (isDoubleElimination && resolvedStageOrder == 1 && ("LOCKED".equalsIgnoreCase(rs.getString(4)) || "COMPLETED".equalsIgnoreCase(rs.getString(4)))) {
+                            throw new IllegalStateException("Stage 1 đã khóa. Cần mở khóa trước khi sửa kết quả.");
+                        }
+                    }
+                }
+            }
+            if (isDoubleElimination && (team1Id == null || team2Id == null || team1Id.equals(team2Id) || winnerId == null)) {
+                throw new IllegalStateException("Trận DE cần đủ hai đội và một đội thắng hợp lệ.");
+            }
+            if (isDoubleElimination && previousWinner != null && !java.util.Objects.equals(previousWinner, winnerId)) {
+                new dao.DoubleEliminationDAO().assertResultChangeAllowed(conn, resolvedTourneyId, stageId, dbMatchId);
+            }
+
             // 4. Update match in matches table
             String matchStatus = (score1 != null && score2 != null) ? "FINISHED" : ((team1Id != null && team2Id != null) ? "READY" : "PENDING");
             String updateSql = "UPDATE matches SET "
@@ -605,11 +632,18 @@ public class MatchUpdateServlet extends HttpServlet {
                 } catch (Exception ignore) {}
             }
 
+            if (isDoubleElimination) {
+                new dao.DoubleEliminationDAO().syncByeAdvancementsInDB(conn, resolvedTourneyId, resolvedStageOrder);
+            }
             conn.commit();
 
             // Clear in-memory caches to reflect new match state immediately
             RollingWindowPointService.clearAllCaches();
             TournamentDAO.clearTournamentCaches();
+
+            if (isDoubleElimination) {
+                res.matchesJson = new dao.DoubleEliminationDAO().getMatchesJsonForFrontend(resolvedTourneyId, resolvedStageOrder);
+            }
 
             res.success = true;
             res.matchId = dbMatchId;
@@ -663,6 +697,19 @@ public class MatchUpdateServlet extends HttpServlet {
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
+            // Full DE match IDs must not fall through ambiguous numeric-suffix lookup.
+            try (PreparedStatement ps = conn.prepareStatement("SELECT m.stage_id, s.format FROM matches m JOIN tournament_stages s ON s.id = m.stage_id WHERE m.id = ? AND m.tournament_id = ?")) {
+                ps.setString(1, mIdClean); ps.setString(2, tournamentId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && "DOUBLE_ELIMINATION".equalsIgnoreCase(rs.getString(2))) {
+                        new dao.DoubleEliminationDAO().resetMatchAndDependants(conn, tournamentId, rs.getString(1), mIdClean);
+                        conn.commit();
+                        RollingWindowPointService.clearAllCaches();
+                        return true;
+                    }
+                }
+            }
+
 
             String dbMatchId = null;
             String resolvedTourneyId = tournamentId;

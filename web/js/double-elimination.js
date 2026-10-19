@@ -225,8 +225,8 @@
                     var uMatches = upperGroups[u] || [];
                     uMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
                     var uTitle = (window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.getUpperRoundTitle === 'function')
-                        ? window.TourmaDoubleElimAlgorithm.getUpperRoundTitle(u, maxUbRound)
-                        : ('UB Vòng ' + u);
+                        ? window.TourmaDoubleElimAlgorithm.getUpperRoundTitle(u, maxUbRound, this.currentStage === 1 && this.cutTarget > 1)
+                        : ('UB Round ' + u);
 
                     this.upperRounds.push({
                         roundNumber: u,
@@ -241,8 +241,8 @@
                     var lMatches = lowerGroups[l] || [];
                     lMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
                     var lTitle = (window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.getLowerRoundTitle === 'function')
-                        ? window.TourmaDoubleElimAlgorithm.getLowerRoundTitle(l, maxLbRound)
-                        : ('LB Vòng ' + l);
+                        ? window.TourmaDoubleElimAlgorithm.getLowerRoundTitle(l, maxLbRound, this.currentStage === 1 && this.cutTarget > 1)
+                        : ('LB Round ' + l);
 
                     this.lowerRounds.push({
                         roundNumber: l,
@@ -259,7 +259,7 @@
                     this.grandFinalsRound = {
                         roundNumber: gfRoundNum,
                         bracketType: 'GRAND_FINAL',
-                        title: 'Grand Final',
+                        title: 'Final',
                         matches: gfMatches
                     };
                 }
@@ -314,7 +314,7 @@
                         var p1 = this.findParentMatch(m.matchId, 1);
                         var w1 = this.getMatchWinner(p1);
                         if (w1 && w1.name && w1.name !== 'BYE' && !this.isPlaceholder(w1.name)) {
-                            m.team1 = { name: w1.name, seed: w1.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                            m.team1 = Object.assign({}, w1, { score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' });
                         } else {
                             var p1Label = (p1 && p1.matchNumber) ? ('W #' + p1.matchNumber) : (p1 && p1.isBye ? this.getNonByeTeamOrPlaceholder(p1) : 'TBD');
                             m.team1 = { name: p1Label, seed: '', score: '' };
@@ -324,7 +324,7 @@
                         var p2 = this.findParentMatch(m.matchId, 2);
                         var w2 = this.getMatchWinner(p2);
                         if (w2 && w2.name && w2.name !== 'BYE' && !this.isPlaceholder(w2.name)) {
-                            m.team2 = { name: w2.name, seed: w2.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                            m.team2 = Object.assign({}, w2, { score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' });
                         } else {
                             var p2Label = (p2 && p2.matchNumber) ? ('W #' + p2.matchNumber) : (p2 && p2.isBye ? this.getNonByeTeamOrPlaceholder(p2) : 'TBD');
                             m.team2 = { name: p2Label, seed: '', score: '' };
@@ -342,7 +342,7 @@
                         } else {
                             var l1 = this.getMatchLoser(drop1);
                             if (l1 && l1.name && l1.name !== 'BYE' && !this.isPlaceholder(l1.name)) {
-                                m.team1 = { name: l1.name, seed: l1.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                                m.team1 = Object.assign({}, l1, { score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' });
                             } else {
                                 var drop1Label = drop1.matchNumber ? ('L #' + drop1.matchNumber) : 'TBD';
                                 m.team1 = { name: drop1Label, seed: '', score: '' };
@@ -356,7 +356,7 @@
                         } else {
                             var l2 = this.getMatchLoser(drop2);
                             if (l2 && l2.name && l2.name !== 'BYE' && !this.isPlaceholder(l2.name)) {
-                                m.team2 = { name: l2.name, seed: l2.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                                m.team2 = Object.assign({}, l2, { score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' });
                             } else {
                                 var drop2Label = drop2.matchNumber ? ('L #' + drop2.matchNumber) : 'TBD';
                                 m.team2 = { name: drop2Label, seed: '', score: '' };
@@ -377,7 +377,7 @@
                         var lbParent = this.findParentMatch(m.matchId, 1);
                         var lbW = this.getMatchWinner(lbParent);
                         if (lbW && lbW.name && lbW.name !== 'BYE' && !this.isPlaceholder(lbW.name)) {
-                            m.team1 = { name: lbW.name, seed: lbW.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                            m.team1 = Object.assign({}, lbW, { score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' });
                         } else if (lbParent && lbParent.isBye) {
                             var fwd = this.getNonByeTeamOrPlaceholder(lbParent);
                             m.team1 = { name: fwd, seed: '', score: '' };
@@ -393,7 +393,7 @@
                         } else {
                             var ubL = this.getMatchLoser(ubDrop);
                             if (ubL && ubL.name && ubL.name !== 'BYE' && !this.isPlaceholder(ubL.name)) {
-                                m.team2 = { name: ubL.name, seed: ubL.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                                m.team2 = Object.assign({}, ubL, { score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' });
                             } else {
                                 var ubDropLabel = ubDrop.matchNumber ? ('L #' + ubDrop.matchNumber) : 'TBD';
                                 m.team2 = { name: ubDropLabel, seed: '', score: '' };
@@ -410,7 +410,7 @@
                         var lbP1 = this.findParentMatch(m.matchId, 1);
                         var lbW1 = this.getMatchWinner(lbP1);
                         if (lbW1 && lbW1.name && lbW1.name !== 'BYE' && !this.isPlaceholder(lbW1.name)) {
-                            m.team1 = { name: lbW1.name, seed: lbW1.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                            m.team1 = Object.assign({}, lbW1, { score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' });
                         } else if (lbP1 && lbP1.isBye) {
                             var fwd1 = this.getNonByeTeamOrPlaceholder(lbP1);
                             m.team1 = { name: fwd1, seed: '', score: '' };
@@ -423,7 +423,7 @@
                         var lbP2 = this.findParentMatch(m.matchId, 2);
                         var lbW2 = this.getMatchWinner(lbP2);
                         if (lbW2 && lbW2.name && lbW2.name !== 'BYE' && !this.isPlaceholder(lbW2.name)) {
-                            m.team2 = { name: lbW2.name, seed: lbW2.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                            m.team2 = Object.assign({}, lbW2, { score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' });
                         } else if (lbP2 && lbP2.isBye) {
                             var fwd2 = this.getNonByeTeamOrPlaceholder(lbP2);
                             m.team2 = { name: fwd2, seed: '', score: '' };
@@ -441,7 +441,7 @@
                         var gfUb = this.findParentMatch(m.matchId, 1);
                         var gfUbW = this.getMatchWinner(gfUb);
                         if (gfUbW && gfUbW.name && gfUbW.name !== 'BYE' && !this.isPlaceholder(gfUbW.name)) {
-                            m.team1 = { name: gfUbW.name, seed: gfUbW.seed || '', score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' };
+                            m.team1 = Object.assign({}, gfUbW, { score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' });
                         } else {
                             m.team1 = { name: 'Winner UB', seed: '', score: '' };
                         }
@@ -450,7 +450,7 @@
                         var gfLb = this.findParentMatch(m.matchId, 2);
                         var gfLbW = this.getMatchWinner(gfLb);
                         if (gfLbW && gfLbW.name && gfLbW.name !== 'BYE' && !this.isPlaceholder(gfLbW.name)) {
-                            m.team2 = { name: gfLbW.name, seed: gfLbW.seed || '', score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' };
+                            m.team2 = Object.assign({}, gfLbW, { score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' });
                         } else {
                             m.team2 = { name: 'Winner LB', seed: '', score: '' };
                         }
@@ -814,9 +814,9 @@
                 var gfHeader = document.createElement('div');
                 gfHeader.className = 'de-round-header single-round-header gf';
                 var gfCtrlHtml = (window.TourmaRoundControls && typeof window.TourmaRoundControls.renderHeaderControlsHtml === 'function')
-                    ? window.TourmaRoundControls.renderHeaderControlsHtml(gfRoundNum, 'Grand Final', 'GRAND_FINAL')
+                    ? window.TourmaRoundControls.renderHeaderControlsHtml(gfRoundNum, 'Final', 'GRAND_FINAL')
                     : '';
-                gfHeader.innerHTML = '<div class="round-header-title">Grand Final</div>' + gfCtrlHtml;
+                gfHeader.innerHTML = '<div class="round-header-title">Final</div>' + gfCtrlHtml;
                 gfCol.appendChild(gfHeader);
 
                 var gfStack = document.createElement('div');
@@ -1139,6 +1139,12 @@
                 .then(function (res) { return res.json(); })
                 .then(function (data) {
                     if (data && data.status === 'success') {
+                        if (Array.isArray(data.matchesData) && data.matchesData.length > 0) {
+                            self.hydrateBracketModel(data.matchesData);
+                            self.render();
+                            self.checkTournamentCompletion();
+                            return;
+                        }
                         // Update local match state
                         m.team1 = m.team1 || { name: t1Name };
                         m.team2 = m.team2 || { name: t2Name };

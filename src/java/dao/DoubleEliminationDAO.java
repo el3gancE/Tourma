@@ -17,6 +17,206 @@ import java.util.Map;
  * Manages Upper Bracket (Winner), Lower Bracket (Loser), and Grand Finals 100% in SQL Server.
  */
 public class DoubleEliminationDAO extends DBContext {
+    private static class DeInput {
+        DeNode source;
+        boolean loser;
+        DeInput(DeNode source, boolean loser) { this.source = source; this.loser = loser; }
+    }
+
+    /** Resolve BYEs from completed feeders, including empty branches, inside the caller's transaction. */
+    public void syncByeAdvancementsInDB(Connection conn, String tournamentId, int stageOrder) throws Exception {
+        String stageId = null;
+        try (PreparedStatement ps = conn.prepareStatement("SELECT id FROM tournament_stages WHERE tournament_id = ? AND stage_order = ?")) {
+            ps.setString(1, tournamentId); ps.setInt(2, stageOrder);
+            try (ResultSet rs = ps.executeQuery()) { if (rs.next()) stageId = rs.getString(1); else if (stageOrder != 1) return; }
+        }
+        syncStageByes(conn, tournamentId, stageId);
+    }
+
+    public void syncByeAdvancementsInDB(String tournamentId, int stageOrder) {
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            syncByeAdvancementsInDB(conn, tournamentId, stageOrder);
+            conn.commit();
+        } catch (Exception e) { throw new IllegalStateException("Không thể đồng bộ nhánh DE mà vẫn bảo toàn kết quả.", e); }
+    }
+
+    private void syncStageByes(Connection conn, String tournamentId, String stageId) throws Exception {
+        Map<String, DeNode> nodes = new java.util.LinkedHashMap<>();
+        Map<String, List<Object>> original = new HashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM matches WITH (UPDLOCK, HOLDLOCK) WHERE tournament_id = ? AND (stage_id = ? OR (stage_id IS NULL AND ? IS NULL))")) {
+            ps.setString(1, tournamentId); ps.setString(2, stageId); ps.setString(3, stageId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    DeNode node = new DeNode(); node.id = rs.getString("id");
+                    node.team1Id = rs.getString("team1_id"); node.team2Id = rs.getString("team2_id");
+                    node.winnerId = rs.getString("winner_id"); node.status = rs.getString("status"); node.isBye = rs.getBoolean("is_bye");
+                    node.nextMatchId = rs.getString("next_match_id"); node.nextSlot = rs.getString("next_slot");
+                    node.loserNextMatchId = rs.getString("loser_next_match_id"); node.loserNextSlot = rs.getString("loser_next_slot");
+                    node.hasScore = rs.getObject("score1") != null || rs.getObject("score2") != null;
+                    nodes.put(node.id, node); original.put(node.id, deState(node));
+                }
+            }
+        }
+        resolveDeByes(nodes);
+        String sql = "UPDATE matches SET team1_id = ?, team2_id = ?, winner_id = ?, loser_id = ?, is_bye = ?, status = ? WHERE id = ? AND tournament_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (DeNode node : nodes.values()) {
+                if (original.get(node.id).equals(deState(node))) continue;
+                String loser = node.winnerId == null || node.isBye ? null
+                    : node.winnerId.equals(node.team1Id) ? node.team2Id : node.team1Id;
+                ps.setString(1, node.team1Id); ps.setString(2, node.team2Id); ps.setString(3, node.winnerId); ps.setString(4, loser);
+                ps.setBoolean(5, node.isBye); ps.setString(6, node.status); ps.setString(7, node.id); ps.setString(8, tournamentId); ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    private static void resolveDeByes(Map<String, DeNode> nodes) {
+        Map<String, DeInput[]> incoming = new HashMap<>();
+        for (DeNode source : nodes.values()) {
+            addDeInput(incoming, nodes, source.nextMatchId, source.nextSlot, source, false);
+            addDeInput(incoming, nodes, source.loserNextMatchId, source.loserNextSlot, source, true);
+        }
+        boolean changed;
+        int passes = 0;
+        do {
+            changed = false;
+            for (DeNode node : nodes.values()) {
+                List<Object> before = deState(node);
+                DeInput[] inputs = incoming.getOrDefault(node.id, new DeInput[2]);
+                boolean firstReady = deInputResolved(inputs[0]);
+                boolean secondReady = deInputResolved(inputs[1]);
+                if (inputs[0] != null) node.team1Id = acceptDeInput(node, node.team1Id, firstReady ? deInputTeam(inputs[0]) : null);
+                if (inputs[1] != null) node.team2Id = acceptDeInput(node, node.team2Id, secondReady ? deInputTeam(inputs[1]) : null);
+                if (firstReady && secondReady) {
+                    boolean bye = node.team1Id == null || node.team2Id == null;
+                    if (bye && node.hasScore) throw new IllegalStateException("Trận đã có tỉ số nhưng chưa đủ đội. Cần kiểm tra kết quả trước khi tiếp tục.");
+                    if (!bye && node.isBye && !node.hasScore) node.winnerId = null;
+                    node.isBye = bye;
+                    if (bye) {
+                        node.winnerId = node.team1Id != null ? node.team1Id : node.team2Id;
+                        node.status = "FINISHED";
+                    } else if (node.winnerId == null) {
+                        node.status = "READY";
+                    } else {
+                        if (!node.winnerId.equals(node.team1Id) && !node.winnerId.equals(node.team2Id)) {
+                            throw new IllegalStateException("Đội thắng DE không thuộc trận đấu.");
+                        }
+                        node.status = "FINISHED";
+                    }
+                } else if (node.isBye) {
+                    node.winnerId = null;
+                    node.status = "PENDING";
+                }
+                if (!before.equals(deState(node))) changed = true;
+            }
+            if (++passes > nodes.size() + 1) throw new IllegalStateException("Nhánh DE có liên kết vòng.");
+        } while (changed);
+    }
+
+    private static List<Object> deState(DeNode node) {
+        return java.util.Arrays.asList(node.team1Id, node.team2Id, node.winnerId, node.isBye, node.status);
+    }
+
+    private static void addDeInput(Map<String, DeInput[]> incoming, Map<String, DeNode> nodes,
+            String target, String slot, DeNode source, boolean loser) {
+        if (target == null) return;
+        if (!nodes.containsKey(target)) throw new IllegalStateException("Liên kết DE vượt ra ngoài stage hiện tại.");
+        int index = "SLOT_2".equalsIgnoreCase(slot) || "2".equals(slot) ? 1 : 0;
+        DeInput[] inputs = incoming.computeIfAbsent(target, key -> new DeInput[2]);
+        if (inputs[index] != null) throw new IllegalStateException("Hai trận DE cùng đẩy đội vào một slot.");
+        inputs[index] = new DeInput(source, loser);
+    }
+
+    private static boolean deInputResolved(DeInput input) {
+        if (input == null) return true;
+        DeNode source = input.source;
+        return source.winnerId != null || (source.team1Id == null && source.team2Id == null && "FINISHED".equalsIgnoreCase(source.status));
+    }
+
+    private static String deInputTeam(DeInput input) {
+        DeNode source = input.source;
+        if (!input.loser) return source.winnerId;
+        if (source.winnerId == null || source.team1Id == null || source.team2Id == null) return null;
+        return source.winnerId.equals(source.team1Id) ? source.team2Id : source.team1Id;
+    }
+
+    private static String acceptDeInput(DeNode target, String previous, String incoming) {
+        if (!java.util.Objects.equals(previous, incoming) && (target.hasScore || (target.winnerId != null && !target.isBye))) {
+            throw new IllegalStateException("Kết quả vòng sau không khớp đội từ vòng trước. Cần reset các trận liên quan trước.");
+        }
+        return incoming;
+    }
+
+    /** A changed winner cannot silently replace opponents in matches already played. */
+    public void assertResultChangeAllowed(Connection conn, String tournamentId, String stageId, String matchId) throws Exception {
+        Map<String, String[]> graph = new HashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement("SELECT id, next_match_id, loser_next_match_id, score1, score2, winner_id, is_bye FROM matches WITH (UPDLOCK, HOLDLOCK) WHERE tournament_id = ? AND (stage_id = ? OR (stage_id IS NULL AND ? IS NULL))")) {
+            ps.setString(1, tournamentId); ps.setString(2, stageId); ps.setString(3, stageId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) graph.put(rs.getString(1), new String[]{rs.getString(2), rs.getString(3),
+                    rs.getObject(4) != null || rs.getObject(5) != null || (rs.getString(6) != null && !rs.getBoolean(7)) ? "played" : ""});
+            }
+        }
+        java.util.ArrayDeque<String> pending = new java.util.ArrayDeque<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        pending.add(matchId);
+        while (!pending.isEmpty()) {
+            String current = pending.remove();
+            if (!seen.add(current)) continue;
+            String[] node = graph.get(current);
+            if (node == null) throw new IllegalStateException("Liên kết DE không thuộc stage hiện tại.");
+            if (!current.equals(matchId) && "played".equals(node[2])) {
+                throw new IllegalStateException("Vòng sau đã có kết quả. Hãy reset các trận liên quan trước khi đổi đội thắng.");
+            }
+            if (node[0] != null) pending.add(node[0]);
+            if (node[1] != null) pending.add(node[1]);
+        }
+    }
+
+    /** Explicit match reset clears only dependent results and the slots fed by them. */
+    public void resetMatchAndDependants(Connection conn, String tournamentId, String stageId, String matchId) throws Exception {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT t.stage1_status, s.stage_order FROM tournaments t JOIN tournament_stages s ON s.tournament_id = t.id WHERE t.id = ? AND s.id = ?")) {
+            ps.setString(1, tournamentId); ps.setString(2, stageId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(2) == 1 && ("LOCKED".equalsIgnoreCase(rs.getString(1)) || "COMPLETED".equalsIgnoreCase(rs.getString(1)))) {
+                    throw new IllegalStateException("Cần mở khóa Stage 1 trước khi reset kết quả trận.");
+                }
+            }
+        }
+        Map<String, String[]> graph = new HashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement("SELECT id, next_match_id, next_slot, loser_next_match_id, loser_next_slot FROM matches WITH (UPDLOCK, HOLDLOCK) WHERE tournament_id = ? AND (stage_id = ? OR (stage_id IS NULL AND ? IS NULL))")) {
+            ps.setString(1, tournamentId); ps.setString(2, stageId); ps.setString(3, stageId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) graph.put(rs.getString(1), new String[]{rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5)});
+            }
+        }
+        Map<String, boolean[]> affected = new java.util.LinkedHashMap<>();
+        java.util.ArrayDeque<String> pending = new java.util.ArrayDeque<>();
+        affected.put(matchId, new boolean[2]); pending.add(matchId);
+        while (!pending.isEmpty()) {
+            String current = pending.remove();
+            String[] links = graph.get(current);
+            if (links == null) throw new IllegalStateException("Liên kết DE vượt ra ngoài stage hiện tại.");
+            for (int edge = 0; edge < 4; edge += 2) {
+                if (links[edge] == null) continue;
+                boolean fresh = !affected.containsKey(links[edge]);
+                boolean[] slots = affected.computeIfAbsent(links[edge], key -> new boolean[2]);
+                slots["SLOT_2".equalsIgnoreCase(links[edge + 1]) || "2".equals(links[edge + 1]) ? 1 : 0] = true;
+                if (fresh) pending.add(links[edge]);
+            }
+        }
+        String sql = "UPDATE matches SET team1_id = CASE WHEN ? = 1 THEN NULL ELSE team1_id END, team2_id = CASE WHEN ? = 1 THEN NULL ELSE team2_id END, score1 = NULL, score2 = NULL, penalty1 = NULL, penalty2 = NULL, winner_id = NULL, loser_id = NULL, status = 'PENDING' WHERE id = ? AND tournament_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (Map.Entry<String, boolean[]> item : affected.entrySet()) {
+                ps.setInt(1, item.getValue()[0] ? 1 : 0); ps.setInt(2, item.getValue()[1] ? 1 : 0);
+                ps.setString(3, item.getKey()); ps.setString(4, tournamentId); ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+        syncStageByes(conn, tournamentId, stageId);
+    }
 
     public List<Match> getMatchesByTournamentId(int tournamentId) {
         return getMatchesByTournamentId(String.valueOf(tournamentId));
@@ -140,6 +340,7 @@ public class DoubleEliminationDAO extends DBContext {
 
         // Auto-initialize DE bracket tree in DB if none exists
         ensureBracketInitialized(tournamentId, stageOrder);
+        syncByeAdvancementsInDB(tournamentId, stageOrder);
 
         String sql = "SELECT m.*, "
                 + "t1.raw_name AS t1_name, t1.original_seed AS t1_seed, "
@@ -721,6 +922,7 @@ public class DoubleEliminationDAO extends DBContext {
                 }
             }
 
+            syncStageByes(conn, tournamentId, stageId);
             conn.commit();
         } catch (Exception e) {
             e.printStackTrace();
@@ -742,6 +944,7 @@ public class DoubleEliminationDAO extends DBContext {
         String loserNextMatchId;
         String loserNextSlot;
         boolean isBye;
+        boolean hasScore;
         String winnerId;
         String status;
     }
