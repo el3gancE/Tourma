@@ -15,7 +15,22 @@ public class TournamentPlacementService {
     public static class PlacementResult {
         public final int rank;
         public final String pointKey;
-        public PlacementResult(int rank, String pointKey) { this.rank = rank; this.pointKey = pointKey; }
+        private final String achievement;
+        public PlacementResult(int rank, String pointKey) { this(rank, pointKey, null); }
+        public PlacementResult(int rank, String pointKey, String achievement) {
+            this.rank = rank; this.pointKey = pointKey; this.achievement = achievement;
+        }
+        public String getAchievement() {
+            if (achievement != null) return achievement;
+            if (pointKey.startsWith("swiss_")) return pointKey.substring(6);
+            if ("stage1_eliminated".equals(pointKey)) return "Vòng Bảng";
+            if (rank == 1) return "Vô Địch";
+            if (rank == 2) return "Á Quân";
+            if (rank <= 4) return "Bán Kết";
+            if (rank <= 8) return "Tứ Kết";
+            int size=16; while(size<rank) size*=2;
+            return "Round of " + size;
+        }
     }
     private static class TeamInfo {
         String id, name, norm;
@@ -67,6 +82,12 @@ public class TournamentPlacementService {
     public Map<String, PlacementResult> getTournamentResults(String tournamentId) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return Collections.emptyMap();
         return RESULTS.computeIfAbsent(tournamentId.trim(), this::loadResults);
+    }
+
+    public Map<String, PlacementResult> getFreshTournamentResults(String tournamentId) {
+        Map<String, PlacementResult> results = loadResults(tournamentId);
+        RESULTS.put(tournamentId, results);
+        return results;
     }
 
     private Map<String, PlacementResult> loadResults(String id) {
@@ -166,6 +187,10 @@ public class TournamentPlacementService {
         for(MatchInfo m:games) brackets.computeIfAbsent(gsl ? String.valueOf(m.groupId) : "main", k->new ArrayList<>()).add(m);
         int groupCount=Math.max(1,brackets.size());
         for(List<MatchInfo> bracket:brackets.values()) {
+            int lastLowerRound=0;
+            boolean groupFinal=false;
+            for (MatchInfo m : bracket) if (lower(m)) lastLowerRound=Math.max(lastLowerRound,m.roundNumber);
+            for (MatchInfo m : bracket) if (grandFinal(m)) groupFinal=true;
             Set<String> participants=participants(bracket);
             int count=gsl ? participants.size() : order==1 ? ctx.teams.size() : Math.max(ctx.cut,participants.size());
             int size=gsl ? Math.max(4,powerOfTwo(count)) : powerOfTwo(count);
@@ -178,7 +203,7 @@ public class TournamentPlacementService {
                     continue;
                 }
                 if(grandFinal(m)) {
-                    if(cut && gsl) put(ctx,m.loserId,groupCount+1,"s1_gsl_final");
+                    if(cut && gsl) put(ctx,m.loserId,groupCount+1,"s1_gsl_final","Group Qualification");
                     else if(!cut) {put(ctx,m.winnerId,1,"1");put(ctx,m.loserId,2,"2");}
                     continue;
                 }
@@ -188,7 +213,10 @@ public class TournamentPlacementService {
                     if(distance<0) throw new IllegalStateException("Invalid lower bracket round: "+m.id);
                     int rank=deRank(distance);
                     String key=cut ? (gsl ? "s1_gsl_lb_r" : "s1_lb_r")+m.roundNumber : rangeKey(rank,deWidth(distance));
-                    put(ctx,m.loserId,gsl ? groupCount*(rank-1)+1 : rank,key);
+                    String achievement=cut && !groupFinal && m.roundNumber==lastLowerRound ? "Loser's Qualification"
+                        : (!cut || groupFinal) && distance==0 ? "Losers Final"
+                        : (!cut || groupFinal) && distance==1 ? "Losers Semi-final" : "Loser's Round " + m.roundNumber;
+                    put(ctx,m.loserId,gsl ? groupCount*(rank-1)+1 : rank,key,achievement);
                 } else {
                     int remaining=ubRounds-m.roundNumber;
                     if(remaining<0) throw new IllegalStateException("Invalid elimination round: "+m.id);
@@ -276,8 +304,11 @@ public class TournamentPlacementService {
     }
 
     private static void put(Context ctx,String id,int rank,String key) {
+        put(ctx,id,rank,key,null);
+    }
+    private static void put(Context ctx,String id,int rank,String key,String achievement) {
         TeamInfo team=ctx.teams.get(id);if(team==null) return;
-        PlacementResult result=new PlacementResult(rank,key);
+        PlacementResult result=new PlacementResult(rank,key,achievement);
         ctx.results.put(id,result);
         if(team.name!=null) ctx.results.put(team.name.trim().toLowerCase(Locale.ROOT),result);
         if(team.norm!=null) ctx.results.put(team.norm.trim().toLowerCase(Locale.ROOT),result);

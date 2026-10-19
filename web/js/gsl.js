@@ -997,6 +997,7 @@
          * Render Multi-Group Tabs and Unified Single Viewport per Group
          */
         renderBracketViews: function () {
+            if (window.TourmaNavbar && typeof window.TourmaNavbar.refreshLiveStatus === 'function') window.TourmaNavbar.refreshLiveStatus();
             var self = this;
             var workspace = document.getElementById('gslGroupsWorkspace');
             if (!workspace) return;

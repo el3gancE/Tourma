@@ -40,6 +40,8 @@ public class DBContext {
                                         "BEGIN ALTER TABLE tournaments ADD champion_name NVARCHAR(255) NULL; END");
                         st.executeUpdate("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tournaments') AND name = 'teams_json') " +
                                         "BEGIN ALTER TABLE tournaments ADD teams_json NVARCHAR(MAX) NULL; END");
+                        st.executeUpdate("IF COL_LENGTH('tournaments', 'top_seed_count') IS NULL " +
+                                        "BEGIN ALTER TABLE tournaments ADD top_seed_count INT NULL; END");
                         schemaMigrated = true;
                     } catch (Exception ignore) {}
                 }

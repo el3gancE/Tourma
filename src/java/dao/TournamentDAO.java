@@ -20,6 +20,76 @@ import model.Tournament;
  * Data Access Object for Tournaments table
  */
 public class TournamentDAO {
+    public Integer getTopSeedCount(String tournamentId) {
+        try (Connection conn = new DBContext().getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT top_seed_count FROM tournaments WHERE id=?")) {
+            ps.setString(1, tournamentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+                int count=rs.getInt(1);
+                return rs.wasNull() ? null : count;
+            }
+        } catch (Exception e) { throw new IllegalStateException("Cannot load Top Seed count", e); }
+    }
+
+    public boolean saveTopSeedCount(String tournamentId, String rawCount) {
+        return saveTopSeedCount(tournamentId, rawCount, false);
+    }
+
+    public boolean saveTopSeedCount(String tournamentId, String rawCount, boolean onlyIfUnset) {
+        if (rawCount == null) return true; // Older forms do not submit this setting.
+        int count;
+        try { count=rawCount.trim().isEmpty() ? 0 : Integer.parseInt(rawCount.trim()); }
+        catch (NumberFormatException e) { return false; }
+        if (count<0 || count>999) return false;
+        try (Connection conn = new DBContext().getConnection();
+             PreparedStatement ps = conn.prepareStatement("UPDATE tournaments SET top_seed_count=? WHERE id=?"
+                     + (onlyIfUnset ? " AND top_seed_count IS NULL" : ""))) {
+            ps.setInt(1,count); ps.setString(2,tournamentId);
+            int updated=ps.executeUpdate();
+            return updated==1 || (onlyIfUnset && getTopSeedCount(tournamentId)!=null);
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Original roster totals are stable across stages; only actual eliminations reduce alive counts. */
+    public String getLiveStatusJson(String tournamentId) {
+        Map<String,service.TournamentPlacementService.PlacementResult> results =
+                service.TournamentPlacementService.getInstance().getFreshTournamentResults(tournamentId);
+        int[] totals=new int[3], alive=new int[3];
+        Set<String> eliminated=new LinkedHashSet<>();
+        String sql="SELECT tm.id, tm.original_seed, ISNULL(t.top_seed_count,0) AS top_seed_count, "
+            + "CASE WHEN t.series_id IS NULL OR EXISTS (SELECT 1 FROM partner_participants p WHERE p.series_id=t.series_id "
+            + "AND (p.id=tm.partner_participant_id OR LOWER(LTRIM(RTRIM(p.name)))=LOWER(LTRIM(RTRIM(tm.raw_name))))) THEN 1 ELSE 0 END AS official "
+            + "FROM teams tm JOIN tournaments t ON t.id=tm.tournament_id WHERE t.id=?";
+        try (Connection conn=new DBContext().getConnection(); PreparedStatement ps=conn.prepareStatement(sql)) {
+            // Match elimination also covers standalone GSL, which has no series placement rule.
+            String lossSql="SELECT COALESCE(m.loser_id,CASE WHEN m.winner_id=m.team1_id THEN m.team2_id ELSE m.team1_id END) "
+                + "FROM matches m LEFT JOIN tournament_stages s ON s.tournament_id=m.tournament_id "
+                + "AND (s.id=m.stage_id OR (m.stage_id IS NULL AND s.stage_order=1)) "
+                + "WHERE m.tournament_id=? AND ISNULL(m.is_bye,0)=0 AND m.team1_id IS NOT NULL AND m.team2_id IS NOT NULL "
+                + "AND m.winner_id IN (m.team1_id,m.team2_id) AND (s.format='SINGLE_ELIMINATION' "
+                + "OR (s.format IN ('DOUBLE_ELIMINATION','GSL') AND m.bracket_type IN "
+                + "('LOSER_BRACKET','LOWER','LB','GRAND_FINAL','GRAND_FINALS','GRAND_FINAL_RESET','GF')))";
+            try (PreparedStatement losses=conn.prepareStatement(lossSql)) {
+                losses.setString(1,tournamentId);
+                try (ResultSet rs=losses.executeQuery()) { while(rs.next()) eliminated.add(rs.getString(1)); }
+            }
+            ps.setString(1,tournamentId);
+            try(ResultSet rs=ps.executeQuery()) {
+                while(rs.next()) {
+                    int seed=rs.getInt("original_seed");
+                    int category=!rs.getBoolean("official") ? 2 : seed>0 && seed<=rs.getInt("top_seed_count") ? 0 : 1;
+                    totals[category]++;
+                    service.TournamentPlacementService.PlacementResult result=results.get(rs.getString("id"));
+                    if(!eliminated.contains(rs.getString("id")) && (result==null || result.rank==1)) alive[category]++;
+                }
+            }
+        } catch(Exception e) { throw new IllegalStateException("Cannot load Live Status",e); }
+        return "{\"seed\":{\"alive\":"+alive[0]+",\"total\":"+totals[0]+"},"
+            + "\"unseed\":{\"alive\":"+alive[1]+",\"total\":"+totals[1]+"},"
+            + "\"guest\":{\"alive\":"+alive[2]+",\"total\":"+totals[2]+"}}";
+    }
+
     /** Reset the selected stage and its dependants without touching earlier stages. */
     public boolean resetStageMatches(String tournamentId, int stage) {
         if (tournamentId == null || (stage != 1 && stage != 2)) return false;
@@ -1320,6 +1390,10 @@ public class TournamentDAO {
                 ps.setString(14, src.getMultiStageConfig());
 
                 ps.executeUpdate();
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement("UPDATE tournaments SET top_seed_count=(SELECT top_seed_count FROM tournaments WHERE id=?) WHERE id=?")) {
+                ps.setString(1, sourceTournamentId.trim()); ps.setString(2, newId); ps.executeUpdate();
             }
 
             // Clone tournament_stages

@@ -43,6 +43,27 @@
 }
 
 /* Format Badges */
+.tournament-live-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.35);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+.live-status-label { color: #94a3b8; font-weight: 600; white-space: nowrap; }
+.live-status-label i { color: #34d399; font-size: 0.4rem; vertical-align: middle; margin-right: 0.25rem; }
+.live-status-count { white-space: nowrap; }
+.live-status-count strong { font-weight: 800; }
+.live-seed { color: #fbbf24; }
+.live-unseed { color: #60a5fa; }
+.live-guest { color: #c4b5fd; }
+.tournament-live-status.is-stale .live-status-label i { color: #f59e0b; }
+
 .format-badge-single,
 .format-badge-double,
 .format-badge-rr,

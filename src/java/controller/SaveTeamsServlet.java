@@ -1,6 +1,7 @@
 package controller;
 
 import dao.ParticipantDAO;
+import dao.TournamentDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -26,6 +27,10 @@ public class SaveTeamsServlet extends HttpServlet {
         String tournamentId = request.getParameter("id");
         String format = request.getParameter("format");
         String teamListRaw = request.getParameter("teamListRaw");
+        if (!new TournamentDAO().saveTopSeedCount(tournamentId, request.getParameter("topSeedCount"))) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu Top Seed vào DB.");
+            return;
+        }
 
         if (tournamentId != null && format != null && !format.trim().isEmpty()) {
             dao.TournamentDAO tDao = new dao.TournamentDAO();

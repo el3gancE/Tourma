@@ -143,6 +143,7 @@
   function getFormatShortCode(fmt) {
     if (!fmt) return 'SE';
     var f = String(fmt).toUpperCase().trim();
+    if (f === 'GSL' || f === 'GF') return 'GF';
     if (f.indexOf('DOUBLE') !== -1 || f === 'DE') return 'DE';
     if (f.indexOf('ROUND') !== -1 || f === 'RR') return 'RR';
     if (f.indexOf('GROUP') !== -1 || f === 'GS') return 'GS';
@@ -1608,6 +1609,7 @@
 
     var serverTourneyPoints = options.serverTourneyPoints || window.serverTourneyPoints || [];
     var serverTourneyParticipation = options.serverTourneyParticipation || window.serverTourneyParticipation || [];
+    var serverTourneyAchievements = options.serverTourneyAchievements || window.serverTourneyAchievements || [];
 
     // Project server point matrices for each tournament
     var tourneyPointsArray = [];
@@ -1624,6 +1626,7 @@
       parsedResultsPerTourney[tIdx] = {
         pointsMap: serverPts,
         participatedMap: serverPart,
+        achievementsMap: serverTourneyAchievements[sourceIdx] || {},
         championName: t.championName || null
       };
       tourneyPointsArray[tIdx] = serverPts;
@@ -1859,7 +1862,9 @@
           ach = resolveAchievementFromPoints(pts, tPtsCfg, isMulti, s1F, isDe, posKey);
         }
         var mStats = (res.matchStatsMap && res.matchStatsMap[k]) || { wins: 0, losses: 0 };
-        var isChamp = (ach === "Vô Địch" || ach === "Champion") || (res.championName && isTeamSelf(res.championName, k)) || (tObj.championName && isTeamSelf(tObj.championName, k));
+        var hasServerAchievement = res.achievementsMap && Object.prototype.hasOwnProperty.call(res.achievementsMap, k);
+        var isChamp = hasServerAchievement ? (ach === "Vô Địch" || ach === "Champion")
+          : (ach === "Vô Địch" || ach === "Champion") || (res.championName && isTeamSelf(res.championName, k)) || (tObj.championName && isTeamSelf(tObj.championName, k));
 
         if (isChamp) {
           ach = "Vô Địch";

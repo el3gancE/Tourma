@@ -130,7 +130,7 @@
             int groupUpperRounds = (int)(Math.log(groupBracketSize) / Math.log(2));
             int groupLowerStop = groupAdvance == 1 ? 2 * (groupUpperRounds - 1)
                 : 2 * (groupUpperRounds - (int)(Math.log(groupAdvance / 2) / Math.log(2)) - 1);
-            if (groupAdvance == 1) posList.add(new PositionItem("s1_gsl_final", "GSL — thua Final của bảng", s1Header));
+            if (groupAdvance == 1) posList.add(new PositionItem("s1_gsl_final", "Group Qualification", s1Header));
             for (int lr = groupLowerStop; lr >= 1; lr--) {
                 posList.add(new PositionItem("s1_gsl_lb_r" + lr, "GSL — loại tại LB Round " + lr,
                     groupAdvance > 1 && lr == groupLowerStop ? s1Header : null));

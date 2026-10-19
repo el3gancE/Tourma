@@ -747,6 +747,7 @@
          * Render Upper Bracket View (Columns of Node Cards & Grand Finals)
          */
         renderUpperBracket: function () {
+            if (window.TourmaNavbar && typeof window.TourmaNavbar.refreshLiveStatus === 'function') window.TourmaNavbar.refreshLiveStatus();
             var self = this;
             var container = document.getElementById('upperBracketColumnsWrapper');
             if (!container) return;

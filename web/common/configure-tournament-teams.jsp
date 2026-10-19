@@ -985,6 +985,7 @@
                     input.value = visibleCount;
                 }
                 window.applyHideSeedUI(isEnabled);
+                window.saveHideSeedConfig();
             };
 
             window.applyHideSeedUI = function(isEnabled) {
@@ -1017,6 +1018,11 @@
                 var input = document.getElementById('lockTopSeedsInput');
                 var isEnabled = (btn && btn.dataset.active === 'true');
                 var visibleCount = input ? input.value.trim() : '';
+                document.querySelectorAll('form').forEach(function (form) {
+                    var field = form.querySelector('input[name="topSeedCount"]');
+                    if (!field) { field = document.createElement('input'); field.type = 'hidden'; field.name = 'topSeedCount'; form.appendChild(field); }
+                    field.value = visibleCount || '0';
+                });
 
                 var cfg = {
                     isEnabled: isEnabled,

@@ -413,6 +413,7 @@
          * Render Canvas Bracket View (Columns of Node Cards with SVG Connector Lines)
          */
         renderBracketView: function () {
+            if (window.TourmaNavbar && typeof window.TourmaNavbar.refreshLiveStatus === 'function') window.TourmaNavbar.refreshLiveStatus();
             var self = this;
             var container = document.getElementById('singleBracketColumnsWrapper');
             if (!container) return;

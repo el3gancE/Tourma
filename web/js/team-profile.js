@@ -30,7 +30,8 @@
       subTourneys: window.seriesSubTournaments || [],
       phaseSize: window.seriesPhaseSize || 26,
       serverTourneyPoints: window.serverTourneyPoints || [],
-      serverTourneyParticipation: window.serverTourneyParticipation || []
+      serverTourneyParticipation: window.serverTourneyParticipation || [],
+      serverTourneyAchievements: window.serverTourneyAchievements || []
     });
 
     if (!prof) {

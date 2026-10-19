@@ -144,6 +144,10 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         String tournamentId = request.getParameter("tournamentId");
         String seriesId = request.getParameter("seriesId");
         ParticipantDAO participantDAO = new ParticipantDAO();
+        if (!new TournamentDAO().saveTopSeedCount(tournamentId, request.getParameter("topSeedCount"))) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu Top Seed vào DB.");
+            return;
+        }
 
         String advSeatsParam = request.getParameter("advancingSeatsCount");
         if (advSeatsParam == null || advSeatsParam.trim().isEmpty()) {

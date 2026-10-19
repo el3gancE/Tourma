@@ -55,6 +55,28 @@ public class MatchUpdateServlet extends HttpServlet {
         }
 
         try {
+            if ("initializeTopSeedCount".equalsIgnoreCase(action)) {
+                TournamentDAO dao=new TournamentDAO();
+                boolean ok=tournamentId!=null && !tournamentId.trim().isEmpty() && params.get("topSeedCount")!=null
+                        && dao.saveTopSeedCount(tournamentId,params.get("topSeedCount"),true);
+                if(!ok) response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print("{\"status\":\""+(ok?"success":"error")+"\",\"topSeedCount\":"
+                        +(ok?dao.getTopSeedCount(tournamentId):"null")+"}");
+                return;
+            }
+
+            if ("liveStatus".equalsIgnoreCase(action)) {
+                if (tournamentId == null || tournamentId.trim().isEmpty()) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.print("{\"status\":\"error\"}");
+                    return;
+                }
+                response.setHeader("Cache-Control", "no-store");
+                out.print("{\"status\":\"success\",\"liveStatus\":"
+                        + new TournamentDAO().getLiveStatusJson(tournamentId.trim()) + "}");
+                return;
+            }
+
             if ("finishTournament".equalsIgnoreCase(action)) {
                 String championName = params.get("championName");
                 if (championName == null) championName = params.get("champion");

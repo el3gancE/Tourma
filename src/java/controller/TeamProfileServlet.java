@@ -474,6 +474,14 @@ public class TeamProfileServlet extends HttpServlet {
                                 }
                             }
 
+                            service.TournamentPlacementService.PlacementResult actualResult = service.TournamentPlacementService.getInstance()
+                                    .getTournamentResults(t.getId()).get(teamInTourney == null ? null : teamInTourney.getId());
+                            if (actualResult != null) {
+                                achievement = actualResult.getAchievement();
+                                tourneyRank = actualResult.rank;
+                                isChamp = actualResult.rank == 1;
+                            }
+
                             String fmtLabel = getFormatShortCode(s1Fmt);
                             if (isMulti) {
                                 fmtLabel = getFormatShortCode(s1Fmt) + " ➔ " + getFormatShortCode(s2Fmt);
@@ -774,6 +782,7 @@ public class TeamProfileServlet extends HttpServlet {
     private String getFormatShortCode(String fmt) {
         if (fmt == null || fmt.trim().isEmpty()) return "SE";
         String f = fmt.toUpperCase().trim();
+        if ("GSL".equals(f) || "GF".equals(f)) return "GF";
         if (f.contains("DOUBLE") || "DE".equals(f)) return "DE";
         if (f.contains("ROUND") || "RR".equals(f)) return "RR";
         if (f.contains("GROUP") || "GS".equals(f)) return "GS";
