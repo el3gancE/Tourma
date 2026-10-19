@@ -239,6 +239,7 @@
                                             <input type="hidden" id="stage2Format" name="stage2Format"
                                                 value="SINGLE_ELIMINATION">
                                             <!-- advancingSeatsCount: populated by JS before form submit -->
+                                            <input type="hidden" id="detailConfig" name="multiConfig" value="">
                                             <input type="hidden" id="advancingSeatsCount" name="advancingSeatsCount"
                                                 value="0">
 
@@ -1172,8 +1173,8 @@
                                 return !isErr;
                             }
 
-                            var hasStage1Matches = false;
-                            var hasStage2Matches = false;
+                            var hasStage1Matches = <%= tDao.hasStageMatches(tournamentId, 1) %>;
+                            var hasStage2Matches = <%= tDao.hasStageMatches(tournamentId, 2) %>;
 
                             // Check if bracket already has completed / scored matches for Stage 1 vs Stage 2
                             if (tournamentId) {
@@ -1360,6 +1361,11 @@
                                 });
                             }
 
+                            function readConfigNumber(input, fallback) {
+                                var value = input ? parseInt(input.value, 10) : NaN;
+                                return isNaN(value) ? fallback : value;
+                            }
+
                             function persistFormatSelection() {
                                 var selectedType = document.getElementById('selectedTournamentType').value;
                                 var selectedVal = document.getElementById('selectedFormat').value;
@@ -1375,6 +1381,7 @@
                                     localStorage.setItem(storageKeyFormat, selectedVal);
 
                                     var advanceCountToSave = 0;
+                                    var detailConfig;
                                     if (selectedType === 'MULTI_STAGE') {
                                         var s1F = document.getElementById('stage1Format').value;
                                         var s2F = document.getElementById('stage2Format').value;
@@ -1387,10 +1394,13 @@
                                             stage1Config: s1Cfg,
                                             stage2Config: s2Cfg
                                         };
+                                        multiConfig.tournamentType = selectedType;
+                                        detailConfig = multiConfig;
                                         localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(multiConfig));
                                         if (s1Cfg) advanceCountToSave = s1Cfg.totalAdvanceCount || s1Cfg.advanceCount || 0;
                                     } else {
                                         var sSingleCfg = getStageConfigValues(1, selectedVal);
+                                        detailConfig = { tournamentType: selectedType, stage1Format: selectedVal, stage1Config: sSingleCfg };
                                         if (sSingleCfg) advanceCountToSave = sSingleCfg.totalAdvanceCount || sSingleCfg.advanceCount || 0;
 
                                         if (selectedVal === 'ROUND_ROBIN') {
@@ -1399,15 +1409,17 @@
                                             var lossInp = document.querySelector('input[name="lossPoints"]');
                                             var legsInp = document.querySelector('input[name="legsCount"]');
                                             var rrConfig = {
-                                                winPoints: winInp ? (parseInt(winInp.value) || 3) : 3,
-                                                drawPoints: drawInp ? (parseInt(drawInp.value) || 1) : 1,
-                                                lossPoints: lossInp ? (parseInt(lossInp.value) || 0) : 0,
-                                                legsCount: legsInp ? (parseInt(legsInp.value) || 1) : 1
+                                                winPoints: winInp ? (readConfigNumber(winInp, 3)) : 3,
+                                                drawPoints: drawInp ? (readConfigNumber(drawInp, 1)) : 1,
+                                                lossPoints: lossInp ? (readConfigNumber(lossInp, 0)) : 0,
+                                                legsCount: legsInp ? (readConfigNumber(legsInp, 1)) : 1
                                             };
+                                            detailConfig.stage1Config = rrConfig;
                                             localStorage.setItem('tourma_rr_config_' + tournamentId, JSON.stringify(rrConfig));
                                         }
                                     }
 
+                                    document.getElementById("detailConfig").value = JSON.stringify(detailConfig);
                                     if (advanceCountToSave > 0) {
                                         localStorage.setItem('tourma_advance_count_' + tournamentId, advanceCountToSave);
                                         localStorage.setItem('tourma_cut_target_' + tournamentId, advanceCountToSave);
@@ -1427,11 +1439,11 @@
                                     var loss = document.getElementById(prefix + 'LossPointsRR');
                                     var legs = document.getElementById(prefix + 'LegsCountRR');
                                     return {
-                                        advanceCount: adv ? (parseInt(adv.value) || 0) : 0,
-                                        winPoints: win ? (parseInt(win.value) || 3) : 3,
-                                        drawPoints: draw ? (parseInt(draw.value) || 1) : 1,
-                                        lossPoints: loss ? (parseInt(loss.value) || 0) : 0,
-                                        legsCount: legs ? (parseInt(legs.value) || 1) : 1
+                                        advanceCount: adv ? (readConfigNumber(adv, 0)) : 0,
+                                        winPoints: win ? (readConfigNumber(win, 3)) : 3,
+                                        drawPoints: draw ? (readConfigNumber(draw, 1)) : 1,
+                                        lossPoints: loss ? (readConfigNumber(loss, 0)) : 0,
+                                        legsCount: legs ? (readConfigNumber(legs, 1)) : 1
                                     };
                                 } else if (formatVal === 'GROUP_STAGE') {
                                     var adv = document.getElementById(prefix + 'AdvanceGR');
@@ -1440,18 +1452,18 @@
                                     var loss = document.getElementById(prefix + 'LossPointsGR');
                                     var legs = document.getElementById(prefix + 'LegsCountGR');
                                     return {
-                                        totalAdvanceCount: adv ? (parseInt(adv.value) || 0) : 0,
-                                        winPoints: win ? (parseInt(win.value) || 3) : 3,
-                                        drawPoints: draw ? (parseInt(draw.value) || 1) : 1,
-                                        lossPoints: loss ? (parseInt(loss.value) || 0) : 0,
-                                        legsCount: legs ? (parseInt(legs.value) || 1) : 1
+                                        totalAdvanceCount: adv ? (readConfigNumber(adv, 0)) : 0,
+                                        winPoints: win ? (readConfigNumber(win, 3)) : 3,
+                                        drawPoints: draw ? (readConfigNumber(draw, 1)) : 1,
+                                        lossPoints: loss ? (readConfigNumber(loss, 0)) : 0,
+                                        legsCount: legs ? (readConfigNumber(legs, 1)) : 1
                                     };
                                 } else if (formatVal === 'SINGLE_ELIMINATION') {
                                     var adv = document.getElementById(prefix + 'AdvanceSE');
-                                    return { advanceCount: adv ? (parseInt(adv.value) || 0) : 0 };
+                                    return { advanceCount: adv ? (readConfigNumber(adv, 0)) : 0 };
                                 } else if (formatVal === 'DOUBLE_ELIMINATION') {
                                     var adv = document.getElementById(prefix + 'AdvanceDE');
-                                    return { advanceCount: adv ? (parseInt(adv.value) || 0) : 0 };
+                                    return { advanceCount: adv ? (readConfigNumber(adv, 0)) : 0 };
                                 } else if (formatVal === 'GSL') {
                                     var adv = document.getElementById(prefix + 'AdvanceGSL');
                                     var cnt = adv ? (parseInt(adv.value, 10) || 0) : 0;
@@ -1758,6 +1770,16 @@
                                             restoreStage(2, mCfg.stage2Format, mCfg.stage2Config);
                                         }
                                     } catch (e) { }
+                                }
+
+                                // Restore single-stage rules from the database-backed configuration.
+                                if (originalType === 'SINGLE_STAGE' && window.TourmaMultiStageConfig) {
+                                    var rules = window.TourmaMultiStageConfig.stage1Config || {};
+                                    ['winPoints', 'drawPoints', 'lossPoints', 'legsCount'].forEach(function (name) {
+                                        var input = document.querySelector('input[name="' + name + '"]');
+                                        if (input && rules[name] !== undefined) input.value = rules[name];
+                                    });
+                                    initialLegsCount = Number(rules.legsCount) || 1;
                                 }
 
                                 // Apply Stage Locks UI

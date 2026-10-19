@@ -42,13 +42,16 @@
         try {
             dao.TournamentDAO tDao = new dao.TournamentDAO();
             if (tournamentTypeParam != null && !tournamentTypeParam.trim().isEmpty()) {
-                tDao.updateTournamentFormatAndType(tournamentId, tourneyFormat, tournamentTypeParam, stage1FormatParam, stage2FormatParam, advCount);
+                if (!tDao.updateTournamentFormatAndType(tournamentId, tourneyFormat, tournamentTypeParam, stage1FormatParam, stage2FormatParam, advCount, request.getParameter("multiConfig"))) {
+                    response.sendError(409, "Không lưu được cấu hình. Stage đã có trận không thể đổi cấu trúc.");
+                    return;
+                }
             } else if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
                 tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
             }
             String copiedFromParam = request.getParameter("copiedFrom");
             if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()) {
-                tDao.copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim());
+                tDao.copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim(), request.getParameter("multiConfig") == null);
             }
         } catch (Exception ignore) {}
         ParticipantDAO pDao = new ParticipantDAO();

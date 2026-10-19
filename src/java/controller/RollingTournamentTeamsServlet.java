@@ -72,12 +72,15 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         }
 
         if (tournamentId != null && ((fmt != null && !fmt.trim().isEmpty()) || advSeats > 0)) {
-            updateTournamentFormatAndTypeSafe(tournamentId.trim(), fmt, tType, s1F, s2F, advSeats);
+            if (!new TournamentDAO().updateTournamentFormatAndType(tournamentId.trim(), fmt, tType, s1F, s2F, advSeats, request.getParameter("multiConfig"))) {
+                response.sendError(409, "Không lưu được cấu hình. Stage đã có trận không thể đổi cấu trúc.");
+                return;
+            }
         }
 
         String copiedFromParam = request.getParameter("copiedFrom");
         if (copiedFromParam != null && !copiedFromParam.trim().isEmpty() && tournamentId != null && !tournamentId.trim().isEmpty()) {
-            new TournamentDAO().copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim());
+            new TournamentDAO().copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim(), request.getParameter("multiConfig") == null);
         }
 
         Tournament tournament = null;
@@ -283,68 +286,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
     }
 
     private boolean updateTournamentFormatAndTypeSafe(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format, int advancingSeatsCount) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        if (format == null || format.trim().isEmpty()) format = "SINGLE_ELIMINATION";
-        if (tournamentType == null || tournamentType.trim().isEmpty()) tournamentType = "SINGLE_STAGE";
-
-        String sqlTourney = (advancingSeatsCount > 0)
-            ? "UPDATE tournaments SET tournament_type = ?, advancing_seats_count = ? WHERE id = ?"
-            : "UPDATE tournaments SET tournament_type = ? WHERE id = ?";
-        dao.DBContext db = new dao.DBContext();
-        try (Connection conn = db.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(sqlTourney)) {
-                if (advancingSeatsCount > 0) {
-                    ps.setString(1, tournamentType.trim().toUpperCase());
-                    ps.setInt(2, advancingSeatsCount);
-                    ps.setString(3, tournamentId.trim());
-                } else {
-                    ps.setString(1, tournamentType.trim().toUpperCase());
-                    ps.setString(2, tournamentId.trim());
-                }
-                ps.executeUpdate();
-            }
-
-            String sqlDeleteStages = "DELETE FROM tournament_stages WHERE tournament_id = ?";
-            try (PreparedStatement ps = conn.prepareStatement(sqlDeleteStages)) {
-                ps.setString(1, tournamentId.trim());
-                ps.executeUpdate();
-            }
-
-            if ("MULTI_STAGE".equalsIgnoreCase(tournamentType)) {
-                String s1 = (stage1Format != null && !stage1Format.trim().isEmpty()) ? stage1Format.trim().toUpperCase() : "GROUP_STAGE";
-                String s2 = (stage2Format != null && !stage2Format.trim().isEmpty()) ? stage2Format.trim().toUpperCase() : "SINGLE_ELIMINATION";
-
-                String sqlInsert1 = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 1, N'Stage 1', ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsert1)) {
-                    ps.setString(1, "STAGE_1_" + System.currentTimeMillis());
-                    ps.setString(2, tournamentId.trim());
-                    ps.setString(3, s1);
-                    ps.executeUpdate();
-                }
-
-                String sqlInsert2 = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 2, N'Stage 2', ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsert2)) {
-                    ps.setString(1, "STAGE_2_" + System.currentTimeMillis());
-                    ps.setString(2, tournamentId.trim());
-                    ps.setString(3, s2);
-                    ps.executeUpdate();
-                }
-            } else {
-                String sqlInsertStage = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 1, N'Main Stage', ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsertStage)) {
-                    ps.setString(1, "STAGE_" + System.currentTimeMillis());
-                    ps.setString(2, tournamentId.trim());
-                    ps.setString(3, format.trim().toUpperCase());
-                    ps.executeUpdate();
-                }
-            }
-            conn.commit();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        return new TournamentDAO().updateTournamentFormatAndType(tournamentId, format, tournamentType, stage1Format, stage2Format, advancingSeatsCount);
     }
 
     /**

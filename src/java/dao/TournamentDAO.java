@@ -452,6 +452,10 @@ public class TournamentDAO {
     }
 
     public boolean copyPointsConfigFromTournament(String sourceTournamentId, String targetTournamentId) {
+        return copyPointsConfigFromTournament(sourceTournamentId, targetTournamentId, true);
+    }
+
+    public boolean copyPointsConfigFromTournament(String sourceTournamentId, String targetTournamentId, boolean copyFormatConfig) {
         if (sourceTournamentId == null || targetTournamentId == null) return false;
         Tournament src = getTournamentById(sourceTournamentId.trim());
         if (src == null) return false;
@@ -465,7 +469,7 @@ public class TournamentDAO {
                 ps.setNull(1, java.sql.Types.INTEGER);
             }
             ps.setString(2, src.getSeriesPointsConfig());
-            ps.setString(3, src.getMultiStageConfig());
+            ps.setString(3, copyFormatConfig ? src.getMultiStageConfig() : null);
             ps.setString(4, targetTournamentId.trim());
             ps.executeUpdate();
 
@@ -498,7 +502,21 @@ public class TournamentDAO {
         return false;
     }
 
+    public boolean hasStageMatches(String tournamentId, int stageOrder) {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        String sql = "SELECT COUNT(*) FROM matches m LEFT JOIN tournament_stages s ON s.id = m.stage_id "
+            + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1))";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId); ps.setInt(2, stageOrder); ps.setInt(3, stageOrder);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next() && rs.getInt(1) > 0; }
+        } catch (Exception e) { throw new IllegalStateException("Cannot check existing matches", e); }
+    }
+
     public boolean updateTournamentFormatAndType(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format, int advancingSeatsCount) {
+        return updateTournamentFormatAndType(tournamentId, format, tournamentType, stage1Format, stage2Format, advancingSeatsCount, null);
+    }
+
+    public boolean updateTournamentFormatAndType(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format, int advancingSeatsCount, String configJson) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
         if (format == null || format.trim().isEmpty()) format = "SINGLE_ELIMINATION";
         if (tournamentType == null || tournamentType.trim().isEmpty()) tournamentType = "SINGLE_STAGE";
@@ -510,6 +528,17 @@ public class TournamentDAO {
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
+            // Changing a cut target after bracket generation would change its shape.
+            if (advancingSeatsCount > 0) {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT advancing_seats_count FROM tournaments WHERE id = ? AND EXISTS "
+                        + "(SELECT 1 FROM matches WHERE tournament_id = ?)")) {
+                    ps.setString(1, tournamentId.trim()); ps.setString(2, tournamentId.trim());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) != advancingSeatsCount) { conn.rollback(); return false; }
+                    }
+                }
+            }
             try (PreparedStatement ps = conn.prepareStatement(sqlTourney)) {
                 if (advancingSeatsCount > 0) {
                     ps.setString(1, tournamentType.trim().toUpperCase());
@@ -522,41 +551,66 @@ public class TournamentDAO {
                 ps.executeUpdate();
             }
 
-            String sqlDeleteStages = "DELETE FROM tournament_stages WHERE tournament_id = ?";
-            try (PreparedStatement ps = conn.prepareStatement(sqlDeleteStages)) {
-                ps.setString(1, tournamentId.trim());
-                ps.executeUpdate();
+            // Preserve stage IDs: existing matches reference them.
+            int expectedStages = "MULTI_STAGE".equalsIgnoreCase(tournamentType) ? 2 : 1;
+            String[] formats = expectedStages == 2
+                ? new String[] {stage1Format == null ? "GROUP_STAGE" : stage1Format,
+                                stage2Format == null ? "SINGLE_ELIMINATION" : stage2Format}
+                : new String[] {format};
+            for (int order = 1; order <= expectedStages; order++) {
+                String desiredFormat = formats[order - 1].trim().toUpperCase();
+                String stageId = null;
+                String oldFormat = null;
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT id, format FROM tournament_stages WHERE tournament_id = ? AND stage_order = ?")) {
+                    ps.setString(1, tournamentId.trim());
+                    ps.setInt(2, order);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) { stageId = rs.getString(1); oldFormat = rs.getString(2); }
+                    }
+                }
+                if (stageId != null) {
+                    if (!desiredFormat.equalsIgnoreCase(oldFormat)) {
+                        try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM matches WHERE stage_id = ?")) {
+                            ps.setString(1, stageId);
+                            try (ResultSet rs = ps.executeQuery()) {
+                                if (rs.next() && rs.getInt(1) > 0) { conn.rollback(); return false; }
+                            }
+                        }
+                    }
+                    try (PreparedStatement ps = conn.prepareStatement("UPDATE tournament_stages SET format = ? WHERE id = ?")) {
+                        ps.setString(1, desiredFormat); ps.setString(2, stageId); ps.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, ?, ?, ?)")) {
+                        ps.setString(1, "STAGE_" + java.util.UUID.randomUUID());
+                        ps.setString(2, tournamentId.trim()); ps.setInt(3, order);
+                        ps.setString(4, "Stage " + order); ps.setString(5, desiredFormat); ps.executeUpdate();
+                    }
+                }
             }
-
-            if ("MULTI_STAGE".equalsIgnoreCase(tournamentType)) {
-                String s1 = (stage1Format != null && !stage1Format.trim().isEmpty()) ? stage1Format.trim().toUpperCase() : "GROUP_STAGE";
-                String s2 = (stage2Format != null && !stage2Format.trim().isEmpty()) ? stage2Format.trim().toUpperCase() : "SINGLE_ELIMINATION";
-
-                String sqlInsert1 = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 1, N'Stage 1', ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsert1)) {
-                    ps.setString(1, "STAGE_1_" + System.currentTimeMillis());
-                    ps.setString(2, tournamentId.trim());
-                    ps.setString(3, s1);
-                    ps.executeUpdate();
+            // Never remove a stage which still owns matches or groups.
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM tournament_stages s WHERE s.tournament_id = ? AND s.stage_order > ? "
+                    + "AND (EXISTS (SELECT 1 FROM matches m WHERE m.stage_id = s.id) "
+                    + "OR EXISTS (SELECT 1 FROM groups g WHERE g.stage_id = s.id))")) {
+                ps.setString(1, tournamentId.trim()); ps.setInt(2, expectedStages);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) > 0) { conn.rollback(); return false; }
                 }
-
-                String sqlInsert2 = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 2, N'Stage 2', ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsert2)) {
-                    ps.setString(1, "STAGE_2_" + System.currentTimeMillis());
-                    ps.setString(2, tournamentId.trim());
-                    ps.setString(3, s2);
-                    ps.executeUpdate();
-                }
-            } else {
-                String sqlInsertStage = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 1, N'Main Stage', ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsertStage)) {
-                    ps.setString(1, "STAGE_" + System.currentTimeMillis());
-                    ps.setString(2, tournamentId.trim());
-                    ps.setString(3, format.trim().toUpperCase());
-                    ps.executeUpdate();
+            }
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "DELETE FROM tournament_stages WHERE tournament_id = ? AND stage_order > ?")) {
+                ps.setString(1, tournamentId.trim()); ps.setInt(2, expectedStages); ps.executeUpdate();
+            }
+            if (configJson != null && !configJson.trim().isEmpty()) {
+                try (PreparedStatement ps = conn.prepareStatement("UPDATE tournaments SET multi_stage_config = ? WHERE id = ?")) {
+                    ps.setString(1, configJson); ps.setString(2, tournamentId.trim()); ps.executeUpdate();
                 }
             }
             conn.commit();
+            clearTournamentCache(tournamentId);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
