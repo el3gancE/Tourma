@@ -36,6 +36,10 @@
     }
 
     String nextStepUrl = request.getContextPath() + "/rolling/point-config?id=" + tourneyId + "&seriesId=" + seriesIdVal;
+    if ("GSL".equals(tourneyFormat) || "GROUP_STAGE".equals(tourneyFormat)) {
+        nextStepUrl = request.getContextPath() + "/common/manage-group.jsp?id=" + tourneyId
+                + "&seriesId=" + seriesIdVal + "&format=" + tourneyFormat;
+    }
     if (targetTeamCountVal > 0) {
         nextStepUrl += "&targetTeamCount=" + targetTeamCountVal;
     }

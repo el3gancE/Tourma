@@ -699,11 +699,11 @@
             }
         },
 
-        saveGroupsState: function () {
+        saveGroupsState: function (skipSync) {
             localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
 
-            // Sync directly to DB in background
-            try {
+            // The Continue action awaits its own save before leaving this page.
+            if (!skipSync) try {
                 var cPath = window.contextPath || '';
                 var targetUrl = (cPath ? cPath : '') + '/group-stage';
                 var params = new URLSearchParams();
@@ -777,19 +777,28 @@
                 }
             }
 
-            this.saveGroupsState();
-            var seriesId = urlParams.get('seriesId');
+            this.saveGroupsState(true);
+            var seriesId = window.TOURNAMENT_SERIES_ID || urlParams.get('seriesId');
             var target = isGsl
                 ? ('gsl.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GSL')
                 : ('group-stage.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GROUP_STAGE');
             if (seriesId) {
-                target += '&seriesId=' + encodeURIComponent(seriesId);
+                target = (window.contextPath || '') + '/rolling/point-config?id='
+                    + encodeURIComponent(this.tournamentId) + '&seriesId=' + encodeURIComponent(seriesId);
             }
 
             var nextBtn = document.querySelector('button[onclick*="saveAndReturn"]');
             if (nextBtn) {
                 nextBtn.disabled = true;
                 nextBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+            }
+
+            function saveFailed(message) {
+                alert('⚠️ Không thể lưu chia bảng: ' + (message || 'Vui lòng thử lại.'));
+                if (nextBtn) {
+                    nextBtn.disabled = false;
+                    nextBtn.innerHTML = 'Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>';
+                }
             }
 
             // Ensure DB persistence completes before redirect
@@ -807,24 +816,21 @@
                     body: params.toString()
                 })
                 .then(function(res) {
+                    if (!res.ok) throw new Error("HTTP " + res.status);
                     return res.json();
                 })
                 .then(function(data) {
-                    if (data && data.status === 'error') {
-                        alert('⚠️ Không thể lưu chia bảng: ' + (data.message || 'Lỗi hệ thống'));
-                        if (nextBtn) {
-                            nextBtn.disabled = false;
-                            nextBtn.innerHTML = 'Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>';
-                        }
+                    if (!data || data.status !== 'success') {
+                        saveFailed(data && data.message);
                         return;
                     }
                     window.location.href = target;
                 })
                 .catch(function(err) {
-                    window.location.href = target;
+                    saveFailed(err.message);
                 });
             } catch (e) {
-                window.location.href = target;
+                saveFailed(e.message);
             }
         }
     };

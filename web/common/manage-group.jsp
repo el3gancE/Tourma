@@ -15,6 +15,7 @@
     TournamentDAO tDao = new TournamentDAO();
     Tournament tourney = tDao.getTournamentById(tournamentId);
 
+    if (tourney != null && tourney.getSeriesId() != null) seriesId = tourney.getSeriesId();
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
     String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
     String s1Format = tDao.getStage1Format(tournamentId);
@@ -184,6 +185,7 @@
 
     <script>
         window.contextPath = '${pageContext.request.contextPath}';
+        window.TOURNAMENT_SERIES_ID = '<%= seriesId %>';
         window.STAGE1_FORMAT = '<%= s1Format %>';
         window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
         window.DB_TEAMS = <%= teamsJsonBuilder.toString() %>;

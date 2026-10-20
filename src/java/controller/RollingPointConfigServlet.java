@@ -67,7 +67,7 @@ public class RollingPointConfigServlet extends HttpServlet {
         request.setAttribute("stage1Format", s1F);
         request.setAttribute("stage2Format", s2F);
 
-        if ("GSL".equalsIgnoreCase(s1F)) {
+        if ("GSL".equalsIgnoreCase(s1F) || "GROUP_STAGE".equalsIgnoreCase(s1F)) {
             int groupCount = 0, groupSize = 0;
             try (java.sql.Connection conn = new dao.DBContext().getConnection();
                  java.sql.PreparedStatement ps = conn.prepareStatement("SELECT g.id, COUNT(gt.team_id) FROM groups g JOIN tournament_stages s ON s.id=g.stage_id LEFT JOIN group_teams gt ON gt.group_id=g.id WHERE s.tournament_id=? AND s.stage_order=1 GROUP BY g.id")) {
@@ -76,8 +76,12 @@ public class RollingPointConfigServlet extends HttpServlet {
                     while (rs.next()) { groupCount++; groupSize = Math.max(groupSize, rs.getInt(2)); }
                 }
             } catch (Exception e) { throw new ServletException("Cannot load GSL point categories", e); }
-            if (groupSize < 2) groupSize = Math.max(4, tournament.getMaxTeamsPerGroup());
-            if (groupCount == 0) groupCount = Math.max(1, (teamCount + groupSize - 1) / groupSize);
+            if (groupCount < 2 || groupSize < 2) {
+                response.sendRedirect(request.getContextPath() + "/common/manage-group.jsp?id="
+                        + tournament.getId() + "&format=" + s1F
+                        + (seriesId != null ? "&seriesId=" + seriesId : ""));
+                return;
+            }
             request.setAttribute("gslGroupCount", groupCount);
             request.setAttribute("gslGroupSize", groupSize);
         }
@@ -168,9 +172,9 @@ public class RollingPointConfigServlet extends HttpServlet {
             String sParam = (seriesId != null && !seriesId.trim().isEmpty()) ? ("&seriesId=" + seriesId.trim()) : "";
 
             if (isGSL) {
-                redirectUrl = request.getContextPath() + "/common/manage-group.jsp?id=" + tournamentId + sParam + "&format=GSL";
+                redirectUrl = request.getContextPath() + "/common/gsl.jsp?id=" + tournamentId + sParam + "&format=GSL";
             } else if (isGroupStage) {
-                redirectUrl = request.getContextPath() + "/common/manage-group.jsp?id=" + tournamentId + sParam + "&format=GROUP_STAGE";
+                redirectUrl = request.getContextPath() + "/common/group-stage.jsp?id=" + tournamentId + sParam + "&format=GROUP_STAGE";
             } else if ("SINGLE_ELIMINATION".equals(s1F) || "SINGLE_ELIMINATION".equals(fmt)) {
                 redirectUrl = request.getContextPath() + "/common/single-elimination.jsp?id=" + tournamentId + sParam;
             } else if ("DOUBLE_ELIMINATION".equals(s1F) || "DOUBLE_ELIMINATION".equals(fmt)) {

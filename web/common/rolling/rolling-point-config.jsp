@@ -60,6 +60,11 @@
         }
         cutTarget = Math.max(2, pow2);
     }
+    boolean hasGroupStep = "GSL".equals(isMultiStage ? s1Format : tourneyFormat)
+            || "GROUP_STAGE".equals(isMultiStage ? s1Format : tourneyFormat);
+    String previousStepUrl = request.getContextPath() + (hasGroupStep
+            ? "/common/manage-group.jsp?id=" + tourneyId + "&format=" + (isMultiStage ? s1Format : tourneyFormat)
+            : "/rolling/tournament-teams?id=" + tourneyId) + "&seriesId=" + seriesIdVal;
     int s2Teams = cutTarget;
     int gslGroupCount = request.getAttribute("gslGroupCount") == null ? 1 : (Integer)request.getAttribute("gslGroupCount");
     int gslGroupSize = request.getAttribute("gslGroupSize") == null ? 4 : (Integer)request.getAttribute("gslGroupSize");
@@ -256,8 +261,8 @@
             
             <!-- Breadcrumb Navigation -->
             <div style="margin-bottom: 0.75rem;">
-                <a href="${pageContext.request.contextPath}/rolling/tournament-teams?id=<%= tourneyId %>&seriesId=<%= seriesIdVal %>" class="text-muted" style="font-size: 0.85rem; font-weight: 600; text-decoration: none;">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại Bước 3: Quản Lý Đội
+                <a href="<%= previousStepUrl %>" class="text-muted" style="font-size: 0.85rem; font-weight: 600; text-decoration: none;">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại: <%= hasGroupStep ? "Chia Bảng" : "Quản Lý Đội" %>
                 </a>
             </div>
 
@@ -267,7 +272,7 @@
                     <i class="fa-solid fa-star text-gold"></i> Thiết Lập Điểm Thưởng Giải Con
                 </h1>
                 <p class="text-muted" style="margin-bottom: 1rem; font-size: 0.82rem;">
-                    Bước 4 / 5: Dựa trên số đội (<strong><%= nTeams %> Đội</strong>), Cấp độ <strong>Tier <%= tierName %></strong> và Thể thức <strong id="fmtHeaderDisplay"><%= isMultiStage ? (s1Format + " → " + s2Format) : tourneyFormat %></strong>, các vị trí bên dưới đã được sinh ra tự động. Bạn vui lòng tự nhập tay số điểm thưởng cho từng vị trí:
+                    Bước <%= hasGroupStep ? "5 / 6" : "4 / 5" %>: Dựa trên số đội (<strong><%= nTeams %> Đội</strong>), Cấp độ <strong>Tier <%= tierName %></strong> và Thể thức <strong id="fmtHeaderDisplay"><%= isMultiStage ? (s1Format + " → " + s2Format) : tourneyFormat %></strong>, các vị trí bên dưới đã được sinh ra tự động. Bạn vui lòng tự nhập tay số điểm thưởng cho từng vị trí:
                 </p>
 
                 <!-- RULE NOTICE ALERT BOX -->
@@ -352,8 +357,8 @@
 
                     <!-- SUBMIT NAVIGATION BUTTONS -->
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.75rem;">
-                        <a href="${pageContext.request.contextPath}/rolling/tournament-teams?id=<%= tourneyId %>&seriesId=<%= seriesIdVal %>" class="btn btn-secondary" style="font-weight: 700;">
-                            <i class="fa-solid fa-arrow-left"></i> Quay Lại Bước 3
+                        <a href="<%= previousStepUrl %>" class="btn btn-secondary" style="font-weight: 700;">
+                            <i class="fa-solid fa-arrow-left"></i> Quay lại: <%= hasGroupStep ? "Chia Bảng" : "Quản Lý Đội" %>
                         </a>
                         <button type="submit" class="btn btn-mint" style="font-weight: 800; font-size: 0.95rem; padding: 0.65rem 1.5rem; border-radius: 8px;">
                             Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>

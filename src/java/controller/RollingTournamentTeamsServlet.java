@@ -224,7 +224,11 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                 response.sendRedirect(nextUrl);
                 return;
             }
-            response.sendRedirect(request.getContextPath() + "/rolling/point-config?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : ""));
+            String nextFormat = new dao.TournamentDAO().getStage1Format(tournamentId);
+            String nextPath = "GSL".equalsIgnoreCase(nextFormat) || "GROUP_STAGE".equalsIgnoreCase(nextFormat)
+                    ? "/common/manage-group.jsp?id=" + tournamentId + "&format=" + nextFormat
+                    : "/rolling/point-config?id=" + tournamentId;
+            response.sendRedirect(request.getContextPath() + nextPath + "&seriesId=" + (seriesId != null ? seriesId : ""));
             return;
         }
 

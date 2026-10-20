@@ -193,6 +193,15 @@
             </a>
         </li>
 
+        <!-- MỤC RIÊNG CHO GROUP STAGE & GSL: QUẢN LÝ BẢNG ĐẤU -->
+        <li class="sidebar-menu-item" id="sidebarMenuManageGroup" style="<%= ("GROUP_STAGE".equalsIgnoreCase(format) || "GSL".equalsIgnoreCase(format)) ? "" : "display: none;" %>">
+            <a href="${pageContext.request.contextPath}/common/manage-group.jsp?id=<%= tournamentId %>&seriesId=<%= seriesId %>&format=<%= format %>"
+               class="sidebar-menu-link <%= "manage-group".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-pen-to-square menu-icon text-mint"></i>
+                <span>Quản Lý Bảng Đấu</span>
+            </a>
+        </li>
+
         <% if (hasSeries) { %>
         <!-- BƯỚC 3: SET ĐIỂM THƯỞNG GIẢI CON -->
         <li class="sidebar-menu-item">
@@ -203,15 +212,6 @@
             </a>
         </li>
         <% } %>
-
-        <!-- MỤC RIÊNG CHO GROUP STAGE & GSL: QUẢN LÝ BẢNG ĐẤU -->
-        <li class="sidebar-menu-item" id="sidebarMenuManageGroup" style="<%= ("GROUP_STAGE".equalsIgnoreCase(format) || "GSL".equalsIgnoreCase(format)) ? "" : "display: none;" %>">
-            <a href="${pageContext.request.contextPath}/common/manage-group.jsp?id=<%= tournamentId %>&seriesId=<%= seriesId %>&format=<%= format %>"
-               class="sidebar-menu-link <%= "manage-group".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-pen-to-square menu-icon text-mint"></i>
-                <span>Quản Lý Bảng Đấu</span>
-            </a>
-        </li>
 
         <!-- MỤC RIÊNG CHO ROUND ROBIN: BẢNG XẾP HẠNG (Single Stage) -->
         <li class="sidebar-menu-item" id="sidebarMenuRRStandings" style="<%= ("ROUND_ROBIN".equalsIgnoreCase(format) && !isMultiStage) ? "" : "display: none;" %>">
