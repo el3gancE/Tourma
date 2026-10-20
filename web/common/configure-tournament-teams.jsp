@@ -66,6 +66,8 @@
             } catch(Exception e) {}
         }
     }
+    String initialDrawFormat = tournamentId == null ? tourneyFormat : new dao.TournamentDAO().getStage1Format(tournamentId);
+    if (initialDrawFormat == null || initialDrawFormat.trim().isEmpty()) initialDrawFormat = stage1FormatParam != null ? stage1FormatParam : tourneyFormat;
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -177,6 +179,12 @@
                                                 style="background: rgba(255, 255, 255, 0.06); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
                                             Ẩn seed
                                         </button>
+                                        <% if ("SINGLE_ELIMINATION".equalsIgnoreCase(initialDrawFormat) || "DOUBLE_ELIMINATION".equalsIgnoreCase(initialDrawFormat)) { %>
+                                        <label style="display:inline-flex;align-items:center;gap:0.4rem;color:#cbd5e1;font-size:0.85rem;cursor:pointer;" title="Giữ sơ đồ seed cố định; bỏ chọn để bốc thăm theo nhóm seed">
+                                            <input type="checkbox" id="classicDrawInput" <%= new dao.TournamentDAO().isClassicDraw(tournamentId) ? "checked" : "" %> onchange="window.saveHideSeedConfig()">
+                                            Classic draw
+                                        </label>
+                                        <% } %>
                                     </div>
                                     <div class="manage-toolbar-right">
                                         <button type="button" class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); height: 32px;" onclick="window.deleteSelectedTeams()">
@@ -1022,6 +1030,12 @@
                     var field = form.querySelector('input[name="topSeedCount"]');
                     if (!field) { field = document.createElement('input'); field.type = 'hidden'; field.name = 'topSeedCount'; form.appendChild(field); }
                     field.value = visibleCount || '0';
+                    var classic = document.getElementById('classicDrawInput');
+                    if (classic) {
+                        var drawField = form.querySelector('input[name="classicDraw"]');
+                        if (!drawField) { drawField = document.createElement('input'); drawField.type = 'hidden'; drawField.name = 'classicDraw'; form.appendChild(drawField); }
+                        drawField.value = classic.checked ? 'true' : 'false';
+                    }
                 });
 
                 var cfg = {

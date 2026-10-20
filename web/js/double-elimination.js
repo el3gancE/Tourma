@@ -112,21 +112,33 @@
         initViewports: function () {
             var self = this;
             if (window.TourmaViewport && typeof window.TourmaViewport.init === 'function') {
-                window.TourmaViewport.init('upperViewportContainer', 'upperViewportCanvas', {
-                    badgeId: 'upperZoomBadge',
-                    toolbarId: 'upperZoomToolbar',
-                    onRedraw: function () {
-                        self.drawUpperSvgConnectors();
-                    }
-                });
-
-                window.TourmaViewport.init('lowerViewportContainer', 'lowerViewportCanvas', {
-                    badgeId: 'lowerZoomBadge',
-                    toolbarId: 'lowerZoomToolbar',
-                    onRedraw: function () {
-                        self.drawLowerSvgConnectors();
-                    }
-                });
+                if (document.getElementById('deViewportContainer')) {
+                    window.TourmaViewport.init('deViewportContainer', 'deViewportCanvas', {
+                        badgeId: 'deZoomBadge',
+                        toolbarId: 'deZoomToolbar',
+                        onRedraw: function () {
+                            self.drawAllSvgConnectors();
+                        }
+                    });
+                }
+                if (document.getElementById('upperViewportContainer')) {
+                    window.TourmaViewport.init('upperViewportContainer', 'upperViewportCanvas', {
+                        badgeId: 'upperZoomBadge',
+                        toolbarId: 'upperZoomToolbar',
+                        onRedraw: function () {
+                            self.drawUpperSvgConnectors();
+                        }
+                    });
+                }
+                if (document.getElementById('lowerViewportContainer')) {
+                    window.TourmaViewport.init('lowerViewportContainer', 'lowerViewportCanvas', {
+                        badgeId: 'lowerZoomBadge',
+                        toolbarId: 'lowerZoomToolbar',
+                        onRedraw: function () {
+                            self.drawLowerSvgConnectors();
+                        }
+                    });
+                }
             }
         },
 
@@ -1372,10 +1384,24 @@
         },
 
         /**
+         * Draw SVG connector lines across all branches in the unified canvas
+         */
+        drawAllSvgConnectors: function () {
+            var canvas = document.getElementById('deViewportCanvas');
+            var wrapper = document.getElementById('deSingleViewportWrapper') || document.getElementById('upperBracketColumnsWrapper');
+            if (canvas && wrapper && window.TourmaViewport && typeof window.TourmaViewport.drawConnectors === 'function') {
+                window.TourmaViewport.drawConnectors(canvas, wrapper, this.matchesMap, 1.0);
+                return;
+            }
+            this.drawUpperSvgConnectors();
+            this.drawLowerSvgConnectors();
+        },
+
+        /**
          * Draw Standard Orthogonal SVG Connector Lines for Upper Bracket
          */
         drawUpperSvgConnectors: function () {
-            var canvas = document.getElementById('upperViewportCanvas');
+            var canvas = document.getElementById('upperViewportCanvas') || document.getElementById('deViewportCanvas');
             var wrapper = document.getElementById('upperBracketColumnsWrapper');
             if (!canvas || !wrapper) return;
             if (window.TourmaViewport && typeof window.TourmaViewport.drawConnectors === 'function') {
@@ -1387,7 +1413,7 @@
          * Draw Standard Orthogonal SVG Connector Lines for Lower Bracket
          */
         drawLowerSvgConnectors: function () {
-            var canvas = document.getElementById('lowerViewportCanvas');
+            var canvas = document.getElementById('lowerViewportCanvas') || document.getElementById('deViewportCanvas');
             var wrapper = document.getElementById('lowerBracketColumnsWrapper');
             if (!canvas || !wrapper) return;
             if (window.TourmaViewport && typeof window.TourmaViewport.drawConnectors === 'function') {

@@ -15,6 +15,70 @@ import java.util.List;
  */
 public class SECutService {
 
+    /** Seeded draw shared by SE and DE. Returned entries are physical first-round slots. */
+    public static List<Team> drawInitialSlots(List<Team> teams, int topSeedCount) {
+        return drawInitialSlots(teams, topSeedCount, java.util.concurrent.ThreadLocalRandom.current());
+    }
+
+    public static List<Team> drawInitialSlots(List<Team> teams, int topSeedCount, boolean classic) {
+        return drawInitialSlots(teams, topSeedCount, java.util.concurrent.ThreadLocalRandom.current(), classic);
+    }
+
+    public static List<Team> drawInitialSlots(List<Team> teams, int topSeedCount, java.util.Random random) {
+        return drawInitialSlots(teams, topSeedCount, random, false);
+    }
+
+    public static List<Team> drawInitialSlots(List<Team> teams, int topSeedCount, java.util.Random random, boolean classic) {
+        if (teams == null || teams.size() < 2) return new ArrayList<>();
+        List<Team> ordered = new ArrayList<>(teams);
+        ordered.sort(java.util.Comparator.comparingInt((Team t) -> t.getOriginalSeed() > 0 ? t.getOriginalSeed() : Integer.MAX_VALUE)
+                .thenComparing(t -> t.getId() == null ? "" : t.getId()));
+        int size = 2;
+        while (size < ordered.size()) size *= 2;
+        int protectedCount = Math.max(0, Math.min(topSeedCount, ordered.size()));
+        List<Integer> layout = new ArrayList<>();
+        layout.add(1); layout.add(2);
+        for (int width = 4; width <= size; width *= 2) {
+            List<Integer> next = new ArrayList<>();
+            for (int rank : layout) { next.add(rank); next.add(width + 1 - rank); }
+            layout = next;
+        }
+        // Put the better seed first in every opening match, including seed 2 at the start of the lower half.
+        int[] positions = new int[size + 1];
+        for (int i = 0; i < size; i += 2) {
+            positions[Math.min(layout.get(i), layout.get(i + 1))] = i;
+            positions[Math.max(layout.get(i), layout.get(i + 1))] = i + 1;
+        }
+        List<Team> slots = new ArrayList<>(Collections.nCopies(size, (Team) null));
+        if (classic) {
+            for (int rank = 1; rank <= ordered.size(); rank++) slots.set(positions[rank], ordered.get(rank - 1));
+            return slots;
+        }
+        for (int rank = 1; rank <= Math.min(2, protectedCount); rank++) slots.set(positions[rank], ordered.get(rank - 1));
+        // Grand Slam style bands: 3-4, 5-8, 9-12, 13-16, 17-24, 25-32, ...
+        for (int first = 3; first <= protectedCount;) {
+            int width;
+            if (first == 3) width = 2;
+            else if (first == 5) width = 4;
+            else width = Integer.highestOneBit(first - 1) / 2;
+            int last = Math.min(protectedCount, first + width - 1);
+            List<Integer> bandPositions = new ArrayList<>();
+            for (int rank = first; rank < first + width && rank <= size; rank++) bandPositions.add(positions[rank]);
+            Collections.shuffle(bandPositions, random);
+            for (int rank = first; rank <= last; rank++) slots.set(bandPositions.get(rank - first), ordered.get(rank - 1));
+            first += width;
+        }
+        List<Team> unseeded = new ArrayList<>(ordered.subList(protectedCount, ordered.size()));
+        Collections.shuffle(unseeded, random);
+        // Standard occupied positions spread BYEs and avoid empty-vs-empty opening matches.
+        int nextTeam = 0;
+        for (int rank = 1; rank <= size && nextTeam < unseeded.size(); rank++) {
+            if (slots.get(positions[rank]) == null) slots.set(positions[rank], unseeded.get(nextTeam++));
+        }
+        return slots;
+    }
+
+
     /**
      * Delegate calculation of SE stopping round to CountAdvanceTeamService.
      */

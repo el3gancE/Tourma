@@ -72,7 +72,7 @@
                     <i class="fa-solid fa-trophy text-gold"></i>
                     <span id="gsTournamentTitle"><%= tourneyName %></span>
                 </h1>
-                <span class="format-badge-rr">Group Stage</span>
+                <span class="format-badge-rr" title="Group Stage">GS</span>
                 <span id="gsTeamCountBadge" class="team-count-badge">0 Đội</span>
                 <span id="gsAdvanceBadge" class="team-count-badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.35rem;">
                     <i class="fa-solid fa-circle-check" style="font-size: 0.75rem;"></i>
@@ -87,10 +87,10 @@
 
                 <div class="view-mode-toggle-group">
                     <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle" style="text-decoration: none;">
-                        <i class="fa-solid fa-calendar-days"></i> Lịch Thi Đấu
+                        <i class="fa-solid fa-calendar-days"></i> Lịch
                     </a>
                     <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle active" style="text-decoration: none;">
-                        <i class="fa-solid fa-ranking-star"></i> Bảng Xếp Hạng
+                        <i class="fa-solid fa-ranking-star"></i> BXH
                     </a>
                 </div>
             </div>

@@ -328,6 +328,10 @@ public class DoubleEliminationDAO extends DBContext {
     }
 
     public String getMatchesJsonForFrontend(String tournamentId, int stageOrder) {
+        if(stageOrder>1) {
+            try(Connection access=getConnection()){TournamentDAO.assertStage2Ready(access,tournamentId,stageOrder);}
+            catch(Exception notReady){return "[]";}
+        }
         if (tournamentId == null || tournamentId.trim().isEmpty()) return "[]";
 
         int cut = new SingleEliminationDAO().getTournamentCutTarget(tournamentId, stageOrder);
@@ -347,11 +351,11 @@ public class DoubleEliminationDAO extends DBContext {
                 + "t2.raw_name AS t2_name, t2.original_seed AS t2_seed, "
                 + "tw.raw_name AS winner_name "
                 + "FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
+                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
                 + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1)) "
                 + "ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
@@ -362,8 +366,6 @@ public class DoubleEliminationDAO extends DBContext {
             ps.setString(1, tournamentId);
             ps.setInt(2, stageOrder);
             ps.setInt(3, stageOrder);
-            ps.setInt(4, stageOrder);
-            ps.setInt(5, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
                 int seq = 1;
                 while (rs.next()) {
@@ -492,16 +494,14 @@ public class DoubleEliminationDAO extends DBContext {
         String checkSql = "SELECT COUNT(*), "
                 + "SUM(CASE WHEN bracket_type IN ('LOSER_BRACKET', 'LOWER', 'LB') THEN 1 ELSE 0 END) AS lb_count "
                 + "FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
+                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1))";
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(checkSql)) {
             ps.setString(1, tournamentId);
             ps.setInt(2, stageOrder);
             ps.setInt(3, stageOrder);
-            ps.setInt(4, stageOrder);
-            ps.setInt(5, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int totalCount = rs.getInt(1);
@@ -528,16 +528,11 @@ public class DoubleEliminationDAO extends DBContext {
         int totalLowerRounds = (upperRounds - 1) * 2;
 
         String stageId = lookupOrCreateStageId(tournamentId, stageOrder);
-        String prefix = "M_" + tournamentId + (stageOrder > 1 ? "_S" + stageOrder : "") + "_";
-        int[] seeds = (stageOrder == 1) ? generateSeedingArray(bracketSize) : null;
-        Map<Integer, Team> seedToTeam = new HashMap<>();
-        if (stageOrder == 1) {
-            for (int i = 0; i < teams.size(); i++) {
-                Team tm = teams.get(i);
-                int seed = tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : (i + 1);
-                seedToTeam.put(seed, tm);
-            }
-        }
+        String prefix = "M_" + tournamentId + (stageOrder > 1 ? "_S" + stageOrder + "_" + java.util.UUID.randomUUID().toString().substring(0,8) : "") + "_";
+        Integer configuredSeeds = stageOrder == 1 ? new TournamentDAO().getTopSeedCount(tournamentId) : null;
+        List<Team> initialSlots = stageOrder == 1
+                ? service.SECutService.drawInitialSlots(teams, configuredSeeds == null ? 0 : configuredSeeds,
+                    new TournamentDAO().isClassicDraw(tournamentId)) : null;
 
         List<DeNode> allMatches = new ArrayList<>();
         int matchSeq = 1;
@@ -565,8 +560,8 @@ public class DoubleEliminationDAO extends DBContext {
                         t1 = (idx1 < n) ? teams.get(idx1) : null;
                         t2 = (idx2 < n) ? teams.get(idx2) : null;
                     } else {
-                        t1 = seedToTeam.get(seeds[m * 2]);
-                        t2 = seedToTeam.get(seeds[m * 2 + 1]);
+                        t1 = initialSlots.get(m * 2);
+                        t2 = initialSlots.get(m * 2 + 1);
                     }
                     node.team1Id = (t1 != null) ? t1.getId() : null;
                     node.team2Id = (t2 != null) ? t2.getId() : null;
@@ -872,6 +867,15 @@ public class DoubleEliminationDAO extends DBContext {
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+            TournamentDAO.assertStage2Ready(conn,tournamentId,stageOrder);
+            // Concurrent page loads may propose different draws; only the first committed draw wins.
+            try (PreparedStatement lock = conn.prepareStatement("SELECT id FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+                lock.setString(1,tournamentId); try(ResultSet rs=lock.executeQuery()){ if(!rs.next()) return; }
+            }
+            try (PreparedStatement check = conn.prepareStatement("SELECT COUNT(*) FROM matches WHERE tournament_id=? AND (stage_id=? OR (stage_id IS NULL AND ?=1))")) {
+                check.setString(1,tournamentId);check.setString(2,stageId);check.setInt(3,stageOrder);
+                try(ResultSet rs=check.executeQuery()){rs.next();if(rs.getInt(1)>0)return;}
+            }
             
             // Pass 1: Insert all match records
             try (PreparedStatement ps = conn.prepareStatement(insertSql)) {

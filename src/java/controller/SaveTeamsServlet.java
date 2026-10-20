@@ -27,8 +27,9 @@ public class SaveTeamsServlet extends HttpServlet {
         String tournamentId = request.getParameter("id");
         String format = request.getParameter("format");
         String teamListRaw = request.getParameter("teamListRaw");
-        if (!new TournamentDAO().saveTopSeedCount(tournamentId, request.getParameter("topSeedCount"))) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu Top Seed vào DB.");
+        if (!new TournamentDAO().saveTopSeedCount(tournamentId, request.getParameter("topSeedCount"))
+                || !new TournamentDAO().saveClassicDraw(tournamentId, request.getParameter("classicDraw"))) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu cấu hình phân cặp vào DB.");
             return;
         }
 

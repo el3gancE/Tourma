@@ -18,6 +18,8 @@
   var matchesMap = {};
   var roundRandomScores = {};
   var poolRandomScores = {};
+  var pendingSwissSave = Promise.resolve();
+  var swissSaveFailed = false;
 
   // Fixed 5-Round Swiss Structure Matrix for 16 Teams (33 Matches total)
   var SWISS_STRUCTURE = [
@@ -296,6 +298,7 @@
 
   // Randomize All 5 Rounds Sequentially
   function randomizeAllMatches(maxScore) {
+    if (tournamentId !== 'demo') return requestSwissAction('randomAll', null, maxScore);
     var winScoreVal = (maxScore && parseInt(maxScore, 10) > 0) ? parseInt(maxScore, 10) : 0;
     for (var r = 1; r <= 5; r++) {
       randomizeRoundMatches(r, winScoreVal);
@@ -415,6 +418,7 @@
 
   // Reset Matches in Specific Round (CASCADING RESET ALL FUTURE ROUNDS!)
   function resetRoundMatches(rNum) {
+    if (tournamentId !== 'demo') return requestSwissAction('resetRound', rNum);
     Object.keys(matchesMap).forEach(function (k) {
       var m = matchesMap[k];
       if (m && m.roundIndex === rNum) {
@@ -488,6 +492,7 @@
 
   // Validate and Repair Matches Map Structure to guarantee 33 unique matches exist without destroying existing results
   function validateAndRepairMatchesMap() {
+    if (tournamentId !== 'demo') return; // Real match slots come from DB hydration.
     if (!matchesMap || typeof matchesMap !== 'object') {
       initFullSwissMatchesStructure();
       return;
@@ -557,89 +562,11 @@
   function checkSwissStageCompletion() {
     if (!window.TourmaSwissAlgorithm || !teamsList || teamsList.length === 0) return;
     var standings = window.TourmaSwissAlgorithm.calculateStandings(teamsList, matchesMap);
-    var qualifiedTeams = standings.filter(function(st) { return st.qualified; });
 
     var stageParam = new URLSearchParams(window.location.search).get('stage');
     var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
 
     if (currentStage === 1) {
-      // Check if 8 teams qualified — trigger Stage 2 cut pipeline
-      if (qualifiedTeams.length === 8) {
-        var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
-        if (multiCfgRaw) {
-          try {
-            var multiCfg = JSON.parse(multiCfgRaw);
-
-            // Group qualified teams strictly by Record Pool:
-            // Pool 3-0 (2 teams) -> Seeds 1, 2
-            // Pool 3-1 (3 teams) -> Seeds 3, 4, 5
-            // Pool 3-2 (3 teams) -> Seeds 6, 7, 8
-            var pool30 = standings.filter(function(st) { return st.wins === 3 && st.losses === 0; });
-            var pool31 = standings.filter(function(st) { return st.wins === 3 && st.losses === 1; });
-            var pool32 = standings.filter(function(st) { return st.wins === 3 && st.losses === 2; });
-
-            // Sort within each pool by Buchholz / Diff DESC
-            var sortByBuchholz = function(a, b) {
-              if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
-              if (b.diff !== a.diff) return b.diff - a.diff;
-              return b.scoresFor - a.scoresFor;
-            };
-            pool30.sort(sortByBuchholz);
-            pool31.sort(sortByBuchholz);
-            pool32.sort(sortByBuchholz);
-
-            var rankedStage2Teams = [].concat(pool30, pool31, pool32);
-            var shuffledStage2Teams = rankedStage2Teams.map(function(st, idx) {
-              return {
-                id: st.id || ('TEAM_' + (idx + 1)),
-                name: st.name,
-                seed: idx + 1
-              };
-            });
-
-            localStorage.setItem('tourma_stage2_teams_' + tournamentId, JSON.stringify(shuffledStage2Teams));
-            localStorage.setItem('tourma_stage1_completed_' + tournamentId, 'true');
-
-            // Save to Servlet
-            try {
-              var cPath = window.swissContextPath || '';
-              var targetUrl = (cPath ? cPath : '') + '/common/swiss-stage';
-              var pS2 = new URLSearchParams();
-              pS2.append('action', 'saveStage2Teams');
-              pS2.append('tournamentId', tournamentId);
-              pS2.append('stage2Teams', JSON.stringify(shuffledStage2Teams));
-              fetch(targetUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                body: pS2.toString()
-              }).catch(function(err) {});
-            } catch (e) {}
-
-            var s2Format = multiCfg.stage2Format || 'SINGLE_ELIMINATION';
-            if (s2Format === 'SINGLE_ELIMINATION') {
-              if (window.TourmaBracketAlgorithm && typeof window.TourmaBracketAlgorithm.generateSingleElimination === 'function') {
-                var seBracket = window.TourmaBracketAlgorithm.generateSingleElimination(shuffledStage2Teams, 0);
-                localStorage.setItem('tourma_bracket_stage2_' + tournamentId, JSON.stringify(seBracket));
-                localStorage.setItem('tourma_matches_stage2_' + tournamentId, JSON.stringify(seBracket.matchesMap || {}));
-              }
-            } else if (s2Format === 'DOUBLE_ELIMINATION') {
-              var doubleEngine = window.TourmaDoubleElimAlgorithm || window.TourmaDoubleEliminationAlgorithm;
-              if (doubleEngine && typeof doubleEngine.generateDoubleElimination === 'function') {
-                var deBracket = doubleEngine.generateDoubleElimination(shuffledStage2Teams);
-                localStorage.setItem('tourma_de_matches_' + tournamentId, JSON.stringify(deBracket));
-              }
-            } else if (s2Format === 'ROUND_ROBIN') {
-              if (window.TourmaRoundRobinAlgorithm && typeof window.TourmaRoundRobinAlgorithm.generateRoundRobin === 'function') {
-                var rrBracket = window.TourmaRoundRobinAlgorithm.generateRoundRobin(shuffledStage2Teams, multiCfg.stage2Config);
-                localStorage.setItem('tourma_rr_matches_' + tournamentId, JSON.stringify(rrBracket));
-              }
-            }
-
-            multiCfg.stage2MatchesCreated = true;
-            localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(multiCfg));
-          } catch(e) {}
-        }
-      }
       // Multi-Stage Stage 1: always refresh StageEndPopup (show confirm / locked banner)
       if (window.StageEndPopup) {
         window.StageEndPopup.update(
@@ -671,66 +598,7 @@
   window.resetSwissMatches = function () {
     var stageParam = new URLSearchParams(window.location.search).get('stage');
     var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
-    if (currentStage === 1 && window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(tournamentId)) {
-      alert('Vòng 1 đã hoàn tất và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa để sửa" trên thanh thông báo nếu bạn muốn thiết lập lại.');
-      return;
-    }
-    if (window.FinalStagePopup && window.FinalStagePopup.isLocked) {
-      alert('Giải đấu đã kết thúc và đang ở trạng thái khóa. Vui lòng bấm "Mở khóa" trên thanh thông báo nếu muốn reset giải.');
-      return;
-    }
-    if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ tỷ số và đặt lại giai đoạn Swiss về Vòng 1 ban đầu?')) {
-      return;
-    }
-    var storageKey = (currentStage === 2) ? ("tourma_swiss_matches_stage2_" + tournamentId) : ("tourma_swiss_matches_" + tournamentId);
-    try {
-      localStorage.removeItem(storageKey);
-      localStorage.removeItem('tourma_final_locked_' + tournamentId);
-      localStorage.removeItem('tourma_champion_' + tournamentId);
-      localStorage.removeItem('tourma_stage1_locked_' + tournamentId);
-    } catch(e) {}
-
-    // Unlock UI and banners
-    if (window.FinalStagePopup) {
-      window.FinalStagePopup.isLocked = false;
-      var banner = document.getElementById('finalStagePopupBanner');
-      if (banner) banner.style.display = 'none';
-    }
-    if (window.StageEndPopup) {
-      var sBanner = document.getElementById('stageEndPopupBanner');
-      if (sBanner) sBanner.style.display = 'none';
-    }
-
-    // Send reset to backend DB
-    var rParams = new URLSearchParams();
-    rParams.append('action', 'reset');
-    rParams.append('tournamentId', tournamentId);
-    rParams.append('stage', currentStage);
-    fetch((window.swissContextPath || '') + '/common/swiss-stage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body: rParams.toString()
-    }).catch(function() {});
-
-    initFullSwissMatchesStructure();
-    syncSwissMatchesToDB(false);
-    if (currentStage === 1) {
-      try {
-        localStorage.removeItem('tourma_stage2_teams_' + tournamentId);
-        localStorage.removeItem('tourma_bracket_stage2_' + tournamentId);
-        localStorage.removeItem('tourma_matches_stage2_' + tournamentId);
-        localStorage.removeItem('tourma_de_matches_' + tournamentId);
-        localStorage.removeItem('tourma_rr_matches_' + tournamentId);
-        localStorage.removeItem('tourma_stage1_completed_' + tournamentId);
-        var mCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
-        if (mCfgRaw) {
-          var mCfg = JSON.parse(mCfgRaw);
-          mCfg.stage2MatchesCreated = false;
-          localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(mCfg));
-        }
-      } catch(e) {}
-    }
-    renderCurrentView();
+    return window.StageEndPopup.resetStage(tournamentId, currentStage, window.swissContextPath || '');
   };
 
   // Initialize Swiss Engine
@@ -841,11 +709,11 @@
       }
     }
 
-    // 3. Matches Loading: Prioritize localStorage first, then DB matches, fallback to full init
+    // Real tournaments load persisted matches; local data is only a demo fallback.
     var loadedMatches = null;
 
     try {
-      var rawLocal = localStorage.getItem(storageKeyMatches);
+      var rawLocal = tournamentId === 'demo' ? localStorage.getItem(storageKeyMatches) : null;
       if (rawLocal) {
         var parsed = JSON.parse(rawLocal);
         if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
@@ -866,11 +734,12 @@
 
     if (loadedMatches && Object.keys(loadedMatches).length > 0) {
       matchesMap = loadedMatches;
-      validateAndRepairMatchesMap();
-      saveSwissMatches();
+      if (tournamentId === 'demo') validateAndRepairMatchesMap();
+      else hydrateSwissMatches(Object.keys(loadedMatches).map(function (key) { return loadedMatches[key]; }));
+      checkSwissStageCompletion();
     } else {
       initFullSwissMatchesStructure();
-      saveSwissMatches();
+      checkSwissStageCompletion();
     }
 
     // Render initial view mode
@@ -879,8 +748,9 @@
   }
 
   function saveSwissMatches() {
+    if (tournamentId === 'demo') return;
     try {
-      checkAndAutoAdvanceRound(); // AUTO GENERATE NEXT ROUND UPON COMPLETION!
+      if (tournamentId === 'demo') checkAndAutoAdvanceRound();
       var stageParam = new URLSearchParams(window.location.search).get('stage');
       var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
       var storageKey = (currentStage === 2) ? ("tourma_swiss_matches_stage2_" + tournamentId) : ("tourma_swiss_matches_" + tournamentId);
@@ -924,11 +794,62 @@
     params.append('stage', currentStage);
     params.append('matchesJson', JSON.stringify(list));
 
-    fetch(url, {
+    pendingSwissSave = pendingSwissSave.catch(function () {}).then(function () { return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
       body: params.toString()
-    }).catch(function(err) {});
+    }).then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+      .then(function (data) {
+        if (!data || data.status !== 'success') throw new Error((data && data.message) || 'Không lưu được kết quả Swiss.');
+        swissSaveFailed = false;
+        hydrateSwissMatches(data.matchesData);
+      }).catch(async function (error) {
+        swissSaveFailed = true;
+        await reloadPersistedSwissMatches();
+        alert(error.message);
+        throw error;
+      }); });
+    pendingSwissSave.catch(function () {});
+    return pendingSwissSave;
+  }
+
+  async function reloadPersistedSwissMatches() {
+    try {
+      var stage = new URLSearchParams(window.location.search).get('stage') === '2' ? 2 : 1;
+      var response = await fetch((window.swissContextPath || '') + '/common/swiss-stage?action=getMatches&tournamentId='
+          + encodeURIComponent(tournamentId) + '&stage=' + stage, {method:'POST'});
+      var data = await response.json();
+      if (response.ok && data.status === 'success') hydrateSwissMatches(data.matchesData);
+    } catch (ignored) { }
+  }
+
+  function requestSwissAction(action, round, score) {
+    var stage = new URLSearchParams(window.location.search).get('stage') === '2' ? 2 : 1;
+    var endpoint = action === 'resetRound' ? '/api/tournament-random' : '/common/swiss-stage';
+    pendingSwissSave = pendingSwissSave.catch(function () {}).then(function () {
+      return fetch((window.swissContextPath || '') + endpoint, {
+        method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+        body: new URLSearchParams({action:action,tournamentId:tournamentId,stage:stage,
+          roundNumber:round || 1,targetScore:score || 3}).toString()
+      }).then(function (res) { return res.json(); }).then(function (data) {
+        if (!data || data.status !== 'success') throw new Error((data && data.message) || 'Không cập nhật được Swiss.');
+        swissSaveFailed = false;
+        hydrateSwissMatches(data.matchesData);
+      }).catch(async function (error) { swissSaveFailed=true; await reloadPersistedSwissMatches(); alert(error.message); throw error; });
+    });
+    pendingSwissSave.catch(function () {});
+    return pendingSwissSave;
+  }
+
+  function hydrateSwissMatches(data) {
+    if (!Array.isArray(data)) return;
+    initFullSwissMatchesStructure();
+    Object.keys(matchesMap).forEach(function (key) {
+      if (data.some(function (m) { return m.roundIndex === matchesMap[key].roundIndex; })) delete matchesMap[key];
+    });
+    data.forEach(function (match) { matchesMap[match.matchKey || match.matchId] = match; });
+    renderCurrentView();
+    checkSwissStageCompletion();
   }
 
   function renderCurrentView() {
@@ -1470,6 +1391,10 @@
 
   // Handle Match Card Click (Quick Mode vs Normal Popup Modal)
   function handleMatchClick(m, event) {
+    if (window.StageEndPopup && window.StageEndPopup.isStage1Locked(tournamentId)
+        && new URLSearchParams(window.location.search).get('stage') !== '2') {
+      window.StageEndPopup.promptUnlock(); return;
+    }
     if (event) {
       event.stopPropagation();
     }
@@ -1569,28 +1494,6 @@
       saveSwissMatches();
       renderCurrentView();
 
-      // Sync via AJAX with Servlet
-      try {
-        var stageParam = new URLSearchParams(window.location.search).get('stage');
-        var curStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
-        var p = new URLSearchParams();
-        p.append('action', 'updateScore');
-        p.append('tournamentId', tournamentId);
-        p.append('stage', curStage);
-        p.append('matchKey', m.matchKey);
-        p.append('team1Score', s1);
-        p.append('team2Score', s2);
-        p.append('status', 'FINISHED');
-        p.append('team1Name', t1Name);
-        p.append('team2Name', t2Name);
-        p.append('winner', winSide);
-
-        fetch((window.swissContextPath || '') + "/common/swiss-stage", {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-          body: p.toString()
-        }).catch(function () {});
-      } catch (e) {}
     });
   }
 
@@ -1616,6 +1519,19 @@
   window.TourmaSwiss = {
     tournamentId: tournamentId,
     init: initSwissEngine,
+    currentStage: new URLSearchParams(window.location.search).get('stage') === '2' ? 2 : 1,
+    getAdvancingTeams: async function () {
+      await pendingSwissSave;
+      if (swissSaveFailed) throw new Error('Kết quả Swiss chưa được lưu thành công.');
+      var response = await fetch((window.swissContextPath || '') + '/api/cut-stage', {
+        method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+        body: new URLSearchParams({tournamentId: tournamentId}).toString()
+      });
+      var data = await response.json();
+      if (!response.ok || data.status !== 'success' || !Array.isArray(data.qualifiedTeams))
+        throw new Error(data.message || 'Chưa xác định đủ đội đi tiếp Swiss từ DB.');
+      return data.qualifiedTeams;
+    },
     checkSwissStageCompletion: checkSwissStageCompletion,
     confirmResetBracket: window.resetSwissMatches,
     resetBracket: window.resetSwissMatches,

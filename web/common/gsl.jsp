@@ -157,7 +157,6 @@
         <jsp:include page="/common/component/stage-end-popup.jsp"/>
 
         <!-- Stage Finish Alert Component (Locked Stage 2) -->
-        <jsp:include page="/common/component/stage-finish-alert.jsp"/>
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
@@ -193,6 +192,7 @@
                 <jsp:param name="view2Icon" value="fa-list-ol" />
                 <jsp:param name="view2Label" value="Danh Sách Trận" />
             </jsp:include>
+            <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
             <div id="gslEmptyAlertContainer" style="display: none; width: 100%;"></div>

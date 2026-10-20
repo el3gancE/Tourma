@@ -271,6 +271,16 @@ public class MatchUpdateServlet extends HttpServlet {
         }
 
         int currentStage = (stage != null && stage > 0) ? stage : 1;
+        String activeFormat = new TournamentDAO().getStageFormat(tournamentId, currentStage);
+        if (activeFormat != null && activeFormat.toUpperCase().contains("SWISS")) {
+            dao.SwissSystemDAO swiss = new dao.SwissSystemDAO();
+            res.success = score1 != null && score2 != null
+                    && swiss.saveMatchScore(tournamentId,currentStage,matchId,score1,score2,winnerFlag);
+            res.matchId=matchId;
+            res.errorMessage = res.success ? "" : "Không thể sửa kết quả Swiss: kiểm tra khóa stage, tỷ số và các vòng sau đã thi đấu.";
+            res.matchesJson=swiss.getMatchesJsonForFrontend(tournamentId,currentStage);
+            return res;
+        }
         String mIdClean = matchId.trim();
         String lastPart = mIdClean;
         int lastUnderscore = mIdClean.lastIndexOf('_');
@@ -283,8 +293,15 @@ public class MatchUpdateServlet extends HttpServlet {
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
 
+            TournamentDAO.assertStage2Ready(conn,tournamentId,currentStage);
+            if(currentStage>1) {
+                try(PreparedStatement ps=conn.prepareStatement("SELECT 1 FROM matches m JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id WHERE m.id=? AND m.tournament_id=? AND s.stage_order=?")) {
+                    ps.setString(1,matchId);ps.setString(2,tournamentId);ps.setInt(3,currentStage);
+                    try(ResultSet rs=ps.executeQuery()){if(!rs.next())throw new IllegalStateException("Nhánh Stage 2 đã thay đổi. Vui lòng tải lại trang.");}
+                }
+            }
             // Auto-initialize bracket in DB if needed according to tournament format
-            if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+            if (currentStage == 1 && tournamentId != null && !tournamentId.trim().isEmpty()) {
                 try {
                     Tournament tourney = new TournamentDAO().getTournamentById(tournamentId.trim());
                     String selectedFormat = new TournamentDAO().getStageFormat(tournamentId.trim(), currentStage);
@@ -719,6 +736,18 @@ public class MatchUpdateServlet extends HttpServlet {
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
+            try(PreparedStatement ps=conn.prepareStatement("SELECT s.stage_order FROM matches m LEFT JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id WHERE m.id=? AND m.tournament_id=?")) {
+                ps.setString(1,mIdClean);ps.setString(2,tournamentId);
+                try(ResultSet rs=ps.executeQuery()) {
+                    if(rs.next()) TournamentDAO.assertStage2Ready(conn,tournamentId,rs.getInt(1));
+                    else if(mIdClean.startsWith("M_")) return false;
+                }
+            }
+            // Swiss results affect subsequent pairings. Use the explicit round reset API.
+            try (PreparedStatement ps=conn.prepareStatement("SELECT 1 FROM matches WHERE id=? AND tournament_id=? AND bracket_type='SWISS'")) {
+                ps.setString(1,mIdClean);ps.setString(2,tournamentId);
+                try(ResultSet rs=ps.executeQuery()) { if(rs.next()) { conn.rollback(); return false; } }
+            }
             // Full DE match IDs must not fall through ambiguous numeric-suffix lookup.
             try (PreparedStatement ps = conn.prepareStatement("SELECT m.stage_id, s.format FROM matches m JOIN tournament_stages s ON s.id = m.stage_id WHERE m.id = ? AND m.tournament_id = ?")) {
                 ps.setString(1, mIdClean); ps.setString(2, tournamentId);
@@ -872,14 +901,23 @@ public class MatchUpdateServlet extends HttpServlet {
      */
     public boolean handleFinishTournament(String tournamentId, String championName) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        TournamentDAO tDao = new TournamentDAO();
-        boolean ok = tDao.updateTournamentStatus(tournamentId.trim(), "COMPLETED");
-        if (championName != null && !championName.trim().isEmpty()) {
-            tDao.updateTournamentChampion(tournamentId.trim(), championName.trim());
-        }
-        RollingWindowPointService.clearAllCaches();
-        TournamentDAO.clearTournamentCaches();
-        return ok;
+        try(Connection conn=new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            boolean multi;
+            try(PreparedStatement ps=conn.prepareStatement("SELECT tournament_type FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+                ps.setString(1,tournamentId);try(ResultSet rs=ps.executeQuery()){if(!rs.next())return false;multi="MULTI_STAGE".equalsIgnoreCase(rs.getString(1));}
+            }
+            if(multi) {
+                TournamentDAO.assertStage2Ready(conn,tournamentId,2);
+                try(PreparedStatement ps=conn.prepareStatement("SELECT COUNT(*),SUM(CASE WHEN ISNULL(m.is_bye,0)=0 AND (m.score1 IS NULL OR m.score2 IS NULL) THEN 1 ELSE 0 END) FROM matches m JOIN tournament_stages s ON s.id=m.stage_id WHERE m.tournament_id=? AND s.stage_order=2")) {
+                    ps.setString(1,tournamentId);try(ResultSet rs=ps.executeQuery()){rs.next();if(rs.getInt(1)==0 || rs.getInt(2)>0)return false;}
+                }
+            }
+            try(PreparedStatement ps=conn.prepareStatement("UPDATE tournaments SET status='COMPLETED',champion_name=COALESCE(?,champion_name) WHERE id=?")) {
+                ps.setString(1,championName==null || championName.trim().isEmpty()?null:championName.trim());ps.setString(2,tournamentId);ps.executeUpdate();
+            }
+            conn.commit();RollingWindowPointService.clearAllCaches();TournamentDAO.clearTournamentCaches();return true;
+        }catch(Exception invalidState){return false;}
     }
 
     public boolean handleUnlockTournament(String tournamentId) {

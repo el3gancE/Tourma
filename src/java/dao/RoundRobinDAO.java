@@ -93,6 +93,10 @@ public class RoundRobinDAO extends DBContext {
     }
 
     public String getMatchesJsonForFrontend(String tournamentId, int stageOrder) {
+        if(stageOrder>1) {
+            try(Connection access=getConnection()){TournamentDAO.assertStage2Ready(access,tournamentId,stageOrder);}
+            catch(Exception notReady){return "[]";}
+        }
         if (tournamentId == null || tournamentId.trim().isEmpty()) return "[]";
 
         ensureRoundRobinInitialized(tournamentId, stageOrder);
@@ -235,6 +239,7 @@ public class RoundRobinDAO extends DBContext {
 
         String stageId = lookupOrCreateStageId(tournamentId, stageOrder);
         int matchSeq = 1;
+        String drawId=stageOrder>1?"_S"+stageOrder+"_"+java.util.UUID.randomUUID().toString().substring(0,8):"";
 
         String insertSql = "INSERT INTO matches (id, tournament_id, stage_id, round_number, match_order, match_code, bracket_type, "
                 + "team1_id, team2_id, is_bye, status) "
@@ -242,6 +247,7 @@ public class RoundRobinDAO extends DBContext {
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+            TournamentDAO.assertStage2Ready(conn,tournamentId,stageOrder);
             try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
                 for (int r = 0; r < numRounds; r++) {
                     int roundNumber = r + 1;
@@ -253,7 +259,7 @@ public class RoundRobinDAO extends DBContext {
                             continue; // Skip match against BYE dummy
                         }
 
-                        String matchId = "M_" + tournamentId + "_RR_R" + roundNumber + "_" + (m + 1);
+                        String matchId = "M_" + tournamentId + drawId + "_RR_R" + roundNumber + "_" + (m + 1);
                         ps.setString(1, matchId);
                         ps.setString(2, tournamentId);
                         ps.setString(3, stageId);
@@ -394,41 +400,7 @@ public class RoundRobinDAO extends DBContext {
     }
 
     public boolean resetBracketMatches(String tournamentId, int stageOrder) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.penalty1 = NULL, m.penalty2 = NULL, "
-                + "m.winner_id = NULL, m.loser_id = NULL, m.status = 'READY' "
-                + "FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
-
-        String resetTourneySql = "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL WHERE id = ?";
-
-        try (Connection conn = getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, tournamentId);
-                ps.setInt(2, stageOrder);
-                ps.setInt(3, stageOrder);
-                ps.setInt(4, stageOrder);
-                ps.setInt(5, stageOrder);
-                ps.executeUpdate();
-            }
-
-            try (PreparedStatement psT = conn.prepareStatement(resetTourneySql)) {
-                psT.setString(1, tournamentId);
-                psT.executeUpdate();
-            } catch (Exception ignore) {}
-
-            try (PreparedStatement psS1 = conn.prepareStatement("UPDATE tournaments SET stage1_status = 'PENDING' WHERE id = ?")) {
-                psS1.setString(1, tournamentId);
-                psS1.executeUpdate();
-            } catch (Exception ignore) {}
-
-            service.RollingWindowPointService.clearAllCaches();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        return new TournamentDAO().resetStageMatches(tournamentId,stageOrder);
     }
 
     private int parseNumericId(String strId, int defaultSeq) {

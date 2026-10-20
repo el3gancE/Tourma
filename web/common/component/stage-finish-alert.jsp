@@ -15,4 +15,16 @@
         </a>
     </div>
 </div>
+<%
+    String accessTournamentId=request.getParameter("id");
+    if(accessTournamentId==null)accessTournamentId=request.getParameter("tournamentId");
+    if(accessTournamentId!=null && !accessTournamentId.trim().isEmpty() && !"demo".equals(accessTournamentId)) {
+%>
+<%
+    String accessStateJson;
+    try { accessStateJson=new dao.TournamentDAO().getStageAccessStateJson(accessTournamentId); }
+    catch(Exception missingTournament){ accessStateJson="{\"ready\":false}"; }
+%>
+<script>window.TourmaStageAccessState=<%= accessStateJson %>;</script>
+<% } %>
 <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>

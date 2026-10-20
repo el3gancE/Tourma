@@ -42,6 +42,8 @@ public class DBContext {
                                         "BEGIN ALTER TABLE tournaments ADD teams_json NVARCHAR(MAX) NULL; END");
                         st.executeUpdate("IF COL_LENGTH('tournaments', 'top_seed_count') IS NULL " +
                                         "BEGIN ALTER TABLE tournaments ADD top_seed_count INT NULL; END");
+                        st.executeUpdate("IF COL_LENGTH('tournaments', 'classic_draw') IS NULL " +
+                                        "BEGIN ALTER TABLE tournaments ADD classic_draw BIT NOT NULL DEFAULT 0; END");
                         schemaMigrated = true;
                     } catch (Exception ignore) {}
                 }

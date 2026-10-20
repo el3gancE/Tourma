@@ -259,6 +259,7 @@ public class TournamentRandomServlet extends HttpServlet {
 
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
+            TournamentDAO.assertStage2Ready(conn,tournamentId,stageOrder);
 
             String updateMatchSql = "UPDATE matches SET score1 = ?, score2 = ?, winner_id = ?, loser_id = ?, status = 'FINISHED' WHERE id = ?";
             String advSql = "UPDATE matches SET %SLOT% = ?, status = CASE WHEN (%OTHER_SLOT% IS NOT NULL) THEN 'READY' ELSE status END "
@@ -690,7 +691,7 @@ public class TournamentRandomServlet extends HttpServlet {
 
         if (format.contains("SWISS")) {
             SwissSystemDAO swissDao = new SwissSystemDAO();
-            boolean ok = swissDao.resetBracketMatches(tournamentId, stageOrder);
+            boolean ok = swissDao.resetRoundInDB(tournamentId, stageOrder, roundNumber);
             res.success = ok;
             res.message = ok ? "Đã đặt lại trận đấu Swiss thành công!" : "Lỗi khi đặt lại Swiss!";
             res.matchesJson = swissDao.getMatchesJsonForFrontend(tournamentId, stageOrder);
@@ -834,7 +835,7 @@ public class TournamentRandomServlet extends HttpServlet {
 
             // 4. Ensure all BYE winners remain properly linked downstream in DB
             if (format.contains("SINGLE")) {
-                new SingleEliminationDAO().syncByeAdvancementsInDB(tournamentId);
+                new SingleEliminationDAO().syncByeAdvancementsInDB(tournamentId, stageOrder);
             }
 
             res.success = true;

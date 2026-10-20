@@ -14,58 +14,46 @@
     'use strict';
 
     var TourmaRoundControls = {
-        /**
-         * In-memory cache of user-typed custom scores keyed by [bracketType_]roundNumber
-         */
+        /** Custom inputs are scoped to tournament, stage and bracket. */
         customScores: {},
 
-        /**
-         * Retrieve persisted custom score for a round from cache or localStorage
-         */
+        getCustomScoreScope: function (tid) {
+            var engine = this.resolveEngine(null);
+            var targetTid = tid || (engine && engine.tournamentId) || window.TourmaTournamentId || 'demo';
+            var stage = parseInt(engine && engine.currentStage, 10)
+                || parseInt(new URLSearchParams(window.location.search).get('stage'), 10) || 1;
+            // Legacy keys have no stage information and must not be imported.
+            return 'tourma_custom_scores_v2_' + targetTid + '_stage_' + stage;
+        },
+
         getCustomScoreForRound: function (roundNumber, tid, bracketType) {
-            var rNum = String(roundNumber || 1);
-            var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
-            var rKey = (bType ? bType + '_' : '') + rNum;
-
-            if (this.customScores && this.customScores[rKey] !== undefined && this.customScores[rKey] !== null && this.customScores[rKey] !== '') {
-                return this.customScores[rKey];
+            var rKey = (bracketType ? String(bracketType).toUpperCase().trim() : 'MAIN')
+                + '_' + String(roundNumber || 1);
+            var scope = this.getCustomScoreScope(tid);
+            var cacheKey = scope + ':' + rKey;
+            if (Object.prototype.hasOwnProperty.call(this.customScores, cacheKey)) {
+                return this.customScores[cacheKey];
             }
-            if (this.customScores && this.customScores[rNum] !== undefined && this.customScores[rNum] !== null && this.customScores[rNum] !== '') {
-                return this.customScores[rNum];
-            }
-
-            var targetTid = tid || (window.SingleEliminationEngine ? window.SingleEliminationEngine.tournamentId : null) || (window.TourmaDoubleElimination ? window.TourmaDoubleElimination.tournamentId : null) || window.TourmaTournamentId || 'demo';
             try {
-                var stored = JSON.parse(localStorage.getItem('tourma_custom_scores_' + targetTid) || '{}');
-                if (stored && stored[rKey] !== undefined && stored[rKey] !== null && stored[rKey] !== '') {
-                    this.customScores[rKey] = stored[rKey];
+                var stored = JSON.parse(localStorage.getItem(scope) || '{}');
+                if (stored && Object.prototype.hasOwnProperty.call(stored, rKey)) {
+                    this.customScores[cacheKey] = stored[rKey];
                     return stored[rKey];
-                }
-                if (stored && stored[rNum] !== undefined && stored[rNum] !== null && stored[rNum] !== '') {
-                    this.customScores[rNum] = stored[rNum];
-                    return stored[rNum];
                 }
             } catch (e) { }
             return '';
         },
 
-        /**
-         * Save custom score for a round to in-memory cache and localStorage
-         */
         saveCustomScoreForRound: function (roundNumber, val, tid, bracketType) {
-            var rNum = String(roundNumber || 1);
-            var bType = bracketType ? String(bracketType).toUpperCase().trim() : '';
-            var rKey = (bType ? bType + '_' : '') + rNum;
-
-            this.customScores[rKey] = val;
-            this.customScores[rNum] = val;
-
-            var targetTid = tid || (window.SingleEliminationEngine ? window.SingleEliminationEngine.tournamentId : null) || (window.TourmaDoubleElimination ? window.TourmaDoubleElimination.tournamentId : null) || window.TourmaTournamentId || 'demo';
+            var rKey = (bracketType ? String(bracketType).toUpperCase().trim() : 'MAIN')
+                + '_' + String(roundNumber || 1);
+            var scope = this.getCustomScoreScope(tid);
+            this.customScores[scope + ':' + rKey] = val;
             try {
-                var stored = JSON.parse(localStorage.getItem('tourma_custom_scores_' + targetTid) || '{}');
+                var stored = JSON.parse(localStorage.getItem(scope) || '{}');
+                if (!stored || typeof stored !== 'object' || Array.isArray(stored)) stored = {};
                 stored[rKey] = val;
-                stored[rNum] = val;
-                localStorage.setItem('tourma_custom_scores_' + targetTid, JSON.stringify(stored));
+                localStorage.setItem(scope, JSON.stringify(stored));
             } catch (e) { }
         },
 

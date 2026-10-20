@@ -144,8 +144,9 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         String tournamentId = request.getParameter("tournamentId");
         String seriesId = request.getParameter("seriesId");
         ParticipantDAO participantDAO = new ParticipantDAO();
-        if (!new TournamentDAO().saveTopSeedCount(tournamentId, request.getParameter("topSeedCount"))) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu Top Seed vào DB.");
+        if (!new TournamentDAO().saveTopSeedCount(tournamentId, request.getParameter("topSeedCount"))
+                || !new TournamentDAO().saveClassicDraw(tournamentId, request.getParameter("classicDraw"))) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu cấu hình phân cặp vào DB.");
             return;
         }
 

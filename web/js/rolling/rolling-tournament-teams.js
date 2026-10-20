@@ -670,6 +670,12 @@
       var field = form.querySelector('input[name="topSeedCount"]');
       if (!field) { field = document.createElement('input'); field.type = 'hidden'; field.name = 'topSeedCount'; form.appendChild(field); }
       field.value = visibleCount || '0';
+                    var classic = document.getElementById('classicDrawInput');
+                    if (classic) {
+                        var drawField = form.querySelector('input[name="classicDraw"]');
+                        if (!drawField) { drawField = document.createElement('input'); drawField.type = 'hidden'; drawField.name = 'classicDraw'; form.appendChild(drawField); }
+                        drawField.value = classic.checked ? 'true' : 'false';
+                    }
     });
 
     var cfg = {

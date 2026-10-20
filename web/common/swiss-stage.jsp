@@ -93,7 +93,6 @@
         <jsp:include page="/common/component/stage-end-popup.jsp"/>
 
         <!-- Stage Finish Alert Component (Locked Stage 2) -->
-        <jsp:include page="/common/component/stage-finish-alert.jsp"/>
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
@@ -127,6 +126,7 @@
                 <jsp:param name="view2Icon" value="fa-list-ol" />
                 <jsp:param name="view2Label" value="Danh Sách Trận" />
             </jsp:include>
+            <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- SWISS TEAM COUNT ALERT BANNER (When team count != 16) -->
             <div id="swissInvalidTeamAlert" style="display: none; background: rgba(18, 22, 32, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(244, 63, 94, 0.35); border-radius: 14px; padding: 3.5rem 2rem; text-align: center; margin-top: 1.5rem; margin-bottom: 2.5rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);">

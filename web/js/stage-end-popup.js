@@ -185,45 +185,13 @@
 
             // 4. SWISS
             if ((format === 'SWISS' || format === 'SWISS_LITE') && matchesMap) {
-                // Primary: Swiss cut complete (8 teams qualified)
-                if (teamsList && teamsList.length > 0 && window.TourmaSwissAlgorithm && typeof window.TourmaSwissAlgorithm.calculateStandings === 'function') {
-                    var swStandings = window.TourmaSwissAlgorithm.calculateStandings(teamsList, matchesMap);
-                    var swQualified = swStandings.filter(function (st) { return st.qualified; });
-                    if (swQualified.length >= 8) return true;
-                }
-
-                // Fallback: all playable matches have decisive scores
-                var swKeys = Object.keys(matchesMap);
-                var swTotal = 0;
-                var swDone = 0;
-                for (var s = 0; s < swKeys.length; s++) {
-                    var swm = matchesMap[swKeys[s]];
-                    if (!swm) continue;
-                    var st1 = swm.team1 ? (swm.team1.name || swm.team1) : '';
-                    var st2 = swm.team2 ? (swm.team2.name || swm.team2) : '';
-                    if (!st1 || !st2 || st1 === 'TBD' || st2 === 'TBD' || st1 === 'BYE' || st2 === 'BYE') continue;
-
-                    swTotal++;
-                    var ss1 = null;
-                    var ss2 = null;
-                    if (swm.team1Score !== '' && swm.team1Score !== null && swm.team1Score !== undefined && !isNaN(Number(swm.team1Score))) {
-                        ss1 = Number(swm.team1Score);
-                    } else if (swm.team1 && swm.team1.score !== '' && swm.team1.score !== null && !isNaN(Number(swm.team1.score))) {
-                        ss1 = Number(swm.team1.score);
-                    }
-                    if (swm.team2Score !== '' && swm.team2Score !== null && swm.team2Score !== undefined && !isNaN(Number(swm.team2Score))) {
-                        ss2 = Number(swm.team2Score);
-                    } else if (swm.team2 && swm.team2.score !== '' && swm.team2.score !== null && !isNaN(Number(swm.team2.score))) {
-                        ss2 = Number(swm.team2.score);
-                    }
-
-                    var isMatchDone = ss1 !== null && ss2 !== null && ss1 !== ss2;
-                    if (!isMatchDone && (swm.status === 'COMPLETED' || swm.status === 'DONE') && ss1 !== null && ss2 !== null) {
-                        isMatchDone = true;
-                    }
-                    if (isMatchDone) swDone++;
-                }
-                return (swTotal > 0 && swDone === swTotal);
+                if (!teamsList || teamsList.length !== 16 || !window.TourmaSwissAlgorithm) return false;
+                var standings = window.TourmaSwissAlgorithm.calculateStandings(teamsList, matchesMap);
+                // All teams must have reached 3 wins or 3 losses, never just finished the current round.
+                return standings.length === 16
+                    && standings.filter(function (st) { return st.wins === 3 && st.losses < 3; }).length === 8
+                    && standings.every(function (st) { return (st.wins === 3 && st.losses < 3)
+                        || (st.losses === 3 && st.wins < 3); });
             }
 
             // 5. DOUBLE ELIMINATION (Multi-Stage Stage 1 with cutTarget)
@@ -516,7 +484,7 @@
             }).catch(function (error) { window.alert(error.message || 'Không reset được stage. Vui lòng thử lại.'); });
         },
 
-        confirmStageEnd: function () {
+        confirmStageEnd: async function () {
             var tid = this.tournamentId;
             if (!tid || this.transitionInProgress) return;
             this.transitionInProgress = true;
@@ -558,14 +526,16 @@
             };
             try {
                 // Extract and draw once; retain the draw when retrying a failed save.
-                if (!this.pendingStage2Teams) {
-                    var advTeams = this.getAdvancingTeamsFromCurrentEngine();
+                if (!this.pendingStage2Teams || this.format === 'SWISS' || this.format === 'SWISS_LITE') {
+                    var advTeams = (this.format === 'SWISS' || this.format === 'SWISS_LITE')
+                        ? await window.TourmaSwiss.getAdvancingTeams()
+                        : this.getAdvancingTeamsFromCurrentEngine();
                     if (!advTeams || advTeams.length === 0) {
                         throw new Error('Chưa xác định được đội đi tiếp.');
                     }
                     var s2Url = this.resolveStage2Url(tid);
                     // GSL returns seed order. DE consumes consecutive pairs instead.
-                    if ((this.format === 'GSL' || this.format === 'DOUBLE_ELIMINATION') && s2Url.indexOf('double-elimination') !== -1) {
+                    if ((this.format === 'GSL' || this.format === 'DOUBLE_ELIMINATION' || this.format === 'SWISS' || this.format === 'SWISS_LITE') && s2Url.indexOf('double-elimination') !== -1) {
                         var gsl = window.TourmaGSL || window.GSLEngine;
                         var seeds = gsl ? gsl.getStandardBracketSeeds(advTeams.length)
                             : window.TourmaBracketAlgorithm.generateSeedPairs(advTeams.length).reduce(function (all, pair) { return all.concat(pair); }, []);
@@ -575,7 +545,7 @@
                 }
                 var teams = this.pendingStage2Teams;
                 var save;
-                if (['SINGLE_ELIMINATION', 'GSL', 'DOUBLE_ELIMINATION'].indexOf(this.format) !== -1) {
+                if (['SINGLE_ELIMINATION', 'GSL', 'DOUBLE_ELIMINATION', 'SWISS', 'SWISS_LITE'].indexOf(this.format) !== -1) {
                     save = fetch((window.TourmaContextPath || '') + '/api/cut-stage', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
@@ -664,7 +634,7 @@
                     '<div class="stage-end-modal-body">' +
                         '<p>Mở khóa Vòng 1 sẽ cho phép chỉnh sửa lại tỉ số các trận đấu.</p>' +
                         '<p style="margin-top: 0.5rem; color: #f59e0b; font-size: 0.85rem;">' +
-                            '⚠️ Lưu ý: Nếu thay đổi kết quả làm đổi các đội đi tiếp, nhánh đấu Vòng 2 có thể sẽ được tính toán lại.' +
+                            '⚠️ Mở khóa sẽ xóa toàn bộ nhánh và kết quả Vòng 2. Xác nhận lại Vòng 1 sẽ tạo nhánh Vòng 2 mới.' +
                         '</p>' +
                     '</div>' +
                     '<div class="stage-end-modal-footer">' +
@@ -689,10 +659,21 @@
             this.pendingStage2Teams = null;
             try {
                 // BOTH localStorage (compat) AND DB
-                try { localStorage.setItem('tourma_stage1_locked_' + tid, 'false'); } catch (e) {}
+
 
                 var self = this;
-                window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'PENDING').then(function () {
+                window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'PENDING').then(function (data) {
+                    if (!data || data.status !== 'success') {
+                        window.alert('Không mở khóa được stage. Vui lòng thử lại.');
+                        return;
+                    }
+                    try {
+                        ['tourma_stage2_teams_','tourma_advance_teams_','tourma_bracket_stage2_','tourma_matches_stage2_',
+                         'tourma_de_matches_stage2_','tourma_rr_matches_stage2_','tourma_swiss_matches_stage2_',
+                         'tourma_final_locked_','tourma_final_champion_','tourma_champion_'].forEach(function (prefix) { localStorage.removeItem(prefix+tid); });
+                        localStorage.setItem('tourma_stage1_locked_'+tid,'false');
+                        localStorage.setItem('tourma_stage_state_'+tid,JSON.stringify({ready:false,changedAt:Date.now()}));
+                    } catch (ignored) {}
                     var banner = document.getElementById('stageEndPopupBanner');
                     if (banner) {
                         banner.classList.remove('is-locked');

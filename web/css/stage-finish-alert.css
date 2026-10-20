@@ -103,3 +103,18 @@
         transform: translateY(0) scale(1);
     }
 }
+
+/* Keep the tournament navbar above the blocked-stage message. */
+body.stage2-is-blocked main.container > :not(#stageFinishAlertContainer):not(.tournament-navbar-control-bar):not(.rr-control-bar) { display: none !important; }
+body.stage2-is-blocked #finalStagePopupBanner,
+body.stage2-is-blocked #stageEndPopupBanner { display: none !important; }
+body.stage2-is-blocked main.container { min-height: calc(100vh - 100px); }
+body.stage2-is-blocked #stageFinishAlertContainer { min-height: 65vh; margin: 0; }
+.stage-finish-alert-card { box-sizing: border-box; }
+@media (max-width: 640px) {
+    .stage-finish-alert-wrapper { padding: 1.5rem 0.75rem; }
+    .stage-finish-alert-card { padding: 2rem 1rem; }
+}
+
+body.stage2-is-blocked .control-actions-right-group,
+body.stage2-is-blocked .rr-actions-group { opacity: 0.45; pointer-events: none; }

@@ -449,8 +449,9 @@
                 if (!groupColor && canvasElem && canvasElem.style && canvasElem.style.getPropertyValue) {
                     groupColor = canvasElem.style.getPropertyValue('--grp-color') || (wrapperElem && wrapperElem.style && wrapperElem.style.getPropertyValue('--grp-color'));
                 }
+                var isUnifiedDe = (canvasElem && canvasElem.classList && canvasElem.classList.contains('de-viewport-canvas')) || (wrapperElem && wrapperElem.classList && wrapperElem.classList.contains('de-single-viewport-wrapper'));
                 var isGsl = (canvasElem && canvasElem.classList && canvasElem.classList.contains('gsl-viewport-canvas')) || (wrapperElem && wrapperElem.classList && wrapperElem.classList.contains('gsl-single-viewport-wrapper'));
-                var themeColor = isGsl ? (groupColor || '#2dd4bf') : (isTargetLb ? '#ff4655' : (isTargetGf ? '#fbbf24' : '#2dd4bf'));
+                var themeColor = (isGsl || isUnifiedDe) ? (groupColor || '#2dd4bf') : (isTargetLb ? '#ff4655' : (isTargetGf ? '#fbbf24' : '#2dd4bf'));
 
                 if (validSources.length >= 2) {
                     // Standard Bracket Fork ( ]-- ) strictly for this target match

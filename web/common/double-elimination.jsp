@@ -122,6 +122,10 @@
             dbMatchesJson = reqJson;
         }
     }
+    if (currentStage == 2 && !("LOCKED".equals(dbStage1Status) || "COMPLETED".equals(dbStage1Status))) {
+        dbMatchesJson = "[]";
+        dbStage2Teams = null;
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -165,7 +169,6 @@
         <jsp:include page="/common/component/stage-end-popup.jsp"/>
 
         <!-- Stage Finish Alert Component (Locked Stage 2) -->
-        <jsp:include page="/common/component/stage-finish-alert.jsp"/>
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
@@ -200,6 +203,7 @@
                 <jsp:param name="view2Icon" value="fa-list-ol" />
                 <jsp:param name="view2Label" value="Danh Sách Trận" />
             </jsp:include>
+            <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
             <div id="deEmptyAlertContainer" style="display: none; width: 100%;"></div>
@@ -209,13 +213,16 @@
                 
                 <!-- UPPER BRACKET SECTION (Includes Grand Finals) -->
                 <div class="de-viewport-section">
-                    <div class="de-section-header">
+                    <!-- Standalone Viewport Navbar Header Card -->
+                    <div class="de-section-header de-section-header-card">
                         <div class="de-section-title-wrap">
-                            <h2 class="de-viewport-title upper">Upper Bracket</h2>
+                            <h2 class="de-viewport-title upper">
+                                <i class="fa-solid fa-trophy text-mint"></i> Upper Bracket
+                            </h2>
                         </div>
                     </div>
 
-                    <!-- Upper Viewport Frame with Floating Zoom Toolbar -->
+                    <!-- Separate Upper Viewport Frame with Floating Zoom Toolbar -->
                     <div id="upperViewportFrame" class="bracket-viewport-frame de-viewport-frame">
                         <div id="upperZoomToolbar" class="bracket-zoom-toolbar">
                             <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomOut('upperViewportContainer')" title="Thu nhỏ (-)">
@@ -231,8 +238,8 @@
                         </div>
 
                         <div id="upperViewportContainer" class="bracket-viewport-container de-viewport-container">
-                            <div id="upperViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas">
-                                <div id="upperBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper"></div>
+                            <div id="upperViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas" data-group-color="#2dd4bf" style="--grp-color: #2dd4bf; --grp-rgb: 45, 212, 191;">
+                                <div id="upperBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper" data-group-color="#2dd4bf" style="--grp-color: #2dd4bf; --grp-rgb: 45, 212, 191;"></div>
                             </div>
                         </div>
                     </div>
@@ -240,13 +247,16 @@
 
                 <!-- LOWER BRACKET SECTION -->
                 <div class="de-viewport-section">
-                    <div class="de-section-header">
+                    <!-- Standalone Viewport Navbar Header Card -->
+                    <div class="de-section-header de-section-header-card">
                         <div class="de-section-title-wrap">
-                            <h2 class="de-viewport-title lower">Lower Bracket</h2>
+                            <h2 class="de-viewport-title lower">
+                                <i class="fa-solid fa-shield-halved text-rose"></i> Lower Bracket
+                            </h2>
                         </div>
                     </div>
 
-                    <!-- Lower Viewport Frame with Floating Zoom Toolbar -->
+                    <!-- Separate Lower Viewport Frame with Floating Zoom Toolbar -->
                     <div id="lowerViewportFrame" class="bracket-viewport-frame de-viewport-frame">
                         <div id="lowerZoomToolbar" class="bracket-zoom-toolbar">
                             <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomOut('lowerViewportContainer')" title="Thu nhỏ (-)">
@@ -262,8 +272,8 @@
                         </div>
 
                         <div id="lowerViewportContainer" class="bracket-viewport-container de-viewport-container">
-                            <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas">
-                                <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper"></div>
+                            <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas" data-group-color="#2dd4bf" style="--grp-color: #2dd4bf; --grp-rgb: 45, 212, 191;">
+                                <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper" data-group-color="#2dd4bf" style="--grp-color: #2dd4bf; --grp-rgb: 45, 212, 191;"></div>
                             </div>
                         </div>
                     </div>

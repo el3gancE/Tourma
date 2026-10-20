@@ -83,6 +83,10 @@
             dbMatchesJson = reqJson;
         }
     }
+    if (currentStage == 2 && !("LOCKED".equals(dbStage1Status) || "COMPLETED".equals(dbStage1Status))) {
+        dbMatchesJson = "[]";
+        dbStage2Teams = null;
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -125,7 +129,6 @@
         <jsp:include page="/common/component/stage-end-popup.jsp"/>
 
         <!-- Stage Finish Alert Component (Locked Stage 2) -->
-        <jsp:include page="/common/component/stage-finish-alert.jsp"/>
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
@@ -149,7 +152,7 @@
                         <i class="fa-solid fa-trophy text-gold"></i> 
                         <span><%= tourneyName %></span>
                     </h1>
-                    <span class="format-badge-rr"><%= (currentStage == 2) ? "Stage 2: Round Robin" : "Round Robin" %></span>
+                    <span class="format-badge-rr" title="Round Robin"><%= (currentStage == 2) ? "S2 · RR" : "RR" %></span>
                     <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
                     <span id="rrAdvancingBadge" class="format-badge-pill" style="display: <%= (currentStage == 1 && cutTarget > 1) ? "inline-flex" : "none" %>; background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.35); color: #2dd4bf; border-radius: 9999px; font-weight: 800; font-size: 0.8rem; padding: 0.25rem 0.75rem; align-items: center; gap: 0.45rem;">
                         <i class="fa-solid fa-trophy" style="color: #2dd4bf; font-size: 0.85rem;"></i>
@@ -160,22 +163,23 @@
                 <div class="rr-actions-group" style="display: flex; align-items: center; gap: 0.75rem;">
                     <!-- Standalone Reset Bracket / Tournament Action Button -->
                     <button type="button" class="btn-reset-bracket-action" onclick="window.TourmaRoundRobin.openResetModal()" title="Xóa toàn bộ kết quả và thiết lập lại từ đầu">
-                        <i class="fa-solid fa-rotate-right"></i> Reset Giải
+                        <i class="fa-solid fa-rotate-right"></i> Reset
                     </button>
 
                     <!-- View Mode Segmented Toggle Buttons (Fixtures List ↔ Standings Table) -->
                     <div class="view-mode-toggle-group">
                         <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=<%= safeTourneyId %>&format=ROUND_ROBIN<%= (currentStage == 2) ? "&stage=2" : "" %>" 
                            class="btn-view-toggle active" style="text-decoration: none;">
-                            <i class="fa-solid fa-calendar-days"></i> Lịch Thi Đấu
+                            <i class="fa-solid fa-calendar-days"></i> Lịch
                         </a>
                         <a href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= safeTourneyId %>&format=ROUND_ROBIN<%= (currentStage == 2) ? "&stage=2" : "" %>" 
                            class="btn-view-toggle" style="text-decoration: none;">
-                            <i class="fa-solid fa-ranking-star"></i> Bảng Xếp Hạng
+                            <i class="fa-solid fa-ranking-star"></i> BXH
                         </a>
                     </div>
                 </div>
             </div>
+            <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
             <div id="rrEmptyAlertContainer" style="display: none; width: 100%;"></div>

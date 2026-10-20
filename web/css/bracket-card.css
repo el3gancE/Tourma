@@ -47,12 +47,14 @@
     --card-theme-glow: rgba(255, 70, 85, 0.45);
 }
 
-/* GSL Format: Dynamic Group Theme for both Upper & Lower cards in the same group viewport */
+/* GSL & Double Elimination Unified: Theme for both Upper & Lower cards in the same viewport */
 .gsl-round-column .bracket-node-card,
 .gsl-group-section .bracket-node-card,
 .gsl-single-viewport-wrapper .bracket-node-card,
 .gsl-viewport-canvas .bracket-node-card,
 .gsl-branch-columns .bracket-node-card,
+.de-single-viewport-wrapper .bracket-node-card,
+.de-viewport-canvas .bracket-node-card,
 [data-group-color] .bracket-node-card {
     --card-theme-color: var(--grp-color, #2dd4bf) !important;
     --card-theme-hover-bg: var(--grp-hover, rgba(45, 212, 191, 0.22)) !important;

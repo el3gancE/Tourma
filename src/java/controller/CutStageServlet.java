@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * CutStageServlet
  * Centralized Servlet Controller for executing Cut Stage transitions.
- * Shared qualification and stage transition API for SE, GSL and DE.
+ * Shared qualification and stage transition API for SE, GSL, DE and Swiss.
  */
 @WebServlet(name = "CutStageServlet", urlPatterns = {"/api/cut-stage", "/cut-stage"})
 public class CutStageServlet extends HttpServlet {
@@ -42,6 +42,11 @@ public class CutStageServlet extends HttpServlet {
             if (id == null || id.trim().isEmpty()) throw new IllegalArgumentException("Thiếu ID giải đấu.");
             id = id.trim();
             String action = request.getParameter("action");
+            if ("stageState".equals(action)) {
+                response.setHeader("Cache-Control","no-store");
+                out.print("{\"status\":\"success\",\"stageState\":"+tournamentDAO.getStageAccessStateJson(id)+"}");
+                return;
+            }
             if ("resetStage".equals(action)) {
                 int stage = Integer.parseInt(request.getParameter("stage"));
                 boolean ok = tournamentDAO.resetStageMatches(id, stage);

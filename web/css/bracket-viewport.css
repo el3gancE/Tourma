@@ -215,7 +215,7 @@
 }
 
 .de-list-section-header.lower:not(.gsl-list-section-header) .round-header-title,
-.de-round-header.lower:not(.gsl-round-header) .round-header-title {
+.de-round-header.lower:not(.gsl-round-header):not(.de-single-viewport-wrapper *) .round-header-title {
     color: #f43f5e !important;
 }
 

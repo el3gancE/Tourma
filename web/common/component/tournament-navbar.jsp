@@ -30,6 +30,9 @@
 
     // Quick Mode only appears in Single Elimination, Double Elimination, and Swiss System
     String fmtKey = (formatName != null) ? formatName.trim().toUpperCase() : "";
+    String compactFormatName = formatName.replaceAll("(?i)Single Elimination", "SE")
+            .replaceAll("(?i)Double Elimination", "DE").replaceAll("(?i)GSL Format", "GSL")
+            .replaceAll("(?i)Swiss System", "Swiss").replaceAll("(?i)Stage 2:[ ]*", "S2 · ");
     boolean isSupportedQuickFormat = fmtKey.contains("SINGLE") || fmtKey.contains("DOUBLE") || fmtKey.contains("SWISS") || fmtKey.contains("ELIMINATION");
 
     String showQuickParam = request.getParameter("showQuickMode");
@@ -81,13 +84,13 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
 
 <!-- Top Control Bar (Tournament Title, Format Badge, Team Count Badge & View Mode Toggle) -->
-<div class="tournament-navbar-control-bar single-elimination-control-bar">
+<div class="tournament-navbar-control-bar single-elimination-control-bar <%= showLiveStatus ? "has-live-status" : "" %>">
     <div class="tournament-info-badge-group">
         <h1 class="tournament-name-title">
             <i class="fa-solid fa-trophy text-gold"></i>
             <span id="tournamentNameDisplay"><%= tourneyName %></span>
         </h1>
-        <span class="<%= formatBadgeClass %>"><%= formatName %></span>
+        <span class="<%= formatBadgeClass %>" title="<%= formatName %>"><%= compactFormatName %></span>
         <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
         <span id="tournamentAdvancingBadge" class="advancing-count-badge"
             style="<%= (cutTarget > 0) ? "" : "display: none;" %>">
@@ -97,12 +100,11 @@
     </div>
 
     <% if (showLiveStatus) { %>
-    <div id="tournamentLiveStatus" class="tournament-live-status" role="status" aria-live="polite" aria-atomic="true"
+    <div id="tournamentLiveStatus" class="tournament-live-status" role="status" aria-label="Số đội còn trong giải theo Seed, Unseed và Guest" aria-live="polite" aria-atomic="true"
          title="S: Seed · US: Unseed · G: Guest. Đội còn trong giải / tổng ban đầu.">
-        <span class="live-status-label"><i class="fa-solid fa-circle"></i> Live Status</span>
-        <span class="live-status-count live-seed" title="Seed">S: <strong id="liveSeedCount">—/—</strong></span>
-        <span class="live-status-count live-unseed" title="Unseed">US: <strong id="liveUnseedCount">—/—</strong></span>
-        <span class="live-status-count live-guest" title="Guest">G: <strong id="liveGuestCount">—/—</strong></span>
+        <span class="live-status-count live-seed team-count-badge" title="Seed">S: <strong id="liveSeedCount">—/—</strong></span>
+        <span class="live-status-count live-unseed format-badge-single" title="Unseed">US: <strong id="liveUnseedCount">—/—</strong></span>
+        <span class="live-status-count live-guest format-badge-double" title="Guest">G: <strong id="liveGuestCount">—/—</strong></span>
     </div>
     <% } %>
 
@@ -113,7 +115,7 @@
         <button type="button" id="singleBtnQuickMode" class="btn-quick-mode-toggle"
             onclick="window.TourmaNavbar && window.TourmaNavbar.toggleQuickMode()"
             title="Chế độ phân định thắng thua nhanh (1-click chọn đội thắng)">
-            <i class="fa-solid fa-bolt"></i> Quick Mode: <span class="quick-mode-status-text">OFF</span>
+            <i class="fa-solid fa-bolt"></i> Quick: <span class="quick-mode-status-text">OFF</span>
         </button>
         <% } %>
 
@@ -121,8 +123,8 @@
         <!-- Standalone Reset Bracket Button -->
         <button type="button" id="seBtnResetBracket" class="btn-reset-bracket-action"
             onclick="window.TourmaNavbar && window.TourmaNavbar.openResetModal()"
-            title="Xóa kết quả và reset lại sơ đồ ban đầu">
-            <i class="fa-solid fa-rotate-right"></i> <%= resetLabel %>
+            title="<%= resetLabel %>: Xóa kết quả và reset lại sơ đồ ban đầu">
+            <i class="fa-solid fa-rotate-right"></i> Reset
         </button>
         <% } %>
 
@@ -130,12 +132,12 @@
         <!-- View Mode Toggle Buttons (Bracket ↔ List View) -->
         <div class="view-mode-toggle-group">
             <button type="button" id="btnViewBracket" class="btn-view-toggle active"
-                onclick="window.TourmaNavbar && window.TourmaNavbar.switchViewMode('bracket')">
-                <i class="fa-solid <%= view1Icon %>"></i> <%= view1Label %>
+                onclick="window.TourmaNavbar && window.TourmaNavbar.switchViewMode('bracket')" title="<%= view1Label %>" aria-label="<%= view1Label %>">
+                <i class="fa-solid <%= view1Icon %>"></i> Sơ đồ
             </button>
             <button type="button" id="btnViewList" class="btn-view-toggle"
-                onclick="window.TourmaNavbar && window.TourmaNavbar.switchViewMode('list')">
-                <i class="fa-solid <%= view2Icon %>"></i> <%= view2Label %>
+                onclick="window.TourmaNavbar && window.TourmaNavbar.switchViewMode('list')" title="<%= view2Label %>" aria-label="<%= view2Label %>">
+                <i class="fa-solid <%= view2Icon %>"></i> Trận
             </button>
         </div>
         <% } %>

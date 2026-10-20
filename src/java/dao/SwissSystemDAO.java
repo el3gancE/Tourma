@@ -104,9 +104,7 @@ public class SwissSystemDAO extends DBContext {
 
         ParticipantDAO pDao = new ParticipantDAO();
         List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
-        if (teams == null || teams.isEmpty()) {
-            teams = generateDefault16Teams(tournamentId);
-        }
+        if (teams == null || teams.size() != 16) return;
 
         initializeSwissRound1InDB(tournamentId, stageOrder, teams);
     }
@@ -264,11 +262,7 @@ public class SwissSystemDAO extends DBContext {
             }
         }
 
-        // 5. Check Round 5 completion -> Stage 1 Finish & Save Stage 2 Teams
-        List<SwissMatch> r5 = roundMatches.get(5);
-        if (r5 != null && r5.size() == 3 && isRoundComplete(r5)) {
-            finishSwissStageInDB(tournamentId, stageOrder, matches);
-        }
+        // Stage completion is confirmed explicitly through CutStageServlet.
     }
 
     private boolean isRoundComplete(List<SwissMatch> roundList) {
@@ -457,39 +451,6 @@ public class SwissSystemDAO extends DBContext {
         return statsMap;
     }
 
-    private void finishSwissStageInDB(String tournamentId, int stageOrder, List<SwissMatch> allMatches) {
-        ParticipantDAO pDao = new ParticipantDAO();
-        List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
-        if (teams == null || teams.isEmpty()) return;
-
-        Map<String, TeamStats> statsMap = computeTeamStats(teams, allMatches);
-        List<TeamStats> qualifiedList = new ArrayList<>();
-        for (TeamStats st : statsMap.values()) {
-            if (st.qualified) qualifiedList.add(st);
-        }
-
-        // Sort qualified teams: 3-0 > 3-1 > 3-2 -> Buchholz DESC -> Diff DESC
-        qualifiedList.sort((a, b) -> {
-            if (a.losses != b.losses) return a.losses - b.losses; // 0 losses (3-0) < 1 loss (3-1) < 2 losses (3-2)
-            if (b.buchholz != a.buchholz) return b.buchholz - a.buchholz;
-            return b.diff - a.diff;
-        });
-
-        StringBuilder jsonSb = new StringBuilder("[");
-        for (int i = 0; i < Math.min(8, qualifiedList.size()); i++) {
-            if (i > 0) jsonSb.append(",");
-            TeamStats st = qualifiedList.get(i);
-            jsonSb.append("{\"id\":\"").append(escapeJson(st.teamId))
-                    .append("\",\"name\":\"").append(escapeJson(st.teamName))
-                    .append("\",\"seed\":").append(i + 1).append("}");
-        }
-        jsonSb.append("]");
-
-        TournamentDAO tDao = new TournamentDAO();
-        tDao.saveStage2Teams(tournamentId, jsonSb.toString());
-        tDao.updateTournamentStage1Status(tournamentId, "COMPLETED");
-    }
-
     // ------------------------------------------------------------------------
     // 2. FRONTEND JSON & MATCH QUERIES
     // ------------------------------------------------------------------------
@@ -505,12 +466,12 @@ public class SwissSystemDAO extends DBContext {
                 + "t2.raw_name AS t2_name, t2.original_seed AS t2_seed, "
                 + "tw.raw_name AS winner_name "
                 + "FROM matches m "
-                + "LEFT JOIN groups g ON (m.group_id = g.id OR m.group_id = g.group_name) "
+                + "LEFT JOIN groups g ON m.group_id = g.id "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR s.stage_order IS NULL OR ? = 1) "
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1)) "
                 + "ORDER BY m.round_number ASC, ISNULL(m.match_order, 999) ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
@@ -608,12 +569,12 @@ public class SwissSystemDAO extends DBContext {
                 + "t2.raw_name AS t2_name, t2.original_seed AS t2_seed, "
                 + "tw.raw_name AS winner_name "
                 + "FROM matches m "
-                + "LEFT JOIN groups g ON (m.group_id = g.id OR m.group_id = g.group_name) "
+                + "LEFT JOIN groups g ON m.group_id = g.id "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR s.stage_order IS NULL OR ? = 1) "
+                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1)) "
                 + "ORDER BY m.round_number ASC, ISNULL(m.match_order, 999) ASC, m.id ASC";
 
         try (Connection conn = getConnection();
@@ -722,117 +683,57 @@ public class SwissSystemDAO extends DBContext {
     public boolean saveMatchScore(String tournamentId, int stageOrder, String matchId, int score1, int score2, String winnerId) {
         if (tournamentId == null || matchId == null) return false;
 
-        // Parse potential round number and match order from matchId (e.g. "R1_M1", "R2_M3", "M_T_05731a1b_SW_R1_1")
-        int parsedRound = -1;
-        int parsedOrder = -1;
-        try {
-            String cleanKey = matchId.toUpperCase();
-            if (cleanKey.matches(".*R\\d+.*")) {
-                int rIdx = cleanKey.indexOf('R');
-                if (rIdx != -1) {
-                    int afterR = rIdx + 1;
-                    StringBuilder rDigits = new StringBuilder();
-                    while (afterR < cleanKey.length() && Character.isDigit(cleanKey.charAt(afterR))) {
-                        rDigits.append(cleanKey.charAt(afterR));
-                        afterR++;
-                    }
-                    if (rDigits.length() > 0) {
-                        parsedRound = Integer.parseInt(rDigits.toString());
-                    }
-                    int mIdx = cleanKey.indexOf('M', afterR);
-                    if (mIdx == -1) mIdx = cleanKey.indexOf('_', afterR);
-                    if (mIdx != -1) {
-                        int afterM = mIdx + 1;
-                        StringBuilder mDigits = new StringBuilder();
-                        while (afterM < cleanKey.length() && Character.isDigit(cleanKey.charAt(afterM))) {
-                            mDigits.append(cleanKey.charAt(afterM));
-                            afterM++;
-                        }
-                        if (mDigits.length() > 0) {
-                            parsedOrder = Integer.parseInt(mDigits.toString());
-                        }
-                    }
-                }
-            }
-        } catch (Exception ignore) {}
-
-        String findSql = "SELECT id, team1_id, team2_id FROM matches WHERE tournament_id = ? AND "
-                + "(id = ? OR id LIKE '%[_]' + ? OR id LIKE '%' + ? "
-                + " OR (round_number = ? AND match_order = ?))";
-        String updateSql = "UPDATE matches SET score1 = ?, score2 = ?, winner_id = ?, loser_id = ?, status = 'FINISHED' WHERE id = ?";
-
+        if (score1 < 0 || score2 < 0 || score1 == score2) return false;
         try (Connection conn = getConnection()) {
-            String actualMatchId = null;
-            String actualT1 = null;
-            String actualT2 = null;
-
-            try (PreparedStatement psFind = conn.prepareStatement(findSql)) {
-                psFind.setString(1, tournamentId);
-                psFind.setString(2, matchId);
-                psFind.setString(3, matchId);
-                psFind.setString(4, matchId);
-                psFind.setInt(5, parsedRound > 0 ? parsedRound : -999);
-                psFind.setInt(6, parsedOrder > 0 ? parsedOrder : -999);
-                try (ResultSet rs = psFind.executeQuery()) {
-                    if (rs.next()) {
-                        actualMatchId = rs.getString("id");
-                        actualT1 = rs.getString("team1_id");
-                        actualT2 = rs.getString("team2_id");
-                    }
+            conn.setAutoCommit(false);
+            TournamentDAO.assertStage2Ready(conn,tournamentId,stageOrder);
+            try (PreparedStatement ps = conn.prepareStatement("SELECT stage1_status FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+                ps.setString(1, tournamentId);
+                try (ResultSet rs=ps.executeQuery()) {
+                    if (!rs.next() || (stageOrder==1 && ("LOCKED".equalsIgnoreCase(rs.getString(1)) || "COMPLETED".equalsIgnoreCase(rs.getString(1))))) return false;
                 }
             }
-
-            if (actualMatchId == null) {
-                return false;
-            }
-
-            String resolvedWinner = null;
-            String resolvedLoser = null;
-            if ("team1".equalsIgnoreCase(winnerId)) {
-                resolvedWinner = actualT1;
-                resolvedLoser = actualT2;
-            } else if ("team2".equalsIgnoreCase(winnerId)) {
-                resolvedWinner = actualT2;
-                resolvedLoser = actualT1;
-            } else if (winnerId != null && !winnerId.trim().isEmpty() && !"null".equalsIgnoreCase(winnerId)) {
-                resolvedWinner = winnerId.trim();
-                if (resolvedWinner.equals(actualT1)) {
-                    resolvedLoser = actualT2;
-                } else if (resolvedWinner.equals(actualT2)) {
-                    resolvedLoser = actualT1;
+            int round = -1, order = -1;
+            java.util.regex.Matcher key = java.util.regex.Pattern.compile("^R(\\d+)_M(\\d+)$").matcher(matchId);
+            if (key.matches()) { round=Integer.parseInt(key.group(1)); order=Integer.parseInt(key.group(2)); }
+            String sql="SELECT m.id,m.stage_id,m.team1_id,m.team2_id,m.round_number,m.score1,m.score2 FROM matches m "
+                + "LEFT JOIN tournament_stages s ON s.id=m.stage_id WHERE m.tournament_id=? "
+                + "AND (s.stage_order=? OR (m.stage_id IS NULL AND ?=1)) AND m.bracket_type='SWISS' "
+                + "AND (m.id=? OR (m.round_number=? AND m.match_order=?))";
+            String actualId, stageId, t1, t2; int actualRound; Integer old1, old2;
+            try (PreparedStatement ps=conn.prepareStatement(sql)) {
+                ps.setString(1,tournamentId); ps.setInt(2,stageOrder); ps.setInt(3,stageOrder);
+                ps.setString(4,matchId); ps.setInt(5,round); ps.setInt(6,order);
+                try(ResultSet rs=ps.executeQuery()) {
+                    if(!rs.next()) return false;
+                    actualId=rs.getString(1); stageId=rs.getString(2); t1=rs.getString(3); t2=rs.getString(4);
+                    actualRound=rs.getInt(5); old1=(Integer)rs.getObject(6); old2=(Integer)rs.getObject(7);
+                    if(rs.next() || t1==null || t2==null || t1.equals(t2)) return false;
                 }
-            } else if (score1 > score2) {
-                resolvedWinner = actualT1;
-                resolvedLoser = actualT2;
-            } else if (score2 > score1) {
-                resolvedWinner = actualT2;
-                resolvedLoser = actualT1;
             }
-
-            try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
-                ps.setInt(1, score1);
-                ps.setInt(2, score2);
-                if (resolvedWinner != null && !resolvedWinner.isEmpty()) {
-                    ps.setString(3, resolvedWinner);
-                } else {
-                    ps.setNull(3, Types.VARCHAR);
+            String winner=score1>score2?t1:t2, loser=score1>score2?t2:t1;
+            String supplied="team1".equalsIgnoreCase(winnerId)?t1:"team2".equalsIgnoreCase(winnerId)?t2:winnerId;
+            if(supplied!=null && !supplied.isEmpty() && !"null".equalsIgnoreCase(supplied) && !winner.equals(supplied)) return false;
+            if(!Objects.equals(old1,score1) || !Objects.equals(old2,score2)) {
+                // A previous score must never silently discard results in a later round/stage.
+                try(PreparedStatement ps=conn.prepareStatement("SELECT COUNT(*) FROM matches m LEFT JOIN tournament_stages s ON s.id=m.stage_id WHERE m.tournament_id=? AND ((ISNULL(s.stage_order,1)=? AND m.round_number>? AND (m.score1 IS NOT NULL OR m.score2 IS NOT NULL OR m.winner_id IS NOT NULL)) OR (?=1 AND s.stage_order>1))")) {
+                    ps.setString(1,tournamentId); ps.setInt(2,stageOrder); ps.setInt(3,actualRound); ps.setInt(4,stageOrder);
+                    try(ResultSet rs=ps.executeQuery()) { rs.next(); if(rs.getInt(1)>0) return false; }
                 }
-                if (resolvedLoser != null && !resolvedLoser.isEmpty()) {
-                    ps.setString(4, resolvedLoser);
-                } else {
-                    ps.setNull(4, Types.VARCHAR);
+                try(PreparedStatement ps=conn.prepareStatement("DELETE FROM matches WHERE tournament_id=? AND (stage_id=? OR (stage_id IS NULL AND ?=1)) AND round_number>?")) {
+                    ps.setString(1,tournamentId); ps.setString(2,stageId); ps.setInt(3,stageOrder); ps.setInt(4,actualRound); ps.executeUpdate();
                 }
-                ps.setString(5, actualMatchId);
-                ps.executeUpdate();
+                try(PreparedStatement ps=conn.prepareStatement("UPDATE matches SET score1=?,score2=?,winner_id=?,loser_id=?,status='FINISHED' WHERE id=?")) {
+                    ps.setInt(1,score1); ps.setInt(2,score2); ps.setString(3,winner); ps.setString(4,loser); ps.setString(5,actualId); ps.executeUpdate();
+                }
+                if(stageOrder==1) try(PreparedStatement ps=conn.prepareStatement("UPDATE tournaments SET stage2_teams=NULL WHERE id=?")) { ps.setString(1,tournamentId); ps.executeUpdate(); }
             }
-
-            checkAndGenerateNextSwissRoundInDB(tournamentId, stageOrder);
-            service.RollingWindowPointService.clearAllCaches();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+            conn.commit();
+        } catch(Exception e) { e.printStackTrace(); return false; }
+        checkAndGenerateNextSwissRoundInDB(tournamentId,stageOrder);
+        TournamentDAO.clearTournamentCache(tournamentId);
+        service.RollingWindowPointService.clearAllCaches();
+        return true;
     }
 
     public boolean batchSyncMatches(String tournamentId, int stageOrder, String matchesJson) {
@@ -861,8 +762,8 @@ public class SwissSystemDAO extends DBContext {
                     try {
                         int s1 = Integer.parseInt(s1Str.trim());
                         int s2 = Integer.parseInt(s2Str.trim());
-                        saveMatchScore(tournamentId, stageOrder, mKey, s1, s2, win);
-                    } catch (Exception ignore) {}
+                        if (!saveMatchScore(tournamentId, stageOrder, mKey, s1, s2, win)) return false;
+                    } catch (Exception invalidScore) { return false; }
                 }
             }
             return true;
@@ -898,110 +799,55 @@ public class SwissSystemDAO extends DBContext {
     }
 
     public boolean resetBracketMatches(String tournamentId, int stageOrder) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String tId = tournamentId.trim();
-
-        // 1. Break links first
-        String nullLinksSql = "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE tournament_id = ?";
-        try (Connection conn = getConnection();
-             PreparedStatement psNull = conn.prepareStatement(nullLinksSql)) {
-            psNull.setString(1, tId);
-            psNull.executeUpdate();
-        } catch (Exception ignore) {}
-
-        // 2. Delete all matches for this tournament & stage
-        String delSql = "DELETE m FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR s.stage_order IS NULL OR ? = 1)";
-
-        try (Connection conn = getConnection();
-             PreparedStatement psDel = conn.prepareStatement(delSql)) {
-            psDel.setString(1, tId);
-            psDel.setInt(2, stageOrder);
-            psDel.setInt(3, stageOrder);
-            psDel.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        // 3. Reset tournaments table metadata
-        String resetTourneySql = "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL, stage2_teams = NULL, stage1_status = 'PENDING' WHERE id = ?";
-        try (Connection conn = getConnection();
-             PreparedStatement psT = conn.prepareStatement(resetTourneySql)) {
-            psT.setString(1, tId);
-            psT.executeUpdate();
-        } catch (Exception ignore) {}
-
-        // 4. Re-initialize fresh Swiss Round 1 in DB
-        ParticipantDAO pDao = new ParticipantDAO();
-        List<Team> teams = pDao.getTeamsByTournamentId(tId);
-        if (teams == null || teams.isEmpty()) {
-            teams = generateDefault16Teams(tId);
-        }
-        initializeSwissRound1InDB(tId, stageOrder, teams);
-
-        service.RollingWindowPointService.clearAllCaches();
-        return true;
+        return new TournamentDAO().resetStageMatches(tournamentId, stageOrder);
     }
 
     public boolean randomRoundInDB(String tournamentId, int stageOrder, int roundNumber, int targetScore) {
         if (tournamentId == null) return false;
         ensureSwissRoundsInitialized(tournamentId, stageOrder);
 
-        String selSql = "SELECT id, team1_id, team2_id FROM matches WHERE tournament_id = ? AND round_number = ? AND (score1 IS NULL OR status != 'FINISHED')";
-        String updateSql = "UPDATE matches SET score1 = ?, score2 = ?, winner_id = ?, status = 'FINISHED' WHERE id = ?";
-
-        Random rand = new Random();
-        int maxS = targetScore > 0 ? targetScore : 3;
-
-        try (Connection conn = getConnection()) {
-            conn.setAutoCommit(false);
-            List<String[]> matchesToUpdate = new ArrayList<>();
-
-            try (PreparedStatement psSel = conn.prepareStatement(selSql)) {
-                psSel.setString(1, tournamentId);
-                psSel.setInt(2, roundNumber);
-                try (ResultSet rs = psSel.executeQuery()) {
-                    while (rs.next()) {
-                        matchesToUpdate.add(new String[]{rs.getString("id"), rs.getString("team1_id"), rs.getString("team2_id")});
-                    }
-                }
-            }
-
-            try (PreparedStatement psUp = conn.prepareStatement(updateSql)) {
-                for (String[] m : matchesToUpdate) {
-                    boolean t1Win = rand.nextBoolean();
-                    int winS = maxS;
-                    int loseS = rand.nextInt(Math.max(1, maxS));
-                    if (loseS >= winS) loseS = winS - 1;
-
-                    int s1 = t1Win ? winS : loseS;
-                    int s2 = t1Win ? loseS : winS;
-                    String winId = t1Win ? m[1] : m[2];
-
-                    psUp.setInt(1, s1);
-                    psUp.setInt(2, s2);
-                    psUp.setString(3, winId);
-                    psUp.setString(4, m[0]);
-                    psUp.addBatch();
-                }
-                psUp.executeBatch();
-            }
-
-            conn.commit();
-            checkAndGenerateNextSwissRoundInDB(tournamentId, stageOrder);
-            service.RollingWindowPointService.clearAllCaches();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+        List<SwissMatch> matches = getSwissMatchesFromDB(tournamentId,stageOrder);
+        boolean found = false;
+        for(SwissMatch match:matches) {
+            if(match.roundNumber!=roundNumber) continue;
+            found = true;
+            if(match.score1!=null && match.score2!=null) continue;
+            int winning = targetScore>0 ? targetScore : 3;
+            int losing = new Random().nextInt(winning);
+            boolean first = new Random().nextBoolean();
+            if(!saveMatchScore(tournamentId,stageOrder,match.id,first?winning:losing,first?losing:winning,first?"team1":"team2")) return false;
         }
+        return found;
+    }
+
+    public boolean resetRoundInDB(String tournamentId, int stageOrder, int round) {
+        if(round<1 || round>5) return false;
+        try(Connection conn=getConnection()) {
+            conn.setAutoCommit(false);
+            try(PreparedStatement ps=conn.prepareStatement("SELECT stage1_status FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+                ps.setString(1,tournamentId);
+                try(ResultSet rs=ps.executeQuery()) {
+                    if(!rs.next() || (stageOrder==1 && ("LOCKED".equalsIgnoreCase(rs.getString(1)) || "COMPLETED".equalsIgnoreCase(rs.getString(1))))) return false;
+                }
+            }
+            if(stageOrder==1) try(PreparedStatement ps=conn.prepareStatement("SELECT COUNT(*) FROM matches m JOIN tournament_stages s ON s.id=m.stage_id WHERE m.tournament_id=? AND s.stage_order>1")) {
+                ps.setString(1,tournamentId); try(ResultSet rs=ps.executeQuery()){rs.next();if(rs.getInt(1)>0)return false;}
+            }
+            String scope="tournament_id=? AND (stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id=? AND stage_order=?) OR (stage_id IS NULL AND ?=1))";
+            try(PreparedStatement ps=conn.prepareStatement("DELETE FROM matches WHERE "+scope+" AND round_number>?")) {
+                ps.setString(1,tournamentId);ps.setString(2,tournamentId);ps.setInt(3,stageOrder);ps.setInt(4,stageOrder);ps.setInt(5,round);ps.executeUpdate();
+            }
+            try(PreparedStatement ps=conn.prepareStatement("UPDATE matches SET score1=NULL,score2=NULL,winner_id=NULL,loser_id=NULL,status='READY' WHERE "+scope+" AND round_number=?")) {
+                ps.setString(1,tournamentId);ps.setString(2,tournamentId);ps.setInt(3,stageOrder);ps.setInt(4,stageOrder);ps.setInt(5,round);ps.executeUpdate();
+            }
+            if(stageOrder==1) try(PreparedStatement ps=conn.prepareStatement("UPDATE tournaments SET stage2_teams=NULL WHERE id=?")){ps.setString(1,tournamentId);ps.executeUpdate();}
+            conn.commit(); TournamentDAO.clearTournamentCache(tournamentId); service.RollingWindowPointService.clearAllCaches(); return true;
+        } catch(Exception e){e.printStackTrace();return false;}
     }
 
     public boolean randomAllInDB(String tournamentId, int stageOrder, int targetScore) {
         for (int r = 1; r <= 5; r++) {
-            randomRoundInDB(tournamentId, stageOrder, r, targetScore);
+            if (!randomRoundInDB(tournamentId, stageOrder, r, targetScore)) return false;
         }
         return true;
     }

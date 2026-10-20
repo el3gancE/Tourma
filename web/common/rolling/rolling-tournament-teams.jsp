@@ -239,6 +239,12 @@
                                     style="background: rgba(255, 255, 255, 0.06); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
                                 Ẩn seed
                             </button>
+                                        <% if ("SINGLE_ELIMINATION".equalsIgnoreCase(tourneyFormat) || "DOUBLE_ELIMINATION".equalsIgnoreCase(tourneyFormat)) { %>
+                                        <label style="display:inline-flex;align-items:center;gap:0.4rem;color:#cbd5e1;font-size:0.85rem;cursor:pointer;" title="Giữ sơ đồ seed cố định; bỏ chọn để bốc thăm theo nhóm seed">
+                                            <input type="checkbox" id="classicDrawInput" <%= new dao.TournamentDAO().isClassicDraw(tourneyId) ? "checked" : "" %> onchange="window.saveHideSeedConfig()">
+                                            Classic draw
+                                        </label>
+                                        <% } %>
                             <button type="button" class="btn btn-secondary" onclick="window.sortByRollingStandings()"
                                     style="background: rgba(45, 212, 191, 0.12); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;"
                                     title="Sắp xếp danh sách đội tham gia theo Bảng Xếp Hạng tổng sau giải gần nhất">
