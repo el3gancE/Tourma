@@ -272,8 +272,8 @@
                         </div>
 
                         <div id="lowerViewportContainer" class="bracket-viewport-container de-viewport-container">
-                            <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas" data-group-color="#2dd4bf" style="--grp-color: #2dd4bf; --grp-rgb: 45, 212, 191;">
-                                <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper" data-group-color="#2dd4bf" style="--grp-color: #2dd4bf; --grp-rgb: 45, 212, 191;"></div>
+                            <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas lower-canvas" data-group-color="#ff4655" style="--grp-color: #ff4655; --grp-rgb: 255, 70, 85; --card-theme-color: #ff4655; --card-theme-hover-bg: rgba(255, 70, 85, 0.22); --card-theme-glow: rgba(255, 70, 85, 0.45);">
+                                <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper lower-wrapper" data-bracket-type="LOWER" data-group-color="#ff4655" style="--grp-color: #ff4655; --grp-rgb: 255, 70, 85; --card-theme-color: #ff4655; --card-theme-hover-bg: rgba(255, 70, 85, 0.22); --card-theme-glow: rgba(255, 70, 85, 0.45);"></div>
                             </div>
                         </div>
                     </div>

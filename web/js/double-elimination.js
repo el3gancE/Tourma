@@ -914,6 +914,8 @@
                     for (var m = 0; m < roundObj.matches.length; m++) {
                         var matchData = roundObj.matches[m];
                         var liveMatch = this.matchesMap[matchData.matchId] || matchData;
+                        liveMatch.bracketType = 'LOSER_BRACKET';
+                        liveMatch.themeColor = 'red';
 
                         var cardNode = null;
                         if (window.TourmaBracketCard && typeof window.TourmaBracketCard.createNodeElement === 'function') {
@@ -923,6 +925,7 @@
                         }
 
                         if (cardNode) {
+                            cardNode.classList.add('lower-bracket-card');
                             this.attachCardClickListener(cardNode, liveMatch);
                             stack.appendChild(cardNode);
                         }

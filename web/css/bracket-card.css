@@ -41,21 +41,73 @@
 
 /* Auto-inherit Lower Bracket theme for all cards inside Double Elimination Lower Bracket containers */
 .de-round-column[data-bracket-type="LOWER"]:not(.gsl-round-column) .bracket-node-card,
-#lowerBracketColumnsWrapper .bracket-node-card {
-    --card-theme-color: #ff4655;
-    --card-theme-hover-bg: rgba(255, 70, 85, 0.22);
-    --card-theme-glow: rgba(255, 70, 85, 0.45);
+#lowerBracketColumnsWrapper .bracket-node-card,
+#lowerViewportCanvas .bracket-node-card,
+.lower-canvas .bracket-node-card,
+.lower-wrapper .bracket-node-card,
+.bracket-node-card.lower-bracket-card {
+    --card-theme-color: #ff4655 !important;
+    --card-theme-hover-bg: rgba(255, 70, 85, 0.22) !important;
+    --card-theme-glow: rgba(255, 70, 85, 0.45) !important;
 }
 
-/* GSL & Double Elimination Unified: Theme for both Upper & Lower cards in the same viewport */
+#lowerBracketColumnsWrapper .bracket-team-row.winner,
+#lowerViewportCanvas .bracket-team-row.winner,
+.lower-canvas .bracket-team-row.winner,
+.lower-wrapper .bracket-team-row.winner,
+.bracket-node-card.lower-bracket-card .bracket-team-row.winner {
+    background: rgba(255, 70, 85, 0.22) !important;
+    border-left: 2.5px solid #ff4655 !important;
+}
+
+#lowerBracketColumnsWrapper .bracket-team-row.winner .bracket-team-name,
+#lowerViewportCanvas .bracket-team-row.winner .bracket-team-name,
+.lower-canvas .bracket-team-row.winner .bracket-team-name,
+.lower-wrapper .bracket-team-row.winner .bracket-team-name,
+.bracket-node-card.lower-bracket-card .bracket-team-row.winner .bracket-team-name {
+    color: #ff4655 !important;
+}
+
+#lowerBracketColumnsWrapper .bracket-team-row.winner .bracket-score-box,
+#lowerViewportCanvas .bracket-team-row.winner .bracket-score-box,
+.lower-canvas .bracket-team-row.winner .bracket-score-box,
+.lower-wrapper .bracket-team-row.winner .bracket-score-box,
+.bracket-node-card.lower-bracket-card .bracket-team-row.winner .bracket-score-box {
+    background: #ff4655 !important;
+    color: #0b0d12 !important;
+    border-color: #ff4655 !important;
+}
+
+#lowerBracketColumnsWrapper .bracket-status-badge.done,
+#lowerViewportCanvas .bracket-status-badge.done,
+.lower-canvas .bracket-status-badge.done,
+.lower-wrapper .bracket-status-badge.done,
+.bracket-node-card.lower-bracket-card .bracket-status-badge.done {
+    background: rgba(255, 70, 85, 0.22) !important;
+    color: #ff4655 !important;
+    border: 1px solid #ff4655 !important;
+}
+
+#lowerBracketColumnsWrapper .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+#lowerBracketColumnsWrapper .bracket-node-card:hover,
+#lowerViewportCanvas .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+#lowerViewportCanvas .bracket-node-card:hover,
+.lower-canvas .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+.lower-canvas .bracket-node-card:hover,
+.bracket-node-card.lower-bracket-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+.bracket-node-card.lower-bracket-card:hover {
+    border-color: #ff4655 !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 70, 85, 0.45) !important;
+}
+
+/* GSL & Upper Viewport: Dynamic Group Theme for cards */
 .gsl-round-column .bracket-node-card,
 .gsl-group-section .bracket-node-card,
 .gsl-single-viewport-wrapper .bracket-node-card,
 .gsl-viewport-canvas .bracket-node-card,
 .gsl-branch-columns .bracket-node-card,
-.de-single-viewport-wrapper .bracket-node-card,
-.de-viewport-canvas .bracket-node-card,
-[data-group-color] .bracket-node-card {
+#upperViewportCanvas .bracket-node-card,
+#upperBracketColumnsWrapper .bracket-node-card {
     --card-theme-color: var(--grp-color, #2dd4bf) !important;
     --card-theme-hover-bg: var(--grp-hover, rgba(45, 212, 191, 0.22)) !important;
     --card-theme-glow: var(--grp-glow, rgba(45, 212, 191, 0.45)) !important;

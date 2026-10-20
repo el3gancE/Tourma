@@ -127,6 +127,50 @@ public class Tournament {
 
     public int getTeamCount() { return teamCount; }
     public void setTeamCount(int teamCount) { this.teamCount = teamCount; }
+
+    private int totalMatches;
+    private int completedMatches;
+    private int stage1TotalMatches;
+    private String stage2Format;
+
+    public int getTotalMatches() { return totalMatches; }
+    public void setTotalMatches(int value) { totalMatches = Math.max(0, value); }
+    public int getCompletedMatches() { return completedMatches; }
+    public void setCompletedMatches(int value) { completedMatches = Math.max(0, value); }
+    public void setStage1TotalMatches(int value) { stage1TotalMatches = Math.max(0, value); }
+    public void setStage2Format(String value) { stage2Format = value; }
+    public String getStage2Format() { return stage2Format; }
+
+    /** Reserve matches for an uncreated final stage rather than assigning equal stage weights. */
+    public int getProgressTotalMatches() {
+        int planned = totalMatches;
+        if (("SWISS".equalsIgnoreCase(format) || "SWISS_LITE".equalsIgnoreCase(format)) && teamCount == 16) {
+            // Swiss inserts subsequent rounds on demand; the complete 16-team schedule has 33 games.
+            int swissMatches = "MULTI_STAGE".equalsIgnoreCase(tournamentType) ? stage1TotalMatches : totalMatches;
+            planned += Math.max(0, 33 - swissMatches);
+        }
+        if ("MULTI_STAGE".equalsIgnoreCase(tournamentType) && totalMatches == stage1TotalMatches) {
+            int n = advancingSeatsCount;
+            if (n >= 2 && stage2Format != null) {
+                if ("SINGLE_ELIMINATION".equalsIgnoreCase(stage2Format)) planned += n - 1;
+                else if ("DOUBLE_ELIMINATION".equalsIgnoreCase(stage2Format)) planned += 2 * n - 2;
+                else if ("ROUND_ROBIN".equalsIgnoreCase(stage2Format)) planned += n * (n - 1) / 2;
+            }
+        }
+        return planned;
+    }
+
+    /** All played matches contribute equally, regardless of their stage. */
+    public int getProgressPercent() {
+        if ("COMPLETED".equalsIgnoreCase(status) || "FINISHED".equalsIgnoreCase(status)) return 100;
+        double progress = 100 * matchProgress(completedMatches, getProgressTotalMatches());
+        // A finished schedule still needs the organizer's final confirmation.
+        return Math.min(99, Math.max(0, (int) Math.floor(progress)));
+    }
+
+    private static double matchProgress(int completed, int total) {
+        return total <= 0 ? 0 : Math.max(0, Math.min(1, (double) completed / total));
+    }
 }
 
 

@@ -410,13 +410,14 @@ public class TournamentDAO {
     public static final String TOURNAMENT_SELECT_QUERY =
         "SELECT t.*, " +
         "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format, " +
+        "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id AND stage_order = 2 ORDER BY id) AS stage2_format, " +
         "(SELECT COUNT(*) FROM teams WHERE tournament_id = t.id) AS team_count, " +
-        "(SELECT COUNT(*) FROM matches WHERE tournament_id = t.id AND (is_bye = 0 OR is_bye IS NULL)) AS total_matches, " +
-        "(SELECT COUNT(*) FROM matches WHERE tournament_id = t.id AND (is_bye = 0 OR is_bye IS NULL) AND (status IN ('FINISHED', 'COMPLETED', 'DONE') OR winner_id IS NOT NULL OR (score1 IS NOT NULL AND score2 IS NOT NULL))) AS completed_matches, " +
+        "ISNULL(ms.total_matches,0) AS total_matches, ISNULL(ms.completed_matches,0) AS completed_matches, " +
+        "ISNULL(ms.stage1_total_matches,0) AS stage1_total_matches, " +
         "(SELECT TOP 1 tm.raw_name FROM matches m " +
         " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
         " JOIN teams tm ON m.winner_id = tm.id " +
-        " WHERE m.tournament_id = t.id " +
+        " WHERE m.tournament_id = t.id AND t.status IN ('COMPLETED','FINISHED') AND NULLIF(LTRIM(RTRIM(t.champion_name)), N'') IS NULL " +
         "   AND m.winner_id IS NOT NULL " +
         "   AND (m.is_bye = 0 OR m.is_bye IS NULL) " +
         "   AND ( " +
@@ -431,6 +432,15 @@ public class TournamentDAO {
         "        WHEN m.bracket_type = 'GRAND_FINAL' OR m.match_code LIKE N'%Chung Kết%' OR m.id LIKE '%_GF_%' THEN 90 " +
         "        ELSE 0 END DESC, " +
         "   m.round_number DESC, m.match_order DESC) AS db_champion_name ";
+
+    // Aggregate the match table once instead of repeating four counts for every tournament.
+    public static final String TOURNAMENT_FROM_QUERY =
+        "FROM tournaments t LEFT JOIN (" +
+        "SELECT m.tournament_id, COUNT(*) AS total_matches, " +
+        "SUM(CASE WHEN m.status IN ('FINISHED','COMPLETED','DONE') OR m.winner_id IS NOT NULL OR (m.score1 IS NOT NULL AND m.score2 IS NOT NULL) THEN 1 ELSE 0 END) AS completed_matches, " +
+        "SUM(CASE WHEN m.stage_id IS NULL OR ts.stage_order=1 THEN 1 ELSE 0 END) AS stage1_total_matches " +
+        "FROM matches m LEFT JOIN tournament_stages ts ON ts.id=m.stage_id AND ts.tournament_id=m.tournament_id " +
+        "WHERE m.is_bye=0 OR m.is_bye IS NULL GROUP BY m.tournament_id) ms ON ms.tournament_id=t.id ";
 
     public Tournament mapTournamentFromResultSet(ResultSet rs) {
         try {
@@ -471,12 +481,19 @@ public class TournamentDAO {
                 t.setTeamCount(rs.getInt("team_count"));
             } catch (Exception ignore) {}
 
+            t.setTotalMatches(totalMatches);
+            t.setCompletedMatches(completedMatches);
+            try {
+                t.setStage1TotalMatches(rs.getInt("stage1_total_matches"));
+            } catch (Exception ignore) {}
+
             try {
                 String fmt = rs.getString("stage_format");
                 if (fmt != null && !fmt.trim().isEmpty()) {
                     t.setFormat(fmt.trim());
                 }
             } catch (Exception ignore) {}
+            try { t.setStage2Format(rs.getString("stage2_format")); } catch (Exception ignore) {}
 
             try {
                 if ("COMPLETED".equals(effectiveStatus)) {
@@ -525,7 +542,8 @@ public class TournamentDAO {
 
     public List<Tournament> getAllTournaments() {
         List<Tournament> list = new ArrayList<>();
-        String sql = TOURNAMENT_SELECT_QUERY + "FROM tournaments t ORDER BY t.created_at DESC";
+        // These small dashboard result sets do not need parallel plans or their larger memory grants.
+        String sql = TOURNAMENT_SELECT_QUERY + TOURNAMENT_FROM_QUERY + "ORDER BY t.created_at DESC OPTION (MAXDOP 1)";
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection();
@@ -545,11 +563,15 @@ public class TournamentDAO {
     }
 
     public Tournament getTournamentById(String id) {
+        return getTournamentById(id, true);
+    }
+
+    public Tournament getTournamentById(String id, boolean useCache) {
         if (id == null || id.trim().isEmpty()) return null;
-        Tournament cached = TOURNAMENT_BY_ID_CACHE.get(id.trim());
+        Tournament cached = useCache ? TOURNAMENT_BY_ID_CACHE.get(id.trim()) : null;
         if (cached != null) return cached;
 
-        String sql = TOURNAMENT_SELECT_QUERY + "FROM tournaments t WHERE t.id = ?";
+        String sql = TOURNAMENT_SELECT_QUERY + TOURNAMENT_FROM_QUERY + "WHERE t.id = ? OPTION (MAXDOP 1)";
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection();
@@ -574,7 +596,7 @@ public class TournamentDAO {
     public List<Tournament> getTournamentsBySeriesId(String seriesId) {
         List<Tournament> list = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return list;
-        String sql = TOURNAMENT_SELECT_QUERY + "FROM tournaments t WHERE t.series_id = ? ORDER BY t.tournament_index_in_series ASC, t.created_at ASC";
+        String sql = TOURNAMENT_SELECT_QUERY + TOURNAMENT_FROM_QUERY + "WHERE t.series_id = ? ORDER BY t.tournament_index_in_series ASC, t.created_at ASC OPTION (MAXDOP 1)";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

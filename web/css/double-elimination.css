@@ -247,12 +247,11 @@ body, button, input, select, textarea, .bracket-header-title, .de-viewport-title
 
 .de-round-header {
     background: #181d29 !important;
-    border: 1px solid rgba(45, 212, 191, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 8px !important;
     padding: 0.4rem 0.55rem !important;
     font-size: 0.78rem !important;
     font-weight: 800 !important;
-    color: #2dd4bf !important;
     text-transform: uppercase !important;
     letter-spacing: 0.04em !important;
     text-align: center !important;
@@ -267,9 +266,7 @@ body, button, input, select, textarea, .bracket-header-title, .de-viewport-title
     font-family: 'Lexend', sans-serif !important;
 }
 
-.de-round-header .round-header-title,
-.de-single-viewport-wrapper .de-round-header.lower .round-header-title {
-    color: #2dd4bf !important;
+.de-round-header .round-header-title {
     font-size: 0.78rem !important;
     font-weight: 800 !important;
     text-transform: uppercase !important;
@@ -280,30 +277,60 @@ body, button, input, select, textarea, .bracket-header-title, .de-viewport-title
     width: 100% !important;
 }
 
+/* Upper Bracket Round Headers (Mint) */
+.de-round-header.upper,
+#upperBracketColumnsWrapper .de-round-header {
+    border-color: rgba(45, 212, 191, 0.35) !important;
+}
+
+.de-round-header.upper .round-header-title,
+#upperBracketColumnsWrapper .de-round-header .round-header-title {
+    color: #2dd4bf !important;
+}
+
+
+/* Lower Bracket Round Headers (Red / Rose) */
+.de-round-header.lower .round-header-title,
+#lowerBracketColumnsWrapper .de-round-header .round-header-title,
+.lower-wrapper .de-round-header .round-header-title,
+#lowerViewportCanvas .de-round-header .round-header-title {
+    color: #f43f5e !important;
+}
+
+/* Lower Viewport Frame Specific Theme (Red / Rose) */
+#lowerViewportFrame .bracket-viewport-container {
+    scrollbar-color: rgba(244, 63, 94, 0.45) rgba(11, 13, 18, 0.9) !important;
+}
+
+#lowerViewportFrame .bracket-viewport-container::-webkit-scrollbar-thumb {
+    background: rgba(244, 63, 94, 0.45) !important;
+}
+
+#lowerViewportFrame .bracket-viewport-container::-webkit-scrollbar-thumb:hover {
+    background: #f43f5e !important;
+}
+
+#lowerViewportFrame .zoom-level-badge {
+    color: #f43f5e !important;
+}
+
+#lowerViewportFrame .btn-zoom:hover {
+    background: #f43f5e !important;
+    color: #ffffff !important;
+    border-color: #f43f5e !important;
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.3) !important;
+}
+
+#lowerViewportFrame .bracket-zoom-toolbar {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(244, 63, 94, 0.15) !important;
+}
+
 .de-round-header.gf {
     border-color: rgba(251, 191, 36, 0.35) !important;
 }
 
 .de-round-header.gf .round-header-title {
     color: #fbbf24 !important;
-}
-
-/* Custom Score Inputs & Random Controls inside unified DE */
-.de-single-viewport-wrapper .round-random-input {
-    background: #0b0d12 !important;
-    border: 1px solid rgba(45, 212, 191, 0.35) !important;
-    color: #2dd4bf !important;
-}
-
-.de-single-viewport-wrapper .btn-round-random {
-    background: rgba(45, 212, 191, 0.12) !important;
-    color: #2dd4bf !important;
-    border: 1px solid rgba(45, 212, 191, 0.3) !important;
-}
-
-.de-single-viewport-wrapper .btn-round-random:hover {
-    background: #2dd4bf !important;
-    color: #0b0d12 !important;
 }
 
 .de-round-matches-stack {

@@ -129,6 +129,12 @@
                                             <i class="fa-solid fa-trophy text-gold"></i> Nhà vô địch: <span class="champion-name-val" style="color: #fbbf24;">${not empty t.championName ? t.championName : ''}</span>
                                         </span>
                                     </div>
+                                    <div class="tourney-progress" title="Số trận đã xong / tổng số trận cả giải, tính trước Stage 2 khi chưa tạo bracket. Không tính BYE; 100% khi xác nhận hoàn thành giải.">
+                                        <div class="tourney-progress-label"><span>Tiến độ · ${t.completedMatches}/${t.progressTotalMatches} trận</span><strong>${t.progressPercent}%</strong></div>
+                                        <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${t.progressPercent}">
+                                            <span class="tourney-progress-fill" style="width: ${t.progressPercent}%"></span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="tourney-card-footer">
@@ -141,38 +147,9 @@
                                         <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${t.id}" class="btn-details-tourney" title="Cấu hình & Chi tiết giải đấu">
                                             <i class="fa-solid fa-sliders"></i> Chi Tiết
                                         </a>
-                                        <c:choose>
-                                            <c:when test="${t.format == 'DOUBLE_ELIMINATION'}">
-                                                <a href="${pageContext.request.contextPath}/common/double-elimination.jsp?id=${t.id}&format=DOUBLE_ELIMINATION" class="btn-view-bracket-card">
-                                                    Trận Đấu ➔
-                                                 </a>
-                                            </c:when>
-                                            <c:when test="${t.format == 'ROUND_ROBIN'}">
-                                                <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=${t.id}&format=ROUND_ROBIN" class="btn-view-bracket-card">
-                                                    Trận Đấu ➔
-                                                </a>
-                                            </c:when>
-                                            <c:when test="${t.format == 'GROUP_STAGE'}">
-                                                <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=${t.id}&format=GROUP_STAGE" class="btn-view-bracket-card">
-                                                    Trận Đấu ➔
-                                                </a>
-                                            </c:when>
-                                            <c:when test="${t.format == 'SWISS_LITE' || t.format == 'SWISS'}">
-                                                <a href="${pageContext.request.contextPath}/common/swiss-stage.jsp?id=${t.id}&format=SWISS_LITE" class="btn-view-bracket-card">
-                                                    Trận Đấu ➔
-                                                </a>
-                                            </c:when>
-                                            <c:when test="${t.format == 'GSL'}">
-                                                <a href="${pageContext.request.contextPath}/common/gsl.jsp?id=${t.id}&format=GSL" class="btn-view-bracket-card">
-                                                    Trận Đấu ➔
-                                                </a>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <a href="${pageContext.request.contextPath}/common/single-elimination.jsp?id=${t.id}&format=${t.format}" class="btn-view-bracket-card">
-                                                    Trận Đấu ➔
-                                                </a>
-                                            </c:otherwise>
-                                        </c:choose>
+                                        <a href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=${t.id}" class="btn-view-bracket-card">
+                                            Trận Đấu ➔
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -518,20 +495,6 @@
                                 '</span>';
                         }
                         if (btnView) {
-                            var s1Fmt = (multiConfig.stage1Format || 'GROUP_STAGE').toUpperCase();
-                            if (s1Fmt === 'GROUP_STAGE') {
-                                btnView.href = ctx + '/common/group-stage.jsp?id=' + tid + '&stage=1';
-                            } else if (s1Fmt === 'DOUBLE_ELIMINATION') {
-                                btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid + '&stage=1';
-                            } else if (s1Fmt === 'ROUND_ROBIN') {
-                                btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&format=ROUND_ROBIN&stage=1';
-                            } else if (s1Fmt === 'GSL') {
-                                btnView.href = ctx + '/common/gsl.jsp?id=' + tid + '&format=GSL&stage=1';
-                            } else if (s1Fmt === 'SWISS_LITE' || s1Fmt === 'SWISS') {
-                                btnView.href = ctx + '/common/swiss-stage.jsp?id=' + tid + '&format=SWISS_LITE&stage=1';
-                            } else {
-                                btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&stage=1';
-                            }
                             btnView.innerText = 'Trận Đấu ➔';
                         }
                     } else {
@@ -540,37 +503,31 @@
                             if (localFmt === 'DOUBLE_ELIMINATION') {
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Double Elimination';
                                 if (btnView) {
-                                    btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid + '&format=DOUBLE_ELIMINATION';
                                     btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             } else if (localFmt === 'ROUND_ROBIN') {
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Round Robin';
                                 if (btnView) {
-                                    btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&format=ROUND_ROBIN';
                                     btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             } else if (localFmt === 'GROUP_STAGE') {
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Group Stage';
                                 if (btnView) {
-                                    btnView.href = ctx + '/common/group-stage.jsp?id=' + tid + '&format=GROUP_STAGE';
                                     btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             } else if (localFmt === 'SINGLE_ELIMINATION') {
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Single Elimination';
                                 if (btnView) {
-                                    btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&format=SINGLE_ELIMINATION';
                                     btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             } else if (localFmt === 'SWISS_LITE' || localFmt === 'SWISS') {
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> Swiss System';
                                 if (btnView) {
-                                    btnView.href = ctx + '/common/swiss-stage.jsp?id=' + tid + '&format=SWISS_LITE';
                                     btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             } else if (localFmt === 'GSL') {
                                 if (formatSpan) formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> GSL Format';
                                 if (btnView) {
-                                    btnView.href = ctx + '/common/gsl.jsp?id=' + tid + '&format=GSL';
                                     btnView.innerHTML = 'Trận Đấu ➔';
                                 }
                             }

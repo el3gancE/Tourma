@@ -36,7 +36,7 @@
 
     List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
     if (tournamentsList == null && series != null) {
-        tournamentsList = seriesDAO.getTournamentsBySeriesId(series.getId());
+        tournamentsList = tournamentDAO.getTournamentsBySeriesId(series.getId());
     }
 
     Map<String, Integer> teamCountMap = (Map<String, Integer>) request.getAttribute("teamCountMap");
@@ -44,21 +44,14 @@
         teamCountMap = new HashMap<>();
         if (tournamentsList != null) {
             for (Tournament t : tournamentsList) {
-                List<Team> teams = participantDAO.getTeamsByTournamentId(t.getId());
-                int count = (teams != null) ? teams.size() : 0;
-                teamCountMap.put(t.getId(), count);
+                teamCountMap.put(t.getId(), t.getTeamCount());
             }
         }
     }
 
     Map<String, List<String>> stageFormatsMap = (Map<String, List<String>>) request.getAttribute("stageFormatsMap");
     if (stageFormatsMap == null) {
-        stageFormatsMap = new HashMap<>();
-        if (tournamentsList != null) {
-            for (Tournament t : tournamentsList) {
-                stageFormatsMap.put(t.getId(), tournamentDAO.getStageFormats(t.getId()));
-            }
-        }
+        stageFormatsMap = series != null ? tournamentDAO.getStageFormatsBySeriesId(series.getId()) : new HashMap<>();
     }
 
     if (seriesIdVal == null && series != null) {
@@ -165,13 +158,6 @@
                         String s2Label = getFmtName(s2Fmt);
                         String fmtLabel = isMulti ? (s1Label + " ➔ " + s2Label) : s1Label;
 
-                        String bracketUrl = "/common/single-elimination.jsp";
-                        if ("DOUBLE_ELIMINATION".equals(s1Fmt)) bracketUrl = "/common/double-elimination.jsp";
-                        else if ("ROUND_ROBIN".equals(s1Fmt)) bracketUrl = "/common/round-robin.jsp";
-                        else if ("GROUP_STAGE".equals(s1Fmt)) bracketUrl = "/common/group-stage.jsp";
-                        else if ("GSL".equals(s1Fmt)) bracketUrl = "/common/gsl.jsp";
-                        else if ("SWISS_LITE".equals(s1Fmt) || "SWISS".equals(s1Fmt)) bracketUrl = "/common/swiss-stage.jsp";
-
                         String championName = t.getChampionName();
                         boolean isFinished = (championName != null && !championName.trim().isEmpty()) || "COMPLETED".equalsIgnoreCase(t.getStatus());
                         String statusStr = isFinished ? "Completed" : ("ONGOING".equalsIgnoreCase(t.getStatus()) ? "In Progress" : "Incoming");
@@ -207,6 +193,12 @@
                                     <i class="fa-solid fa-trophy text-gold"></i> Nhà vô địch: <span class="champion-name-val" style="color: #fbbf24;"><%= championName != null ? championName : "" %></span>
                                 </span>
                             </div>
+                            <div class="tourney-progress" title="Số trận đã xong / tổng số trận cả giải, tính trước Stage 2 khi chưa tạo bracket. Không tính BYE; 100% khi xác nhận hoàn thành giải.">
+                                <div class="tourney-progress-label"><span>Tiến độ · <%= t.getCompletedMatches() %>/<%= t.getProgressTotalMatches() %> trận</span><strong><%= t.getProgressPercent() %>%</strong></div>
+                                <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= t.getProgressPercent() %>">
+                                    <span class="tourney-progress-fill" style="width: <%= t.getProgressPercent() %>%"></span>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="tourney-card-footer">
@@ -220,7 +212,7 @@
                                 <a href="${pageContext.request.contextPath}/rolling/point-config?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Set điểm thưởng">
                                     <i class="fa-solid fa-star text-gold"></i> Set Điểm
                                 </a>
-                                <a href="${pageContext.request.contextPath}<%= bracketUrl %>?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-view-bracket-card">
+                                <a href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=<%= t.getId() %>" class="btn-view-bracket-card">
                                     Trận Đấu ➔
                                 </a>
                             </div>
@@ -630,26 +622,7 @@
                         }
                     }
 
-                    // Dynamically update Trận Đấu ➔ link based on Stage 1 format
-                    var btnView = card.querySelector('.btn-view-bracket-card');
-                    if (btnView) {
-                        var ctx = "${pageContext.request.contextPath}";
-                        var seriesId = "<%= seriesIdVal %>";
-                        var s1Upper = s1Fmt.toUpperCase();
-                        if (s1Upper === 'DOUBLE_ELIMINATION') {
-                            btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        } else if (s1Upper === 'ROUND_ROBIN') {
-                            btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        } else if (s1Upper === 'GROUP_STAGE') {
-                            btnView.href = ctx + '/common/group-stage.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        } else if (s1Upper === 'GSL') {
-                            btnView.href = ctx + '/common/gsl.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        } else if (s1Upper === 'SWISS_LITE' || s1Upper === 'SWISS') {
-                            btnView.href = ctx + '/common/swiss-stage.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        } else {
-                            btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        }
-                    }
+                    // The match link resolves the current stage from DB when clicked.
                 });
             }
 
