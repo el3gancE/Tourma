@@ -141,6 +141,25 @@ public class Tournament {
     public void setStage2Format(String value) { stage2Format = value; }
     public String getStage2Format() { return stage2Format; }
 
+    public String getFormatSummary() {
+        String first = formatName(format);
+        return "MULTI_STAGE".equalsIgnoreCase(tournamentType)
+                ? first + " ➔ " + formatName(stage2Format) : first;
+    }
+
+    private static String formatName(String value) {
+        String normalized = value == null ? "" : value.trim().toUpperCase(java.util.Locale.ROOT);
+        switch (normalized) {
+            case "DOUBLE_ELIMINATION": return "Double Elimination";
+            case "ROUND_ROBIN": return "Round Robin";
+            case "GROUP_STAGE": return "Group Stage";
+            case "GSL": return "GSL Format";
+            case "SWISS":
+            case "SWISS_LITE": return "Swiss System";
+            default: return "Single Elimination";
+        }
+    }
+
     /** Reserve matches for an uncreated final stage rather than assigning equal stage weights. */
     public int getProgressTotalMatches() {
         int planned = totalMatches;

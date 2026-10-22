@@ -36,9 +36,12 @@ public class MyTournamentsServlet extends HttpServlet {
             response.sendRedirect(response.encodeRedirectURL(request.getContextPath() + matchUrl(tournament)));
             return;
         }
-        List<Tournament> tournamentList = dao.getAllTournaments();
+        TournamentDAO.TournamentPage page = dao.getTournamentPage(null, request.getParameter("q"),
+                request.getParameter("filter"), request.getParameter("page"));
+        List<Tournament> tournamentList = page.getTournaments();
         
         request.setAttribute("tournamentList", tournamentList);
+        request.setAttribute("pageInfo", page);
         request.getRequestDispatcher("/common/my-tournaments.jsp").forward(request, response);
     }
 

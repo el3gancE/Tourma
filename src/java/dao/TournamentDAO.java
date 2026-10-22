@@ -540,6 +540,74 @@ public class TournamentDAO {
         }
     }
 
+    public static final class TournamentPage {
+        private final List<Tournament> tournaments;
+        private final int totalCount;
+        private final int page;
+        private final String filter;
+        private final String query;
+
+        private TournamentPage(List<Tournament> tournaments, int totalCount, int page, String filter, String query) {
+            this.tournaments = tournaments; this.totalCount = totalCount; this.page = page;
+            this.filter = filter; this.query = query;
+        }
+        public List<Tournament> getTournaments() { return tournaments; }
+        public int getTotalCount() { return totalCount; }
+        public int getPage() { return page; }
+        public int getTotalPages() { return Math.max(1, (totalCount + 24) / 25); }
+        public String getFilter() { return filter; }
+        public String getQuery() { return query; }
+    }
+
+    /** Filter in SQL before fetching a maximum of 25 cards; no browser-side paging of all rows. */
+    public TournamentPage getTournamentPage(String seriesId, String rawQuery, String rawFilter, String rawPage) {
+        String query = rawQuery == null ? "" : rawQuery.trim();
+        String filter = rawFilter == null ? "ALL" : rawFilter.toUpperCase(Locale.ROOT);
+        if (!Set.of("ALL", "STANDALONE", "SERIES", "INCOMING", "IN_PROGRESS", "COMPLETED").contains(filter)) filter = "ALL";
+        int requestedPage = 1;
+        try { requestedPage = Math.max(1, Integer.parseInt(rawPage)); } catch (Exception ignored) {}
+        List<String> parameters = new ArrayList<>();
+        StringBuilder where = new StringBuilder("WHERE 1=1 ");
+        if (seriesId != null && !seriesId.trim().isEmpty()) {
+            where.append("AND t.series_id=? "); parameters.add(seriesId.trim());
+        }
+        if (!query.isEmpty()) {
+            where.append("AND CHARINDEX(LOWER(?),LOWER(t.name))>0 "); parameters.add(query);
+        }
+        if ("STANDALONE".equals(filter)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NULL ");
+        else if ("SERIES".equals(filter)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NOT NULL ");
+        else if (!"ALL".equals(filter)) {
+            where.append("AND (CASE WHEN t.status IN ('COMPLETED','FINISHED') THEN 'COMPLETED' ")
+                 .append("WHEN t.status IN ('ONGOING','IN_PROGRESS') OR ISNULL(ms.completed_matches,0)>0 THEN 'IN_PROGRESS' ELSE 'INCOMING' END)=? ");
+            parameters.add(filter);
+        }
+        String order = seriesId == null || seriesId.trim().isEmpty()
+                ? "t.created_at DESC,t.id DESC" : "t.tournament_index_in_series DESC,t.created_at DESC,t.id DESC";
+        try (Connection conn = new DBContext().getConnection()) {
+            int count;
+            boolean statusFilter = Set.of("INCOMING", "IN_PROGRESS", "COMPLETED").contains(filter);
+            String countFrom = statusFilter ? TOURNAMENT_FROM_QUERY : "FROM tournaments t ";
+            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) " + countFrom + where + "OPTION (MAXDOP 1)")) {
+                for (int i=0; i<parameters.size(); i++) ps.setString(i+1, parameters.get(i));
+                try (ResultSet rs=ps.executeQuery()) { rs.next(); count=rs.getInt(1); }
+            }
+            int page = Math.min(requestedPage, Math.max(1, (count + 24) / 25));
+            List<Tournament> rows = new ArrayList<>();
+            if (count > 0) {
+                String sql = TOURNAMENT_SELECT_QUERY + TOURNAMENT_FROM_QUERY + where + "ORDER BY " + order
+                        + " OFFSET ? ROWS FETCH NEXT 25 ROWS ONLY OPTION (MAXDOP 1)";
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    for (int i=0; i<parameters.size(); i++) ps.setString(i+1, parameters.get(i));
+                    ps.setInt(parameters.size()+1, (page-1)*25);
+                    try (ResultSet rs=ps.executeQuery()) {
+                        while (rs.next()) { Tournament tournament=mapTournamentFromResultSet(rs); if (tournament!=null) rows.add(tournament); }
+                    }
+                }
+            }
+            return new TournamentPage(rows,count,page,filter,query);
+        } catch (Exception e) { throw new IllegalStateException("Cannot load tournament page",e); }
+    }
+
     public List<Tournament> getAllTournaments() {
         List<Tournament> list = new ArrayList<>();
         // These small dashboard result sets do not need parallel plans or their larger memory grants.

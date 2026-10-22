@@ -57,7 +57,10 @@ public class RollingTournamentListServlet extends HttpServlet {
 
         if (series != null) {
             seriesId = series.getId();
-            tournamentsList = tournamentDAO.getTournamentsBySeriesId(seriesId);
+            TournamentDAO.TournamentPage page = tournamentDAO.getTournamentPage(seriesId,
+                    request.getParameter("q"), "ALL", request.getParameter("page"));
+            tournamentsList = page.getTournaments();
+            request.setAttribute("pageInfo", page);
 
             stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(seriesId);
 
