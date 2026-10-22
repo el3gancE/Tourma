@@ -81,7 +81,8 @@ public class MatchUpdateServlet extends HttpServlet {
                 String championName = params.get("championName");
                 if (championName == null) championName = params.get("champion");
                 boolean ok = handleFinishTournament(tournamentId, championName);
-                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã hoàn thành giải đấu!" : "Lỗi hoàn thành giải đấu!") + "\"}");
+                if (!ok) response.setStatus(HttpServletResponse.SC_CONFLICT);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã hoàn thành giải đấu!" : "Chưa thể hoàn thành giải: hãy kiểm tra lịch đấu và kết quả các trận.") + "\"}");
                 return;
             }
 
@@ -909,15 +910,92 @@ public class MatchUpdateServlet extends HttpServlet {
             }
             if(multi) {
                 TournamentDAO.assertStage2Ready(conn,tournamentId,2);
-                try(PreparedStatement ps=conn.prepareStatement("SELECT COUNT(*),SUM(CASE WHEN ISNULL(m.is_bye,0)=0 AND (m.score1 IS NULL OR m.score2 IS NULL) THEN 1 ELSE 0 END) FROM matches m JOIN tournament_stages s ON s.id=m.stage_id WHERE m.tournament_id=? AND s.stage_order=2")) {
-                    ps.setString(1,tournamentId);try(ResultSet rs=ps.executeQuery()){rs.next();if(rs.getInt(1)==0 || rs.getInt(2)>0)return false;}
-                }
             }
+            if (!hasCompleteFinalSchedule(conn, tournamentId, multi)) return false;
             try(PreparedStatement ps=conn.prepareStatement("UPDATE tournaments SET status='COMPLETED',champion_name=COALESCE(?,champion_name) WHERE id=?")) {
                 ps.setString(1,championName==null || championName.trim().isEmpty()?null:championName.trim());ps.setString(2,tournamentId);ps.executeUpdate();
             }
             conn.commit();RollingWindowPointService.clearAllCaches();TournamentDAO.clearTournamentCaches();return true;
         }catch(Exception invalidState){return false;}
+    }
+
+    /** Validate persisted results under tournament/match locks before committing completion. */
+    private boolean hasCompleteFinalSchedule(Connection conn, String tournamentId, boolean multi) throws java.sql.SQLException {
+        int stage = multi ? 2 : 1;
+        String format;
+        try (PreparedStatement ps = conn.prepareStatement("SELECT format FROM tournament_stages WHERE tournament_id=? AND stage_order=?")) {
+            ps.setString(1, tournamentId); ps.setInt(2, stage);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next() || rs.getString(1) == null) return false;
+                format = rs.getString(1).trim().toUpperCase(java.util.Locale.ROOT);
+            }
+        }
+        int participants;
+        String participantSql = multi
+                ? "SELECT COUNT(*) FROM tournaments t CROSS APPLY OPENJSON(t.stage2_teams) j WHERE t.id=?"
+                : "SELECT COUNT(*) FROM teams WHERE tournament_id=?";
+        try (PreparedStatement ps = conn.prepareStatement(participantSql)) {
+            ps.setString(1, tournamentId);
+            try (ResultSet rs = ps.executeQuery()) { rs.next(); participants = rs.getInt(1); }
+        }
+        if (participants < 2) return false;
+        boolean allowDraw = "ROUND_ROBIN".equals(format) || "GROUP_STAGE".equals(format);
+        int realMatches = 0;
+        boolean hasGrandFinal = false;
+        Map<Integer, Integer> rounds = new HashMap<>();
+        java.util.Set<String> scheduledTeams = new java.util.HashSet<>();
+        String sql = "SELECT m.*, a.id AS valid_team1, b.id AS valid_team2 FROM matches m WITH (UPDLOCK,HOLDLOCK) "
+                + "LEFT JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id "
+                + "LEFT JOIN teams a ON a.id=m.team1_id AND a.tournament_id=m.tournament_id "
+                + "LEFT JOIN teams b ON b.id=m.team2_id AND b.tournament_id=m.tournament_id "
+                + "WHERE m.tournament_id=? AND (s.stage_order=? OR (m.stage_id IS NULL AND ?=1))";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tournamentId); ps.setInt(2, stage); ps.setInt(3, stage);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String status = rs.getString("status");
+                    if (!("FINISHED".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status) || "DONE".equalsIgnoreCase(status))) return false;
+                    String first = rs.getString("valid_team1"), second = rs.getString("valid_team2"), winner = rs.getString("winner_id");
+                    if ((rs.getString("team1_id") != null && first == null) || (rs.getString("team2_id") != null && second == null)) return false;
+                    if (first != null) scheduledTeams.add(first);
+                    if (second != null) scheduledTeams.add(second);
+                    if (rs.getBoolean("is_bye")) {
+                        // A resolved BYE can have one entrant or be an empty bracket node; never two real opponents.
+                        if (first != null && second != null) return false;
+                        String survivor = first != null ? first : second;
+                        if (!java.util.Objects.equals(survivor, winner)) return false;
+                        continue;
+                    }
+                    if (first == null || second == null || first.equals(second)) return false;
+                    Integer score1 = (Integer) rs.getObject("score1"), score2 = (Integer) rs.getObject("score2");
+                    if (score1 == null || score2 == null || score1 < 0 || score2 < 0) return false;
+                    String expectedWinner;
+                    if (!score1.equals(score2)) expectedWinner = score1 > score2 ? first : second;
+                    else if (allowDraw) expectedWinner = null;
+                    else {
+                        Integer penalty1 = (Integer) rs.getObject("penalty1"), penalty2 = (Integer) rs.getObject("penalty2");
+                        if (penalty1 == null || penalty2 == null || penalty1 < 0 || penalty2 < 0 || penalty1.equals(penalty2)
+                                || format.contains("SWISS")) return false;
+                        expectedWinner = penalty1 > penalty2 ? first : second;
+                    }
+                    if (!java.util.Objects.equals(expectedWinner, winner)) return false;
+                    realMatches++;
+                    rounds.merge(rs.getInt("round_number"), 1, Integer::sum);
+                    if ("GRAND_FINAL".equalsIgnoreCase(rs.getString("bracket_type"))) hasGrandFinal = true;
+                }
+            }
+        }
+        if (realMatches == 0 || scheduledTeams.size() != participants) return false;
+        // Also reject a partially generated schedule whose existing games all happen to be finished.
+        if ("SINGLE_ELIMINATION".equals(format)) return realMatches >= participants - 1;
+        if ("DOUBLE_ELIMINATION".equals(format)) return hasGrandFinal && realMatches >= 2L * participants - 2;
+        if ("ROUND_ROBIN".equals(format)) return realMatches >= (long) participants * (participants - 1) / 2;
+        if (format.contains("SWISS")) {
+            return participants == 16 && realMatches == 33 && rounds.size() == 5
+                    && rounds.getOrDefault(1,0) == 8 && rounds.getOrDefault(2,0) == 8 && rounds.getOrDefault(3,0) == 8
+                    && rounds.getOrDefault(4,0) == 6 && rounds.getOrDefault(5,0) == 3;
+        }
+        return "GSL".equals(format) || "GROUP_STAGE".equals(format);
     }
 
     public boolean handleUnlockTournament(String tournamentId) {

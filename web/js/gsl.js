@@ -1216,11 +1216,18 @@
                         roundObj.matches.forEach(function (m) {
                             var liveM = grp.matchesMap[m.matchId] || m;
                             liveM.tournamentId = self.tournamentId;
+                            liveM.format = 'GSL';
+                            liveM.isGsl = true;
+                            liveM.groupColor = gColor;
                             liveM.onClick = function (e) {
                                 self.openMatchScoreModal(liveM);
                             };
                             var card = window.TourmaBracketCard ? window.TourmaBracketCard.createNodeElement(liveM) : self.createFallbackCard(liveM);
                             if (card) {
+                                card.style.setProperty('--card-theme-color', gColor);
+                                card.style.setProperty('--card-theme-hover-bg', 'rgba(' + gRgb + ', 0.22)');
+                                card.style.setProperty('--card-theme-glow', 'rgba(' + gRgb + ', 0.45)');
+                                card.style.setProperty('--grp-color', gColor);
                                 self.attachCardClickListener(card, liveM);
                                 stack.appendChild(card);
                             }
@@ -1269,11 +1276,18 @@
                         roundObj.matches.forEach(function (m) {
                             var liveM = grp.matchesMap[m.matchId] || m;
                             liveM.tournamentId = self.tournamentId;
+                            liveM.format = 'GSL';
+                            liveM.isGsl = true;
+                            liveM.groupColor = gColor;
                             liveM.onClick = function (e) {
                                 self.openMatchScoreModal(liveM);
                             };
                             var card = window.TourmaBracketCard ? window.TourmaBracketCard.createNodeElement(liveM) : self.createFallbackCard(liveM);
                             if (card) {
+                                card.style.setProperty('--card-theme-color', gColor);
+                                card.style.setProperty('--card-theme-hover-bg', 'rgba(' + gRgb + ', 0.22)');
+                                card.style.setProperty('--card-theme-glow', 'rgba(' + gRgb + ', 0.45)');
+                                card.style.setProperty('--grp-color', gColor);
                                 self.attachCardClickListener(card, liveM);
                                 stack.appendChild(card);
                             }
@@ -1470,11 +1484,17 @@
                             roundObj.matches.forEach(function (m) {
                                 var liveMatch = grp.matchesMap[m.matchId] || m;
                                 liveMatch.tournamentId = self.tournamentId;
+                                liveMatch.format = 'GSL';
+                                liveMatch.isGsl = true;
+                                liveMatch.groupColor = gColor;
                                 liveMatch.onClick = function (e) {
                                     self.openMatchScoreModal(liveMatch);
                                 };
                                 var listCard = window.TourmaMatchCard ? window.TourmaMatchCard.createCardElement(liveMatch) : self.createFallbackCard(liveMatch);
                                 if (listCard) {
+                                    listCard.style.setProperty('--grp-color', gColor);
+                                    listCard.style.setProperty('--grp-hover', 'rgba(' + gRgb + ', 0.15)');
+                                    listCard.style.setProperty('--grp-glow', 'rgba(' + gRgb + ', 0.35)');
                                     self.attachCardClickListener(listCard, liveMatch);
                                     grid.appendChild(listCard);
                                 }
@@ -1514,11 +1534,17 @@
                             roundObj.matches.forEach(function (m) {
                                 var liveMatch = grp.matchesMap[m.matchId] || m;
                                 liveMatch.tournamentId = self.tournamentId;
+                                liveMatch.format = 'GSL';
+                                liveMatch.isGsl = true;
+                                liveMatch.groupColor = gColor;
                                 liveMatch.onClick = function (e) {
                                     self.openMatchScoreModal(liveMatch);
                                 };
                                 var listCard = window.TourmaMatchCard ? window.TourmaMatchCard.createCardElement(liveMatch) : self.createFallbackCard(liveMatch);
                                 if (listCard) {
+                                    listCard.style.setProperty('--grp-color', gColor);
+                                    listCard.style.setProperty('--grp-hover', 'rgba(' + gRgb + ', 0.15)');
+                                    listCard.style.setProperty('--grp-glow', 'rgba(' + gRgb + ', 0.35)');
                                     self.attachCardClickListener(listCard, liveMatch);
                                     grid.appendChild(listCard);
                                 }

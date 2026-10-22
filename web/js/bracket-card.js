@@ -191,11 +191,12 @@
 
             var themeClass = '';
             var bType = (data.bracketType || '').toUpperCase();
+            var isGslMatch = !!(data.isGsl || data.format === 'GSL' || data.tournamentFormat === 'GSL');
             if (bType === 'GRAND_FINAL' || bType === 'GF' || bType === 'GRAND_FINALS' || bType === 'GRAND_FINAL_RESET' || data.isGrandFinal || data.themeColor === 'gold' || data.isGold) {
                 themeClass = ' swiss-card-gold';
             } else if (data.themeColor === 'green' || data.isGreen) {
                 themeClass = ' swiss-card-green';
-            } else if (data.themeColor === 'red' || data.isRed || bType === 'LOWER' || bType === 'LOSER' || bType === 'LOSER_BRACKET' || bType === 'LB' || bType.indexOf('LOSER') !== -1 || bType.indexOf('LOWER') !== -1) {
+            } else if (!isGslMatch && (data.themeColor === 'red' || data.isRed || bType === 'LOWER' || bType === 'LOSER' || bType === 'LOSER_BRACKET' || bType === 'LB' || bType.indexOf('LOSER') !== -1 || bType.indexOf('LOWER') !== -1)) {
                 themeClass = ' lower-bracket-card';
             } else if (data.themeColor === 'mint' || data.isMint) {
                 themeClass = ' swiss-card-mint';

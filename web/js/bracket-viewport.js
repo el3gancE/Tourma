@@ -452,7 +452,7 @@
                 var isGsl = (canvasElem && canvasElem.classList && canvasElem.classList.contains('gsl-viewport-canvas')) || (wrapperElem && wrapperElem.classList && wrapperElem.classList.contains('gsl-single-viewport-wrapper'));
                 var isLowerCanvas = (canvasElem && (canvasElem.id === 'lowerViewportCanvas' || canvasElem.classList.contains('lower-canvas'))) ||
                                     (wrapperElem && (wrapperElem.id === 'lowerBracketColumnsWrapper' || wrapperElem.classList.contains('lower-wrapper') || wrapperElem.getAttribute('data-bracket-type') === 'LOWER'));
-                var themeColor = (isTargetLb || isLowerCanvas) ? '#ff4655' : (isTargetGf ? '#fbbf24' : (isGsl ? (groupColor || '#2dd4bf') : '#2dd4bf'));
+                var themeColor = isGsl ? (groupColor || '#2dd4bf') : ((isTargetLb || isLowerCanvas) ? '#ff4655' : (isTargetGf ? '#fbbf24' : '#2dd4bf'));
 
                 if (validSources.length >= 2) {
                     // Standard Bracket Fork ( ]-- ) strictly for this target match

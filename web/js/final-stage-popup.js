@@ -388,19 +388,43 @@
         /**
          * User confirms conclusion -> Lock tournament & transition to Step 2
          */
-        confirmConclusion: function () {
-            if (!this.tournamentId) return;
+        confirmConclusion: async function () {
+            if (!this.tournamentId || this.isFinishing || this.isLocked) return;
+            var tournamentId = this.tournamentId;
+            var confirmButton = document.getElementById('finalStageConfirmBtn');
+            var originalLabel = confirmButton ? confirmButton.textContent : '';
+            var finishError = '';
+            this.isFinishing = true;
+            if (confirmButton) {
+                confirmButton.disabled = true;
+                confirmButton.textContent = 'Đang kiểm tra…';
+            }
 
             try {
                 var rootPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
                 if (!rootPath || rootPath === '/common') rootPath = '';
                 var ctx = window.TourmaContextPath || rootPath || '';
-                fetch(ctx + '/api/match-update', {
+                var response = await fetch(ctx + '/api/match-update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                    body: 'action=finishTournament&tournamentId=' + encodeURIComponent(this.tournamentId) + '&championName=' + encodeURIComponent(this.championName || '')
-                }).catch(function(err) { console.error('Error saving tournament finish to DB:', err); });
-            } catch (e) {}
+                    body: 'action=finishTournament&tournamentId=' + encodeURIComponent(tournamentId) + '&championName=' + encodeURIComponent(this.championName || '')
+                });
+                var data = await response.json();
+                if (!response.ok || data.status !== 'success') {
+                    finishError = data.message || 'Chưa thể hoàn thành giải. Vui lòng kiểm tra kết quả các trận.';
+                    throw new Error(finishError);
+                }
+                if (this.tournamentId !== tournamentId) return;
+            } catch (error) {
+                window.alert(finishError || 'Không thể xác nhận hoàn thành giải. Vui lòng tải lại trang và thử lại.');
+                return;
+            } finally {
+                this.isFinishing = false;
+                if (confirmButton) {
+                    confirmButton.disabled = false;
+                    confirmButton.textContent = originalLabel;
+                }
+            }
 
             this.isLocked = true;
 
