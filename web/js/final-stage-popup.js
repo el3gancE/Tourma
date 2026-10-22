@@ -389,7 +389,7 @@
          * User confirms conclusion -> Lock tournament & transition to Step 2
          */
         confirmConclusion: async function () {
-            if (!this.tournamentId || this.isFinishing || this.isLocked) return;
+            if (!this.tournamentId || this.isFinishing || this.isUnlocking || this.isLocked) return;
             var tournamentId = this.tournamentId;
             var confirmButton = document.getElementById('finalStageConfirmBtn');
             var originalLabel = confirmButton ? confirmButton.textContent : '';
@@ -467,19 +467,43 @@
         /**
          * User unlocks tournament -> Re-enable editing & transition back to Step 1
          */
-        unlockTournament: function () {
-            if (!this.tournamentId) return;
+        unlockTournament: async function () {
+            if (!this.tournamentId || this.isFinishing || this.isUnlocking) return;
+            var tournamentId = this.tournamentId;
+            var unlockButton = document.getElementById('finalStageUnlockBtn');
+            var originalLabel = unlockButton ? unlockButton.textContent : '';
+            var unlockError = '';
+            this.isUnlocking = true;
+            if (unlockButton) {
+                unlockButton.disabled = true;
+                unlockButton.textContent = 'Đang cập nhật…';
+            }
 
             try {
                 var rootPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
                 if (!rootPath || rootPath === '/common') rootPath = '';
                 var ctx = window.TourmaContextPath || rootPath || '';
-                fetch(ctx + '/api/match-update', {
+                var response = await fetch(ctx + '/api/match-update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                    body: 'action=unlockTournament&tournamentId=' + encodeURIComponent(this.tournamentId)
-                }).catch(function(err) { console.error('Error unlocking tournament in DB:', err); });
-            } catch (e) {}
+                    body: 'action=unlockTournament&tournamentId=' + encodeURIComponent(tournamentId)
+                });
+                var data = await response.json();
+                if (!response.ok || data.status !== 'success') {
+                    unlockError = data.message || 'Chưa thể mở khóa giải. Vui lòng thử lại.';
+                    throw new Error(unlockError);
+                }
+                if (this.tournamentId !== tournamentId) return;
+            } catch (error) {
+                window.alert(unlockError || 'Không thể mở khóa giải. Vui lòng tải lại trang và thử lại.');
+                return;
+            } finally {
+                this.isUnlocking = false;
+                if (unlockButton) {
+                    unlockButton.disabled = false;
+                    unlockButton.textContent = originalLabel;
+                }
+            }
 
             try {
                 localStorage.removeItem('tourma_final_locked_' + this.tournamentId);

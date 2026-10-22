@@ -88,6 +88,7 @@ public class MatchUpdateServlet extends HttpServlet {
 
             if ("unlockTournament".equalsIgnoreCase(action)) {
                 boolean ok = handleUnlockTournament(tournamentId);
+                if (!ok) response.setStatus(HttpServletResponse.SC_CONFLICT);
                 out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã mở khóa giải đấu!" : "Lỗi mở khóa giải đấu!") + "\"}");
                 return;
             }
@@ -901,6 +902,10 @@ public class MatchUpdateServlet extends HttpServlet {
      * Completes a tournament and records champion name in database.
      */
     public boolean handleFinishTournament(String tournamentId, String championName) {
+        return retryTournamentTransition(() -> finishTournamentAttempt(tournamentId, championName), "Cannot finish tournament and save standings");
+    }
+
+    private boolean finishTournamentAttempt(String tournamentId, String championName) throws Exception {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
         try(Connection conn=new DBContext().getConnection()) {
             conn.setAutoCommit(false);
@@ -912,11 +917,37 @@ public class MatchUpdateServlet extends HttpServlet {
                 TournamentDAO.assertStage2Ready(conn,tournamentId,2);
             }
             if (!hasCompleteFinalSchedule(conn, tournamentId, multi)) return false;
+            if (!RollingWindowPointService.getInstance().refreshForTournamentTransition(conn, tournamentId, "COMPLETED")) return false;
             try(PreparedStatement ps=conn.prepareStatement("UPDATE tournaments SET status='COMPLETED',champion_name=COALESCE(?,champion_name) WHERE id=?")) {
                 ps.setString(1,championName==null || championName.trim().isEmpty()?null:championName.trim());ps.setString(2,tournamentId);ps.executeUpdate();
             }
             conn.commit();RollingWindowPointService.clearAllCaches();TournamentDAO.clearTournamentCaches();return true;
-        }catch(Exception invalidState){return false;}
+        }
+    }
+
+    private boolean retryTournamentTransition(java.util.concurrent.Callable<Boolean> operation, String message) {
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            try { return operation.call(); }
+            catch (Exception failure) {
+                RollingWindowPointService.clearAllCaches();
+                boolean transientLock = false;
+                for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+                    if (cause instanceof java.sql.SQLException) {
+                        java.sql.SQLException sql = (java.sql.SQLException) cause;
+                        transientLock = sql.getErrorCode() == 1205 || sql.getErrorCode() == 1222 || "40001".equals(sql.getSQLState());
+                        if (transientLock) break;
+                    }
+                }
+                if (!transientLock || attempt == 5) {
+                    java.util.logging.Logger.getLogger(MatchUpdateServlet.class.getName()).log(java.util.logging.Level.WARNING, message, failure);
+                    return false;
+                }
+                // A deadlock victim was rolled back when its connection closed; retry the whole transaction.
+                try { Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextInt(50, 201)); }
+                catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); return false; }
+            }
+        }
+        return false;
     }
 
     /** Validate persisted results under tournament/match locks before committing completion. */
@@ -999,13 +1030,25 @@ public class MatchUpdateServlet extends HttpServlet {
     }
 
     public boolean handleUnlockTournament(String tournamentId) {
+        return retryTournamentTransition(() -> unlockTournamentAttempt(tournamentId), "Cannot unlock tournament and save standings");
+    }
+
+    private boolean unlockTournamentAttempt(String tournamentId) throws Exception {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        TournamentDAO tDao = new TournamentDAO();
-        boolean ok = tDao.updateTournamentStatus(tournamentId.trim(), "ONGOING");
-        tDao.updateTournamentChampion(tournamentId.trim(), null);
-        RollingWindowPointService.clearAllCaches();
-        TournamentDAO.clearTournamentCaches();
-        return ok;
+        try (Connection conn = new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement("SELECT id FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+                ps.setString(1, tournamentId.trim());
+                try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) return false; }
+            }
+            if (!RollingWindowPointService.getInstance().refreshForTournamentTransition(conn, tournamentId.trim(), "ONGOING")) return false;
+            try (PreparedStatement ps = conn.prepareStatement("UPDATE tournaments SET status='ONGOING',champion_name=NULL WHERE id=?")) {
+                ps.setString(1, tournamentId.trim()); ps.executeUpdate();
+            }
+            conn.commit();
+            RollingWindowPointService.clearAllCaches();
+            return true;
+        }
     }
 
     /**

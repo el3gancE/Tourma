@@ -1506,6 +1506,7 @@ public class TournamentDAO {
     private boolean unlockStage1AndInvalidateStage2(String id) {
         try(Connection conn=new DBContext().getConnection()) {
             conn.setAutoCommit(false);lockCutTournament(conn,id);
+            if (!service.RollingWindowPointService.getInstance().refreshForTournamentTransition(conn, id, "DRAFT")) return false;
             String stages="SELECT id FROM tournament_stages WHERE tournament_id=? AND stage_order>1";
             for(String sql:new String[]{
                 "UPDATE matches SET next_match_id=NULL,loser_next_match_id=NULL WHERE tournament_id=? AND stage_id IN ("+stages+")",
@@ -1519,7 +1520,7 @@ public class TournamentDAO {
             try(PreparedStatement ps=conn.prepareStatement("UPDATE tournament_stages SET status='PENDING' WHERE tournament_id=? AND stage_order>1")){ps.setString(1,id);ps.executeUpdate();}
             try(PreparedStatement ps=conn.prepareStatement("UPDATE tournaments SET stage1_status='PENDING',stage2_teams=NULL,status='DRAFT',champion_name=NULL WHERE id=?")){ps.setString(1,id);ps.executeUpdate();}
             conn.commit();clearTournamentCache(id);service.RollingWindowPointService.clearAllCaches();return true;
-        }catch(Exception e){e.printStackTrace();return false;}
+        }catch(Exception e){service.RollingWindowPointService.clearAllCaches();e.printStackTrace();return false;}
     }
 
     public boolean saveStage1Status(String tournamentId, String status) {
