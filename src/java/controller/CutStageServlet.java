@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * CutStageServlet
  * Centralized Servlet Controller for executing Cut Stage transitions.
- * Shared qualification and stage transition API for SE, GSL, DE and Swiss.
+ * Shared qualification and stage transition API for SE, GSL, DE, Swiss, RR and GS.
  */
 @WebServlet(name = "CutStageServlet", urlPatterns = {"/api/cut-stage", "/cut-stage"})
 public class CutStageServlet extends HttpServlet {
@@ -63,7 +63,19 @@ public class CutStageServlet extends HttpServlet {
             out.print("{\"status\":\"success\",\"qualifiedTeams\":" + teams + "}");
         } catch (Exception e) {
             response.setStatus(400);
-            out.print("{\"status\":\"error\",\"message\":\"Chưa thể cut stage. Kiểm tra cấu hình và kết quả trận đấu.\"}");
+            String message = (e instanceof IllegalStateException || e instanceof IllegalArgumentException) && e.getCause() == null
+                    ? e.getMessage() : "Chưa thể cut stage. Kiểm tra cấu hình và kết quả trận đấu.";
+            out.print("{\"status\":\"error\",\"message\":\"" + escapeJson(message) + "\"}");
         }
+    }
+    private static String escapeJson(String value) {
+        if (value == null) return "";
+        StringBuilder escaped = new StringBuilder();
+        for (char ch : value.toCharArray()) {
+            if (ch == '"' || ch == '\\') escaped.append('\\').append(ch);
+            else if (ch < 32) escaped.append(String.format("\\u%04x", (int) ch));
+            else escaped.append(ch);
+        }
+        return escaped.toString();
     }
 }

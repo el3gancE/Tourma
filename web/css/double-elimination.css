@@ -488,3 +488,6 @@ body, button, input, select, textarea, .bracket-header-title, .de-viewport-title
 .de-list-section-header.gf .round-header-title {
     color: #fbbf24 !important;
 }
+
+.de-section-header-card { flex-wrap: wrap; gap: .65rem; }
+.de-branch-live-status { margin-left: auto; gap: .45rem; font-variant-numeric: tabular-nums; }

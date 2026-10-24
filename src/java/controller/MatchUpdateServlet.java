@@ -71,9 +71,11 @@ public class MatchUpdateServlet extends HttpServlet {
                     out.print("{\"status\":\"error\"}");
                     return;
                 }
+                String branchStage = params.get("branchStage");
+                String branches = branchStage == null ? "" : ",\"branchLiveStatus\":" + new TournamentDAO().getDEBranchLiveStatusJson(tournamentId.trim(), Integer.parseInt(branchStage));
                 response.setHeader("Cache-Control", "no-store");
                 out.print("{\"status\":\"success\",\"liveStatus\":"
-                        + new TournamentDAO().getLiveStatusJson(tournamentId.trim()) + "}");
+                        + new TournamentDAO().getLiveStatusJson(tournamentId.trim()) + branches + "}");
                 return;
             }
 

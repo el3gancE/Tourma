@@ -534,6 +534,10 @@ public class DoubleEliminationDAO extends DBContext {
                 ? service.SECutService.drawInitialSlots(teams, configuredSeeds == null ? 0 : configuredSeeds,
                     new TournamentDAO().isClassicDraw(tournamentId)) : null;
 
+        boolean seededGroupField = stageOrder>1 && (n & (n-1))!=0
+                && "GROUP_STAGE".equalsIgnoreCase(new TournamentDAO().getStage1Format(tournamentId));
+        int[] groupSeeds = seededGroupField ? generateSeedingArray(bracketSize) : null;
+
         List<DeNode> allMatches = new ArrayList<>();
         int matchSeq = 1;
 
@@ -555,8 +559,8 @@ public class DoubleEliminationDAO extends DBContext {
                     Team t1, t2;
                     if (stageOrder > 1) {
                         // Stage 2: sequentially pair from the qualified teams list
-                        int idx1 = m * 2;
-                        int idx2 = m * 2 + 1;
+                        int idx1 = seededGroupField ? groupSeeds[m * 2] - 1 : m * 2;
+                        int idx2 = seededGroupField ? groupSeeds[m * 2 + 1] - 1 : m * 2 + 1;
                         t1 = (idx1 < n) ? teams.get(idx1) : null;
                         t2 = (idx2 < n) ? teams.get(idx2) : null;
                     } else {

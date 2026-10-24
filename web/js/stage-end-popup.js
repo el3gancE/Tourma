@@ -73,7 +73,7 @@
             // Format specific completion detection - MUST ALWAYS check actual match scores!
             // 1. GROUP STAGE
             if (format === 'GROUP_STAGE') {
-                var gData = groupsData;
+                var gData = groupsData || matchesMap;
                 if (!gData) {
                     try {
                         gData = JSON.parse(localStorage.getItem('tourma_group_matches_' + tid));
@@ -525,9 +525,20 @@
                 return data;
             };
             try {
+                var league = this.format === 'ROUND_ROBIN' || this.format === 'GROUP_STAGE';
+                if (league) {
+                    var engine = this.format === 'GROUP_STAGE' ? window.TourmaGroupStage : window.TourmaRoundRobin;
+                    if (engine && engine.waitForPendingSaves) await engine.waitForPendingSaves();
+                    this.pendingStage2Teams = null;
+                }
                 // Extract and draw once; retain the draw when retrying a failed save.
                 if (!this.pendingStage2Teams || this.format === 'SWISS' || this.format === 'SWISS_LITE') {
-                    var advTeams = (this.format === 'SWISS' || this.format === 'SWISS_LITE')
+                    var advTeams = league
+                        ? await fetch((window.TourmaContextPath || '') + '/api/cut-stage', {
+                            method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+                            body: new URLSearchParams({action:'qualify',tournamentId:tid}).toString()
+                        }).then(function(res){return res.json();}).then(requireSuccess).then(function(data){return data.qualifiedTeams;})
+                        : (this.format === 'SWISS' || this.format === 'SWISS_LITE')
                         ? await window.TourmaSwiss.getAdvancingTeams()
                         : this.getAdvancingTeamsFromCurrentEngine();
                     if (!advTeams || advTeams.length === 0) {
@@ -535,7 +546,8 @@
                     }
                     var s2Url = this.resolveStage2Url(tid);
                     // GSL returns seed order. DE consumes consecutive pairs instead.
-                    if ((this.format === 'GSL' || this.format === 'DOUBLE_ELIMINATION' || this.format === 'SWISS' || this.format === 'SWISS_LITE') && s2Url.indexOf('double-elimination') !== -1) {
+                    if ((league || this.format === 'GSL' || this.format === 'DOUBLE_ELIMINATION' || this.format === 'SWISS' || this.format === 'SWISS_LITE') && s2Url.indexOf('double-elimination') !== -1
+                            && !(this.format === 'GROUP_STAGE' && (advTeams.length & (advTeams.length - 1)) !== 0)) {
                         var gsl = window.TourmaGSL || window.GSLEngine;
                         var seeds = gsl ? gsl.getStandardBracketSeeds(advTeams.length)
                             : window.TourmaBracketAlgorithm.generateSeedPairs(advTeams.length).reduce(function (all, pair) { return all.concat(pair); }, []);
@@ -545,7 +557,7 @@
                 }
                 var teams = this.pendingStage2Teams;
                 var save;
-                if (['SINGLE_ELIMINATION', 'GSL', 'DOUBLE_ELIMINATION', 'SWISS', 'SWISS_LITE'].indexOf(this.format) !== -1) {
+                if (['SINGLE_ELIMINATION', 'GSL', 'DOUBLE_ELIMINATION', 'SWISS', 'SWISS_LITE', 'ROUND_ROBIN', 'GROUP_STAGE'].indexOf(this.format) !== -1) {
                     save = fetch((window.TourmaContextPath || '') + '/api/cut-stage', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},

@@ -23,7 +23,7 @@
             this.currentStage = (stage === 2 || stage === '2') ? 2 : 1;
             this.cutTarget = cutTarget || 0;
 
-            if (!this.cutTarget || this.cutTarget <= 1) {
+            if (window.TourmaTournamentType === undefined && (!this.cutTarget || this.cutTarget <= 1)) {
                 var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
                              localStorage.getItem('tourma_cut_target_' + this.tournamentId);
                 if (rawCut) this.cutTarget = parseInt(rawCut, 10);
@@ -44,7 +44,7 @@
                     cfg = null;
                 }
             }
-            this.config = cfg || { winPoints: 3, drawPoints: 1, lossPoints: 0, legsCount: 1 };
+            this.config = (window.TourmaMultiStageConfig || {})['stage' + this.currentStage + 'Config'] || { winPoints: 3, drawPoints: 1, lossPoints: 0, legsCount: 1 };
 
             // 1. Load Teams List
             var storageKeyTeams = (this.currentStage === 2) ? ('tourma_stage2_teams_' + this.tournamentId) : ('tourma_teams_' + this.tournamentId);
@@ -75,7 +75,7 @@
                 if (!t) return false;
                 var n = (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
                 return n !== 'BYE' && n.trim() !== '';
-            }).slice(0, 24);
+            });
 
             // Update team count badge
             var countBadge = document.getElementById('tournamentTeamCountBadge');
@@ -159,45 +159,7 @@
                 return;
             }
 
-            var storageKeyRR = (this.currentStage === 2) ? ('tourma_rr_matches_stage2_' + this.tournamentId) : ('tourma_rr_matches_' + this.tournamentId);
-            var storageKeyMatches = (this.currentStage === 2) ? ('tourma_matches_stage2_' + this.tournamentId) : ('tourma_matches_' + this.tournamentId);
-
-            try {
-                var saved = JSON.parse(localStorage.getItem(storageKeyRR));
-                if (saved) {
-                    this.matchesMap = saved.matchesMap || {};
-                    if (saved.teamsList && saved.teamsList.length > 0) {
-                        this.teamsList = saved.teamsList;
-                    }
-                    if (saved.rounds && saved.rounds.length > 0) {
-                        for (var r = 0; r < saved.rounds.length; r++) {
-                            var rd = saved.rounds[r];
-                            if (rd && rd.matches) {
-                                for (var mi = 0; mi < rd.matches.length; mi++) {
-                                    var rm = rd.matches[mi];
-                                    var mid = rm.matchId || rm.id;
-                                    if (!this.matchesMap[mid] || (rm.team1 && rm.team1.score !== '' && rm.team1.score != null)) {
-                                        this.matchesMap[mid] = rm;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    var universal = JSON.parse(localStorage.getItem(storageKeyMatches));
-                    this.matchesMap = universal || {};
-                }
-            } catch (e) {
-                this.matchesMap = {};
-            }
-
-            // If empty, generate fresh matches structure
-            if (!this.matchesMap || Object.keys(this.matchesMap).length === 0) {
-                if (this.teamsList && this.teamsList.length > 0 && window.TourmaRoundRobinAlgorithm) {
-                    var gen = window.TourmaRoundRobinAlgorithm.generateRoundRobin(this.teamsList, this.config);
-                    this.matchesMap = gen.matchesMap || {};
-                }
-            }
+            // An empty DB schedule stays empty; old browser scores cannot qualify a team.
         },
 
         renderEmptyState: function (containerElem) {

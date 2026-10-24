@@ -18,6 +18,8 @@
         contextPath: '',
         currentStage: 1,
         cutTarget: 0,
+        pendingSaves: new Set(),
+        waitForPendingSaves: function () { return Promise.all(Array.from(this.pendingSaves)); },
         teamsList: [],
         rounds: [],
         matchesMap: {},
@@ -33,7 +35,7 @@
             this.currentStage = (stage === 2 || stage === '2') ? 2 : 1;
             this.cutTarget = cutTarget || 0;
 
-            if (!this.cutTarget || this.cutTarget <= 1) {
+            if (window.TourmaTournamentType === undefined && (!this.cutTarget || this.cutTarget <= 1)) {
                 var rawCut = localStorage.getItem('tourma_advance_count_' + this.tournamentId) ||
                              localStorage.getItem('tourma_cut_target_' + this.tournamentId);
                 if (rawCut) this.cutTarget = parseInt(rawCut, 10);
@@ -78,7 +80,7 @@
                 if (!t) return false;
                 var n = (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
                 return n !== 'BYE' && n.trim() !== '';
-            }).slice(0, 24);
+            });
 
             // Update team count badge
             var countBadge = document.getElementById('tournamentTeamCountBadge');
@@ -100,7 +102,8 @@
                     cfg = JSON.parse(localStorage.getItem(storageKeyConfig));
                 } catch (e) {}
             }
-            this.config = cfg || { winPoints: 3, drawPoints: 1, lossPoints: 0, legsCount: 1 };
+            this.config = (window.TourmaMultiStageConfig || {})['stage' + this.currentStage + 'Config']
+                || { winPoints: 3, drawPoints: 1, lossPoints: 0, legsCount: 1 };
 
             // 3. Load Matches State (From DB or Generated Algorithm)
             this.loadMatches(dbMatches);
@@ -182,13 +185,6 @@
                 var rKeys = Object.keys(roundsMap).map(Number).sort(function (a, b) { return a - b; });
                 for (var r = 0; r < rKeys.length; r++) {
                     this.rounds.push(roundsMap[rKeys[r]]);
-                }
-            } else {
-                // B. Generate via Algorithm Engine
-                if (window.TourmaRoundRobinAlgorithm && typeof window.TourmaRoundRobinAlgorithm.generateRoundRobin === 'function') {
-                    var generated = window.TourmaRoundRobinAlgorithm.generateRoundRobin(this.teamsList, this.config);
-                    this.rounds = generated.rounds || [];
-                    this.matchesMap = generated.matchesMap || {};
                 }
             }
 
@@ -463,7 +459,7 @@
                 stage: this.currentStage
             };
 
-            fetch((this.contextPath || '') + '/api/match-update', {
+            var save = fetch((this.contextPath || '') + '/api/match-update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
@@ -484,12 +480,16 @@
                         self.checkTournamentCompletion();
                     } else {
                         console.error('[TourmaRoundRobin] Error saving match score:', data);
-                        alert('Lỗi lưu kết quả: ' + (data.message || 'Không rõ nguyên nhân'));
+                        throw new Error('Lỗi lưu kết quả: ' + ((data && data.message) || 'Không rõ nguyên nhân'));
                     }
                 })
                 .catch(function (err) {
                     console.error('[TourmaRoundRobin] Error saving match score:', err);
+                    alert(err.message || 'Không lưu được kết quả.');
+                    throw err;
                 });
+            this.pendingSaves.add(save);
+            save.then(function(){self.pendingSaves.delete(save);},function(){self.pendingSaves.delete(save);});
         },
 
         /**

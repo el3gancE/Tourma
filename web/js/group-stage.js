@@ -19,6 +19,7 @@
     var teamsList = [];
     var rules = { winPoints: 3, drawPoints: 1, lossPoints: 0, advanceCount: 2 };
     var groupRandomScores = {};
+    var pendingSaves = new Set();
 
     // Initialize Group Stage Engine
     function initGroupStageEngine() {
@@ -38,7 +39,7 @@
         var storageKeyMatches = "tourma_group_matches_" + tournamentId;
 
         // 1. Load Teams List
-        if (window.serverTeams && Array.isArray(window.serverTeams) && window.serverTeams.length > 0) {
+        if (window.serverTeams && Array.isArray(window.serverTeams) && true) {
             teamsList = window.serverTeams;
         } else {
             try {
@@ -77,8 +78,8 @@
 
         // 2. Load Group Assignments
         var loadedGroups = null;
-        if (window.DB_GROUP_ASSIGNMENTS && typeof window.DB_GROUP_ASSIGNMENTS === 'object' && Object.keys(window.DB_GROUP_ASSIGNMENTS).length > 0) {
-            loadedGroups = window.DB_GROUP_ASSIGNMENTS;
+        if (Object.prototype.hasOwnProperty.call(window, 'DB_GROUP_ASSIGNMENTS')) {
+            loadedGroups = window.DB_GROUP_ASSIGNMENTS || {};
         } else {
             try {
                 var rawGroups = localStorage.getItem(storageKeyGroups);
@@ -97,35 +98,8 @@
             groupsMap = {};
         }
 
-        // 3. Load Matches
-        var loadedMatches = null;
-        try {
-            var rawM = localStorage.getItem(storageKeyMatches);
-            if (rawM) {
-                var parsedM = JSON.parse(rawM);
-                if (parsedM && typeof parsedM === 'object' && Object.keys(parsedM).length > 0) {
-                    loadedMatches = parsedM;
-                }
-            }
-        } catch (e) {}
-
-        if (!loadedMatches && window.dbGroupMatches && Array.isArray(window.dbGroupMatches) && window.dbGroupMatches.length > 0) {
-            loadedMatches = {};
-            window.dbGroupMatches.forEach(function (dm) {
-                var gk = dm.groupKey || 'A';
-                if (!loadedMatches[gk]) loadedMatches[gk] = [];
-                loadedMatches[gk].push(dm);
-            });
-        }
-
-        if (loadedMatches && Object.keys(loadedMatches).length > 0) {
-            groupMatches = loadedMatches;
-        } else if (Object.keys(groupsMap).length > 0) {
-            groupMatches = generateDefaultGroupFixtures(groupsMap);
-            saveGroupMatches();
-        } else {
-            groupMatches = {};
-        }
+        // Persisted matches are authoritative, including an empty schedule after reset.
+        applyDbMatches(window.dbGroupMatches || []);
 
         // 4. Load Tournament Rules
         loadTournamentRules();
@@ -137,6 +111,39 @@
         renderGroupFilterPills();
         renderCurrentView();
         checkGroupStageCompletion();
+    }
+
+    function applyDbMatches(matches) {
+        groupMatches = {};
+        (matches || []).forEach(function (match) {
+            var key = match.groupKey || 'A';
+            if (!groupMatches[key]) groupMatches[key] = [];
+            groupMatches[key].push(match);
+        });
+    }
+
+    function requestGroupAction(action, values) {
+        var params = new URLSearchParams(values || {});
+        params.set('action', action);
+        params.set('tournamentId', tournamentId);
+        params.set('stage', new URLSearchParams(window.location.search).get('stage') === '2' ? '2' : '1');
+        var task = fetch((window.TourmaContextPath || '') + '/common/group-stage', {
+            method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}, body: params.toString()
+        }).then(function (res) { return res.json(); }).then(function (data) {
+            if (!data || data.status !== 'success') throw new Error((data && data.message) || 'Không lưu được kết quả.');
+            if (Array.isArray(data.matchesData)) {
+                applyDbMatches(data.matchesData);
+                renderCurrentView();
+                checkGroupStageCompletion();
+            } else window.location.reload();
+            return true;
+        }).catch(function (error) {
+            alert(error.message || 'Không lưu được kết quả. Vui lòng thử lại.');
+            return false;
+        });
+        pendingSaves.add(task);
+        task.then(function () { pendingSaves.delete(task); });
+        return task;
     }
 
     // Default Group Assignments Generator (Snake seed distribution across groups)
@@ -229,6 +236,12 @@
                 }
             }
         } catch (e) {}
+        var stage = new URLSearchParams(window.location.search).get('stage') === '2' ? 2 : 1;
+        var cfg = window.TourmaMultiStageConfig || {};
+        var saved = cfg['stage' + stage + 'Config'] || {};
+        ['winPoints','drawPoints','lossPoints'].forEach(function(key){rules[key]=saved[key] !== undefined?Number(saved[key]):({winPoints:3,drawPoints:1,lossPoints:0})[key];});
+        var count=Object.keys(groupsMap).length;
+        if(stage===1 && window.TourmaCutTarget && count) rules.advanceCount=window.TourmaCutTarget;
     }
 
     // Update Header Badges
@@ -514,131 +527,18 @@
             if (newS1 > newS2) winnerSide = 'team1';
             else if (newS2 > newS1) winnerSide = 'team2';
 
-            if (!m.team1) m.team1 = {};
-            if (!m.team2) m.team2 = {};
-            m.team1.score = String(newS1);
-            m.team2.score = String(newS2);
-            m.team1Score = newS1;
-            m.team2Score = newS2;
-            m.winnerId = winnerSide;
-            m.status = 'COMPLETED';
-
-            saveGroupMatches();
-            renderCurrentView();
-
-            // Sync with Server DB
-            try {
-                var stageParam = new URLSearchParams(window.location.search).get('stage');
-                var curStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
-                var p = new URLSearchParams();
-                p.append('action', 'updateScore');
-                p.append('tournamentId', tournamentId);
-                p.append('stage', curStage);
-                p.append('matchKey', m.matchKey || m.matchId);
-                p.append('team1Score', newS1);
-                p.append('team2Score', newS2);
-                p.append('winner', winnerSide);
-
-                fetch((window.TourmaContextPath || '') + '/common/group-stage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                    body: p.toString()
-                }).catch(function () {});
-            } catch (e) {}
-        });
-    }
-
-    // Save Group Matches to localStorage and Sync to DB
-    function saveGroupMatches() {
-        try {
-            var stageParam = new URLSearchParams(window.location.search).get('stage');
-            var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
-            var storageKeyMatches = "tourma_group_matches_" + tournamentId;
-            localStorage.setItem(storageKeyMatches, JSON.stringify(groupMatches));
-            checkGroupStageCompletion();
-            syncGroupMatchesToDB();
-        } catch (e) {}
-    }
-
-    // Sync Group Matches via BatchSync to Server DB
-    function syncGroupMatchesToDB() {
-        if (!tournamentId || !groupMatches) return;
-        var list = [];
-        Object.keys(groupMatches).forEach(function (gk) {
-            var mList = groupMatches[gk] || [];
-            mList.forEach(function (m) {
-                var s1 = (m.team1 && m.team1.score !== undefined && m.team1.score !== '') ? parseInt(m.team1.score, 10) : 0;
-                var s2 = (m.team2 && m.team2.score !== undefined && m.team2.score !== '') ? parseInt(m.team2.score, 10) : 0;
-                var isDone = (m.status === 'COMPLETED' || m.status === 'FINISHED' || (m.team1 && m.team1.score !== '' && m.team2 && m.team2.score !== ''));
-                if (isDone) {
-                    list.push({
-                        matchKey: m.matchKey || m.matchId,
-                        matchId: m.matchKey || m.matchId,
-                        groupKey: gk,
-                        team1Score: s1,
-                        team2Score: s2,
-                        winnerId: m.winnerId || ((s1 > s2) ? 'team1' : ((s2 > s1) ? 'team2' : 'draw')),
-                        status: 'COMPLETED'
-                    });
-                }
+            requestGroupAction('updateScore', {
+                matchKey: m.matchKey || m.matchId,
+                team1Score: newS1, team2Score: newS2, winner: winnerSide
             });
         });
-
-        if (list.length === 0) return;
-
-        var stageParam = new URLSearchParams(window.location.search).get('stage');
-        var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
-        var p = new URLSearchParams();
-        p.append('action', 'batchSync');
-        p.append('tournamentId', tournamentId);
-        p.append('stage', currentStage);
-        p.append('matchesJson', JSON.stringify(list));
-
-        fetch((window.TourmaContextPath || '') + '/common/group-stage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-            body: p.toString()
-        }).catch(function () {});
     }
 
     // Randomize Matches in Specific Group
     function randomGroupMatches(gKey, maxScore) {
-        var mList = groupMatches[gKey] || [];
-        if (mList.length === 0) return;
-
-        var maxS = (maxScore && parseInt(maxScore, 10) > 0) ? parseInt(maxScore, 10) : 4;
-        mList.forEach(function (m) {
-            var s1 = Math.floor(Math.random() * (maxS + 1));
-            var s2 = Math.floor(Math.random() * (maxS + 1));
-            if (!m.team1) m.team1 = {};
-            if (!m.team2) m.team2 = {};
-            m.team1.score = String(s1);
-            m.team2.score = String(s2);
-            m.team1Score = s1;
-            m.team2Score = s2;
-            m.status = 'COMPLETED';
-
-            if (s1 > s2) m.winnerId = 'team1';
-            else if (s2 > s1) m.winnerId = 'team2';
-            else m.winnerId = 'draw';
-        });
-
-        saveGroupMatches();
-        renderCurrentView();
-
-        // Server DB randomGroup call
-        try {
-            var p = new URLSearchParams();
-            p.append('action', 'randomGroup');
-            p.append('tournamentId', tournamentId);
-            p.append('groupId', 'GRP_' + tournamentId + '_' + gKey);
-            p.append('maxScore', maxS);
-            fetch((window.TourmaContextPath || '') + '/common/group-stage', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                body: p.toString()
-            }).catch(function () {});
-        } catch (e) {}
+        var matches = groupMatches[gKey] || [];
+        if (!matches.length) return;
+        return requestGroupAction('randomGroup', {groupId: matches[0].groupId, maxScore: parseInt(maxScore,10) || 4});
     }
 
     // Reset Matches in Specific Group
@@ -656,71 +556,13 @@
             return;
         }
 
-        var mList = groupMatches[gKey] || [];
-        if (mList.length === 0) return;
-
-        mList.forEach(function (m) {
-            if (m.team1) m.team1.score = '';
-            if (m.team2) m.team2.score = '';
-            m.team1Score = null;
-            m.team2Score = null;
-            m.winnerId = null;
-            m.status = 'SCHEDULED';
-        });
-
-        saveGroupMatches();
-        renderCurrentView();
-
-        try {
-            var p = new URLSearchParams();
-            p.append('action', 'resetGroup');
-            p.append('tournamentId', tournamentId);
-            p.append('groupId', 'GRP_' + tournamentId + '_' + gKey);
-            fetch((window.TourmaContextPath || '') + '/common/group-stage', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                body: p.toString()
-            }).catch(function () {});
-        } catch (e) {}
+        var matches = groupMatches[gKey] || [];
+        if (matches.length) return requestGroupAction('resetGroup', {groupId: matches[0].groupId});
     }
 
     // Randomize All Matches Across All Groups
     function randomAllMatches(maxScore) {
-        var maxS = (maxScore && parseInt(maxScore, 10) > 0) ? parseInt(maxScore, 10) : 4;
-        Object.keys(groupMatches).forEach(function (gKey) {
-            var mList = groupMatches[gKey] || [];
-            mList.forEach(function (m) {
-                var s1 = Math.floor(Math.random() * (maxS + 1));
-                var s2 = Math.floor(Math.random() * (maxS + 1));
-                if (!m.team1) m.team1 = {};
-                if (!m.team2) m.team2 = {};
-                m.team1.score = String(s1);
-                m.team2.score = String(s2);
-                m.team1Score = s1;
-                m.team2Score = s2;
-                m.status = 'COMPLETED';
-
-                if (s1 > s2) m.winnerId = 'team1';
-                else if (s2 > s1) m.winnerId = 'team2';
-                else m.winnerId = 'draw';
-            });
-        });
-
-        saveGroupMatches();
-        renderCurrentView();
-
-        // Server DB randomAll call
-        try {
-            var p = new URLSearchParams();
-            p.append('action', 'randomAll');
-            p.append('tournamentId', tournamentId);
-            p.append('maxScore', maxS);
-            fetch((window.TourmaContextPath || '') + '/common/group-stage', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                body: p.toString()
-            }).catch(function () {});
-        } catch (e) {}
+        return requestGroupAction('randomAll', {maxScore: parseInt(maxScore,10) || 4});
     }
 
     // Reset All Matches in Group Stage
@@ -753,134 +595,21 @@
             return;
         }
 
-        Object.keys(groupMatches).forEach(function (gKey) {
-            var mList = groupMatches[gKey] || [];
-            mList.forEach(function (m) {
-                if (m.team1) m.team1.score = '';
-                if (m.team2) m.team2.score = '';
-                m.team1Score = null;
-                m.team2Score = null;
-                m.winnerId = null;
-                m.status = 'SCHEDULED';
-            });
-        });
-
-        try {
-            localStorage.removeItem('tourma_group_matches_' + tournamentId);
-            localStorage.removeItem('tourma_final_locked_' + tournamentId);
-            localStorage.removeItem('tourma_champion_' + tournamentId);
-            localStorage.removeItem('tourma_stage1_locked_' + tournamentId);
-            localStorage.removeItem('tourma_stage2_teams_' + tournamentId);
-            localStorage.removeItem('tourma_stage1_completed_' + tournamentId);
-        } catch (e) {}
-
-        // Unlock UI banners
-        if (window.FinalStagePopup) {
-            window.FinalStagePopup.isLocked = false;
-            var banner = document.getElementById('finalStagePopupBanner');
-            if (banner) banner.style.display = 'none';
-        }
-        if (window.StageEndPopup) {
-            var sBanner = document.getElementById('stageEndPopupBanner');
-            if (sBanner) sBanner.style.display = 'none';
-        }
-
-        // Send reset to backend DB
-        try {
-            var rParams = new URLSearchParams();
-            rParams.append('action', 'reset');
-            rParams.append('tournamentId', tournamentId);
-            rParams.append('stage', currentStage);
-            fetch((window.TourmaContextPath || '') + '/common/group-stage', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                body: rParams.toString()
-            }).catch(function () {});
-        } catch (e) {}
-
-        renderCurrentView();
+        return requestGroupAction('reset', {});
     }
 
     // Check Stage Completion and Trigger Multi-Stage Pipeline or Final Popup
     function checkGroupStageCompletion() {
-        if (!groupsMap || Object.keys(groupsMap).length === 0) return;
-
-        var allMatchesDone = true;
-        var totalMatches = 0;
-
-        Object.keys(groupMatches).forEach(function (gk) {
-            var mList = groupMatches[gk] || [];
-            mList.forEach(function (m) {
-                totalMatches++;
-                var s1 = (m.team1 && m.team1.score !== undefined && m.team1.score !== '') ? m.team1.score : '';
-                var s2 = (m.team2 && m.team2.score !== undefined && m.team2.score !== '') ? m.team2.score : '';
-                if (m.status !== 'COMPLETED' && m.status !== 'FINISHED' && (s1 === '' || s2 === '')) {
-                    allMatchesDone = false;
-                }
-            });
-        });
-
-        if (totalMatches === 0 || !allMatchesDone) return;
-
-        var stageParam = new URLSearchParams(window.location.search).get('stage');
-        var currentStage = (stageParam === '2' || stageParam === 2) ? 2 : 1;
-
-        if (currentStage === 1) {
-            // Multi-Stage Stage 1 Completion
-            if (window.TourmaGroupStanding && typeof window.TourmaGroupStanding.calculateAllGroupStandings === 'function') {
-                window.TourmaGroupStanding.groups = groupsMap;
-                window.TourmaGroupStanding.groupMatches = groupMatches;
-                window.TourmaGroupStanding.rules = rules;
-
-                var standingsResult = window.TourmaGroupStanding.calculateAllGroupStandings();
-                var qualifiedTeams = [];
-                Object.keys(standingsResult).forEach(function (gk) {
-                    var stList = standingsResult[gk] || [];
-                    var slots = (rules.advanceCount && rules.advanceCount > 0) ? rules.advanceCount : 2;
-                    for (var i = 0; i < Math.min(slots, stList.length); i++) {
-                        qualifiedTeams.push({
-                            id: stList[i].teamId || ('TEAM_' + (qualifiedTeams.length + 1)),
-                            name: stList[i].name,
-                            seed: qualifiedTeams.length + 1
-                        });
-                    }
-                });
-
-                if (qualifiedTeams.length > 0) {
-                    localStorage.setItem('tourma_stage2_teams_' + tournamentId, JSON.stringify(qualifiedTeams));
-                    localStorage.setItem('tourma_stage1_completed_' + tournamentId, 'true');
-
-                    // Save to Servlet
-                    try {
-                        var pS2 = new URLSearchParams();
-                        pS2.append('action', 'saveStage2Teams');
-                        pS2.append('tournamentId', tournamentId);
-                        pS2.append('stage2Teams', JSON.stringify(qualifiedTeams));
-                        fetch((window.TourmaContextPath || '') + '/common/group-stage', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                            body: pS2.toString()
-                        }).catch(function () {});
-                    } catch (e) {}
-                }
-            }
-
-            if (window.StageEndPopup) {
-                window.StageEndPopup.update(
-                    tournamentId,
-                    'GROUP_STAGE',
-                    groupMatches,
-                    teamsList,
-                    null,
-                    null,
-                    1
-                );
-            }
+        var stage = new URLSearchParams(window.location.search).get('stage') === '2' ? 2 : 1;
+        if (stage === 1 && window.TourmaTournamentType === 'MULTI_STAGE' && window.StageEndPopup) {
+            window.StageEndPopup.update(tournamentId, 'GROUP_STAGE', groupMatches, teamsList,
+                {isMultiStage:true, cutTarget:window.TourmaCutTarget}, groupMatches, stage);
         }
     }
 
     // Export TourmaGroupStage Engine
     window.TourmaGroupStage = {
+        waitForPendingSaves: function () { return Promise.all(Array.from(pendingSaves)).then(function(results){if(results.some(function(ok){return !ok;})) throw new Error("Có kết quả chưa lưu được.");}); },
         tournamentId: tournamentId,
         init: initGroupStageEngine,
         switchViewMode: switchViewMode,

@@ -42,6 +42,20 @@ public class GroupStageDAO extends DBContext {
         public int rankInGroup;
     }
 
+    private static void assertMutable(Connection conn, String id, int stage) throws Exception {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT status, stage1_status FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+            ps.setString(1,id);
+            try (ResultSet rs=ps.executeQuery()) {
+                if (!rs.next()) throw new IllegalStateException("Không tìm thấy giải.");
+                String status=rs.getString(1), stageStatus=rs.getString(2);
+                if ("COMPLETED".equalsIgnoreCase(status) || "FINISHED".equalsIgnoreCase(status)
+                        || (stage==1 && ("LOCKED".equalsIgnoreCase(stageStatus) || "COMPLETED".equalsIgnoreCase(stageStatus))))
+                    throw new IllegalStateException("Cần mở khóa trước khi sửa kết quả.");
+            }
+        }
+        TournamentDAO.assertStage2Ready(conn,id,stage);
+    }
+
     public boolean syncGroupsAndGroupTeams(String tournamentId, int stageOrder, String groupAssignmentsJson) {
         if (tournamentId == null || groupAssignmentsJson == null || groupAssignmentsJson.trim().isEmpty()) return false;
         
@@ -56,6 +70,7 @@ public class GroupStageDAO extends DBContext {
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+            assertMutable(conn, tournamentId, stageOrder);
 
             // 1. Delete old matches, group_teams, and groups for this stage
             try (PreparedStatement psDelM = conn.prepareStatement("DELETE FROM matches WHERE tournament_id = ? AND stage_id = ?")) {
@@ -92,6 +107,7 @@ public class GroupStageDAO extends DBContext {
 
     public synchronized void ensureGroupStageInitialized(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return;
+        if(stageOrder>1)try(Connection access=getConnection()){TournamentDAO.assertStage2Ready(access,tournamentId,stageOrder);}catch(Exception blocked){return;}
 
         String stageId = lookupOrCreateStageId(tournamentId, stageOrder);
 
@@ -110,10 +126,8 @@ public class GroupStageDAO extends DBContext {
         }
 
         ParticipantDAO pDao = new ParticipantDAO();
-        List<Team> teams = pDao.getTeamsByTournamentId(tournamentId);
-        if (teams == null || teams.size() < 2) {
-            teams = generateDefaultTeams(tournamentId, 16);
-        }
+        List<Team> teams = stageOrder>1 ? new SingleEliminationDAO().getStage2TeamsList(tournamentId) : pDao.getTeamsByTournamentId(tournamentId);
+        if (teams == null || teams.size() < 2) return;
 
         TournamentDAO tDao = new TournamentDAO();
         Tournament tourney = tDao.getTournamentById(tournamentId);
@@ -123,6 +137,7 @@ public class GroupStageDAO extends DBContext {
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+            assertMutable(conn, tournamentId, stageOrder);
             initializeGroupsAndFixturesFromMap(conn, tournamentId, stageId, groups);
             conn.commit();
         } catch (Exception e) {
@@ -273,18 +288,28 @@ public class GroupStageDAO extends DBContext {
                 + "team1_id, team2_id, is_bye, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'GROUP_STAGE', ?, ?, 0, 'READY')";
 
         int matchSeq = 1;
+        int stageOrder;
+        try (PreparedStatement ps=conn.prepareStatement("SELECT stage_order FROM tournament_stages WHERE id=?")) {
+            ps.setString(1,stageId); try(ResultSet rs=ps.executeQuery()){rs.next();stageOrder=rs.getInt(1);}
+        }
+        int legs=TournamentDAO.getLeagueRules(conn,tournamentId,stageOrder)[3];
+        int slots=2;
+        try(PreparedStatement ps=conn.prepareStatement("SELECT advancing_seats_count FROM tournaments WHERE id=?")) {
+            ps.setString(1,tournamentId);try(ResultSet rs=ps.executeQuery()){if(rs.next() && rs.getInt(1)>0) slots=rs.getInt(1)/groups.size();}
+        }
+        String drawId=stageOrder>1?"_S"+stageOrder+"_"+UUID.randomUUID().toString().substring(0,8):"";
 
         for (Map.Entry<String, List<Team>> entry : groups.entrySet()) {
             String gName = entry.getKey();
             String gSuffix = gName.replaceAll("[^a-zA-Z0-9]", "_").toUpperCase();
             if (gSuffix.isEmpty()) gSuffix = "GA";
-            String gId = "GRP_" + tournamentId + "_" + gSuffix;
+            String gId = "GRP_" + tournamentId + drawId + "_" + gSuffix;
 
             try (PreparedStatement psG = conn.prepareStatement(insGroupSql)) {
                 psG.setString(1, gId);
                 psG.setString(2, stageId);
                 psG.setString(3, gName);
-                psG.setInt(4, 2);
+                psG.setInt(4, slots);
                 psG.executeUpdate();
             }
 
@@ -304,11 +329,11 @@ public class GroupStageDAO extends DBContext {
             // Generate round robin fixtures for this group
             int n = grpTeams.size();
             int rNum = 1;
-            for (int i = 0; i < n; i++) {
+            for (int leg = 0; leg < legs; leg++) for (int i = 0; i < n; i++) {
                 for (int j = i + 1; j < n; j++) {
-                    Team t1 = grpTeams.get(i);
-                    Team t2 = grpTeams.get(j);
-                    String mId = "M_" + tournamentId + "_G_" + gSuffix + "_" + (rNum);
+                    Team t1 = grpTeams.get(leg % 2 == 0 ? i : j);
+                    Team t2 = grpTeams.get(leg % 2 == 0 ? j : i);
+                    String mId = "M_" + tournamentId + drawId + "_G_" + gSuffix + "_" + (rNum);
 
                     try (PreparedStatement psM = conn.prepareStatement(insMatchSql)) {
                         psM.setString(1, mId);
@@ -336,6 +361,7 @@ public class GroupStageDAO extends DBContext {
         List<GroupDTO> groups = new ArrayList<>();
         if (tournamentId == null || tournamentId.trim().isEmpty()) return groups;
 
+        if(stageOrder>1)try(Connection access=getConnection()){TournamentDAO.assertStage2Ready(access,tournamentId,stageOrder);}catch(Exception blocked){return groups;}
         ensureGroupStageInitialized(tournamentId, stageOrder);
 
         String stageId = lookupOrCreateStageId(tournamentId, stageOrder);
@@ -397,6 +423,7 @@ public class GroupStageDAO extends DBContext {
     public String getMatchesJsonForFrontend(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return "[]";
 
+        if(stageOrder>1)try(Connection access=getConnection()){TournamentDAO.assertStage2Ready(access,tournamentId,stageOrder);}catch(Exception blocked){return "[]";}
         ensureGroupStageInitialized(tournamentId, stageOrder);
 
         String sql = "SELECT m.*, "
@@ -409,7 +436,7 @@ public class GroupStageDAO extends DBContext {
                 + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
+                + "WHERE m.tournament_id = ? AND ((s.stage_order = ? AND s.tournament_id=m.tournament_id) OR (m.stage_id IS NULL AND ? = 1)) "
                 + "ORDER BY g.group_name ASC, m.round_number ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
@@ -420,8 +447,6 @@ public class GroupStageDAO extends DBContext {
             ps.setString(1, tournamentId);
             ps.setInt(2, stageOrder);
             ps.setInt(3, stageOrder);
-            ps.setInt(4, stageOrder);
-            ps.setInt(5, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
                 int seq = 1;
                 while (rs.next()) {
@@ -516,13 +541,16 @@ public class GroupStageDAO extends DBContext {
     // ------------------------------------------------------------------------
 
     public boolean saveMatchScore(String tournamentId, int stageOrder, String matchId, int score1, int score2, String winnerId) {
-        if (tournamentId == null || matchId == null) return false;
+        if (tournamentId == null || matchId == null || score1 < 0 || score2 < 0) return false;
 
-        String findSql = "SELECT id, group_id, team1_id, team2_id FROM matches WHERE tournament_id = ? AND "
-                + "(id = ? OR id LIKE '%[_]' + ? OR id LIKE '%' + ?)";
+        String findSql = "SELECT m.id, m.group_id, m.team1_id, m.team2_id FROM matches m "
+                + "JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id "
+                + "WHERE m.tournament_id=? AND m.id=? AND s.stage_order=?";
         String updateSql = "UPDATE matches SET score1 = ?, score2 = ?, winner_id = ?, loser_id = ?, status = 'FINISHED' WHERE id = ?";
 
         try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            assertMutable(conn, tournamentId, stageOrder);
             String actualMatchId = null;
             String groupId = null;
             String actualT1 = null;
@@ -531,8 +559,7 @@ public class GroupStageDAO extends DBContext {
             try (PreparedStatement psFind = conn.prepareStatement(findSql)) {
                 psFind.setString(1, tournamentId);
                 psFind.setString(2, matchId);
-                psFind.setString(3, matchId);
-                psFind.setString(4, matchId);
+                psFind.setInt(3, stageOrder);
                 try (ResultSet rs = psFind.executeQuery()) {
                     if (rs.next()) {
                         actualMatchId = rs.getString("id");
@@ -545,28 +572,9 @@ public class GroupStageDAO extends DBContext {
 
             if (actualMatchId == null) return false;
 
-            String resolvedWinner = null;
-            String resolvedLoser = null;
-            if ("team1".equalsIgnoreCase(winnerId)) {
-                resolvedWinner = actualT1;
-                resolvedLoser = actualT2;
-            } else if ("team2".equalsIgnoreCase(winnerId)) {
-                resolvedWinner = actualT2;
-                resolvedLoser = actualT1;
-            } else if ("draw".equalsIgnoreCase(winnerId) || score1 == score2) {
-                resolvedWinner = null;
-                resolvedLoser = null;
-            } else if (winnerId != null && !winnerId.trim().isEmpty() && !"null".equalsIgnoreCase(winnerId)) {
-                resolvedWinner = winnerId.trim();
-                if (resolvedWinner.equals(actualT1)) resolvedLoser = actualT2;
-                else if (resolvedWinner.equals(actualT2)) resolvedLoser = actualT1;
-            } else if (score1 > score2) {
-                resolvedWinner = actualT1;
-                resolvedLoser = actualT2;
-            } else if (score2 > score1) {
-                resolvedWinner = actualT2;
-                resolvedLoser = actualT1;
-            }
+            if (actualT1 == null || actualT2 == null || actualT1.equals(actualT2)) return false;
+            String resolvedWinner = score1 > score2 ? actualT1 : score2 > score1 ? actualT2 : null;
+            String resolvedLoser = score1 > score2 ? actualT2 : score2 > score1 ? actualT1 : null;
 
             try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
                 ps.setInt(1, score1);
@@ -584,8 +592,8 @@ public class GroupStageDAO extends DBContext {
             if (groupId != null) {
                 recalculateGroupStandings(conn, groupId);
             }
+            conn.commit();
 
-            checkAndFinishGroupStageInDB(tournamentId, stageOrder);
             service.RollingWindowPointService.clearAllCaches();
             return true;
         } catch (Exception e) {
@@ -619,7 +627,7 @@ public class GroupStageDAO extends DBContext {
                     try {
                         int s1 = Integer.parseInt(s1Str.trim());
                         int s2 = Integer.parseInt(s2Str.trim());
-                        saveMatchScore(tournamentId, stageOrder, mKey, s1, s2, win);
+                        if (!saveMatchScore(tournamentId, stageOrder, mKey, s1, s2, win)) return false;
                     } catch (Exception ignore) {}
                 }
             }
@@ -636,10 +644,14 @@ public class GroupStageDAO extends DBContext {
         String selectMatchesSql = "SELECT team1_id, team2_id, score1, score2, winner_id, status FROM matches "
                 + "WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL";
 
-        String selectTeamsSql = "SELECT team_id, seed_in_group FROM group_teams WHERE group_id = ?";
+        String selectTeamsSql = "SELECT gt.team_id, t.original_seed AS seed_in_group FROM group_teams gt JOIN teams t ON t.id=gt.team_id WHERE gt.group_id = ?";
         String updateGroupTeamSql = "UPDATE group_teams SET matches_played = ?, wins = ?, draws = ?, losses = ?, "
                 + "goals_scored = ?, goals_conceded = ?, goal_difference = ?, points = ?, rank_in_group = ? WHERE group_id = ? AND team_id = ?";
 
+        int[] rules;
+        try (PreparedStatement ps=conn.prepareStatement("SELECT s.tournament_id,s.stage_order FROM groups g JOIN tournament_stages s ON s.id=g.stage_id WHERE g.id=?")) {
+            ps.setString(1,groupId);try(ResultSet rs=ps.executeQuery()){if(!rs.next())return;rules=TournamentDAO.getLeagueRules(conn,rs.getString(1),rs.getInt(2));}
+        } catch(Exception e){throw new IllegalStateException("Không đọc được luật tính điểm.",e);}
         Map<String, GroupTeamDTO> teamStats = new HashMap<>();
 
         try (PreparedStatement psT = conn.prepareStatement(selectTeamsSql)) {
@@ -679,17 +691,19 @@ public class GroupStageDAO extends DBContext {
 
                         if (s1 > s2) {
                             st1.wins++;
-                            st1.points += 3;
+                            st1.points += rules[0];
                             st2.losses++;
+                            st2.points += rules[2];
                         } else if (s2 > s1) {
                             st2.wins++;
-                            st2.points += 3;
+                            st2.points += rules[0];
                             st1.losses++;
+                            st1.points += rules[2];
                         } else {
                             st1.draws++;
-                            st1.points += 1;
+                            st1.points += rules[1];
                             st2.draws++;
-                            st2.points += 1;
+                            st2.points += rules[1];
                         }
                     }
                 }
@@ -709,7 +723,8 @@ public class GroupStageDAO extends DBContext {
             if (b.points != a.points) return b.points - a.points;
             if (b.goalDifference != a.goalDifference) return b.goalDifference - a.goalDifference;
             if (b.goalsScored != a.goalsScored) return b.goalsScored - a.goalsScored;
-            return a.seedInGroup - b.seedInGroup;
+            int seedOrder=Integer.compare(a.seedInGroup>0?a.seedInGroup:Integer.MAX_VALUE,b.seedInGroup>0?b.seedInGroup:Integer.MAX_VALUE);
+            return seedOrder!=0?seedOrder:a.teamId.compareTo(b.teamId);
         });
 
         int rank = 1;
@@ -735,59 +750,6 @@ public class GroupStageDAO extends DBContext {
         }
     }
 
-    public void checkAndFinishGroupStageInDB(String tournamentId, int stageOrder) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return;
-
-        String checkSql = "SELECT COUNT(*) FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1)) "
-                + "AND (m.status != 'FINISHED' OR m.score1 IS NULL OR m.score2 IS NULL)";
-
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(checkSql)) {
-            ps.setString(1, tournamentId);
-            ps.setInt(2, stageOrder);
-            ps.setInt(3, stageOrder);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next() && rs.getInt(1) == 0) {
-                    // ALL MATCHES IN GROUP STAGE COMPLETED!
-                    finishGroupStageAdvancement(tournamentId, stageOrder);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void finishGroupStageAdvancement(String tournamentId, int stageOrder) {
-        List<GroupDTO> groups = getGroupsWithTeams(tournamentId, stageOrder);
-        if (groups.isEmpty()) return;
-
-        List<GroupTeamDTO> qualifiedList = new ArrayList<>();
-
-        // Group Stage advancement logic: Top 2 from each group (or qualifiedSlots count)
-        for (GroupDTO g : groups) {
-            int slots = g.qualifiedSlots > 0 ? g.qualifiedSlots : 2;
-            for (int i = 0; i < Math.min(slots, g.teams.size()); i++) {
-                qualifiedList.add(g.teams.get(i));
-            }
-        }
-
-        StringBuilder jsonSb = new StringBuilder("[");
-        for (int i = 0; i < qualifiedList.size(); i++) {
-            if (i > 0) jsonSb.append(",");
-            GroupTeamDTO gt = qualifiedList.get(i);
-            jsonSb.append("{\"id\":\"").append(escapeJson(gt.teamId))
-                    .append("\",\"name\":\"").append(escapeJson(gt.teamName))
-                    .append("\",\"seed\":").append(i + 1).append("}");
-        }
-        jsonSb.append("]");
-
-        TournamentDAO tDao = new TournamentDAO();
-        tDao.saveStage2Teams(tournamentId, jsonSb.toString());
-        tDao.updateTournamentStage1Status(tournamentId, "COMPLETED");
-    }
-
     // ------------------------------------------------------------------------
     // 4. RANDOM & RESET OPERATIONS
     // ------------------------------------------------------------------------
@@ -797,7 +759,7 @@ public class GroupStageDAO extends DBContext {
         ensureGroupStageInitialized(tournamentId, stageOrder);
 
         String selSql = "SELECT id, team1_id, team2_id, group_id FROM matches "
-                + "WHERE tournament_id = ? " + (groupId != null ? "AND group_id = ? " : "") + "AND (score1 IS NULL OR status != 'FINISHED')";
+                + "WHERE tournament_id = ? AND stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id=? AND stage_order=?) " + (groupId != null ? "AND group_id = ? " : "") + "AND (score1 IS NULL OR status != 'FINISHED')";
         String updateSql = "UPDATE matches SET score1 = ?, score2 = ?, winner_id = ?, loser_id = ?, status = 'FINISHED' WHERE id = ?";
 
         Random rand = new Random();
@@ -805,12 +767,14 @@ public class GroupStageDAO extends DBContext {
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+            assertMutable(conn, tournamentId, stageOrder);
             List<String[]> matchesToUpdate = new ArrayList<>();
             Set<String> affectedGroups = new HashSet<>();
 
             try (PreparedStatement psSel = conn.prepareStatement(selSql)) {
                 psSel.setString(1, tournamentId);
-                if (groupId != null) psSel.setString(2, groupId);
+                psSel.setString(2, tournamentId); psSel.setInt(3, stageOrder);
+                if (groupId != null) psSel.setString(4, groupId);
                 try (ResultSet rs = psSel.executeQuery()) {
                     while (rs.next()) {
                         matchesToUpdate.add(new String[]{
@@ -855,7 +819,6 @@ public class GroupStageDAO extends DBContext {
             }
 
             conn.commit();
-            checkAndFinishGroupStageInDB(tournamentId, stageOrder);
             service.RollingWindowPointService.clearAllCaches();
             return true;
         } catch (Exception e) {
@@ -870,24 +833,27 @@ public class GroupStageDAO extends DBContext {
 
     public boolean resetGroupMatchesInDB(String tournamentId, int stageOrder, String groupId) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String resetMatchesSql = "UPDATE matches SET score1 = NULL, score2 = NULL, penalty1 = NULL, penalty2 = NULL, winner_id = NULL, loser_id = NULL, status = 'SCHEDULED' "
-                + "WHERE tournament_id = ? " + (groupId != null ? "AND group_id = ? " : "");
+        String resetMatchesSql = "UPDATE matches SET score1 = NULL, score2 = NULL, penalty1 = NULL, penalty2 = NULL, winner_id = NULL, loser_id = NULL, status = 'READY' "
+                + "WHERE tournament_id = ? AND stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id=? AND stage_order=?) " + (groupId != null ? "AND group_id = ? " : "");
 
         String resetGroupTeamsSql = "UPDATE gt SET matches_played = 0, wins = 0, draws = 0, losses = 0, "
                 + "goals_scored = 0, goals_conceded = 0, goal_difference = 0, points = 0, rank_in_group = seed_in_group "
                 + "FROM group_teams gt JOIN groups g ON gt.group_id = g.id "
-                + "WHERE g.tournament_id = ? " + (groupId != null ? "AND g.id = ? " : "");
+                + "WHERE g.stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id=? AND stage_order=?) " + (groupId != null ? "AND g.id = ? " : "");
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+            assertMutable(conn, tournamentId, stageOrder);
             try (PreparedStatement psM = conn.prepareStatement(resetMatchesSql)) {
                 psM.setString(1, tournamentId);
-                if (groupId != null) psM.setString(2, groupId);
+                psM.setString(2, tournamentId); psM.setInt(3, stageOrder);
+                if (groupId != null) psM.setString(4, groupId);
                 psM.executeUpdate();
             }
             try (PreparedStatement psGT = conn.prepareStatement(resetGroupTeamsSql)) {
                 psGT.setString(1, tournamentId);
-                if (groupId != null) psGT.setString(2, groupId);
+                psGT.setInt(2, stageOrder);
+                if (groupId != null) psGT.setString(3, groupId);
                 psGT.executeUpdate();
             }
             conn.commit();
@@ -900,49 +866,7 @@ public class GroupStageDAO extends DBContext {
     }
 
     public boolean resetBracketMatches(String tournamentId, int stageOrder) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        String sql = "UPDATE m SET m.score1 = NULL, m.score2 = NULL, m.penalty1 = NULL, m.penalty2 = NULL, "
-                + "m.winner_id = NULL, m.loser_id = NULL, m.status = 'READY' "
-                + "FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
-
-        String resetGroupTeamsSql = "UPDATE gt SET matches_played = 0, wins = 0, draws = 0, losses = 0, "
-                + "goals_scored = 0, goals_conceded = 0, goal_difference = 0, points = 0, rank_in_group = seed_in_group "
-                + "FROM group_teams gt JOIN groups g ON gt.group_id = g.id "
-                + "JOIN tournament_stages s ON g.stage_id = s.id "
-                + "WHERE s.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1))";
-
-        String resetTourneySql = "UPDATE tournaments SET status = 'DRAFT', champion_name = NULL, stage2_teams = NULL, stage1_status = 'PENDING' WHERE id = ?";
-
-        try (Connection conn = getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, tournamentId);
-                ps.setInt(2, stageOrder);
-                ps.setInt(3, stageOrder);
-                ps.setInt(4, stageOrder);
-                ps.setInt(5, stageOrder);
-                ps.executeUpdate();
-            }
-
-            try (PreparedStatement psGT = conn.prepareStatement(resetGroupTeamsSql)) {
-                psGT.setString(1, tournamentId);
-                psGT.setInt(2, stageOrder);
-                psGT.setInt(3, stageOrder);
-                psGT.executeUpdate();
-            }
-
-            try (PreparedStatement psT = conn.prepareStatement(resetTourneySql)) {
-                psT.setString(1, tournamentId);
-                psT.executeUpdate();
-            } catch (Exception ignore) {}
-
-            service.RollingWindowPointService.clearAllCaches();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        return resetGroupMatchesInDB(tournamentId, stageOrder, null);
     }
 
     private String lookupOrCreateStageId(String tournamentId, int stageOrder) {

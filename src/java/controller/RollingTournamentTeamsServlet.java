@@ -116,13 +116,14 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             }
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
             standingsDTOList = service.RollingWindowPointService.getInstance().calculateSeriesStandingsWithExpiry(seriesId.trim());
-            tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
+            tournamentsList = new TournamentDAO().getTournamentsBySeriesId(seriesId.trim());
             try {
                 serverTourneyPoints = service.RollingWindowPointService.getInstance().getTourneyPointsPerTournament(seriesId.trim());
                 serverTourneyParticipation = service.RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(seriesId.trim());
             } catch (Exception ignore) {}
         }
 
+        request.setAttribute("seriesTournamentTeams", participantDAO.getTeamsBySeriesId(seriesId));
         request.setAttribute("tournament", tournament);
         request.setAttribute("series", series);
         request.setAttribute("currentTeams", currentTeams);
@@ -144,6 +145,15 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         String tournamentId = request.getParameter("tournamentId");
         String seriesId = request.getParameter("seriesId");
         ParticipantDAO participantDAO = new ParticipantDAO();
+        if ("addPartnerTeams".equalsIgnoreCase(action)) {
+            try {
+                validatePartnerExclusions(tournamentId, request.getParameterValues("excludedTournamentIds"),
+                        request.getParameterValues("selectedTeamNames"), participantDAO);
+            } catch (IllegalArgumentException e) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+                return;
+            }
+        }
         if (!new TournamentDAO().saveTopSeedCount(tournamentId, request.getParameter("topSeedCount"))
                 || !new TournamentDAO().saveClassicDraw(tournamentId, request.getParameter("classicDraw"))) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu cấu hình phân cặp vào DB.");
@@ -234,6 +244,29 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         }
 
         response.sendRedirect(request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : ""));
+    }
+
+    /** Resolve the Series from the target tournament, never from submitted seriesId. */
+    private void validatePartnerExclusions(String tournamentId, String[] excludedIds, String[] selectedNames,
+            ParticipantDAO participantDAO) {
+        if (excludedIds == null || excludedIds.length == 0) return;
+        Tournament target = getTournamentByIdSafe(tournamentId);
+        if (target == null || target.getSeriesId() == null)
+            throw new IllegalArgumentException("Không tìm thấy giải con trong Series.");
+        java.util.Set<String> allowed = new java.util.HashSet<>();
+        for (Tournament sibling : new TournamentDAO().getTournamentsBySeriesId(target.getSeriesId()))
+            if (!sibling.getId().equals(target.getId())) allowed.add(sibling.getId());
+        java.util.Set<String> excludedNames = new java.util.HashSet<>();
+        java.util.Map<String, List<Team>> teams = participantDAO.getTeamsBySeriesId(target.getSeriesId());
+        for (String excluded : excludedIds) {
+            if (!allowed.contains(excluded))
+                throw new IllegalArgumentException("Chỉ được loại trừ giải khác trong cùng Series.");
+            for (Team team : teams.getOrDefault(excluded, java.util.Collections.emptyList()))
+                if (team.getRawName() != null) excludedNames.add(team.getRawName().trim().toLowerCase(java.util.Locale.ROOT));
+        }
+        if (selectedNames != null) for (String name : selectedNames)
+            if (name != null && excludedNames.contains(name.trim().toLowerCase(java.util.Locale.ROOT)))
+                throw new IllegalArgumentException("Có đội đã tham gia giải đang được loại trừ. Hãy mở lại danh sách Partner.");
     }
 
     private Tournament getTournamentByIdSafe(String id) {

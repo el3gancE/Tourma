@@ -110,7 +110,7 @@ public class RoundRobinDAO extends DBContext {
                 + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
                 + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
                 + "LEFT JOIN teams tw ON m.winner_id = tw.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
+                + "WHERE m.tournament_id = ? AND ((s.stage_order = ? AND s.tournament_id=m.tournament_id) OR (m.stage_id IS NULL AND ? = 1)) "
                 + "ORDER BY m.round_number ASC, m.match_order ASC, m.id ASC";
 
         StringBuilder sb = new StringBuilder("[");
@@ -121,8 +121,6 @@ public class RoundRobinDAO extends DBContext {
             ps.setString(1, tournamentId);
             ps.setInt(2, stageOrder);
             ps.setInt(3, stageOrder);
-            ps.setInt(4, stageOrder);
-            ps.setInt(5, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
                 int seq = 1;
                 while (rs.next()) {
@@ -191,15 +189,13 @@ public class RoundRobinDAO extends DBContext {
 
         String checkSql = "SELECT COUNT(*) FROM matches m "
                 + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
-                + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
+                + "WHERE m.tournament_id = ? AND ((s.stage_order = ? AND s.tournament_id=m.tournament_id) OR (m.stage_id IS NULL AND ? = 1))";
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(checkSql)) {
             ps.setString(1, tournamentId);
             ps.setInt(2, stageOrder);
             ps.setInt(3, stageOrder);
-            ps.setInt(4, stageOrder);
-            ps.setInt(5, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next() && rs.getInt(1) > 0) {
                     return; // Already initialized!
@@ -249,11 +245,12 @@ public class RoundRobinDAO extends DBContext {
             conn.setAutoCommit(false);
             TournamentDAO.assertStage2Ready(conn,tournamentId,stageOrder);
             try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
-                for (int r = 0; r < numRounds; r++) {
-                    int roundNumber = r + 1;
+                int legs=TournamentDAO.getLeagueRules(conn,tournamentId,stageOrder)[3];
+                for(int leg=0;leg<legs;leg++) for (int r = 0; r < numRounds; r++) {
+                    int roundNumber = leg*numRounds + r + 1;
                     for (int m = 0; m < matchesPerRound; m++) {
-                        Team t1 = teamList.get(m);
-                        Team t2 = teamList.get(numTeams - 1 - m);
+                        Team t1 = teamList.get(leg%2==0?m:numTeams-1-m);
+                        Team t2 = teamList.get(leg%2==0?numTeams-1-m:m);
 
                         if (t1 == null || t2 == null) {
                             continue; // Skip match against BYE dummy
@@ -290,6 +287,9 @@ public class RoundRobinDAO extends DBContext {
         List<RRStandingRow> standings = new ArrayList<>();
         if (tournamentId == null || tournamentId.trim().isEmpty()) return standings;
 
+        int[] scoring;
+        try(Connection conn=getConnection()){scoring=TournamentDAO.getLeagueRules(conn,tournamentId,stageOrder);}
+        catch(Exception e){throw new IllegalStateException("Không đọc được luật vòng tròn.",e);}
         String sql = "SELECT t.id AS team_id, t.raw_name AS team_name, t.original_seed, "
                 + "ISNULL(stats.mp, 0) AS matches_played, "
                 + "ISNULL(stats.w, 0) AS wins, "
@@ -308,7 +308,7 @@ public class RoundRobinDAO extends DBContext {
                 + "         SUM(CASE WHEN is_loss = 1 THEN 1 ELSE 0 END) AS l, "
                 + "         SUM(gf) AS gf, "
                 + "         SUM(ga) AS ga, "
-                + "         SUM(CASE WHEN is_win = 1 THEN 3 WHEN is_draw = 1 THEN 1 ELSE 0 END) AS pts "
+                + "         SUM(CASE WHEN is_win = 1 THEN " + scoring[0] + " WHEN is_draw = 1 THEN " + scoring[1] + " ELSE " + scoring[2] + " END) AS pts "
                 + "  FROM ("
                 + "    SELECT m.team1_id AS t_id, m.score1 AS gf, m.score2 AS ga, "
                 + "           CASE WHEN m.score1 > m.score2 THEN 1 ELSE 0 END AS is_win, "
@@ -317,7 +317,7 @@ public class RoundRobinDAO extends DBContext {
                 + "    FROM matches m "
                 + "    LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "    WHERE m.tournament_id = ? AND (m.status = 'FINISHED' OR m.status = 'COMPLETED') AND m.score1 IS NOT NULL AND m.score2 IS NOT NULL "
-                + "      AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
+                + "      AND ((s.stage_order = ? AND s.tournament_id=m.tournament_id) OR (m.stage_id IS NULL AND ? = 1)) "
                 + "    UNION ALL "
                 + "    SELECT m.team2_id AS t_id, m.score2 AS gf, m.score1 AS ga, "
                 + "           CASE WHEN m.score2 > m.score1 THEN 1 ELSE 0 END AS is_win, "
@@ -326,27 +326,21 @@ public class RoundRobinDAO extends DBContext {
                 + "    FROM matches m "
                 + "    LEFT JOIN tournament_stages s ON m.stage_id = s.id "
                 + "    WHERE m.tournament_id = ? AND (m.status = 'FINISHED' OR m.status = 'COMPLETED') AND m.score1 IS NOT NULL AND m.score2 IS NOT NULL "
-                + "      AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR)) "
+                + "      AND ((s.stage_order = ? AND s.tournament_id=m.tournament_id) OR (m.stage_id IS NULL AND ? = 1)) "
                 + "  ) sub GROUP BY t_id"
                 + ") stats ON t.id = stats.t_id "
                 + "WHERE t.tournament_id = ? "
-                + "ORDER BY points DESC, goal_difference DESC, goals_scored DESC, t.original_seed ASC";
+                + "ORDER BY points DESC, goal_difference DESC, goals_scored DESC, CASE WHEN t.original_seed>0 THEN t.original_seed ELSE 2147483647 END, t.id";
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tournamentId);
             ps.setInt(2, stageOrder);
             ps.setInt(3, stageOrder);
-            ps.setInt(4, stageOrder);
+            ps.setString(4, tournamentId);
             ps.setInt(5, stageOrder);
-
-            ps.setString(6, tournamentId);
-            ps.setInt(7, stageOrder);
-            ps.setInt(8, stageOrder);
-            ps.setInt(9, stageOrder);
-            ps.setInt(10, stageOrder);
-
-            ps.setString(11, tournamentId);
+            ps.setInt(6, stageOrder);
+            ps.setString(7, tournamentId);
             try (ResultSet rs = ps.executeQuery()) {
                 int rk = 1;
                 while (rs.next()) {

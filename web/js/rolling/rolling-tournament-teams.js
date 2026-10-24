@@ -474,8 +474,34 @@
     reindexSubtourneyRows();
   };
 
+  window.applyPartnerExclusions = function () {
+    var selected = new Set(Array.from(document.querySelectorAll('.partner-exclusion-input:checked')).map(function (cb) { return cb.value; }));
+    var blocked = 0, available = 0;
+    document.querySelectorAll('#partnerModalCheckboxList .partner-checkbox-item').forEach(function (item) {
+      var cb = item.querySelector('.partner-cb-input');
+      if (!cb) return;
+      var excluded = (item.getAttribute('data-played-tournaments') || '').split(' ').some(function (id) { return selected.has(id); });
+      var alreadyIn = item.getAttribute('data-already-in') === 'true';
+      cb.disabled = alreadyIn || excluded;
+      if (excluded && !alreadyIn) cb.checked = false;
+      item.classList.toggle('partner-is-excluded', excluded);
+      item.title = excluded ? 'Đội đã tham gia một trong các giải đang loại trừ' : '';
+      var note = item.querySelector('.partner-excluded-label');
+      if (note) note.hidden = !excluded;
+      if (excluded) blocked++;
+      if (!cb.disabled) available++;
+    });
+    var count = document.getElementById('partnerExclusionCount');
+    if (count) count.textContent = selected.size + ' giải';
+    var hint = document.getElementById('partnerExclusionHint');
+    if (hint) hint.textContent = selected.size ? 'Loại trừ ' + blocked + ' đội · Còn ' + available + ' đội có thể chọn' : '';
+    var input = document.getElementById('quickSelectNum');
+    if (input) input.max = available;
+  };
+
   window.openPartnerSelectModal = function () {
     window.calculateAndSyncModalStandings();
+    window.applyPartnerExclusions();
     var modal = document.getElementById('partnerSelectModal');
     if (modal) modal.style.display = 'flex';
   };
@@ -499,7 +525,7 @@
     if (!numInput) return;
 
     var availableCbs = Array.from(document.querySelectorAll('.partner-cb-input:not(:disabled)'));
-    var totalPartnerCount = document.querySelectorAll('.partner-cb-input').length;
+    var totalPartnerCount = availableCbs.length;
 
     var count = parseInt(numInput.value, 10);
     if (isNaN(count) || count < 2) {
@@ -756,6 +782,10 @@
   };
 
   document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.partner-exclusion-input').forEach(function (cb) {
+      cb.addEventListener('change', window.applyPartnerExclusions);
+    });
+    window.applyPartnerExclusions();
     var tid = getSubtourneyId();
     if (tid) {
       if (window.targetTeamCount && window.targetTeamCount > 0) {

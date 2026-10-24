@@ -220,6 +220,11 @@
                                 <i class="fa-solid fa-trophy text-mint"></i> Upper Bracket
                             </h2>
                         </div>
+                        <div id="deupperLiveStatus" class="tournament-live-status de-branch-live-status" role="status" aria-live="polite" aria-label="Live Status upper bracket">
+                            <span class="live-status-count team-count-badge">S: <strong data-category="seed">—/—</strong></span>
+                            <span class="live-status-count format-badge-single">US: <strong data-category="unseed">—/—</strong></span>
+                            <span class="live-status-count format-badge-double">G: <strong data-category="guest">—/—</strong></span>
+                        </div>
                     </div>
 
                     <!-- Separate Upper Viewport Frame with Floating Zoom Toolbar -->
@@ -253,6 +258,11 @@
                             <h2 class="de-viewport-title lower">
                                 <i class="fa-solid fa-shield-halved text-rose"></i> Lower Bracket
                             </h2>
+                        </div>
+                        <div id="delowerLiveStatus" class="tournament-live-status de-branch-live-status" role="status" aria-live="polite" aria-label="Live Status lower bracket">
+                            <span class="live-status-count team-count-badge">S: <strong data-category="seed">—/—</strong></span>
+                            <span class="live-status-count format-badge-single">US: <strong data-category="unseed">—/—</strong></span>
+                            <span class="live-status-count format-badge-double">G: <strong data-category="guest">—/—</strong></span>
                         </div>
                     </div>
 

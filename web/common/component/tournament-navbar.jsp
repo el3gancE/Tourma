@@ -218,7 +218,9 @@
                             }
                         }
                     }
-                    var response=await fetch(endpoint+'?'+new URLSearchParams({action:'liveStatus',tournamentId:id}),{cache:'no-store'});
+                    var liveParams={action:'liveStatus',tournamentId:id};
+                    if (document.getElementById('deupperLiveStatus') && engine) liveParams.branchStage=engine.currentStage || 1;
+                    var response=await fetch(endpoint+'?'+new URLSearchParams(liveParams),{cache:'no-store'});
                     if (!response.ok) throw new Error('Cannot load Live Status');
                     var data=await response.json();
                     if (data.status!=='success' || !data.liveStatus) throw new Error('Invalid Live Status');
@@ -227,10 +229,22 @@
                         var value=data.liveStatus[item[0]];
                         document.getElementById(item[1]).textContent=value.alive+'/'+value.total;
                     });
+                    ['upper','lower'].forEach(function (branch) {
+                        var branchWidget=document.getElementById('de'+branch+'LiveStatus');
+                        if (!branchWidget) return;
+                        var counts=data.branchLiveStatus && data.branchLiveStatus[branch];
+                        if (!counts) { branchWidget.classList.add('is-stale'); return; }
+                        branchWidget.querySelectorAll('[data-category]').forEach(function (node) {
+                            var value=counts[node.getAttribute('data-category')];
+                            node.textContent=value.alive+'/'+value.total;
+                        });
+                        branchWidget.classList.remove('is-stale');
+                    });
                     widget.classList.remove('is-stale');
                     widget.title='S: Seed · US: Unseed · G: Guest. Đội còn trong giải / tổng ban đầu.';
                 } catch(error) {
                     if (version!==self.liveStatusVersion) return;
+                    document.querySelectorAll('.de-branch-live-status').forEach(function (node) { node.classList.add('is-stale'); });
                     widget.classList.add('is-stale');
                     widget.title='Không cập nhật được Live Status từ DB. Vui lòng thử lại.';
                 }

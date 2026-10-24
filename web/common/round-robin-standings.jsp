@@ -16,13 +16,15 @@
     String activeStepVal = (currentStage == 2) ? "standings2" : "standings1";
     String currentStageStr = (currentStage == 2) ? "2" : "1";
     int cutTarget = 0;
+    String dbStage1Status = "PENDING";
+    String dbTournamentStatus = "DRAFT";
     String dbStage2Teams = null;
     String dbMultiStageConfig = null;
 
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
-            Tournament t = tDao.getTournamentById(tourneyId);
+            Tournament t = tDao.getTournamentById(tourneyId, false);
             if (t != null) {
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
@@ -30,6 +32,8 @@
                 if ("MULTI_STAGE".equals(t.getTournamentType()) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
                 }
+                dbStage1Status = t.getStage1Status() == null ? "PENDING" : t.getStage1Status();
+                dbTournamentStatus = t.getStatus() == null ? "DRAFT" : t.getStatus();
                 dbStage2Teams = t.getStage2Teams();
                 dbMultiStageConfig = t.getMultiStageConfig();
             }
@@ -47,7 +51,7 @@
                     if (tName == null || tName.trim().isEmpty()) {
                         tName = "Đội #" + (i + 1);
                     }
-                    sb.append("\"").append(tName.replace("\"", "\\\"")).append("\"");
+                    sb.append("{\"id\":\"").append(tm.getId()).append("\",\"name\":\"").append(tName.replace("\"", "\\\"")).append("\",\"seed\":").append(tm.getOriginalSeed()).append("}");
                 }
                 sb.append("]");
                 teamsJson = sb.toString();
@@ -95,6 +99,7 @@
         <!-- Stage Finish Alert Component (Locked Stage 2) -->
         <jsp:include page="/common/component/stage-finish-alert.jsp"/>
 
+        <jsp:include page="/common/component/stage-end-popup.jsp"/>
         <!-- Final Stage Popup Banner -->
         <jsp:include page="/common/component/final-stage-popup.jsp"/>
 
@@ -221,7 +226,9 @@
 
         </main>
 
+        <jsp:include page="/common/component/tournament-config-state.jsp"/>
         <!-- Scripts -->
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
@@ -229,6 +236,11 @@
         <script src="${pageContext.request.contextPath}/js/round-robin-standings.js"></script>
 
         <script>
+            window.TourmaContextPath = '${pageContext.request.contextPath}';
+            window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
+            window.TourmaDbStage1Status['<%= safeTourneyId %>'] = '<%= dbStage1Status %>';
+            window.TourmaDbTournamentStatus = window.TourmaDbTournamentStatus || {};
+            window.TourmaDbTournamentStatus['<%= safeTourneyId %>'] = '<%= dbTournamentStatus %>';
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var preloadedTeams = <%= teamsJson %>;
@@ -255,17 +267,12 @@
                     }
 
                     var s2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
-                    if (!s2TeamsRaw || s2TeamsRaw.length === 0) {
-                        try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
-                    }
                     if (s2TeamsRaw && s2TeamsRaw.length > 0) {
                         preloadedTeams = s2TeamsRaw.filter(function(t) {
                             var n = (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
                             return n !== 'BYE' && n.trim() !== '';
                         });
-                    } else if (advCount && advCount > 1 && preloadedTeams && preloadedTeams.length > advCount) {
-                        preloadedTeams = preloadedTeams.slice(0, advCount);
-                    }
+                    } else preloadedTeams = [];
                     cutTarget = 0; // Stage 2 plays to find a champion!
                 }
                 var dbMatches = <%= dbMatchesJson %>;

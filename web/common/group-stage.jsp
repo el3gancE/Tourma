@@ -11,7 +11,7 @@
     }
 
     TournamentDAO tDao = new TournamentDAO();
-    Tournament tourney = tDao.getTournamentById(tournamentId);
+    Tournament tourney = tDao.getTournamentById(tournamentId, false);
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
     String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
     String dbStage1Status = (tourney != null && tourney.getStage1Status() != null) ? tourney.getStage1Status() : "PENDING";
@@ -19,13 +19,15 @@
     String tournamentType = (tourney != null && tourney.getTournamentType() != null) ? tourney.getTournamentType() : "SINGLE_STAGE";
     int cutTarget = (tourney != null) ? tourney.getAdvancingSeatsCount() : 0;
 
+    int currentStage = "2".equals(request.getParameter("stage")) ? 2 : 1;
+    String dbMultiStageConfig = tourney == null ? null : tourney.getMultiStageConfig();
     ParticipantDAO pDao = new ParticipantDAO();
     List<Team> dbTeamsList = null;
     String dbMatchesJson = "[]";
     try {
-        dbTeamsList = pDao.getTeamsByTournamentId(tournamentId);
+        dbTeamsList = currentStage == 2 ? new dao.SingleEliminationDAO().getStage2TeamsList(tournamentId) : pDao.getTeamsByTournamentId(tournamentId);
         dao.GroupStageDAO gsDao = new dao.GroupStageDAO();
-        String j = gsDao.getMatchesJsonForFrontend(tournamentId, 1);
+        String j = gsDao.getMatchesJsonForFrontend(tournamentId, currentStage);
         if (j != null && !j.trim().isEmpty() && !j.trim().equals("[]")) {
             dbMatchesJson = j;
         }
@@ -145,6 +147,7 @@
         </div>
     </main>
 
+    <jsp:include page="/common/component/tournament-config-state.jsp"/>
     <!-- JS SCRIPTS -->
     <script>
         window.TourmaContextPath = "${pageContext.request.contextPath}";
@@ -159,6 +162,8 @@
                 localStorage.removeItem('tourma_final_champion_' + '<%= tournamentId %>');
             } catch(e) {}
         }
+        window.TourmaTournamentType = "<%= tournamentType %>";
+        window.TourmaCutTarget = <%= cutTarget %>;
         window.groupTournamentId = "<%= tournamentId %>";
         window.dbGroupMatches = <%= dbMatchesJson %>;
         window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
@@ -178,6 +183,7 @@
             } %>
         ];
     </script>
+    <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
     <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
     <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
     <script src="${pageContext.request.contextPath}/js/popup.js"></script>

@@ -4,7 +4,7 @@
     if (configTournamentId == null) configTournamentId = request.getParameter("tournamentId");
     model.Tournament configTournament = null;
     if (configTournamentId != null && !configTournamentId.trim().isEmpty()) {
-        configTournament = new dao.TournamentDAO().getTournamentById(configTournamentId.trim());
+        configTournament = new dao.TournamentDAO().getTournamentById(configTournamentId.trim(), false);
     }
     if (configTournament != null) {
         String configJson = configTournament.getMultiStageConfig();
