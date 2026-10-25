@@ -905,6 +905,222 @@
   });
 
   /**
+   * 10B. PHASE 2 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 2)
+   * Nền hồng ngọc Ruby / Cosmic Plasma rực lửa, hiệu ứng sóng xung đa tầng và thiên thạch gia tốc
+   */
+  registry.push({
+    id: 'PHASE_2_LEADER',
+    name: 'Phase 2 #1',
+    category: 'PHASE_CHAMPION',
+    rarity: 'Phase 2 #1',
+    themeClass: 'tourma-badge-phase-2',
+    iconClass: 'fa-solid fa-meteor',
+    evaluate: function (teamName, context) {
+      if (!teamName) return null;
+      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
+        var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
+        badges = [];
+        pWinners.forEach(function (pw) {
+          if (isTeamSelf(pw.teamName, teamName)) {
+            badges.push(pw);
+          }
+        });
+      }
+      if (badges && badges.length > 0) {
+        var phase2Badge = null;
+        for (var i = 0; i < badges.length; i++) {
+          if (badges[i].phase === 2) {
+            phase2Badge = badges[i];
+            break;
+          }
+        }
+        if (phase2Badge) {
+          var tName = phase2Badge.tourneyName || ('Giải #' + (phase2Badge.tourneyIndex || 2));
+          var pts = phase2Badge.totalPts || 0;
+          return {
+            id: 'PHASE_2_LEADER',
+            name: 'Phase 2 #1',
+            title: 'Phase 2 #1',
+            category: 'PHASE_CHAMPION',
+            rarity: 'Phase 2 #1',
+            themeClass: 'tourma-badge-phase-2',
+            iconClass: 'fa-solid fa-meteor',
+            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 2 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            meta: {
+              phase: 2,
+              tourneyName: tName,
+              totalPts: pts
+            }
+          };
+        }
+      }
+  /**
+   * 10C. PHASE 3 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 3)
+   * Nền xanh lôi thần Electric Cyan, tia sét chói lòa giáng sấm sét
+   */
+  registry.push({
+    id: 'PHASE_3_LEADER',
+    name: 'Phase 3 #1',
+    category: 'PHASE_CHAMPION',
+    rarity: 'Phase 3 #1',
+    themeClass: 'tourma-badge-phase-3',
+    iconClass: 'fa-solid fa-bolt-lightning',
+    evaluate: function (teamName, context) {
+      if (!teamName) return null;
+      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
+        var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
+        badges = [];
+        pWinners.forEach(function (pw) {
+          if (isTeamSelf(pw.teamName, teamName)) {
+            badges.push(pw);
+          }
+        });
+      }
+      if (badges && badges.length > 0) {
+        var phaseBadge = null;
+        for (var i = 0; i < badges.length; i++) {
+          if (badges[i].phase === 3) {
+            phaseBadge = badges[i];
+            break;
+          }
+        }
+        if (phaseBadge) {
+          var tName = phaseBadge.tourneyName || ('Giải #' + (phaseBadge.tourneyIndex || 3));
+          var pts = phaseBadge.totalPts || 0;
+          return {
+            id: 'PHASE_3_LEADER',
+            name: 'Phase 3 #1',
+            title: 'Phase 3 #1',
+            category: 'PHASE_CHAMPION',
+            rarity: 'Phase 3 #1',
+            themeClass: 'tourma-badge-phase-3',
+            iconClass: 'fa-solid fa-bolt-lightning',
+            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 3 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            meta: {
+              phase: 3,
+              tourneyName: tName,
+              totalPts: pts
+            }
+          };
+        }
+      }
+      return null;
+    }
+  });
+
+  /**
+   * 10D. PHASE 4 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 4)
+   * Nền thạch anh tím Royal Amethyst, sóng hấp dẫn hố đen vũ trụ & nguyên tử lượng tử
+   */
+  registry.push({
+    id: 'PHASE_4_LEADER',
+    name: 'Phase 4 #1',
+    category: 'PHASE_CHAMPION',
+    rarity: 'Phase 4 #1',
+    themeClass: 'tourma-badge-phase-4',
+    iconClass: 'fa-solid fa-atom',
+    evaluate: function (teamName, context) {
+      if (!teamName) return null;
+      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
+        var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
+        badges = [];
+        pWinners.forEach(function (pw) {
+          if (isTeamSelf(pw.teamName, teamName)) {
+            badges.push(pw);
+          }
+        });
+      }
+      if (badges && badges.length > 0) {
+        var phaseBadge = null;
+        for (var i = 0; i < badges.length; i++) {
+          if (badges[i].phase === 4) {
+            phaseBadge = badges[i];
+            break;
+          }
+        }
+        if (phaseBadge) {
+          var tName = phaseBadge.tourneyName || ('Giải #' + (phaseBadge.tourneyIndex || 4));
+          var pts = phaseBadge.totalPts || 0;
+          return {
+            id: 'PHASE_4_LEADER',
+            name: 'Phase 4 #1',
+            title: 'Phase 4 #1',
+            category: 'PHASE_CHAMPION',
+            rarity: 'Phase 4 #1',
+            themeClass: 'tourma-badge-phase-4',
+            iconClass: 'fa-solid fa-atom',
+            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 4 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            meta: {
+              phase: 4,
+              tourneyName: tName,
+              totalPts: pts
+            }
+          };
+        }
+      }
+      return null;
+    }
+  });
+
+  /**
+   * 10E. PHASE 5 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 5)
+   * Nền Thái Dương Hoàng Kim Solar Gold, nhật hoa bốc tỏa và Mặt Trời Tối Thượng
+   */
+  registry.push({
+    id: 'PHASE_5_LEADER',
+    name: 'Phase 5 #1',
+    category: 'PHASE_CHAMPION',
+    rarity: 'Phase 5 #1',
+    themeClass: 'tourma-badge-phase-5',
+    iconClass: 'fa-solid fa-sun',
+    evaluate: function (teamName, context) {
+      if (!teamName) return null;
+      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
+        var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
+        badges = [];
+        pWinners.forEach(function (pw) {
+          if (isTeamSelf(pw.teamName, teamName)) {
+            badges.push(pw);
+          }
+        });
+      }
+      if (badges && badges.length > 0) {
+        var phaseBadge = null;
+        for (var i = 0; i < badges.length; i++) {
+          if (badges[i].phase === 5) {
+            phaseBadge = badges[i];
+            break;
+          }
+        }
+        if (phaseBadge) {
+          var tName = phaseBadge.tourneyName || ('Giải #' + (phaseBadge.tourneyIndex || 5));
+          var pts = phaseBadge.totalPts || 0;
+          return {
+            id: 'PHASE_5_LEADER',
+            name: 'Phase 5 #1',
+            title: 'Phase 5 #1',
+            category: 'PHASE_CHAMPION',
+            rarity: 'Phase 5 #1',
+            themeClass: 'tourma-badge-phase-5',
+            iconClass: 'fa-solid fa-sun',
+            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 5 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            meta: {
+              phase: 5,
+              tourneyName: tName,
+              totalPts: pts
+            }
+          };
+        }
+      }
+      return null;
+    }
+  });
+
+  /**
    * 11. RUNNER_UP (Vua Về Nhì / Runner-Up)
    * Điều kiện: Vào tối thiểu 5 trận chung kết, và số lần về nhì nhiều hơn số lần vô địch
    * finalsCount >= 5 && runnerUpCount > champCount (Badge tĩnh)
@@ -1075,7 +1291,6 @@
         var tourneyName = (b.meta && b.meta.tourneyName) ? b.meta.tourneyName : '';
         var iconClass = b.iconClass || 'fa-solid fa-trophy';
         var isDefending = (b.id === 'DEFENDING_CHAMPION' || (b.themeClass && b.themeClass.indexOf('defending') !== -1));
-        var isPhase1 = (b.id === 'PHASE_1_LEADER' || (b.themeClass && b.themeClass.indexOf('phase-1') !== -1));
 
         var circuitSvg = isDefending ? (
           '<svg class="tourma-badge-svg-border" aria-hidden="true">' +
@@ -1091,7 +1306,18 @@
           '</svg>'
         ) : '';
 
-        var phase1Shine = isPhase1 ? '<span class="phase1-shine-fx" aria-hidden="true"></span>' : '';
+        var phaseShine = '';
+        if (b.themeClass && b.themeClass.indexOf('phase-') !== -1) {
+          var pMatch = b.themeClass.match(/phase-(\d+)/);
+          if (pMatch && pMatch[1]) {
+            phaseShine = '<span class="phase' + pMatch[1] + '-shine-fx" aria-hidden="true"></span>';
+          }
+        } else if (b.id && b.id.indexOf('PHASE_') === 0) {
+          var pIdMatch = b.id.match(/PHASE_(\d+)_/);
+          if (pIdMatch && pIdMatch[1]) {
+            phaseShine = '<span class="phase' + pIdMatch[1] + '-shine-fx" aria-hidden="true"></span>';
+          }
+        }
 
         var footerText = '';
         if (b.meta && b.meta.phase) {
@@ -1175,7 +1401,7 @@
 
         html += '<div class="tourma-badge-pill ' + (b.themeClass || 'tourma-badge-gold') + '" tabindex="0">' +
           circuitSvg +
-          phase1Shine +
+          phaseShine +
           '<i class="' + iconClass + ' badge-icon"></i>' +
           '<span class="tourma-badge-name">' + b.name + '</span>' +
           '<!-- Tooltip on Hover -->' +

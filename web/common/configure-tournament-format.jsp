@@ -15,7 +15,7 @@
     TournamentDAO tDao = new TournamentDAO();
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
         try {
-            currentTournament = tDao.getTournamentById(tournamentId);
+            currentTournament = tDao.getTournamentById(tournamentId, false);
             if (currentTournament != null) {
                 if ((currentFormat == null || currentFormat.trim().isEmpty()) && currentTournament.getFormat() != null) {
                     currentFormat = currentTournament.getFormat();
@@ -34,8 +34,16 @@
             // Keep empty
         }
     }
+    // The persisted target owns the Series scope, regardless of the URL parameter.
+    if (currentTournament != null) seriesIdParam = currentTournament.getSeriesId();
+    if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()
+            && !tDao.canCopyTournamentConfig(copiedFromParam, tournamentId)) {
+        response.sendError(400, "Nguồn sao chép không hợp lệ. Giải con chỉ được sao chép trong cùng Series.");
+        return;
+    }
     try {
-        List<Tournament> allTourneys = tDao.getAllTournaments();
+        List<Tournament> allTourneys = seriesIdParam != null && !seriesIdParam.trim().isEmpty()
+                ? tDao.getTournamentsBySeriesId(seriesIdParam.trim()) : tDao.getAllTournaments();
         if (allTourneys != null) {
             for (Tournament t : allTourneys) {
                 if (tournamentId == null || !tournamentId.trim().equalsIgnoreCase(t.getId())) {
@@ -44,6 +52,19 @@
             }
         }
     } catch (Exception ignore) {}
+    if (seriesIdParam != null && !seriesIdParam.trim().isEmpty()) {
+        availableTournaments.sort((a, b) -> {
+            int order = Integer.compare(b.getTournamentIndexInSeries(), a.getTournamentIndexInSeries());
+            if (order != 0) return order;
+            if (a.getCreatedAt() == null && b.getCreatedAt() != null) return 1;
+            if (a.getCreatedAt() != null && b.getCreatedAt() == null) return -1;
+            if (a.getCreatedAt() != null) {
+                int created = b.getCreatedAt().compareTo(a.getCreatedAt());
+                if (created != 0) return created;
+            }
+            return a.getId().compareTo(b.getId());
+        });
+    }
 
     if (copiedFromParam != null && !copiedFromParam.trim().isEmpty() && (copiedSourceTourneyNameParam == null || copiedSourceTourneyNameParam.trim().isEmpty())) {
         try {
@@ -854,7 +875,7 @@
                                             <% } } else { %>
                                                 <div
                                                     style="text-align: center; padding: 2rem 1rem; color: #94a3b8; font-size: 0.85rem;">
-                                                    Chưa có giải đấu nào khác để sao chép cấu hình.
+                                                    <%= isRollingSubTournament ? "Chưa có giải con khác trong Series để sao chép cấu hình." : "Chưa có giải đấu nào khác để sao chép cấu hình." %>
                                                 </div>
                                                 <% } %>
                                     </div>
@@ -1837,6 +1858,15 @@
                                 paramCopiedFrom = localStorage.getItem('tourma_copied_from_' + tournamentId) || '';
                             }
 
+                            if (isRollingSubTournament && paramCopiedFrom) {
+                                var allowedCopy = Array.from(document.querySelectorAll('.copy-tourney-item-card')).some(function (card) {
+                                    return card.getAttribute('data-tourney-id') === paramCopiedFrom;
+                                });
+                                if (!allowedCopy) {
+                                    clearCopiedConfig();
+                                    paramCopiedFrom = ''; paramCopiedName = ''; paramTargetTeams = '';
+                                }
+                            }
                             if (paramTargetTeams && Number(paramTargetTeams) > 0) {
                                 var inpT = document.getElementById('targetTeamCount');
                                 if (inpT) inpT.value = paramTargetTeams;

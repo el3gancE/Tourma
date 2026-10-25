@@ -1276,51 +1276,73 @@ public class TournamentDAO {
         return false;
     }
 
+    /** A sub-tournament may import configuration only from another tournament in its own Series. */
+    public boolean canCopyTournamentConfig(String sourceId, String targetId) {
+        if(sourceId==null||targetId==null||sourceId.trim().isEmpty()||targetId.trim().isEmpty())return false;
+        String sql="SELECT 1 FROM tournaments source JOIN tournaments target ON target.id=? "
+            + "WHERE source.id=? AND source.id<>target.id AND (NULLIF(LTRIM(RTRIM(target.series_id)),'') IS NULL OR source.series_id=target.series_id)";
+        try(Connection conn=new DBContext().getConnection();PreparedStatement ps=conn.prepareStatement(sql)) {
+            ps.setString(1,targetId.trim());ps.setString(2,sourceId.trim());
+            try(ResultSet rs=ps.executeQuery()){return rs.next();}
+        }catch(Exception e){throw new IllegalStateException("Cannot validate configuration source",e);}
+    }
+
     public boolean copyPointsConfigFromTournament(String sourceTournamentId, String targetTournamentId) {
         return copyPointsConfigFromTournament(sourceTournamentId, targetTournamentId, true);
     }
 
     public boolean copyPointsConfigFromTournament(String sourceTournamentId, String targetTournamentId, boolean copyFormatConfig) {
-        if (sourceTournamentId == null || targetTournamentId == null) return false;
-        Tournament src = getTournamentById(sourceTournamentId.trim());
+        if (!canCopyTournamentConfig(sourceTournamentId, targetTournamentId)) return false;
+        Tournament src = getTournamentById(sourceTournamentId.trim(), false);
         if (src == null) return false;
         String sql = "UPDATE tournaments SET series_reward_points = ?, series_points_config = ?, multi_stage_config = COALESCE(?, multi_stage_config) WHERE id = ?";
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            if (src.getSeriesRewardPoints() != null) {
-                ps.setInt(1, src.getSeriesRewardPoints());
-            } else {
-                ps.setNull(1, java.sql.Types.INTEGER);
-            }
-            ps.setString(2, src.getSeriesPointsConfig());
-            ps.setString(3, copyFormatConfig ? src.getMultiStageConfig() : null);
-            ps.setString(4, targetTournamentId.trim());
-            ps.executeUpdate();
+            conn.setAutoCommit(false);
+            try {
+                if (src.getSeriesRewardPoints() != null) {
+                    ps.setInt(1, src.getSeriesRewardPoints());
+                } else {
+                    ps.setNull(1, java.sql.Types.INTEGER);
+                }
+                ps.setString(2, src.getSeriesPointsConfig());
+                ps.setString(3, copyFormatConfig ? src.getMultiStageConfig() : null);
+                ps.setString(4, targetTournamentId.trim());
+                ps.executeUpdate();
 
-            // Clone custom placement points if any
-            String delSql = "DELETE FROM tournament_placement_points WHERE tournament_id = ?";
-            try (PreparedStatement psDel = conn.prepareStatement(delSql)) {
-                psDel.setString(1, targetTournamentId.trim());
-                psDel.executeUpdate();
-            }
-            String selSql = "SELECT rank_position, points_awarded, elo_weight FROM tournament_placement_points WHERE tournament_id = ?";
-            String insSql = "INSERT INTO tournament_placement_points (id, tournament_id, rank_position, points_awarded, elo_weight) VALUES (?, ?, ?, ?, ?)";
-            try (PreparedStatement psSel = conn.prepareStatement(selSql);
-                 PreparedStatement psIns = conn.prepareStatement(insSql)) {
-                psSel.setString(1, sourceTournamentId.trim());
-                try (ResultSet rs = psSel.executeQuery()) {
-                    while (rs.next()) {
-                        psIns.setString(1, "tpp_" + java.util.UUID.randomUUID().toString().substring(0, 8));
-                        psIns.setString(2, targetTournamentId.trim());
-                        psIns.setInt(3, rs.getInt("rank_position"));
-                        psIns.setInt(4, rs.getInt("points_awarded"));
-                        psIns.setDouble(5, rs.getDouble("elo_weight"));
-                        psIns.executeUpdate();
+                // Clone custom placement points if any
+                String delSql = "DELETE FROM tournament_placement_points WHERE tournament_id = ?";
+                try (PreparedStatement psDel = conn.prepareStatement(delSql)) {
+                    psDel.setString(1, targetTournamentId.trim());
+                    psDel.executeUpdate();
+                }
+                boolean hasEloWeight;
+                try(ResultSet columns=conn.getMetaData().getColumns(conn.getCatalog(),null,"tournament_placement_points","elo_weight")) {
+                    hasEloWeight=columns.next();
+                }
+                String selSql = "SELECT rank_position, points_awarded" + (hasEloWeight ? ", elo_weight" : "") + " FROM tournament_placement_points WHERE tournament_id = ?";
+                String insSql = "INSERT INTO tournament_placement_points (id, tournament_id, rank_position, points_awarded" + (hasEloWeight ? ", elo_weight" : "") + ") VALUES (?, ?, ?, ?" + (hasEloWeight ? ", ?" : "") + ")";
+                try (PreparedStatement psSel = conn.prepareStatement(selSql);
+                     PreparedStatement psIns = conn.prepareStatement(insSql)) {
+                    psSel.setString(1, sourceTournamentId.trim());
+                    try (ResultSet rs = psSel.executeQuery()) {
+                        while (rs.next()) {
+                            psIns.setString(1, "tpp_" + java.util.UUID.randomUUID().toString().substring(0, 8));
+                            psIns.setString(2, targetTournamentId.trim());
+                            psIns.setInt(3, rs.getInt("rank_position"));
+                            psIns.setInt(4, rs.getInt("points_awarded"));
+                            if (hasEloWeight) psIns.setDouble(5, rs.getDouble("elo_weight"));
+                            psIns.executeUpdate();
+                        }
                     }
                 }
+                conn.commit();
+                return true;
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
             }
-            return true;
         } catch (Exception e) {
             e.printStackTrace();
         }

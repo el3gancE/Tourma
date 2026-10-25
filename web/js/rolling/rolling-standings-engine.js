@@ -1771,34 +1771,53 @@
         return 0;
       });
 
-      // Check if mStep marks the completion of Phase 1 (when total tournaments reach phaseSize)
-      if (phaseSize > 0 && (mStep + 1) === phaseSize && mScores.length > 0 && mScores[0].pts > 0) {
-        var phaseNum = 1;
-        var phaseChampK = mScores[0].key;
-        var pTourney = subTourneys[mStep];
-        var pTourneyName = (pTourney && pTourney.name) ? pTourney.name : ('Giải #' + (mStep + 1));
-        var pTourneyIdx = (pTourney && pTourney.index) ? pTourney.index : (mStep + 1);
+      // Check if mStep marks the completion of a Phase (when total tournaments reach phaseSize * N)
+      if (phaseSize > 0 && (mStep + 1) % phaseSize === 0 && mScores.length > 0 && mScores[0].pts > 0) {
+        var phaseNum = Math.floor((mStep + 1) / phaseSize);
 
-        var pBadgeObj = {
-          phase: 1,
-          badgeId: 'PHASE_1_LEADER',
-          name: 'Phase 1 #1',
-          label: 'Phase 1 #1',
-          title: 'Hạng 1 BXH khi kết thúc Phase 1 (' + pTourneyName + ')',
-          tourneyName: pTourneyName,
-          tourneyIndex: pTourneyIdx,
-          totalPts: mScores[0].pts,
-          teamName: teamDataMap[phaseChampK] ? teamDataMap[phaseChampK].name : mScores[0].name,
-          themeClass: 'tourma-badge-phase-1',
-          iconClass: 'fa-solid fa-gem',
-          colorName: 'green'
-        };
+        if (phaseNum >= 1 && phaseNum <= 5) {
+          var phaseChampK = mScores[0].key;
+          var pTourney = subTourneys[mStep];
+          var pTourneyName = (pTourney && pTourney.name) ? pTourney.name : ('Giải #' + (mStep + 1));
+          var pTourneyIdx = (pTourney && pTourney.index) ? pTourney.index : (mStep + 1);
 
-        if (!teamPhaseBadgesMap[phaseChampK]) {
-          teamPhaseBadgesMap[phaseChampK] = [];
+          var phaseIcons = {
+            1: 'fa-solid fa-gem',
+            2: 'fa-solid fa-meteor',
+            3: 'fa-solid fa-bolt-lightning',
+            4: 'fa-solid fa-atom',
+            5: 'fa-solid fa-sun'
+          };
+
+          var phaseColors = {
+            1: 'green',
+            2: 'crimson',
+            3: 'cyan',
+            4: 'purple',
+            5: 'gold'
+          };
+
+          var pBadgeObj = {
+            phase: phaseNum,
+            badgeId: 'PHASE_' + phaseNum + '_LEADER',
+            name: 'Phase ' + phaseNum + ' #1',
+            label: 'Phase ' + phaseNum + ' #1',
+            title: 'Hạng 1 BXH khi kết thúc Phase ' + phaseNum + ' (' + pTourneyName + ')',
+            tourneyName: pTourneyName,
+            tourneyIndex: pTourneyIdx,
+            totalPts: mScores[0].pts,
+            teamName: teamDataMap[phaseChampK] ? teamDataMap[phaseChampK].name : mScores[0].name,
+            themeClass: 'tourma-badge-phase-' + phaseNum,
+            iconClass: phaseIcons[phaseNum] || 'fa-solid fa-trophy',
+            colorName: phaseColors[phaseNum] || 'gold'
+          };
+
+          if (!teamPhaseBadgesMap[phaseChampK]) {
+            teamPhaseBadgesMap[phaseChampK] = [];
+          }
+          teamPhaseBadgesMap[phaseChampK].push(pBadgeObj);
+          phaseWinnersList.push(pBadgeObj);
         }
-        teamPhaseBadgesMap[phaseChampK].push(pBadgeObj);
-        phaseWinnersList.push(pBadgeObj);
       }
 
       mScores.forEach(function (ms, mRankIdx) {

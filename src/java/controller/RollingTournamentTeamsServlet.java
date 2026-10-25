@@ -36,6 +36,13 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             tournamentId = request.getParameter("tournamentId");
         }
 
+        String copiedFromParam = request.getParameter("copiedFrom");
+        if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()
+                && !new TournamentDAO().canCopyTournamentConfig(copiedFromParam, tournamentId)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Chỉ được sao chép cấu hình từ giải khác trong cùng Series.");
+            return;
+        }
+
         SeriesDAO seriesDAO = new SeriesDAO();
         ParticipantDAO participantDAO = new ParticipantDAO();
 
@@ -78,9 +85,11 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             }
         }
 
-        String copiedFromParam = request.getParameter("copiedFrom");
         if (copiedFromParam != null && !copiedFromParam.trim().isEmpty() && tournamentId != null && !tournamentId.trim().isEmpty()) {
-            new TournamentDAO().copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim(), request.getParameter("multiConfig") == null);
+            if (!new TournamentDAO().copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim(), request.getParameter("multiConfig") == null)) {
+                response.sendError(409, "Không thể lưu cấu hình sao chép.");
+                return;
+            }
         }
 
         Tournament tournament = null;
