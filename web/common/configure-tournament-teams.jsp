@@ -42,13 +42,16 @@
         try {
             dao.TournamentDAO tDao = new dao.TournamentDAO();
             if (tournamentTypeParam != null && !tournamentTypeParam.trim().isEmpty()) {
-                tDao.updateTournamentFormatAndType(tournamentId, tourneyFormat, tournamentTypeParam, stage1FormatParam, stage2FormatParam, advCount);
+                if (!tDao.updateTournamentFormatAndType(tournamentId, tourneyFormat, tournamentTypeParam, stage1FormatParam, stage2FormatParam, advCount, request.getParameter("multiConfig"))) {
+                    response.sendError(409, "Không lưu được cấu hình. Stage đã có trận không thể đổi cấu trúc.");
+                    return;
+                }
             } else if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
                 tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
             }
             String copiedFromParam = request.getParameter("copiedFrom");
             if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()) {
-                tDao.copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim());
+                tDao.copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim(), request.getParameter("multiConfig") == null);
             }
         } catch (Exception ignore) {}
         ParticipantDAO pDao = new ParticipantDAO();
@@ -63,6 +66,8 @@
             } catch(Exception e) {}
         }
     }
+    String initialDrawFormat = tournamentId == null ? tourneyFormat : new dao.TournamentDAO().getStage1Format(tournamentId);
+    if (initialDrawFormat == null || initialDrawFormat.trim().isEmpty()) initialDrawFormat = stage1FormatParam != null ? stage1FormatParam : tourneyFormat;
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -174,6 +179,12 @@
                                                 style="background: rgba(255, 255, 255, 0.06); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
                                             Ẩn seed
                                         </button>
+                                        <% if ("SINGLE_ELIMINATION".equalsIgnoreCase(initialDrawFormat) || "DOUBLE_ELIMINATION".equalsIgnoreCase(initialDrawFormat)) { %>
+                                        <label style="display:inline-flex;align-items:center;gap:0.4rem;color:#cbd5e1;font-size:0.85rem;cursor:pointer;" title="Giữ sơ đồ seed cố định; bỏ chọn để bốc thăm theo nhóm seed">
+                                            <input type="checkbox" id="classicDrawInput" <%= new dao.TournamentDAO().isClassicDraw(tournamentId) ? "checked" : "" %> onchange="window.saveHideSeedConfig()">
+                                            Classic draw
+                                        </label>
+                                        <% } %>
                                     </div>
                                     <div class="manage-toolbar-right">
                                         <button type="button" class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); height: 32px;" onclick="window.deleteSelectedTeams()">
@@ -336,6 +347,16 @@
 
             // Helper to get effective Stage 1 Format
             function getStage1Format() {
+                var urlParams = new URLSearchParams(window.location.search);
+                var urlType = urlParams.get('tournamentType');
+                var urlStage1 = urlParams.get('stage1Format');
+                var urlFormat = urlParams.get('format');
+
+                if (urlType === 'MULTI_STAGE' && urlStage1) {
+                    return urlStage1.toUpperCase();
+                }
+                if (urlFormat) return urlFormat.toUpperCase();
+
                 if (tournamentId) {
                     var tType = localStorage.getItem('tourma_type_' + tournamentId);
                     var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
@@ -348,8 +369,9 @@
                     var localFmt = localStorage.getItem('tourma_format_' + tournamentId);
                     if (localFmt) return localFmt.toUpperCase();
                 }
-                var urlFormat = new URLSearchParams(window.location.search).get('format');
-                if (urlFormat) return urlFormat.toUpperCase();
+                <% if (stage1FormatParam != null && !stage1FormatParam.trim().isEmpty()) { %>
+                    return "<%= stage1FormatParam.trim().toUpperCase() %>";
+                <% } %>
                 if (tourneyFormatServer) return tourneyFormatServer.toUpperCase();
                 return 'SINGLE_ELIMINATION';
             }
@@ -859,10 +881,15 @@
                     }
                 }
 
-                // Round Robin validation: MUST NOT exceed 24 teams!
+                // Round Robin validation: MUST NOT exceed 24 teams and MUST have at least 2 teams!
                 if (checkIsRoundRobin()) {
                     if (currentTeamsList.length > 24) {
-                        alert('Thể thức Round Robin chỉ hỗ trợ tối đa 24 đội bóng. Hiện tại bạn đã nhập ' + currentTeamsList.length + ' đội. Vui lòng bớt đội để tiếp tục.');
+                        alert('⚠️ Thể thức Vòng Tròn (Round Robin) chỉ hỗ trợ tối đa 24 đội bóng. Hiện tại danh sách có ' + currentTeamsList.length + ' đội. Vui lòng bớt đội để tiếp tục.');
+                        if (e && e.preventDefault) e.preventDefault();
+                        return false;
+                    }
+                    if (currentTeamsList.length < 2) {
+                        alert('⚠️ Cần ít nhất 2 đội bóng để sinh lịch thi đấu Vòng Tròn (Round Robin).');
                         if (e && e.preventDefault) e.preventDefault();
                         return false;
                     }
@@ -966,6 +993,7 @@
                     input.value = visibleCount;
                 }
                 window.applyHideSeedUI(isEnabled);
+                window.saveHideSeedConfig();
             };
 
             window.applyHideSeedUI = function(isEnabled) {
@@ -998,6 +1026,17 @@
                 var input = document.getElementById('lockTopSeedsInput');
                 var isEnabled = (btn && btn.dataset.active === 'true');
                 var visibleCount = input ? input.value.trim() : '';
+                document.querySelectorAll('form').forEach(function (form) {
+                    var field = form.querySelector('input[name="topSeedCount"]');
+                    if (!field) { field = document.createElement('input'); field.type = 'hidden'; field.name = 'topSeedCount'; form.appendChild(field); }
+                    field.value = visibleCount || '0';
+                    var classic = document.getElementById('classicDrawInput');
+                    if (classic) {
+                        var drawField = form.querySelector('input[name="classicDraw"]');
+                        if (!drawField) { drawField = document.createElement('input'); drawField.type = 'hidden'; drawField.name = 'classicDraw'; form.appendChild(drawField); }
+                        drawField.value = classic.checked ? 'true' : 'false';
+                    }
+                });
 
                 var cfg = {
                     isEnabled: isEnabled,

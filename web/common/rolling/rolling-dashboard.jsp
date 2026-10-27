@@ -375,6 +375,66 @@
                             </div>
                         </div>
 
+                        <!-- 10B. Phase 2 #1 (Đứng đầu BXH kết thúc Phase 2) -->
+                        <div class="tourma-badge-pill tourma-badge-phase-2" tabindex="0">
+                            <span class="phase2-shine-fx" aria-hidden="true"></span>
+                            <i class="fa-solid fa-meteor badge-icon"></i>
+                            <span class="tourma-badge-name">Phase 2 #1</span>
+                            <div class="tourma-badge-tooltip">
+                                <div class="tourma-badge-tooltip-header">
+                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-meteor"></i> Phase 2 #1</span>
+                                    <span class="tourma-badge-tooltip-rarity">Phase 2 #1</span>
+                                </div>
+                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 2.</div>
+                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-meteor"></i> Hạng 1 BXH kết thúc Phase 2</div>
+                            </div>
+                        </div>
+
+                        <!-- 10C. Phase 3 #1 (Đứng đầu BXH kết thúc Phase 3) -->
+                        <div class="tourma-badge-pill tourma-badge-phase-3" tabindex="0">
+                            <span class="phase3-shine-fx" aria-hidden="true"></span>
+                            <i class="fa-solid fa-bolt-lightning badge-icon"></i>
+                            <span class="tourma-badge-name">Phase 3 #1</span>
+                            <div class="tourma-badge-tooltip">
+                                <div class="tourma-badge-tooltip-header">
+                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-bolt-lightning"></i> Phase 3 #1</span>
+                                    <span class="tourma-badge-tooltip-rarity">Phase 3 #1</span>
+                                </div>
+                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 3.</div>
+                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-bolt-lightning"></i> Hạng 1 BXH kết thúc Phase 3</div>
+                            </div>
+                        </div>
+
+                        <!-- 10D. Phase 4 #1 (Đứng đầu BXH kết thúc Phase 4) -->
+                        <div class="tourma-badge-pill tourma-badge-phase-4" tabindex="0">
+                            <span class="phase4-shine-fx" aria-hidden="true"></span>
+                            <i class="fa-solid fa-atom badge-icon"></i>
+                            <span class="tourma-badge-name">Phase 4 #1</span>
+                            <div class="tourma-badge-tooltip">
+                                <div class="tourma-badge-tooltip-header">
+                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-atom"></i> Phase 4 #1</span>
+                                    <span class="tourma-badge-tooltip-rarity">Phase 4 #1</span>
+                                </div>
+                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 4.</div>
+                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-atom"></i> Hạng 1 BXH kết thúc Phase 4</div>
+                            </div>
+                        </div>
+
+                        <!-- 10E. Phase 5 #1 (Đứng đầu BXH kết thúc Phase 5) -->
+                        <div class="tourma-badge-pill tourma-badge-phase-5" tabindex="0">
+                            <span class="phase5-shine-fx" aria-hidden="true"></span>
+                            <i class="fa-solid fa-sun badge-icon"></i>
+                            <span class="tourma-badge-name">Phase 5 #1</span>
+                            <div class="tourma-badge-tooltip">
+                                <div class="tourma-badge-tooltip-header">
+                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-sun"></i> Phase 5 #1</span>
+                                    <span class="tourma-badge-tooltip-rarity">Phase 5 #1</span>
+                                </div>
+                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 5.</div>
+                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-sun"></i> Hạng 1 BXH kết thúc Phase 5</div>
+                            </div>
+                        </div>
+
                         <!-- 11. Runner-Up (Tối thiểu 5 trận chung kết, về nhì nhiều hơn vô địch) -->
                         <div class="tourma-badge-pill tourma-badge-runner-up" tabindex="0">
                             <i class="fa-solid fa-medal badge-icon"></i>

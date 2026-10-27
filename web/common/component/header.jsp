@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
+<jsp:include page="/common/component/tournament-config-state.jsp" />
 <!-- Dedicated Header Component Stylesheet -->
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css">
 
@@ -61,3 +62,35 @@
         </li>
     </ul>
 </nav>
+
+<script>
+(function () {
+    var header = document.querySelector('nav.navbar');
+    if (!header) return;
+    function updateHeaderHeight() {
+        document.documentElement.style.setProperty('--tourma-header-height', Math.ceil(header.getBoundingClientRect().height) + 'px');
+    }
+    updateHeaderHeight();
+    if (window.ResizeObserver) new ResizeObserver(updateHeaderHeight).observe(header);
+    else window.addEventListener('resize', updateHeaderHeight);
+    window.addEventListener('load', updateHeaderHeight);
+
+    var previousScroll = Math.max(0, window.scrollY);
+    var scrollFramePending = false;
+    window.addEventListener('scroll', function () {
+        if (scrollFramePending) return;
+        scrollFramePending = true;
+        window.requestAnimationFrame(function () {
+            scrollFramePending = false;
+            var currentScroll = Math.max(0, window.scrollY);
+            var nearTop = currentScroll <= header.getBoundingClientRect().height;
+            if (!nearTop && Math.abs(currentScroll - previousScroll) < 4) return;
+            var hide = !nearTop && currentScroll < previousScroll;
+            document.querySelectorAll('main.container > .tournament-navbar-control-bar, main.container > .rr-control-bar').forEach(function (navbar) {
+                navbar.classList.toggle('is-scroll-hidden', hide && !navbar.contains(document.activeElement));
+            });
+            previousScroll = currentScroll;
+        });
+    }, { passive: true });
+})();
+</script>

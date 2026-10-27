@@ -115,6 +115,82 @@ public class SwissStageServlet extends HttpServlet {
                 return;
             }
 
+            if ("randomRound".equalsIgnoreCase(action)) {
+                int roundNumber = 1;
+                try {
+                    String rParam = request.getParameter("round");
+                    if (rParam == null) rParam = request.getParameter("roundNumber");
+                    if (rParam != null) roundNumber = Integer.parseInt(rParam.trim());
+                } catch (Exception ignore) {}
+
+                int maxScore = 3;
+                try {
+                    String sParam = request.getParameter("targetScore");
+                    if (sParam == null) sParam = request.getParameter("maxScore");
+                    if (sParam != null) maxScore = Integer.parseInt(sParam.trim());
+                } catch (Exception ignore) {}
+
+                boolean ok = swissSystemDAO.randomRoundInDB(tournamentId, stage, roundNumber, maxScore);
+                String matchesJson = swissSystemDAO.getMatchesJsonForFrontend(tournamentId, stage);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã random Vòng " + roundNumber + " thành công!" : "Lỗi khi random Vòng " + roundNumber) + "\",\"matchesData\":" + matchesJson + "}");
+                return;
+            }
+
+            if ("randomAll".equalsIgnoreCase(action)) {
+                int maxScore = 3;
+                try {
+                    String sParam = request.getParameter("targetScore");
+                    if (sParam == null) sParam = request.getParameter("maxScore");
+                    if (sParam != null) maxScore = Integer.parseInt(sParam.trim());
+                } catch (Exception ignore) {}
+
+                boolean ok = swissSystemDAO.randomAllInDB(tournamentId, stage, maxScore);
+                String matchesJson = swissSystemDAO.getMatchesJsonForFrontend(tournamentId, stage);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã random toàn bộ 5 vòng Swiss thành công!" : "Lỗi khi random toàn bộ Swiss") + "\",\"matchesData\":" + matchesJson + "}");
+                return;
+            }
+
+            if ("updateScore".equalsIgnoreCase(action)) {
+                String matchId = request.getParameter("matchId");
+                if (matchId == null || matchId.trim().isEmpty()) matchId = request.getParameter("matchKey");
+
+                int score1 = 0;
+                try {
+                    String s1 = request.getParameter("score1");
+                    if (s1 == null) s1 = request.getParameter("team1Score");
+                    if (s1 != null) score1 = Integer.parseInt(s1.trim());
+                } catch (Exception ignore) {}
+
+                int score2 = 0;
+                try {
+                    String s2 = request.getParameter("score2");
+                    if (s2 == null) s2 = request.getParameter("team2Score");
+                    if (s2 != null) score2 = Integer.parseInt(s2.trim());
+                } catch (Exception ignore) {}
+
+                String winnerId = request.getParameter("winner");
+                if (winnerId == null) winnerId = request.getParameter("winnerId");
+
+                boolean ok = swissSystemDAO.saveMatchScore(tournamentId, stage, matchId, score1, score2, winnerId);
+                String matchesJson = swissSystemDAO.getMatchesJsonForFrontend(tournamentId, stage);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Cập nhật tỉ số thành công!" : "Lỗi cập nhật tỉ số!") + "\",\"matchesData\":" + matchesJson + "}");
+                return;
+            }
+
+            if ("batchSync".equalsIgnoreCase(action)) {
+                String matchesJson = request.getParameter("matchesJson");
+                boolean ok = swissSystemDAO.batchSyncMatches(tournamentId, stage, matchesJson);
+                String updatedJson = swissSystemDAO.getMatchesJsonForFrontend(tournamentId, stage);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã đồng bộ kết quả vào CSDL!" : "Lỗi khi đồng bộ CSDL!") + "\",\"matchesData\":" + updatedJson + "}");
+                return;
+            }
+
+            if ("getMatches".equalsIgnoreCase(action)) {
+                String matchesJson = swissSystemDAO.getMatchesJsonForFrontend(tournamentId, stage);
+                out.print("{\"status\":\"success\",\"matchesData\":" + matchesJson + "}");
+                return;
+            }
+
             out.print("{\"status\":\"error\",\"message\":\"Hành động không hợp lệ: " + action + "\"}");
 
         } catch (Exception e) {

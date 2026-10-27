@@ -228,35 +228,7 @@ public class TeamProfileServlet extends HttpServlet {
             if (tourneys != null) {
                 DBContext db = new DBContext();
                 try (Connection conn = db.getConnection()) {
-                    // Pre-fetch all matches for this specific team across the series in 1 fast indexed query
-                    Map<String, List<Map<String, Object>>> teamMatchesByTourney = new HashMap<>();
-                    String teamMatchSql = "SELECT m.tournament_id, m.bracket_type, m.team1_id, m.team2_id, m.winner_id, m.score1, m.score2, "
-                        + "t1.raw_name AS team1_name, t2.raw_name AS team2_name "
-                        + "FROM matches m "
-                        + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                        + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                        + "WHERE (t1.raw_name = ? OR t2.raw_name = ?) AND m.is_bye = 0 "
-                        + "AND m.tournament_id IN (SELECT id FROM tournaments WHERE series_id = ?)";
-                    try (PreparedStatement psTeamM = conn.prepareStatement(teamMatchSql)) {
-                        psTeamM.setString(1, teamName);
-                        psTeamM.setString(2, teamName);
-                        psTeamM.setString(3, series.getId());
-                        try (ResultSet rs = psTeamM.executeQuery()) {
-                            while (rs.next()) {
-                                String tid = rs.getString("tournament_id");
-                                Map<String, Object> mData = new HashMap<>();
-                                mData.put("bracket_type", rs.getString("bracket_type"));
-                                mData.put("team1_id", rs.getString("team1_id"));
-                                mData.put("team2_id", rs.getString("team2_id"));
-                                mData.put("winner_id", rs.getString("winner_id"));
-                                mData.put("score1", rs.getObject("score1"));
-                                mData.put("score2", rs.getObject("score2"));
-                                mData.put("team1_name", rs.getString("team1_name"));
-                                mData.put("team2_name", rs.getString("team2_name"));
-                                teamMatchesByTourney.computeIfAbsent(tid, k -> new ArrayList<>()).add(mData);
-                            }
-                        }
-                    }
+                    Map<String, int[]> matchStats = loadMatchStats(conn, series.getId());
 
                     RollingWindowPointService rwps = RollingWindowPointService.getInstance();
                     for (int tIdx = 0; tIdx < tourneys.size(); tIdx++) {
@@ -265,83 +237,30 @@ public class TeamProfileServlet extends HttpServlet {
 
                         List<Team> teams = rwps.getCachedTeamsByTournamentId(t.getId());
                         Team teamInTourney = null;
-                        if (teams != null) {
+                        // Resolve stable Partner identity before falling back to an unlinked name.
+                        if (teams != null && partner != null && partner.getId() != null) {
                             for (Team tm : teams) {
-                                if (partner != null && partner.getId() != null && partner.getId().equalsIgnoreCase(tm.getPartnerParticipantId())) {
+                                if (partner.getId().equalsIgnoreCase(tm.getPartnerParticipantId())) {
                                     teamInTourney = tm;
                                     break;
                                 }
-                                if (tm.getName() != null && tm.getName().trim().equalsIgnoreCase(teamName)) {
-                                    teamInTourney = tm;
-                                    break;
-                                }
-                                if (tm.getRawName() != null && tm.getRawName().trim().equalsIgnoreCase(teamName)) {
+                            }
+                        }
+                        if (teams != null && teamInTourney == null) {
+                            for (Team tm : teams) {
+                                if (partner != null && tm.getPartnerParticipantId() != null) continue;
+                                if ((tm.getRawName() != null && tm.getRawName().trim().equalsIgnoreCase(teamName))
+                                        || (tm.getName() != null && tm.getName().trim().equalsIgnoreCase(teamName))) {
                                     teamInTourney = tm;
                                     break;
                                 }
                             }
                         }
 
-                        int tWins = 0;
-                        int tLosses = 0;
-                        boolean playedInTourney = (teamInTourney != null);
-
-                        List<Map<String, Object>> tMatches = teamMatchesByTourney.get(t.getId());
-                        if (tMatches != null && !tMatches.isEmpty()) {
-                            for (Map<String, Object> m : tMatches) {
-                                String t1 = (String) m.get("team1_id");
-                                String t2 = (String) m.get("team2_id");
-                                String t1Name = (String) m.get("team1_name");
-                                String t2Name = (String) m.get("team2_name");
-
-                                boolean isT1 = false;
-                                boolean isT2 = false;
-
-                                if (teamInTourney != null) {
-                                    if (teamInTourney.getId() != null) {
-                                        if (teamInTourney.getId().equalsIgnoreCase(t1)) isT1 = true;
-                                        if (teamInTourney.getId().equalsIgnoreCase(t2)) isT2 = true;
-                                    }
-                                    if (teamInTourney.getRawName() != null) {
-                                        if (teamInTourney.getRawName().equalsIgnoreCase(t1Name) || teamInTourney.getRawName().equalsIgnoreCase(t1)) isT1 = true;
-                                        if (teamInTourney.getRawName().equalsIgnoreCase(t2Name) || teamInTourney.getRawName().equalsIgnoreCase(t2)) isT2 = true;
-                                    }
-                                }
-                                if (!isT1 && !isT2 && !teamName.isEmpty()) {
-                                    if (teamName.equalsIgnoreCase(t1Name) || teamName.equalsIgnoreCase(t1)) isT1 = true;
-                                    if (teamName.equalsIgnoreCase(t2Name) || teamName.equalsIgnoreCase(t2)) isT2 = true;
-                                }
-
-                                if (!isT1 && !isT2) continue;
-                                playedInTourney = true;
-
-                                String wId = (String) m.get("winner_id");
-                                int s1 = -1, s2 = -1;
-                                try { Object o1 = m.get("score1"); if (o1 != null) s1 = (Integer) o1; } catch (Exception ignore) {}
-                                try { Object o2 = m.get("score2"); if (o2 != null) s2 = (Integer) o2; } catch (Exception ignore) {}
-
-                                if (wId == null && s1 >= 0 && s2 >= 0 && s1 != s2) {
-                                    wId = (s1 > s2) ? t1 : t2;
-                                    if (wId == null && t1Name != null && t2Name != null) {
-                                        wId = (s1 > s2) ? t1Name : t2Name;
-                                    }
-                                }
-
-                                if (wId != null) {
-                                    boolean won = false;
-                                    if (isT1 && (wId.equalsIgnoreCase(t1) || (t1Name != null && wId.equalsIgnoreCase(t1Name)) || (teamInTourney != null && wId.equalsIgnoreCase(teamInTourney.getId())) || wId.equalsIgnoreCase(teamName))) {
-                                        won = true;
-                                    } else if (isT2 && (wId.equalsIgnoreCase(t2) || (t2Name != null && wId.equalsIgnoreCase(t2Name)) || (teamInTourney != null && wId.equalsIgnoreCase(teamInTourney.getId())) || wId.equalsIgnoreCase(teamName))) {
-                                        won = true;
-                                    }
-                                    if (won) {
-                                        tWins++;
-                                    } else {
-                                        tLosses++;
-                                    }
-                                }
-                            }
-                        }
+                        boolean playedInTourney = teamInTourney != null;
+                        int[] stats = playedInTourney ? matchStats.get(teamInTourney.getId()) : null;
+                        int tWins = stats == null ? 0 : stats[0];
+                        int tLosses = stats == null ? 0 : stats[1];
 
                         if (playedInTourney) {
                             totalTourneysPlayed++;
@@ -372,16 +291,6 @@ public class TeamProfileServlet extends HttpServlet {
 
                             boolean isDe = (s1Fmt != null && s1Fmt.toUpperCase().contains("DOUBLE")) || (t.getFormat() != null && t.getFormat().toUpperCase().contains("DOUBLE"));
                             boolean isSwiss = (s1Fmt != null && (s1Fmt.toUpperCase().contains("SWISS") || s1Fmt.toUpperCase().contains("SW"))) || (t.getFormat() != null && (t.getFormat().toUpperCase().contains("SWISS") || t.getFormat().toUpperCase().contains("SW")));
-                            if (!isSwiss && tMatches != null) {
-                                for (Map<String, Object> m : tMatches) {
-                                    String bType = (String) m.get("bracket_type");
-                                    if (bType != null && bType.toUpperCase().contains("SWISS")) {
-                                        isSwiss = true;
-                                        break;
-                                    }
-                                }
-                            }
-
                             String achievement = "Round of 16";
                             boolean isChamp = false;
 
@@ -474,16 +383,19 @@ public class TeamProfileServlet extends HttpServlet {
                                 }
                             }
 
+                            service.TournamentPlacementService.PlacementResult actualResult = service.TournamentPlacementService.getInstance()
+                                    .getTournamentResults(t.getId()).get(teamInTourney == null ? null : teamInTourney.getId());
+                            if (actualResult != null) {
+                                achievement = actualResult.getAchievement();
+                                tourneyRank = actualResult.rank;
+                                isChamp = actualResult.rank == 1;
+                            }
+
                             String fmtLabel = getFormatShortCode(s1Fmt);
                             if (isMulti) {
                                 fmtLabel = getFormatShortCode(s1Fmt) + " ➔ " + getFormatShortCode(s2Fmt);
                             }
 
-                            if (tWins == 0 && tLosses == 0) {
-                                int[] wl = deduceMatchStats(achievement, fmtLabel);
-                                tWins = wl[0];
-                                tLosses = wl[1];
-                            }
                             totalWins += tWins;
                             totalLosses += tLosses;
 
@@ -492,7 +404,7 @@ public class TeamProfileServlet extends HttpServlet {
                             // Points calculation for this tournament
                             int ptsEarned = 0;
                             try {
-                                ptsEarned = calculatePointsForTournament(t, tourneyRank);
+                                ptsEarned = calculatePointsForTournament(t, teamInTourney == null ? null : teamInTourney.getId());
                             } catch (Exception ignore) {}
                             totalAccumulatedPoints += ptsEarned;
 
@@ -675,14 +587,6 @@ public class TeamProfileServlet extends HttpServlet {
             java.util.Collections.reverse(championTourneys);
         }
 
-        if (totalWins == 0 && totalLosses == 0 && !performanceList.isEmpty()) {
-            for (TourneyPerformanceDTO perf : performanceList) {
-                int[] wl = deduceMatchStats(perf.getAchievement(), perf.getFormatLabel());
-                totalWins += wl[0];
-                totalLosses += wl[1];
-            }
-        }
-
         int sumTablePoints = 0;
         for (TourneyPerformanceDTO perf : performanceList) {
             sumTablePoints += perf.getPointsEarned();
@@ -767,24 +671,14 @@ public class TeamProfileServlet extends HttpServlet {
         return url.toString();
     }
 
-    private int calculatePointsForTournament(Tournament t, int rank) {
-        if (t == null) return 0;
-        RollingWindowPointService svc = RollingWindowPointService.getInstance();
-        Map<String, Integer> config = svc.parsePointsConfigJson(t.getSeriesPointsConfig());
-        if (!config.isEmpty()) {
-            return svc.resolvePointsForPosition(rank, config);
-        }
-        int champPts = (t.getSeriesRewardPoints() > 0) ? t.getSeriesRewardPoints() : 100;
-        if (rank == 1) return champPts;
-        if (rank == 2) return (int) Math.round(champPts * 0.70);
-        if (rank <= 4) return (int) Math.round(champPts * 0.40);
-        if (rank <= 8) return (int) Math.round(champPts * 0.20);
-        return (int) Math.round(champPts * 0.10);
+    private int calculatePointsForTournament(Tournament t, String teamId) {
+        return RollingWindowPointService.getInstance().getTournamentTeamPoints(t, teamId);
     }
 
     private String getFormatShortCode(String fmt) {
         if (fmt == null || fmt.trim().isEmpty()) return "SE";
         String f = fmt.toUpperCase().trim();
+        if ("GSL".equals(f) || "GF".equals(f)) return "GF";
         if (f.contains("DOUBLE") || "DE".equals(f)) return "DE";
         if (f.contains("ROUND") || "RR".equals(f)) return "RR";
         if (f.contains("GROUP") || "GS".equals(f)) return "GS";
@@ -792,40 +686,33 @@ public class TeamProfileServlet extends HttpServlet {
         return "SE";
     }
 
-    public static int[] deduceMatchStats(String achievement, String formatLabel) {
-        String a = (achievement != null) ? achievement.trim() : "";
-        if (a.contains("3-0")) {
-            return new int[]{3, 0};
-        } else if (a.contains("3-1")) {
-            return new int[]{3, 1};
-        } else if (a.contains("3-2")) {
-            return new int[]{3, 2};
-        } else if (a.contains("2-3")) {
-            return new int[]{2, 3};
-        } else if (a.contains("1-3")) {
-            return new int[]{1, 3};
-        } else if (a.contains("0-3")) {
-            return new int[]{0, 3};
-        } else if ("Vô Địch".equalsIgnoreCase(a) || "Champion".equalsIgnoreCase(a)) {
-            return new int[]{6, 0};
-        } else if ("Á Quân".equalsIgnoreCase(a) || "Runner-Up".equalsIgnoreCase(a)) {
-            return new int[]{5, 1};
-        } else if ("Bán Kết".equalsIgnoreCase(a) || "Semi-Finals".equalsIgnoreCase(a)) {
-            return new int[]{4, 1};
-        } else if ("Tứ Kết".equalsIgnoreCase(a) || "Quarter-Finals".equalsIgnoreCase(a)) {
-            return new int[]{3, 1};
-        } else if ("Round of 16".equalsIgnoreCase(a)) {
-            return new int[]{2, 1};
-        } else if ("Round of 32".equalsIgnoreCase(a) || "Round of 64".equalsIgnoreCase(a)) {
-            return new int[]{1, 1};
-        } else if ("Round of 128".equalsIgnoreCase(a)) {
-            return new int[]{0, 1};
-        } else if (a.toLowerCase().contains("loser's qualification") || a.toLowerCase().contains("qualification")) {
-            return new int[]{1, 2};
-        } else if (a.toLowerCase().contains("loser's round 1")) {
-            return new int[]{0, 2};
-        } else {
-            return new int[]{0, 1};
+    /** Aggregate persisted results across all stages; draws count as neither wins nor losses. */
+    static Map<String, int[]> loadMatchStats(Connection conn, String seriesId) throws java.sql.SQLException {
+        String sql = "WITH results AS ("
+                + "SELECT m.team1_id, m.team2_id, CASE "
+                + "WHEN m.winner_id IN (m.team1_id, m.team2_id) THEN m.winner_id "
+                + "WHEN m.winner_id IS NULL THEN CASE "
+                + "WHEN m.score1 > m.score2 THEN m.team1_id WHEN m.score2 > m.score1 THEN m.team2_id "
+                + "WHEN m.penalty1 >= 0 AND m.penalty2 >= 0 AND m.penalty1 > m.penalty2 THEN m.team1_id "
+                + "WHEN m.penalty1 >= 0 AND m.penalty2 >= 0 AND m.penalty2 > m.penalty1 THEN m.team2_id END "
+                + "END AS winner_id FROM matches m JOIN tournaments t ON t.id = m.tournament_id "
+                + "JOIN teams a ON a.id = m.team1_id AND a.tournament_id = m.tournament_id "
+                + "JOIN teams b ON b.id = m.team2_id AND b.tournament_id = m.tournament_id "
+                + "WHERE t.series_id = ? AND ISNULL(m.is_bye, 0) = 0 AND m.team1_id <> m.team2_id "
+                + "AND UPPER(m.status) IN ('FINISHED', 'COMPLETED', 'DONE') "
+                + "AND m.score1 >= 0 AND m.score2 >= 0), appearances AS ("
+                + "SELECT team1_id AS team_id, winner_id FROM results UNION ALL "
+                + "SELECT team2_id, winner_id FROM results) "
+                + "SELECT team_id, SUM(CASE WHEN winner_id = team_id THEN 1 ELSE 0 END) AS wins, "
+                + "SUM(CASE WHEN winner_id IS NOT NULL AND winner_id <> team_id THEN 1 ELSE 0 END) AS losses "
+                + "FROM appearances GROUP BY team_id";
+        Map<String, int[]> stats = new HashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, seriesId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) stats.put(rs.getString("team_id"), new int[]{rs.getInt("wins"), rs.getInt("losses")});
+            }
         }
+        return stats;
     }
 }

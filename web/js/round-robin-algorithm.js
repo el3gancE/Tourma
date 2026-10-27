@@ -324,24 +324,11 @@
                 standingsList.push(item);
             }
 
-            // Tie-breaker Sorting:
-            // 1. Points DESC
-            // 2. Goal Difference DESC
-            // 3. Goals For DESC
-            // 4. Won Matches DESC
-            // 5. Head-to-head
-            // 6. Original Seed ASC
+            // Same order as persisted league qualification: points, GD, GF, original seed.
             standingsList.sort(function (a, b) {
                 if (b.points !== a.points) return b.points - a.points;
                 if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
                 if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-                if (b.won !== a.won) return b.won - a.won;
-
-                // Head to head check
-                var h2hA = a.h2hPoints[b.team] || 0;
-                var h2hB = b.h2hPoints[a.team] || 0;
-                if (h2hA !== h2hB) return h2hB - h2hA;
-
                 return a.seed - b.seed;
             });
 

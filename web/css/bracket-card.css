@@ -34,9 +34,135 @@
 .bracket-node-card.swiss-card-red,
 .bracket-node-card.lower-bracket-card,
 .bracket-node-card.card-theme-red {
-    --card-theme-color: #f43f5e;
-    --card-theme-hover-bg: rgba(244, 63, 94, 0.22);
-    --card-theme-glow: rgba(244, 63, 94, 0.45);
+    --card-theme-color: #ff4655;
+    --card-theme-hover-bg: rgba(255, 70, 85, 0.22);
+    --card-theme-glow: rgba(255, 70, 85, 0.45);
+}
+
+/* Auto-inherit Lower Bracket theme for all cards inside Double Elimination Lower Bracket containers */
+.de-round-column[data-bracket-type="LOWER"]:not(.gsl-round-column) .bracket-node-card,
+#lowerBracketColumnsWrapper .bracket-node-card,
+#lowerViewportCanvas .bracket-node-card,
+.lower-canvas:not(.gsl-viewport-canvas) .bracket-node-card,
+.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-node-card,
+body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card {
+    --card-theme-color: #ff4655 !important;
+    --card-theme-hover-bg: rgba(255, 70, 85, 0.22) !important;
+    --card-theme-glow: rgba(255, 70, 85, 0.45) !important;
+}
+
+#lowerBracketColumnsWrapper .bracket-team-row.winner,
+#lowerViewportCanvas .bracket-team-row.winner,
+.lower-canvas:not(.gsl-viewport-canvas) .bracket-team-row.winner,
+.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-team-row.winner,
+body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card .bracket-team-row.winner {
+    background: rgba(255, 70, 85, 0.22) !important;
+    border-left: 2.5px solid #ff4655 !important;
+}
+
+#lowerBracketColumnsWrapper .bracket-team-row.winner .bracket-team-name,
+#lowerViewportCanvas .bracket-team-row.winner .bracket-team-name,
+.lower-canvas:not(.gsl-viewport-canvas) .bracket-team-row.winner .bracket-team-name,
+.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-team-row.winner .bracket-team-name,
+body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card .bracket-team-row.winner .bracket-team-name {
+    color: #ff4655 !important;
+}
+
+#lowerBracketColumnsWrapper .bracket-team-row.winner .bracket-score-box,
+#lowerViewportCanvas .bracket-team-row.winner .bracket-score-box,
+.lower-canvas:not(.gsl-viewport-canvas) .bracket-team-row.winner .bracket-score-box,
+.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-team-row.winner .bracket-score-box,
+body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card .bracket-team-row.winner .bracket-score-box {
+    background: #ff4655 !important;
+    color: #0b0d12 !important;
+    border-color: #ff4655 !important;
+}
+
+#lowerBracketColumnsWrapper .bracket-status-badge.done,
+#lowerViewportCanvas .bracket-status-badge.done,
+.lower-canvas:not(.gsl-viewport-canvas) .bracket-status-badge.done,
+.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-status-badge.done,
+body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card .bracket-status-badge.done {
+    background: rgba(255, 70, 85, 0.22) !important;
+    color: #ff4655 !important;
+    border: 1px solid #ff4655 !important;
+}
+
+#lowerBracketColumnsWrapper .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+#lowerBracketColumnsWrapper .bracket-node-card:hover,
+#lowerViewportCanvas .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+#lowerViewportCanvas .bracket-node-card:hover,
+.lower-canvas:not(.gsl-viewport-canvas) .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+.lower-canvas:not(.gsl-viewport-canvas) .bracket-node-card:hover,
+body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card:hover {
+    border-color: #ff4655 !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 70, 85, 0.45) !important;
+}
+
+/* GSL Dynamic Group Theme for cards (Both Upper & Lower Branches) */
+.gsl-round-column .bracket-node-card,
+.gsl-group-section .bracket-node-card,
+.gsl-single-viewport-wrapper .bracket-node-card,
+.gsl-viewport-canvas .bracket-node-card,
+.gsl-branch-columns .bracket-node-card,
+body.gsl-page-container .bracket-node-card,
+#upperViewportCanvas .bracket-node-card,
+#upperBracketColumnsWrapper .bracket-node-card {
+    --card-theme-color: var(--grp-color, #2dd4bf) !important;
+    --card-theme-hover-bg: var(--grp-hover, rgba(45, 212, 191, 0.22)) !important;
+    --card-theme-glow: var(--grp-glow, rgba(45, 212, 191, 0.45)) !important;
+}
+
+.gsl-round-column .bracket-node-card .bracket-team-row.winner,
+.gsl-single-viewport-wrapper .bracket-node-card .bracket-team-row.winner,
+.gsl-viewport-canvas .bracket-node-card .bracket-team-row.winner,
+.gsl-branch-columns .bracket-node-card .bracket-team-row.winner,
+body.gsl-page-container .bracket-node-card .bracket-team-row.winner {
+    background: var(--card-theme-hover-bg, var(--grp-hover, rgba(45, 212, 191, 0.22))) !important;
+    border-left: 2.5px solid var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+}
+
+.gsl-round-column .bracket-node-card .bracket-team-row.winner .bracket-team-name,
+.gsl-single-viewport-wrapper .bracket-node-card .bracket-team-row.winner .bracket-team-name,
+.gsl-viewport-canvas .bracket-node-card .bracket-team-row.winner .bracket-team-name,
+.gsl-branch-columns .bracket-node-card .bracket-team-row.winner .bracket-team-name,
+body.gsl-page-container .bracket-node-card .bracket-team-row.winner .bracket-team-name {
+    color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+}
+
+.gsl-round-column .bracket-node-card .bracket-team-row.winner .bracket-score-box,
+.gsl-single-viewport-wrapper .bracket-node-card .bracket-team-row.winner .bracket-score-box,
+.gsl-viewport-canvas .bracket-node-card .bracket-team-row.winner .bracket-score-box,
+.gsl-branch-columns .bracket-node-card .bracket-team-row.winner .bracket-score-box,
+body.gsl-page-container .bracket-node-card .bracket-team-row.winner .bracket-score-box {
+    background: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+    color: #0b0d12 !important;
+    border-color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+}
+
+.gsl-round-column .bracket-node-card .bracket-status-badge.done,
+.gsl-single-viewport-wrapper .bracket-node-card .bracket-status-badge.done,
+.gsl-viewport-canvas .bracket-node-card .bracket-status-badge.done,
+.gsl-branch-columns .bracket-node-card .bracket-status-badge.done,
+body.gsl-page-container .bracket-node-card .bracket-status-badge.done {
+    background: var(--card-theme-hover-bg, var(--grp-hover, rgba(45, 212, 191, 0.22))) !important;
+    color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+    border: 1px solid var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+}
+
+.gsl-round-column .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+.gsl-round-column .bracket-node-card:hover,
+.gsl-single-viewport-wrapper .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+.gsl-single-viewport-wrapper .bracket-node-card:hover,
+.gsl-viewport-canvas .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+.gsl-viewport-canvas .bracket-node-card:hover,
+.gsl-branch-columns .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+.gsl-branch-columns .bracket-node-card:hover,
+body.gsl-page-container .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
+body.gsl-page-container .bracket-node-card:hover {
+    border-color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px var(--card-theme-glow, var(--grp-glow, rgba(45, 212, 191, 0.45))) !important;
 }
 
 .bracket-node-card.swiss-card-gold {
@@ -225,4 +351,19 @@
 .bracket-connector-in,
 .bracket-connector-out {
     display: none;
+}
+
+/* Quick Mode 1-Click Interactive Hover Feedback (Dynamically matches card theme / group color without double borders) */
+body.quick-mode-active .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:not(.bye-row):hover,
+body.quick-mode-active .match-card:not(.disabled-unconfirmed):not(.bye-match-card) .match-team-side:not(.bye-team):hover,
+body.quick-mode-active .match-card-item:not(.disabled-unconfirmed):not(.bye-match-item) .match-team-side:not(.bye-team):hover {
+    background: var(--card-theme-hover-bg, var(--grp-hover, rgba(45, 212, 191, 0.22))) !important;
+    cursor: pointer !important;
+    border-left: 2.5px solid var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+}
+
+body.quick-mode-active .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:not(.bye-row):hover .bracket-team-name,
+body.quick-mode-active .match-card:not(.disabled-unconfirmed):not(.bye-match-card) .match-team-side:not(.bye-team):hover .match-list-name,
+body.quick-mode-active .match-card-item:not(.disabled-unconfirmed):not(.bye-match-item) .match-team-side:not(.bye-team):hover .match-list-name {
+    color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
 }

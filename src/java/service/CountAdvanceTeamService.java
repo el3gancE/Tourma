@@ -22,14 +22,13 @@ public class CountAdvanceTeamService {
             return 1;
         }
 
-        int totalRounds = (int) Math.ceil(Math.log(totalTeams) / Math.log(2));
-        // Use ceil so stopping round leaves remaining teams >= cutTarget
-        // e.g. 32 teams, cutTarget=9: ceil(log2(9))=4, stopping=5-4=1 (16 remain >= 9) ✓
-        // e.g. 32 teams, cutTarget=8: ceil(log2(8))=3, stopping=5-3=2 (8 remain = 8) ✓
-        int remainingRoundsForCut = (int) Math.ceil(Math.log(cutTarget) / Math.log(2));
-        int stoppingRound = totalRounds - remainingRoundsForCut;
+        int maxM = (int) Math.ceil((double) totalTeams / cutTarget);
+        int pMax = 1;
+        while (pMax < maxM) pMax *= 2;
+        if (pMax < 2) pMax = 2;
 
-        return Math.max(1, stoppingRound);
+        int rounds = (int) (Math.log(pMax) / Math.log(2));
+        return Math.max(1, rounds);
     }
 
     /**

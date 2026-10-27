@@ -30,6 +30,9 @@
 
     // Quick Mode only appears in Single Elimination, Double Elimination, and Swiss System
     String fmtKey = (formatName != null) ? formatName.trim().toUpperCase() : "";
+    String compactFormatName = formatName.replaceAll("(?i)Single Elimination", "SE")
+            .replaceAll("(?i)Double Elimination", "DE").replaceAll("(?i)GSL Format", "GSL")
+            .replaceAll("(?i)Swiss System", "Swiss").replaceAll("(?i)Stage 2:[ ]*", "S2 · ");
     boolean isSupportedQuickFormat = fmtKey.contains("SINGLE") || fmtKey.contains("DOUBLE") || fmtKey.contains("SWISS") || fmtKey.contains("ELIMINATION");
 
     String showQuickParam = request.getParameter("showQuickMode");
@@ -62,6 +65,8 @@
     if (engineName == null || engineName.trim().isEmpty()) {
         engineName = "SingleEliminationEngine";
     }
+    boolean showLiveStatus = fmtKey.contains("SINGLE") || fmtKey.contains("DOUBLE") || fmtKey.contains("GSL")
+            || "GSLEngine".equals(engineName) || "TourmaGSL".equals(engineName);
 
     String view1Icon = request.getParameter("view1Icon");
     if (view1Icon == null || view1Icon.trim().isEmpty()) view1Icon = "fa-diagram-project";
@@ -79,20 +84,29 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
 
 <!-- Top Control Bar (Tournament Title, Format Badge, Team Count Badge & View Mode Toggle) -->
-<div class="tournament-navbar-control-bar single-elimination-control-bar">
+<div class="tournament-navbar-control-bar single-elimination-control-bar <%= showLiveStatus ? "has-live-status" : "" %>">
     <div class="tournament-info-badge-group">
         <h1 class="tournament-name-title">
             <i class="fa-solid fa-trophy text-gold"></i>
             <span id="tournamentNameDisplay"><%= tourneyName %></span>
         </h1>
-        <span class="<%= formatBadgeClass %>"><%= formatName %></span>
+        <span class="<%= formatBadgeClass %>" title="<%= formatName %>"><%= compactFormatName %></span>
         <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
         <span id="tournamentAdvancingBadge" class="advancing-count-badge"
-            style="<%= ("MULTI_STAGE".equals(tournamentType) && cutTarget > 1) ? "" : "display: none;" %>">
+            style="<%= (cutTarget > 0) ? "" : "display: none;" %>">
             <i class="fa-solid fa-arrow-right-to-bracket"></i>
             <%= cutTarget %> Đội đi tiếp
         </span>
     </div>
+
+    <% if (showLiveStatus) { %>
+    <div id="tournamentLiveStatus" class="tournament-live-status" role="status" aria-label="Số đội còn trong giải theo Seed, Unseed và Guest" aria-live="polite" aria-atomic="true"
+         title="S: Seed · US: Unseed · G: Guest. Đội còn trong giải / tổng ban đầu.">
+        <span class="live-status-count live-seed team-count-badge" title="Seed">S: <strong id="liveSeedCount">—/—</strong></span>
+        <span class="live-status-count live-unseed format-badge-single" title="Unseed">US: <strong id="liveUnseedCount">—/—</strong></span>
+        <span class="live-status-count live-guest format-badge-double" title="Guest">G: <strong id="liveGuestCount">—/—</strong></span>
+    </div>
+    <% } %>
 
     <!-- Right Action Bar: Quick Mode Toggle + Standalone Reset Button + View Mode Toggle Buttons -->
     <div class="control-actions-right-group">
@@ -101,7 +115,7 @@
         <button type="button" id="singleBtnQuickMode" class="btn-quick-mode-toggle"
             onclick="window.TourmaNavbar && window.TourmaNavbar.toggleQuickMode()"
             title="Chế độ phân định thắng thua nhanh (1-click chọn đội thắng)">
-            <i class="fa-solid fa-bolt"></i> Quick Mode: <span class="quick-mode-status-text">OFF</span>
+            <i class="fa-solid fa-bolt"></i> Quick: <span class="quick-mode-status-text">OFF</span>
         </button>
         <% } %>
 
@@ -109,8 +123,8 @@
         <!-- Standalone Reset Bracket Button -->
         <button type="button" id="seBtnResetBracket" class="btn-reset-bracket-action"
             onclick="window.TourmaNavbar && window.TourmaNavbar.openResetModal()"
-            title="Xóa kết quả và reset lại sơ đồ ban đầu">
-            <i class="fa-solid fa-rotate-right"></i> <%= resetLabel %>
+            title="<%= resetLabel %>: Xóa kết quả và reset lại sơ đồ ban đầu">
+            <i class="fa-solid fa-rotate-right"></i> Reset
         </button>
         <% } %>
 
@@ -118,12 +132,12 @@
         <!-- View Mode Toggle Buttons (Bracket ↔ List View) -->
         <div class="view-mode-toggle-group">
             <button type="button" id="btnViewBracket" class="btn-view-toggle active"
-                onclick="window.TourmaNavbar && window.TourmaNavbar.switchViewMode('bracket')">
-                <i class="fa-solid <%= view1Icon %>"></i> <%= view1Label %>
+                onclick="window.TourmaNavbar && window.TourmaNavbar.switchViewMode('bracket')" title="<%= view1Label %>" aria-label="<%= view1Label %>">
+                <i class="fa-solid <%= view1Icon %>"></i> Sơ đồ
             </button>
             <button type="button" id="btnViewList" class="btn-view-toggle"
-                onclick="window.TourmaNavbar && window.TourmaNavbar.switchViewMode('list')">
-                <i class="fa-solid <%= view2Icon %>"></i> <%= view2Label %>
+                onclick="window.TourmaNavbar && window.TourmaNavbar.switchViewMode('list')" title="<%= view2Label %>" aria-label="<%= view2Label %>">
+                <i class="fa-solid <%= view2Icon %>"></i> Trận
             </button>
         </div>
         <% } %>
@@ -176,11 +190,88 @@
 <script>
     window.TourmaNavbar = {
         engineName: '<%= engineName %>',
+        refreshLiveStatus: function () {
+            var widget=document.getElementById('tournamentLiveStatus');
+            if (!widget) return;
+            var self=this, version=(this.liveStatusVersion || 0)+1;
+            this.liveStatusVersion=version;
+            clearTimeout(this.liveStatusTimer);
+            this.liveStatusTimer=setTimeout(async function () {
+                var engine=self.getEngine();
+                var id=(engine && engine.tournamentId) || window.TourmaTournamentId || new URLSearchParams(window.location.search).get('id');
+                if (!id || id==='demo') return;
+                var endpoint='${pageContext.request.contextPath}/api/match-update';
+                try {
+                    // Import a legacy browser setting only if the database has no saved value.
+                    if (window.TourmaTopSeedCount == null) {
+                        var legacy;
+                        try { legacy=JSON.parse(localStorage.getItem('tourma_hide_seed_config_'+id)); } catch(e) {}
+                        if (legacy && legacy.visibleCount !== undefined) {
+                            var count=Number(legacy.visibleCount || 0);
+                            if (Number.isInteger(count) && count>=0 && count<=999) {
+                                var imported=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+                                    body:new URLSearchParams({action:'initializeTopSeedCount',tournamentId:id,topSeedCount:count}).toString()});
+                                if (!imported.ok) throw new Error('Cannot save Top Seed');
+                                var saved=await imported.json();
+                                if (saved.status!=='success') throw new Error('Cannot save Top Seed');
+                                window.TourmaTopSeedCount=saved.topSeedCount;
+                            }
+                        }
+                    }
+                    var liveParams={action:'liveStatus',tournamentId:id};
+                    if (document.getElementById('deupperLiveStatus') && engine) liveParams.branchStage=engine.currentStage || 1;
+                    var response=await fetch(endpoint+'?'+new URLSearchParams(liveParams),{cache:'no-store'});
+                    if (!response.ok) throw new Error('Cannot load Live Status');
+                    var data=await response.json();
+                    if (data.status!=='success' || !data.liveStatus) throw new Error('Invalid Live Status');
+                    if (version!==self.liveStatusVersion) return;
+                    [['seed','liveSeedCount'],['unseed','liveUnseedCount'],['guest','liveGuestCount']].forEach(function (item) {
+                        var value=data.liveStatus[item[0]];
+                        document.getElementById(item[1]).textContent=value.alive+'/'+value.total;
+                    });
+                    ['upper','lower'].forEach(function (branch) {
+                        var branchWidget=document.getElementById('de'+branch+'LiveStatus');
+                        if (!branchWidget) return;
+                        var counts=data.branchLiveStatus && data.branchLiveStatus[branch];
+                        if (!counts) { branchWidget.classList.add('is-stale'); return; }
+                        branchWidget.querySelectorAll('[data-category]').forEach(function (node) {
+                            var value=counts[node.getAttribute('data-category')];
+                            node.textContent=value.alive+'/'+value.total;
+                        });
+                        branchWidget.classList.remove('is-stale');
+                    });
+                    widget.classList.remove('is-stale');
+                    widget.title='S: Seed · US: Unseed · G: Guest. Đội còn trong giải / tổng ban đầu.';
+                } catch(error) {
+                    if (version!==self.liveStatusVersion) return;
+                    document.querySelectorAll('.de-branch-live-status').forEach(function (node) { node.classList.add('is-stale'); });
+                    widget.classList.add('is-stale');
+                    widget.title='Không cập nhật được Live Status từ DB. Vui lòng thử lại.';
+                }
+            },40);
+        },
         getEngine: function () {
-            return window[this.engineName] || window.SingleEliminationEngine || window.TourmaSingleElimination || window.TourmaDoubleElimination || window.TourmaSwiss || window.TourmaRoundRobin || window.TourmaGroupStage;
+            return window[this.engineName] || window.GSLEngine || window.TourmaGSL || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine || window.TourmaSingleElimination || window.TourmaSwiss || window.TourmaRoundRobin || window.TourmaGroupStage;
         },
         openResetModal: function () {
             var engine = this.getEngine();
+            var tid = (engine && engine.tournamentId) || window.TourmaTournamentId || '';
+            if (window.TourmaScoreModal && typeof window.TourmaScoreModal.isLocked === 'function') {
+                if (window.TourmaScoreModal.isLocked(tid)) {
+                    if (window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                        window.FinalStagePopup.promptUnlock();
+                    } else if (window.StageEndPopup && typeof window.StageEndPopup.promptUnlock === 'function') {
+                        window.StageEndPopup.promptUnlock();
+                    }
+                    return;
+                }
+            } else if (window.FinalStagePopup && typeof window.FinalStagePopup.isTournamentLocked === 'function') {
+                if (window.FinalStagePopup.isTournamentLocked(tid)) {
+                    window.FinalStagePopup.promptUnlock();
+                    return;
+                }
+            }
+
             if (engine && typeof engine.openResetModal === 'function') {
                 engine.openResetModal();
             } else {
@@ -247,4 +338,38 @@
             }
         }
     };
+
+    if (<%= showLiveStatus %>) {
+        document.addEventListener('DOMContentLoaded',function () { window.TourmaNavbar.refreshLiveStatus(); });
+        window.addEventListener('focus',function () { window.TourmaNavbar.refreshLiveStatus(); });
+        setInterval(function () {
+            if (!document.hidden) window.TourmaNavbar.refreshLiveStatus();
+        },5000);
+    }
+
+    // Immediate View Mode Active State Sync from localStorage
+    (function () {
+        var tid = window.TourmaTournamentId || '';
+        if (!tid) {
+            try {
+                var params = new URLSearchParams(window.location.search);
+                tid = params.get('id') || params.get('tournamentId') || 'demo';
+            } catch (e) { }
+        }
+        var savedView = null;
+        try {
+            savedView = localStorage.getItem('tourma_view_mode_' + tid) ||
+                        localStorage.getItem('tourma_view_mode_demo') ||
+                        localStorage.getItem('tourma_gsl_view_mode_' + tid) ||
+                        localStorage.getItem('tourma_de_view_mode_' + tid) ||
+                        localStorage.getItem('tourma_se_view_mode_' + tid);
+        } catch (e) { }
+
+        if (savedView && savedView.toUpperCase() === 'LIST') {
+            var bBtns = document.querySelectorAll('#btnViewBracket, .btn-view-toggle:first-child');
+            var lBtns = document.querySelectorAll('#btnViewList, .btn-view-toggle:last-child');
+            bBtns.forEach(function (b) { b.classList.remove('active'); });
+            lBtns.forEach(function (b) { b.classList.add('active'); });
+        }
+    })();
 </script>

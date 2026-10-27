@@ -11,18 +11,23 @@
     }
 
     TournamentDAO tDao = new TournamentDAO();
-    Tournament tourney = tDao.getTournamentById(tournamentId);
+    Tournament tourney = tDao.getTournamentById(tournamentId, false);
     String tourneyName = (tourney != null && tourney.getName() != null) ? tourney.getName() : "Giải Đấu Vòng Bảng";
     String dbGroupAssignments = (tourney != null) ? tourney.getGroupAssignments() : null;
     String dbStage1Status = (tourney != null && tourney.getStage1Status() != null) ? tourney.getStage1Status() : "PENDING";
+    String dbTournamentStatus = (tourney != null && tourney.getStatus() != null) ? tourney.getStatus().trim() : "DRAFT";
+    String tournamentType = (tourney != null && tourney.getTournamentType() != null) ? tourney.getTournamentType() : "SINGLE_STAGE";
+    int cutTarget = (tourney != null) ? tourney.getAdvancingSeatsCount() : 0;
 
+    int currentStage = "2".equals(request.getParameter("stage")) ? 2 : 1;
+    String dbMultiStageConfig = tourney == null ? null : tourney.getMultiStageConfig();
     ParticipantDAO pDao = new ParticipantDAO();
     List<Team> dbTeamsList = null;
     String dbMatchesJson = "[]";
     try {
-        dbTeamsList = pDao.getTeamsByTournamentId(tournamentId);
+        dbTeamsList = currentStage == 2 ? new dao.SingleEliminationDAO().getStage2TeamsList(tournamentId) : pDao.getTeamsByTournamentId(tournamentId);
         dao.GroupStageDAO gsDao = new dao.GroupStageDAO();
-        String j = gsDao.getMatchesJsonForFrontend(tournamentId, 1);
+        String j = gsDao.getMatchesJsonForFrontend(tournamentId, currentStage);
         if (j != null && !j.trim().isEmpty() && !j.trim().equals("[]")) {
             dbMatchesJson = j;
         }
@@ -44,10 +49,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= tourneyName %> - Group Stage - Tourma</title>
 
+    <!-- Google Font Lexend -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <!-- Global Styling & Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-bracket.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
@@ -55,9 +65,12 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-stage.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
 </head>
 <body style="background: #0b0d12; color: #f8fafc;">
+
+    <!-- Stage Finish Alert Component (Locked Stage 2) -->
 
     <!-- Stage End Popup Component -->
     <jsp:include page="/common/component/stage-end-popup.jsp"/>
@@ -78,14 +91,14 @@
 
     <main class="container has-sidebar round-robin-container">
         
-        <!-- TOP CONTROL BAR (Round Robin Design Style) -->
+        <!-- TOP CONTROL BAR (Round Robin / Group Stage Design Style) -->
         <div class="rr-control-bar">
             <div class="rr-info-group">
                 <h1 class="rr-tourney-title">
                     <i class="fa-solid fa-trophy text-gold"></i>
                     <span id="gsTournamentTitle"><%= tourneyName %></span>
                 </h1>
-                <span class="format-badge-rr">Group Stage</span>
+                <span class="format-badge-rr" title="Group Stage">GS</span>
                 <span id="gsTeamCountBadge" class="team-count-badge">0 Đội</span>
                 <span id="gsAdvanceBadge" class="team-count-badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.35rem;">
                     <i class="fa-solid fa-circle-check" style="font-size: 0.75rem;"></i>
@@ -95,19 +108,20 @@
 
             <div class="rr-actions-group">
                 <button type="button" class="btn-reset-bracket-action" onclick="TourmaGroupStage.resetAllMatches()" title="Xóa toàn bộ kết quả và thiết lập lại từ đầu">
-                    <i class="fa-solid fa-rotate-right"></i> Reset Giải
+                    <i class="fa-solid fa-rotate-right"></i> Reset Bảng Đấu
                 </button>
 
                 <div class="view-mode-toggle-group">
                     <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle active" style="text-decoration: none;">
-                        <i class="fa-solid fa-calendar-days"></i> Lịch Thi Đấu
+                        <i class="fa-solid fa-calendar-days"></i> Lịch
                     </a>
                     <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle" style="text-decoration: none;">
-                        <i class="fa-solid fa-ranking-star"></i> Bảng Xếp Hạng
+                        <i class="fa-solid fa-ranking-star"></i> BXH
                     </a>
                 </div>
             </div>
         </div>
+            <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
         <!-- CONTAINER FOR EMPTY TEAM ALERT -->
         <div id="gsEmptyAlertContainer" style="display: none; width: 100%;"></div>
@@ -120,19 +134,36 @@
                 <!-- Dynamic Group Pills (Tất cả các bảng, Bảng A, Bảng B...) -->
             </div>
 
-            <!-- FIXTURES / MATCHES CONTAINER -->
+            <!-- FIXTURES / MATCHES VIEW -->
             <div id="gsMatchesView">
                 <div id="gsMatchesContainer" class="rr-fixtures-container"></div>
+            </div>
+
+            <!-- STANDINGS VIEW (Dynamically toggled) -->
+            <div id="gsStandingsView" style="display: none;">
+                <div id="gsStandingsContainer" class="gst-container" style="padding: 0;"></div>
             </div>
 
         </div>
     </main>
 
+    <jsp:include page="/common/component/tournament-config-state.jsp"/>
     <!-- JS SCRIPTS -->
     <script>
         window.TourmaContextPath = "${pageContext.request.contextPath}";
         window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
         window.TourmaDbStage1Status["<%= tournamentId %>"] = "<%= dbStage1Status %>";
+        window.TourmaDbTournamentStatus = window.TourmaDbTournamentStatus || {};
+        window.TourmaDbTournamentStatus["<%= tournamentId %>"] = "<%= dbTournamentStatus %>";
+        if ('<%= dbTournamentStatus %>' !== 'COMPLETED') {
+            try {
+                localStorage.removeItem('tourma_final_locked_' + '<%= tournamentId %>');
+                localStorage.removeItem('tourma_champion_' + '<%= tournamentId %>');
+                localStorage.removeItem('tourma_final_champion_' + '<%= tournamentId %>');
+            } catch(e) {}
+        }
+        window.TourmaTournamentType = "<%= tournamentType %>";
+        window.TourmaCutTarget = <%= cutTarget %>;
         window.groupTournamentId = "<%= tournamentId %>";
         window.dbGroupMatches = <%= dbMatchesJson %>;
         window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
@@ -147,14 +178,17 @@
                     if (tName == null) tName = "Đội " + (i + 1);
                     String nameEsc = tName.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
             %>
-                { id: "<%= tm.getId() %>", name: "<%= nameEsc %>" }<%= (i < dbTeamsList.size() - 1) ? "," : "" %>
+                { id: "<%= tm.getId() %>", name: "<%= nameEsc %>", seed: <%= tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : (i + 1) %> }<%= (i < dbTeamsList.size() - 1) ? "," : "" %>
             <%  } 
             } %>
         ];
     </script>
+    <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
     <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
     <script src="${pageContext.request.contextPath}/js/match-card.js"></script>
     <script src="${pageContext.request.contextPath}/js/popup.js"></script>
+    <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
+    <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
     <script src="${pageContext.request.contextPath}/js/group-standing.js"></script>
     <script src="${pageContext.request.contextPath}/js/group-stage.js"></script>
 </body>

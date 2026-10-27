@@ -450,6 +450,25 @@
                 <%  }
                 } %>
             ];
+            window.serverTourneyAchievements = [
+                <% if (tournamentsList != null) {
+                    for (int tIdx = 0; tIdx < tournamentsList.size(); tIdx++) {
+                        java.util.Map<String, service.TournamentPlacementService.PlacementResult> results =
+                            service.TournamentPlacementService.getInstance().getTournamentResults(tournamentsList.get(tIdx).getId());
+                        StringBuilder resultJson = new StringBuilder("{");
+                        int resultIdx = 0;
+                        for (java.util.Map.Entry<String, service.TournamentPlacementService.PlacementResult> entry : results.entrySet()) {
+                            if (resultIdx++ > 0) resultJson.append(',');
+                            String resultKey = entry.getKey().replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t").replace("<", "\\u003c");
+                            String resultLabel = entry.getValue().getAchievement().replace("\\", "\\\\").replace("\"", "\\\"");
+                            resultJson.append('"').append(resultKey).append("\":\"").append(resultLabel).append('"');
+                        }
+                        resultJson.append('}');
+                %>
+                    <%= resultJson.toString() %><%= tIdx < tournamentsList.size()-1 ? "," : "" %>
+                <%  }
+                } %>
+            ];
             window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
             window.seriesIdVal = "<%= (series != null && series.getId() != null) ? series.getId() : "" %>";
         </script>

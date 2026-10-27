@@ -49,22 +49,25 @@ public class DECutService {
     public static boolean isCutStageFinished(List<Match> matchesList, int ubStopRound, int lbStopRound) {
         if (matchesList == null || matchesList.isEmpty()) return false;
 
+        int upperCount = 0, lowerCount = 0;
         for (Match m : matchesList) {
             if (m == null) continue;
             int round = m.getRoundNumber();
             String bracketType = m.getBracketType(); // "UPPER" or "LOWER"
 
-            if ("UPPER".equalsIgnoreCase(bracketType) && round == ubStopRound) {
-                if (!"COMPLETED".equalsIgnoreCase(m.getStatus()) && !"done".equalsIgnoreCase(m.getStatus())) {
+            if (isUpper(bracketType) && round == ubStopRound) {
+                upperCount++;
+                if (!"COMPLETED".equalsIgnoreCase(m.getStatus()) && !"done".equalsIgnoreCase(m.getStatus()) && !"FINISHED".equalsIgnoreCase(m.getStatus())) {
                     return false;
                 }
-            } else if ("LOWER".equalsIgnoreCase(bracketType) && round == lbStopRound) {
-                if (!"COMPLETED".equalsIgnoreCase(m.getStatus()) && !"done".equalsIgnoreCase(m.getStatus())) {
+            } else if (isLower(bracketType) && round == lbStopRound) {
+                lowerCount++;
+                if (!"COMPLETED".equalsIgnoreCase(m.getStatus()) && !"done".equalsIgnoreCase(m.getStatus()) && !"FINISHED".equalsIgnoreCase(m.getStatus())) {
                     return false;
                 }
             }
         }
-        return true;
+        return upperCount > 0 && lowerCount > 0;
     }
 
     /**
@@ -81,12 +84,12 @@ public class DECutService {
             int round = m.getRoundNumber();
             String bracketType = m.getBracketType();
 
-            if ("UPPER".equalsIgnoreCase(bracketType) && round == ubStopRound) {
+            if (isUpper(bracketType) && round == ubStopRound) {
                 Team winner = getMatchWinner(m);
                 if (winner != null && winner.getName() != null && !"BYE".equalsIgnoreCase(winner.getName())) {
                     ubTeams.add(winner);
                 }
-            } else if ("LOWER".equalsIgnoreCase(bracketType) && round == lbStopRound) {
+            } else if (isLower(bracketType) && round == lbStopRound) {
                 Team winner = getMatchWinner(m);
                 if (winner != null && winner.getName() != null && !"BYE".equalsIgnoreCase(winner.getName())) {
                     lbTeams.add(winner);
@@ -101,52 +104,25 @@ public class DECutService {
         return allQualifiers;
     }
 
-    private static Team getMatchWinner(Match m) {
-        if (m == null) return null;
-        Integer winnerId = m.getWinnerTeamId();
-        
-        Team t = new Team();
-        if (winnerId != null) {
-            if (winnerId.equals(m.getTeam1Id())) {
-                t.setId(String.valueOf(m.getTeam1Id()));
-                t.setRawName(m.getTeam1Name());
-                t.setOriginalSeed(m.getTeam1Seed() != null ? m.getTeam1Seed() : 0);
-                t.setStatus("QUALIFIED");
-                return t;
-            } else if (winnerId.equals(m.getTeam2Id())) {
-                t.setId(String.valueOf(m.getTeam2Id()));
-                t.setRawName(m.getTeam2Name());
-                t.setOriginalSeed(m.getTeam2Seed() != null ? m.getTeam2Seed() : 0);
-                t.setStatus("QUALIFIED");
-                return t;
-            }
-        }
+    private static boolean isUpper(String bracket) {
+        return "UPPER".equalsIgnoreCase(bracket) || "WINNER_BRACKET".equalsIgnoreCase(bracket) || "MAIN".equalsIgnoreCase(bracket);
+    }
 
-        // Fallback to scores
-        if (m.getTeam1Score() != null && m.getTeam2Score() != null) {
-            if (m.getTeam1Score() > m.getTeam2Score()) {
-                t.setId(String.valueOf(m.getTeam1Id()));
-                t.setRawName(m.getTeam1Name());
-                t.setOriginalSeed(m.getTeam1Seed() != null ? m.getTeam1Seed() : 0);
-                t.setStatus("QUALIFIED");
-                return t;
-            } else if (m.getTeam2Score() > m.getTeam1Score()) {
-                t.setId(String.valueOf(m.getTeam2Id()));
-                t.setRawName(m.getTeam2Name());
-                t.setOriginalSeed(m.getTeam2Seed() != null ? m.getTeam2Seed() : 0);
-                t.setStatus("QUALIFIED");
-                return t;
-            }
-        }
-        
-        if (m.getTeam1Id() != null) {
-            t.setId(String.valueOf(m.getTeam1Id()));
-            t.setRawName(m.getTeam1Name());
-            t.setOriginalSeed(m.getTeam1Seed() != null ? m.getTeam1Seed() : 0);
-            t.setStatus("QUALIFIED");
-            return t;
-        }
-        return null;
+    private static boolean isLower(String bracket) {
+        return "LOWER".equalsIgnoreCase(bracket) || "LOSER_BRACKET".equalsIgnoreCase(bracket) || "LB".equalsIgnoreCase(bracket);
+    }
+
+    private static Team getMatchWinner(Match match) {
+        Integer winner = match.getWinnerTeamId();
+        if (winner == null || (winner != 1 && winner != 2)) return null;
+        boolean first = winner == 1;
+        String id = first ? match.getTeam1StringId() : match.getTeam2StringId();
+        String name = first ? match.getTeam1Name() : match.getTeam2Name();
+        Integer seed = first ? match.getTeam1Seed() : match.getTeam2Seed();
+        if (id == null || name == null || "BYE".equalsIgnoreCase(name)) return null;
+        Team team = new Team(); team.setId(id); team.setRawName(name);
+        team.setOriginalSeed(seed == null ? 0 : seed); team.setStatus("QUALIFIED");
+        return team;
     }
 
     private static int nextPowerOfTwo(int n) {

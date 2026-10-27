@@ -28,8 +28,28 @@ public class DBContext {
         }
     }
 
+    private static volatile boolean schemaMigrated = false;
+
     private static Connection createPhysicalConnection() throws SQLException {
-        return DriverManager.getConnection(URL, userID, password);
+        Connection conn = DriverManager.getConnection(URL, userID, password);
+        if (!schemaMigrated) {
+            synchronized (DBContext.class) {
+                if (!schemaMigrated) {
+                    try (java.sql.Statement st = conn.createStatement()) {
+                        st.executeUpdate("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tournaments') AND name = 'champion_name') " +
+                                        "BEGIN ALTER TABLE tournaments ADD champion_name NVARCHAR(255) NULL; END");
+                        st.executeUpdate("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tournaments') AND name = 'teams_json') " +
+                                        "BEGIN ALTER TABLE tournaments ADD teams_json NVARCHAR(MAX) NULL; END");
+                        st.executeUpdate("IF COL_LENGTH('tournaments', 'top_seed_count') IS NULL " +
+                                        "BEGIN ALTER TABLE tournaments ADD top_seed_count INT NULL; END");
+                        st.executeUpdate("IF COL_LENGTH('tournaments', 'classic_draw') IS NULL " +
+                                        "BEGIN ALTER TABLE tournaments ADD classic_draw BIT NOT NULL DEFAULT 0; END");
+                        schemaMigrated = true;
+                    } catch (Exception ignore) {}
+                }
+            }
+        }
+        return conn;
     }
 
     public Connection getConnection() throws Exception {

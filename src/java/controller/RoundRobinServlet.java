@@ -115,11 +115,50 @@ public class RoundRobinServlet extends HttpServlet {
                 return;
             }
 
+            if ("updateMatch".equalsIgnoreCase(action) || "saveScore".equalsIgnoreCase(action)) {
+                String matchId = request.getParameter("matchId");
+                if (matchId == null) matchId = request.getParameter("id");
+                Integer score1 = parseInteger(request.getParameter("score1"));
+                if (score1 == null) score1 = parseInteger(request.getParameter("team1Score"));
+                Integer score2 = parseInteger(request.getParameter("score2"));
+                if (score2 == null) score2 = parseInteger(request.getParameter("team2Score"));
+                Integer penalty1 = parseInteger(request.getParameter("penalty1"));
+                Integer penalty2 = parseInteger(request.getParameter("penalty2"));
+                String winnerFlag = request.getParameter("winner");
+                if (winnerFlag == null) winnerFlag = request.getParameter("winnerId");
+                String team1Name = request.getParameter("team1Name");
+                String team2Name = request.getParameter("team2Name");
+
+                MatchUpdateServlet servlet = new MatchUpdateServlet();
+                MatchUpdateServlet.MatchUpdateResult res = servlet.handleUpdateMatch(tournamentId, matchId, score1, score2, penalty1, penalty2, winnerFlag, team1Name, team2Name, stage);
+
+                if (res != null && res.success) {
+                    out.print("{\"status\":\"success\",\"message\":\"Cập nhật thành công!\",\"matchId\":\"" + escapeJson(res.matchId) + "\"}");
+                } else {
+                    out.print("{\"status\":\"error\",\"message\":\"" + escapeJson(res != null ? res.errorMessage : "Lỗi") + "\"}");
+                }
+                return;
+            }
+
             out.print("{\"status\":\"error\",\"message\":\"Hành động không hợp lệ: " + action + "\"}");
 
         } catch (Exception e) {
             e.printStackTrace();
             out.print("{\"status\":\"error\",\"message\":\"Lỗi server: " + e.getMessage() + "\"}");
         }
+    }
+
+    private Integer parseInteger(String val) {
+        if (val == null || val.trim().isEmpty()) return null;
+        try {
+            return Integer.parseInt(val.trim());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     }
 }

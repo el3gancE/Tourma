@@ -1,176 +1,92 @@
-/**
- * ============================================================================
- * TOURMA - STAGE FINISH ALERT COMPONENT ENGINE (stage-finish-alert.js)
- * Automatically blocks access to Stage 2 when Stage 1 is not yet completed
- * or completed but not yet confirmed in stage-end-popup.
- * ============================================================================
- */
-
+/** Shared Stage 2 guard: database state overrides all browser caches and old matches. */
 (function (window) {
     'use strict';
-
-    var StageFinishAlert = {
-        /**
-         * Check if Stage 2 access is locked and render alert if not ready
-         * @param {string} tournamentId
-         * @param {number|string} currentStage
-         * @param {string|HTMLElement} targetContainer
-         * @returns {boolean} true if alert is shown (Stage 2 locked & viewport must be hidden), false if unlocked
-         */
-        checkAndRender: function (tournamentId, currentStage, targetContainer) {
-            var urlParams = new URLSearchParams(window.location.search);
-            var stageParam = urlParams.get('stage');
-            var stageNum = (currentStage === 2 || currentStage === '2' || stageParam === '2' || stageParam === 2) ? 2 : 1;
-
-            if (stageNum !== 2) return false;
-            if (!tournamentId) return false;
-
-            // 1. Check if Stage 1 has been confirmed and locked or if Stage 2 has matches
-            var isLocked = false;
-            try {
-                isLocked = (localStorage.getItem('tourma_stage1_locked_' + tournamentId) === 'true');
-            } catch (e) {
-                isLocked = false;
+    if (window.StageFinishAlert) return;
+    var guard = {
+        tournamentId: null,
+        state: window.TourmaStageAccessState || null,
+        blocked: false,
+        checkAndRender: function (tid, stage) {
+            if (String(stage) !== '2' && new URLSearchParams(window.location.search).get('stage') !== '2') return false;
+            this.tournamentId = tid;
+            var state = this.state || window.TourmaStageAccessState;
+            var dbStatus = window.TourmaDbStage1Status && window.TourmaDbStage1Status[tid];
+            var ready = state ? state.ready === true : (dbStatus === 'LOCKED' || dbStatus === 'COMPLETED');
+            var wrapper = document.getElementById('stageFinishAlertContainer');
+            var main = document.querySelector('main.container');
+            var navbar = main && main.querySelector('.tournament-navbar-control-bar, .rr-control-bar');
+            if (wrapper && main) {
+                if (navbar && wrapper.previousElementSibling !== navbar) main.insertBefore(wrapper, navbar.nextSibling);
+                else if (!navbar && wrapper.parentNode !== main) main.insertBefore(wrapper, main.firstChild);
             }
-
-            // Also check if Stage 2 already has saved matches or DB preloads
-            if (!isLocked) {
-                try {
-                    if (localStorage.getItem('tourma_matches_stage2_' + tournamentId) ||
-                        localStorage.getItem('tourma_bracket_stage2_' + tournamentId) ||
-                        localStorage.getItem('tourma_stage2_teams_' + tournamentId) ||
-                        localStorage.getItem('tourma_champion_' + tournamentId) ||
-                        localStorage.getItem('tourma_final_champion_' + tournamentId)) {
-                        isLocked = true;
-                    }
-                } catch (e) {}
-            }
-
-            if (!isLocked && window.TourmaContextDbMatches && Array.isArray(window.TourmaContextDbMatches) && window.TourmaContextDbMatches.length > 0) {
-                isLocked = true;
-            }
-
-            // If Stage 1 is already confirmed and locked or Stage 2 has active data, Stage 2 is unlocked!
-            if (isLocked) {
-                var wrapper = document.getElementById('stageFinishAlertContainer');
-                if (wrapper) wrapper.style.display = 'none';
-                return false;
-            }
-
-            // 2. Stage 1 is NOT yet confirmed/locked -> MUST SHOW ALERT AND HIDE VIEWPORT!
-            // Detect Stage 1 format to create the return link
-            var s1Format = 'GROUP_STAGE';
-            try {
-                var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tournamentId);
-                if (multiCfgRaw) {
-                    var mCfg = JSON.parse(multiCfgRaw);
-                    if (mCfg && mCfg.stage1Format) s1Format = mCfg.stage1Format;
-                } else if (localStorage.getItem('tourma_group_assignments_' + tournamentId) || localStorage.getItem('tourma_group_matches_' + tournamentId)) {
-                    s1Format = 'GROUP_STAGE';
-                } else if (localStorage.getItem('tourma_swiss_matches_' + tournamentId)) {
-                    s1Format = 'SWISS';
-                } else if (localStorage.getItem('tourma_rr_matches_' + tournamentId)) {
-                    s1Format = 'ROUND_ROBIN';
-                } else {
-                    s1Format = 'SINGLE_ELIMINATION';
-                }
-            } catch (e) {
-                s1Format = 'GROUP_STAGE';
-            }
-
-            var title = 'Bạn chưa hoàn thành vòng 1';
-            var desc = 'Vui lòng hoàn thành và xác nhận kết quả vòng 1 để tiếp tục.';
-
-            // Resolve Stage 1 return link
-            var isCommonPath = (window.location.pathname.indexOf('/common/') !== -1);
-            var basePrefix = isCommonPath ? '' : 'common/';
-            var page = 'group-stage.jsp';
-            if (s1Format === 'SINGLE_ELIMINATION') page = 'single-elimination.jsp';
-            else if (s1Format === 'DOUBLE_ELIMINATION') page = 'double-elimination.jsp';
-            else if (s1Format === 'ROUND_ROBIN') page = 'round-robin.jsp';
-            else if (s1Format === 'SWISS' || s1Format === 'SWISS_LITE') page = 'swiss-stage.jsp';
-
-            var targetHref = basePrefix + page + '?id=' + encodeURIComponent(tournamentId) + '&stage=1';
-
-            var targetNode = (typeof targetContainer === 'string') ? document.getElementById(targetContainer) : targetContainer;
-            var wrapperElem = document.getElementById('stageFinishAlertContainer');
-
-            var alertHtml = 
-                '<div class="stage-finish-alert-wrapper" style="display: flex; width: 100%; justify-content: center; margin: 2rem 0;">' +
-                    '<div class="stage-finish-alert-card">' +
-                        '<div class="stage-finish-alert-icon-box">' +
-                            '<i class="fa-solid fa-lock stage-finish-alert-icon"></i>' +
-                        '</div>' +
-                        '<h3 class="stage-finish-alert-title">' + title + '</h3>' +
-                        '<p class="stage-finish-alert-desc">' + desc + '</p>' +
-                        '<a href="' + targetHref + '" class="btn-stage-finish-return">' +
-                            '<i class="fa-solid fa-arrow-left"></i> Quay Lại Vòng 1' +
-                        '</a>' +
-                    '</div>' +
-                '</div>';
-
-            if (targetNode) {
-                targetNode.innerHTML = alertHtml;
-                targetNode.style.display = 'flex';
-            } else if (wrapperElem) {
-                wrapperElem.innerHTML = 
-                    '<div class="stage-finish-alert-card">' +
-                        '<div class="stage-finish-alert-icon-box">' +
-                            '<i class="fa-solid fa-lock stage-finish-alert-icon"></i>' +
-                        '</div>' +
-                        '<h3 class="stage-finish-alert-title">' + title + '</h3>' +
-                        '<p class="stage-finish-alert-desc">' + desc + '</p>' +
-                        '<a href="' + targetHref + '" class="btn-stage-finish-return">' +
-                            '<i class="fa-solid fa-arrow-left"></i> Quay Lại Vòng 1' +
-                        '</a>' +
-                    '</div>';
-                wrapperElem.style.display = 'flex';
-            } else {
-                var mainEl = document.querySelector('main.container');
-                if (mainEl) {
-                    var div = document.createElement('div');
-                    div.id = 'stageFinishAlertContainer';
-                    div.className = 'stage-finish-alert-wrapper';
-                    div.style.display = 'flex';
-                    div.innerHTML = 
-                        '<div class="stage-finish-alert-card">' +
-                            '<div class="stage-finish-alert-icon-box">' +
-                                '<i class="fa-solid fa-lock stage-finish-alert-icon"></i>' +
-                            '</div>' +
-                            '<h3 class="stage-finish-alert-title">' + title + '</h3>' +
-                            '<p class="stage-finish-alert-desc">' + desc + '</p>' +
-                            '<a href="' + targetHref + '" class="btn-stage-finish-return">' +
-                                '<i class="fa-solid fa-arrow-left"></i> Quay Lại Vòng 1' +
-                            '</a>' +
-                        '</div>';
-                    mainEl.insertBefore(div, mainEl.firstChild);
+            this.blocked = !ready;
+            document.body.classList.toggle('stage2-is-blocked', !ready);
+            if (navbar) navbar.querySelectorAll('button').forEach(function (button) {
+                if (!ready && !button.disabled) { button.setAttribute('data-stage-guard-disabled','true'); button.disabled = true; }
+                else if (ready && button.hasAttribute('data-stage-guard-disabled')) { button.removeAttribute('data-stage-guard-disabled'); button.disabled = false; }
+            });
+            if (wrapper) {
+                wrapper.style.display = ready ? 'none' : 'flex';
+                if (!ready) {
+                    var format = state && state.stage1Format;
+                    if (!format && window.TourmaMultiStageConfig) format = window.TourmaMultiStageConfig.stage1Format;
+                    var pages = {SINGLE_ELIMINATION:'single-elimination.jsp',DOUBLE_ELIMINATION:'double-elimination.jsp',
+                        ROUND_ROBIN:'round-robin.jsp',GSL:'gsl.jsp',GROUP_STAGE:'group-stage.jsp',SWISS:'swiss-stage.jsp',SWISS_LITE:'swiss-stage.jsp'};
+                    var path = window.TourmaContextPath;
+                    if (path === undefined) path = window.location.pathname.split('/common/')[0];
+                    var url = path + '/common/' + (pages[format] || 'single-elimination.jsp') + '?id=' + encodeURIComponent(tid) + '&stage=1';
+                    var series = new URLSearchParams(window.location.search).get('seriesId');
+                    if (series) url += '&seriesId=' + encodeURIComponent(series);
+                    var link = document.getElementById('stageFinishAlertReturnBtn');
+                    if (link) link.setAttribute('href',url);
                 }
             }
-
-            // HIDE ALL VIEWPORTS & MATCH WORKSPACES
-            var dualWs = document.getElementById('deDualViewportWorkspace');
-            if (dualWs) dualWs.style.display = 'none';
-            var listV = document.getElementById('deListViewContainer');
-            if (listV) listV.style.display = 'none';
-            var singleVp = document.getElementById('bracketViewportFrame');
-            if (singleVp) singleVp.style.display = 'none';
-            var singleList = document.getElementById('singleListViewContainer');
-            if (singleList) singleList.style.display = 'none';
-            var swissMain = document.getElementById('swissMainContentWrapper');
-            if (swissMain) swissMain.style.display = 'none';
-            var swissAlert = document.getElementById('swissInvalidTeamAlert');
-            if (swissAlert) swissAlert.style.display = 'none';
-            var rrFixt = document.getElementById('rrFixturesContainer');
-            if (rrFixt) rrFixt.style.display = 'none';
-            var rrTabs = document.getElementById('rrRoundSelectorTabs');
-            if (rrTabs) rrTabs.style.display = 'none';
-            var emptyAlert = document.getElementById('emptyTeamAlertContainer');
-            if (emptyAlert) emptyAlert.style.display = 'none';
-
-            return true; // Alert shown -> viewport hidden
+            return !ready;
+        },
+        applyState: function (state) {
+            var previous = this.state || window.TourmaStageAccessState;
+            var wasBlocked = this.blocked;
+            this.state = state;
+            if (state.ready && (wasBlocked || (previous && previous.generation !== state.generation))) {
+                window.location.reload();
+                return;
+            }
+            this.checkAndRender(this.tournamentId,2);
+        },
+        refresh: async function () {
+            if (!this.tournamentId || this.refreshing) return;
+            this.refreshing = true;
+            try {
+                var path = window.TourmaContextPath;
+                if (path === undefined) path = window.location.pathname.split('/common/')[0];
+                var response = await fetch(path + '/api/cut-stage', {
+                    method:'POST', cache:'no-store', headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+                    body:new URLSearchParams({action:'stageState',tournamentId:this.tournamentId}).toString()
+                });
+                var data = await response.json();
+                if (response.ok && data.status === 'success' && data.stageState) this.applyState(data.stageState);
+            } catch (error) { /* Keep the current view until the next successful refresh. */ }
+            finally { this.refreshing = false; }
         }
     };
-
-    window.StageFinishAlert = StageFinishAlert;
-
+    window.StageFinishAlert = guard;
+    function start() {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('stage') !== '2') return;
+        var tid = params.get('id') || params.get('tournamentId') || window.TourmaTournamentId;
+        if (!tid || tid === 'demo') return;
+        guard.checkAndRender(tid,2);
+        guard.refresh();
+        window.setInterval(function () { if (!document.hidden) guard.refresh(); },1000);
+        window.addEventListener('focus',function () { guard.refresh(); });
+        document.addEventListener('visibilitychange',function () { if (!document.hidden) guard.refresh(); });
+        window.addEventListener('storage',function (event) {
+            if (event.key === 'tourma_stage1_locked_' + tid && event.newValue === 'false') {
+                guard.applyState(Object.assign({},guard.state,{ready:false,stage1Status:'PENDING'}));
+            }
+            if (event.key === 'tourma_stage_state_' + tid || event.key === 'tourma_stage1_locked_' + tid) guard.refresh();
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',start);
+    else start();
 })(window);

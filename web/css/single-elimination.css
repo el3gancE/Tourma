@@ -176,9 +176,9 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: space-around;
+    justify-content: flex-start;
     flex: 1;
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
 /* List View Container & Prominent Round Headers */

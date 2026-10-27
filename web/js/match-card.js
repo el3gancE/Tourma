@@ -72,6 +72,8 @@
                 }
 
                 var tid = (matchData && (matchData.tournamentId || matchData.tourneyId)) ||
+                    (window.TourmaGSL && window.TourmaGSL.tournamentId) ||
+                    (window.GSLEngine && window.GSLEngine.tournamentId) ||
                     (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId) ||
                     (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId) ||
                     (window.TourmaRoundRobin && window.TourmaRoundRobin.tournamentId) ||
@@ -89,7 +91,9 @@
                 // If seed is missing, try looking it up by teamName from memory or localStorage
                 if (isNaN(sNum) && teamName && teamName !== 'BYE' && teamName !== 'TBD' && !teamName.startsWith('W #') && !teamName.startsWith('L #')) {
                     try {
-                        var teams = (window.SingleEliminationEngine && window.SingleEliminationEngine.teamsList) ||
+                        var teams = (window.TourmaGSL && window.TourmaGSL.teamsList) ||
+                            (window.GSLEngine && window.GSLEngine.teamsList) ||
+                            (window.SingleEliminationEngine && window.SingleEliminationEngine.teamsList) ||
                             (window.TourmaDoubleElimination && window.TourmaDoubleElimination.teamsList) ||
                             (window.TourmaRoundRobin && window.TourmaRoundRobin.teamsList) ||
                             (window.TourmaSwissStage && window.TourmaSwissStage.teamsList) ||
@@ -232,8 +236,17 @@
                         try { if (localStorage.getItem('tourma_final_locked_' + _tid) === 'true') isL = true; } catch (e) { }
                     }
                 }
-                if (isL && shouldPrompt && window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
-                    window.FinalStagePopup.promptUnlock();
+                if (isL && shouldPrompt) {
+                    var _lockTid = tid || (window.StageEndPopup ? window.StageEndPopup.tournamentId : null) || (window.FinalStagePopup ? window.FinalStagePopup.tournamentId : null);
+                    if (window.StageEndPopup && typeof window.StageEndPopup.isStage1Locked === 'function' && window.StageEndPopup.isStage1Locked(_lockTid)) {
+                        if (typeof window.StageEndPopup.showUnlockConfirmModal === 'function') {
+                            window.StageEndPopup.showUnlockConfirmModal();
+                            return isL;
+                        }
+                    }
+                    if (window.FinalStagePopup && typeof window.FinalStagePopup.promptUnlock === 'function') {
+                        window.FinalStagePopup.promptUnlock();
+                    }
                 }
                 return isL;
             };
@@ -245,21 +258,26 @@
             if (t1Side) {
                 t1Side.addEventListener('click', function (e) {
                     if (checkCardLocked(true)) return;
-                    if (window.TourmaQuickMode && isPlayable) {
+                    var isQ = window.TourmaQuickMode || (window.GSLEngine && window.GSLEngine.isQuickMode) || (window.TourmaGSL && window.TourmaGSL.isQuickMode) || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.isQuickMode) || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.isQuickMode) || (window.SingleEliminationEngine && window.SingleEliminationEngine.isQuickMode);
+                    if (isQ && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
                         var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
                             ? window.TourmaRoundControls.getCustomWinScore(card, null)
                             : null;
 
+                        var activeEngine = (window.GSLEngine && window.GSLEngine.tournamentId ? window.GSLEngine : null)
+                            || (window.TourmaGSL && window.TourmaGSL.tournamentId ? window.TourmaGSL : null)
+                            || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
+                            || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId ? window.TourmaDoubleElimination : null)
+                            || (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId ? window.SingleEliminationEngine : null)
+                            || (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId ? window.TourmaSingleElimination : null)
+                            || window.GSLEngine || window.TourmaGSL || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
+
                         if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
-                            window.TourmaRoundControls.handleQuickWinner(null, matchId, 1, customScore);
-                        } else if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
-                            window.SingleEliminationEngine.handleQuickWinner(matchId, 1, customScore);
-                        } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
-                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 1, customScore);
-                        } else if (window.TourmaSwiss && typeof window.TourmaSwiss.handleQuickWinner === 'function') {
-                            window.TourmaSwiss.handleQuickWinner(matchId, 1, customScore);
+                            window.TourmaRoundControls.handleQuickWinner(activeEngine, matchId, 1, customScore);
+                        } else if (activeEngine && typeof activeEngine.handleQuickWinner === 'function') {
+                            activeEngine.handleQuickWinner(matchId, 1, customScore);
                         }
                     }
                 });
@@ -268,21 +286,26 @@
             if (t2Side) {
                 t2Side.addEventListener('click', function (e) {
                     if (checkCardLocked(true)) return;
-                    if (window.TourmaQuickMode && isPlayable) {
+                    var isQ = window.TourmaQuickMode || (window.GSLEngine && window.GSLEngine.isQuickMode) || (window.TourmaGSL && window.TourmaGSL.isQuickMode) || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.isQuickMode) || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.isQuickMode) || (window.SingleEliminationEngine && window.SingleEliminationEngine.isQuickMode);
+                    if (isQ && isPlayable) {
                         e.stopPropagation();
                         e.preventDefault();
                         var customScore = (window.TourmaRoundControls && typeof window.TourmaRoundControls.getCustomWinScore === 'function')
                             ? window.TourmaRoundControls.getCustomWinScore(card, null)
                             : null;
 
+                        var activeEngine = (window.GSLEngine && window.GSLEngine.tournamentId ? window.GSLEngine : null)
+                            || (window.TourmaGSL && window.TourmaGSL.tournamentId ? window.TourmaGSL : null)
+                            || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.tournamentId ? window.DoubleEliminationEngine : null)
+                            || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.tournamentId ? window.TourmaDoubleElimination : null)
+                            || (window.SingleEliminationEngine && window.SingleEliminationEngine.tournamentId ? window.SingleEliminationEngine : null)
+                            || (window.TourmaSingleElimination && window.TourmaSingleElimination.tournamentId ? window.TourmaSingleElimination : null)
+                            || window.GSLEngine || window.TourmaGSL || window.TourmaSwiss || window.DoubleEliminationEngine || window.TourmaDoubleElimination || window.SingleEliminationEngine;
+
                         if (window.TourmaRoundControls && typeof window.TourmaRoundControls.handleQuickWinner === 'function') {
-                            window.TourmaRoundControls.handleQuickWinner(null, matchId, 2, customScore);
-                        } else if (window.SingleEliminationEngine && typeof window.SingleEliminationEngine.handleQuickWinner === 'function') {
-                            window.SingleEliminationEngine.handleQuickWinner(matchId, 2, customScore);
-                        } else if (window.TourmaDoubleElimination && typeof window.TourmaDoubleElimination.handleQuickWinner === 'function') {
-                            window.TourmaDoubleElimination.handleQuickWinner(matchId, 2, customScore);
-                        } else if (window.TourmaSwiss && typeof window.TourmaSwiss.handleQuickWinner === 'function') {
-                            window.TourmaSwiss.handleQuickWinner(matchId, 2, customScore);
+                            window.TourmaRoundControls.handleQuickWinner(activeEngine, matchId, 2, customScore);
+                        } else if (activeEngine && typeof activeEngine.handleQuickWinner === 'function') {
+                            activeEngine.handleQuickWinner(matchId, 2, customScore);
                         }
                     }
                 });
@@ -296,7 +319,8 @@
                     return; // Prevent clicking unconfirmed / BYE matches
                 }
 
-                if (window.TourmaQuickMode) {
+                var isQ = window.TourmaQuickMode || (window.GSLEngine && window.GSLEngine.isQuickMode) || (window.TourmaGSL && window.TourmaGSL.isQuickMode) || (window.DoubleEliminationEngine && window.DoubleEliminationEngine.isQuickMode) || (window.TourmaDoubleElimination && window.TourmaDoubleElimination.isQuickMode) || (window.SingleEliminationEngine && window.SingleEliminationEngine.isQuickMode);
+                if (isQ) {
                     return; // In Quick Mode, only team clicks are active
                 }
 

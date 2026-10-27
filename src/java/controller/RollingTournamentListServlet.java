@@ -1,6 +1,5 @@
 package controller;
 
-import dao.ParticipantDAO;
 import dao.SeriesDAO;
 import dao.TournamentDAO;
 import jakarta.servlet.ServletException;
@@ -13,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import model.Series;
-import model.Team;
 import model.Tournament;
 
 /**
@@ -34,7 +32,6 @@ public class RollingTournamentListServlet extends HttpServlet {
 
         SeriesDAO seriesDAO = new SeriesDAO();
         TournamentDAO tournamentDAO = new TournamentDAO();
-        ParticipantDAO participantDAO = new ParticipantDAO();
 
         Series series = null;
         if (seriesId != null && !seriesId.trim().isEmpty()) {
@@ -60,17 +57,16 @@ public class RollingTournamentListServlet extends HttpServlet {
 
         if (series != null) {
             seriesId = series.getId();
-            tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
+            TournamentDAO.TournamentPage page = tournamentDAO.getTournamentPage(seriesId,
+                    request.getParameter("q"), "ALL", request.getParameter("page"));
+            tournamentsList = page.getTournaments();
+            request.setAttribute("pageInfo", page);
 
-            service.RollingWindowPointService rwps = service.RollingWindowPointService.getInstance();
-            rwps.preloadSeriesData(seriesId);
             stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(seriesId);
 
             if (tournamentsList != null) {
                 for (Tournament t : tournamentsList) {
-                    List<Team> teams = rwps.getCachedTeamsByTournamentId(t.getId());
-                    int count = (teams != null) ? teams.size() : 0;
-                    teamCountMap.put(t.getId(), count);
+                    teamCountMap.put(t.getId(), t.getTeamCount());
                 }
             }
         }

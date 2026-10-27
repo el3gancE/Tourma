@@ -12,11 +12,13 @@ public class Match implements Serializable {
     private int matchNumber;
     
     private Integer team1Id;
+    private String team1StringId;
     private String team1Name;
     private Integer team1Seed;
     private Integer team1Score;
     
     private Integer team2Id;
+    private String team2StringId;
     private String team2Name;
     private Integer team2Seed;
     private Integer team2Score;
@@ -79,6 +81,9 @@ public class Match implements Serializable {
     public Integer getTeam1Id() { return team1Id; }
     public void setTeam1Id(Integer team1Id) { this.team1Id = team1Id; }
 
+    public String getTeam1StringId() { return team1StringId; }
+    public void setTeam1StringId(String team1StringId) { this.team1StringId = team1StringId; }
+
     public String getTeam1Name() { return team1Name; }
     public void setTeam1Name(String team1Name) { this.team1Name = team1Name; }
 
@@ -90,6 +95,9 @@ public class Match implements Serializable {
 
     public Integer getTeam2Id() { return team2Id; }
     public void setTeam2Id(Integer team2Id) { this.team2Id = team2Id; }
+
+    public String getTeam2StringId() { return team2StringId; }
+    public void setTeam2StringId(String team2StringId) { this.team2StringId = team2StringId; }
 
     public String getTeam2Name() { return team2Name; }
     public void setTeam2Name(String team2Name) { this.team2Name = team2Name; }

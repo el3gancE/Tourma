@@ -1,7 +1,7 @@
 /**
  * TOURMA - SHARED ROLLING STANDINGS ENGINE (rolling-standings-engine.js)
  * Standalone calculation engine for Series Standings across all tournament formats.
- * Synchronizes Server + LocalStorage bracket placements (Swiss, Round Robin, Single/Double Elimination, Multi-Stage).
+ * Projects server-calculated point matrices into standings and historical views.
  * Used by:
  *  1. rolling-standings.js (Main BXH screen)
  *  2. rolling-tournament-teams.js (Sub-tournament seeding and partner selection modal)
@@ -143,6 +143,7 @@
   function getFormatShortCode(fmt) {
     if (!fmt) return 'SE';
     var f = String(fmt).toUpperCase().trim();
+    if (f === 'GSL' || f === 'GF') return 'GF';
     if (f.indexOf('DOUBLE') !== -1 || f === 'DE') return 'DE';
     if (f.indexOf('ROUND') !== -1 || f === 'RR') return 'RR';
     if (f.indexOf('GROUP') !== -1 || f === 'GS') return 'GS';
@@ -1598,7 +1599,6 @@
 
     if (totalTourneys === 0) {
       var emptyArray = Object.keys(teamDataMap).map(function (k) { return teamDataMap[k]; });
-      emptyArray.sort(function (a, b) { return a.name.localeCompare(b.name); });
       var emptyRankMap = {};
       emptyArray.forEach(function (item, idx) {
         item.rank = idx + 1;
@@ -1609,83 +1609,32 @@
 
     var serverTourneyPoints = options.serverTourneyPoints || window.serverTourneyPoints || [];
     var serverTourneyParticipation = options.serverTourneyParticipation || window.serverTourneyParticipation || [];
+    var serverTourneyAchievements = options.serverTourneyAchievements || window.serverTourneyAchievements || [];
 
-    // Parse results for all completed tournaments
+    // Project server point matrices for each tournament
     var tourneyPointsArray = [];
     var tourneyParticipatedArray = [];
     var parsedResultsPerTourney = [];
 
     for (var tIdx = 0; tIdx < totalTourneys; tIdx++) {
       var t = subTourneys[tIdx];
-      var serverPts = (serverTourneyPoints && serverTourneyPoints[tIdx]) ? Object.assign({}, serverTourneyPoints[tIdx]) : {};
-      var serverPart = (serverTourneyParticipation && serverTourneyParticipation[tIdx]) ? Object.assign({}, serverTourneyParticipation[tIdx]) : {};
-
-      var localRes = parseTournamentResults(t, teamDataMap);
-      parsedResultsPerTourney[tIdx] = localRes;
-
-      // Check if server actually has scored points (> 0) for this tournament
-      var serverHasScores = false;
-      if (serverPts && Object.keys(serverPts).length > 0) {
-        var sKeys = Object.keys(serverPts);
-        for (var sk = 0; sk < sKeys.length; sk++) {
-          if (serverPts[sKeys[sk]] > 0) {
-            serverHasScores = true;
-            break;
-          }
-        }
-      }
-
-      var localHasScores = false;
-      if (localRes && localRes.pointsMap && Object.keys(localRes.pointsMap).length > 0) {
-        var lKeys = Object.keys(localRes.pointsMap);
-        for (var lk = 0; lk < lKeys.length; lk++) {
-          if (localRes.pointsMap[lKeys[lk]] > 0) {
-            localHasScores = true;
-            break;
-          }
-        }
-      }
-
-      var mergedPts = {};
-      var mergedPart = {};
-
-      if (localHasScores) {
-        // User's active browser localStorage has real played results for this tournament
-        mergedPts = Object.assign({}, localRes.pointsMap);
-        mergedPart = Object.assign({}, localRes.participatedMap || {});
-        if (serverPart) {
-          Object.keys(serverPart).forEach(function (k) { mergedPart[k] = true; });
-        }
-      } else if (serverHasScores) {
-        // Database has scored points from DB matches
-        mergedPts = Object.assign({}, serverPts);
-        mergedPart = Object.assign({}, serverPart);
-        if (localRes && localRes.participatedMap) {
-          Object.keys(localRes.participatedMap).forEach(function (k) { mergedPart[k] = true; });
-        }
-      } else {
-        if (localRes && localRes.pointsMap) {
-          mergedPts = Object.assign({}, localRes.pointsMap);
-        }
-        if (localRes && localRes.participatedMap) {
-          mergedPart = Object.assign({}, serverPart || {}, localRes.participatedMap || {});
-        } else if (serverPart) {
-          mergedPart = Object.assign({}, serverPart);
-        }
-      }
-
-      Object.keys(mergedPts).forEach(function (k) {
-        if (mergedPts[k] > 0) {
-          mergedPart[k] = true;
-        }
-      });
-
-      tourneyPointsArray[tIdx] = mergedPts;
-      tourneyParticipatedArray[tIdx] = mergedPart;
+      // Match placements and point configuration are resolved exclusively by Java.
+      // Preserve matrix alignment when the current draft tournament is excluded.
+      var sourceIdx = rawTourneys.indexOf(t);
+      var serverPts = Object.assign({}, serverTourneyPoints[sourceIdx] || {});
+      var serverPart = Object.assign({}, serverTourneyParticipation[sourceIdx] || {});
+      parsedResultsPerTourney[tIdx] = {
+        pointsMap: serverPts,
+        participatedMap: serverPart,
+        achievementsMap: serverTourneyAchievements[sourceIdx] || {},
+        championName: t.championName || null
+      };
+      tourneyPointsArray[tIdx] = serverPts;
+      tourneyParticipatedArray[tIdx] = serverPart;
     }
 
     // Determine target milestone index
-    // If 'LATEST' (or unset), find the last tournament that actually has match results, or totalTourneys - 1
+    // Match Java's latest milestone; tournament eligibility is resolved separately.
     var milestoneVal = options.milestoneVal;
     var targetIdx = -1;
     if (milestoneVal !== undefined && milestoneVal !== null && milestoneVal !== 'LATEST') {
@@ -1693,16 +1642,7 @@
       if (isNaN(targetIdx) || targetIdx < 0) targetIdx = 0;
       if (targetIdx >= totalTourneys) targetIdx = totalTourneys - 1;
     } else {
-      // Find latest tournament with points/matches
-      for (var ti = totalTourneys - 1; ti >= 0; ti--) {
-        var ptsMapCheck = tourneyPointsArray[ti];
-        var hasPts = ptsMapCheck && Object.keys(ptsMapCheck).some(function (k) { return ptsMapCheck[k] > 0; });
-        if (hasPts) {
-          targetIdx = ti;
-          break;
-        }
-      }
-      if (targetIdx === -1) targetIdx = totalTourneys - 1;
+      targetIdx = totalTourneys - 1;
     }
 
     // Calculate previous milestone rankings for rank changes
@@ -1732,8 +1672,7 @@
 
       prevScores.sort(function (a, b) {
         if (b.pts !== a.pts) return b.pts - a.pts;
-        if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
-        return a.name.localeCompare(b.name);
+        return 0;
       });
 
       prevScores.forEach(function (st, prIdx) {
@@ -1771,12 +1710,11 @@
       entry.droppedPts = droppedTourneyPts;
     });
 
-    // Sort Teams: totalPts DESC -> lastPts DESC -> alphabetical ASC
+    // Match Java's stable ordering for teams with equal total points.
     var teamDataArray = Object.keys(teamDataMap).map(function (k) { return teamDataMap[k]; });
     teamDataArray.sort(function (a, b) {
       if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-      if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
-      return a.name.localeCompare(b.name);
+      return 0;
     });
 
     var rankMap = {};
@@ -1830,38 +1768,56 @@
       });
       mScores.sort(function (a, b) {
         if (b.pts !== a.pts) return b.pts - a.pts;
-        if (b.lastPts !== a.lastPts) return b.lastPts - a.lastPts;
-        return a.name.localeCompare(b.name);
+        return 0;
       });
 
-      // Check if mStep marks the completion of Phase 1 (when total tournaments reach phaseSize)
-      if (phaseSize > 0 && (mStep + 1) === phaseSize && mScores.length > 0 && mScores[0].pts > 0) {
-        var phaseNum = 1;
-        var phaseChampK = mScores[0].key;
-        var pTourney = subTourneys[mStep];
-        var pTourneyName = (pTourney && pTourney.name) ? pTourney.name : ('Giải #' + (mStep + 1));
-        var pTourneyIdx = (pTourney && pTourney.index) ? pTourney.index : (mStep + 1);
+      // Check if mStep marks the completion of a Phase (when total tournaments reach phaseSize * N)
+      if (phaseSize > 0 && (mStep + 1) % phaseSize === 0 && mScores.length > 0 && mScores[0].pts > 0) {
+        var phaseNum = Math.floor((mStep + 1) / phaseSize);
 
-        var pBadgeObj = {
-          phase: 1,
-          badgeId: 'PHASE_1_LEADER',
-          name: 'Phase 1 #1',
-          label: 'Phase 1 #1',
-          title: 'Hạng 1 BXH khi kết thúc Phase 1 (' + pTourneyName + ')',
-          tourneyName: pTourneyName,
-          tourneyIndex: pTourneyIdx,
-          totalPts: mScores[0].pts,
-          teamName: teamDataMap[phaseChampK] ? teamDataMap[phaseChampK].name : mScores[0].name,
-          themeClass: 'tourma-badge-phase-1',
-          iconClass: 'fa-solid fa-gem',
-          colorName: 'green'
-        };
+        if (phaseNum >= 1 && phaseNum <= 5) {
+          var phaseChampK = mScores[0].key;
+          var pTourney = subTourneys[mStep];
+          var pTourneyName = (pTourney && pTourney.name) ? pTourney.name : ('Giải #' + (mStep + 1));
+          var pTourneyIdx = (pTourney && pTourney.index) ? pTourney.index : (mStep + 1);
 
-        if (!teamPhaseBadgesMap[phaseChampK]) {
-          teamPhaseBadgesMap[phaseChampK] = [];
+          var phaseIcons = {
+            1: 'fa-solid fa-gem',
+            2: 'fa-solid fa-meteor',
+            3: 'fa-solid fa-bolt-lightning',
+            4: 'fa-solid fa-atom',
+            5: 'fa-solid fa-sun'
+          };
+
+          var phaseColors = {
+            1: 'green',
+            2: 'crimson',
+            3: 'cyan',
+            4: 'purple',
+            5: 'gold'
+          };
+
+          var pBadgeObj = {
+            phase: phaseNum,
+            badgeId: 'PHASE_' + phaseNum + '_LEADER',
+            name: 'Phase ' + phaseNum + ' #1',
+            label: 'Phase ' + phaseNum + ' #1',
+            title: 'Hạng 1 BXH khi kết thúc Phase ' + phaseNum + ' (' + pTourneyName + ')',
+            tourneyName: pTourneyName,
+            tourneyIndex: pTourneyIdx,
+            totalPts: mScores[0].pts,
+            teamName: teamDataMap[phaseChampK] ? teamDataMap[phaseChampK].name : mScores[0].name,
+            themeClass: 'tourma-badge-phase-' + phaseNum,
+            iconClass: phaseIcons[phaseNum] || 'fa-solid fa-trophy',
+            colorName: phaseColors[phaseNum] || 'gold'
+          };
+
+          if (!teamPhaseBadgesMap[phaseChampK]) {
+            teamPhaseBadgesMap[phaseChampK] = [];
+          }
+          teamPhaseBadgesMap[phaseChampK].push(pBadgeObj);
+          phaseWinnersList.push(pBadgeObj);
         }
-        teamPhaseBadgesMap[phaseChampK].push(pBadgeObj);
-        phaseWinnersList.push(pBadgeObj);
       }
 
       mScores.forEach(function (ms, mRankIdx) {
@@ -1925,7 +1881,9 @@
           ach = resolveAchievementFromPoints(pts, tPtsCfg, isMulti, s1F, isDe, posKey);
         }
         var mStats = (res.matchStatsMap && res.matchStatsMap[k]) || { wins: 0, losses: 0 };
-        var isChamp = (ach === "Vô Địch" || ach === "Champion") || (res.championName && isTeamSelf(res.championName, k)) || (tObj.championName && isTeamSelf(tObj.championName, k));
+        var hasServerAchievement = res.achievementsMap && Object.prototype.hasOwnProperty.call(res.achievementsMap, k);
+        var isChamp = hasServerAchievement ? (ach === "Vô Địch" || ach === "Champion")
+          : (ach === "Vô Địch" || ach === "Champion") || (res.championName && isTeamSelf(res.championName, k)) || (tObj.championName && isTeamSelf(tObj.championName, k));
 
         if (isChamp) {
           ach = "Vô Địch";

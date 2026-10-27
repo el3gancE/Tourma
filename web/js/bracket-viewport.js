@@ -128,30 +128,54 @@
         },
 
         /**
-         * Get element position relative to canvas container (independent of scroll/zoom)
+         * Get element position relative to canvas container (independent of scroll/zoom/nesting)
          */
         getRelativePos: function (elem, root) {
-            if (!elem) return { left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 };
+            if (!elem || !root) return { left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 };
             root = root || document.getElementById('bracketViewportCanvas');
 
-            var x = 0, y = 0;
-            var curr = elem;
-            while (curr && curr !== root && curr !== document.body) {
-                x += curr.offsetLeft;
-                y += curr.offsetTop;
-                curr = curr.offsetParent;
+            var elemRect = elem.getBoundingClientRect();
+            var rootRect = root.getBoundingClientRect();
+
+            var scale = 1.0;
+            if (root.style && root.style.zoom) {
+                var z = parseFloat(root.style.zoom);
+                if (!isNaN(z) && z > 0) scale = z;
+            } else if (root.style && root.style.transform && root.style.transform.indexOf('scale(') !== -1) {
+                var match = root.style.transform.match(/scale\(([^)]+)\)/);
+                if (match && match[1]) {
+                    var s = parseFloat(match[1]);
+                    if (!isNaN(s) && s > 0) scale = s;
+                }
             }
 
-            var w = elem.offsetWidth || 200;
-            var h = elem.offsetHeight || 70;
+            var left = (elemRect.left - rootRect.left) / scale;
+            var top = (elemRect.top - rootRect.top) / scale;
+            var width = elemRect.width / scale;
+            var height = elemRect.height / scale;
+
+            // Fallback if element is not rendered / detached
+            if (width === 0 && elem.offsetWidth) {
+                var x = 0, y = 0;
+                var curr = elem;
+                while (curr && curr !== root && curr !== document.body) {
+                    x += curr.offsetLeft;
+                    y += curr.offsetTop;
+                    curr = curr.offsetParent;
+                }
+                left = x;
+                top = y;
+                width = elem.offsetWidth || 220;
+                height = elem.offsetHeight || 70;
+            }
 
             return {
-                left: x,
-                top: y,
-                width: w,
-                height: h,
-                right: x + w,
-                bottom: y + h
+                left: left,
+                top: top,
+                width: width,
+                height: height,
+                right: left + width,
+                bottom: top + height
             };
         },
 
@@ -239,7 +263,8 @@
 
         /**
          * UNIVERSAL ORTHOGONAL SVG CONNECTOR DRAWING ENGINE
-         * Group parents by target match and draw clean bracket forks ( ]-- )
+         * Iterates each target match card in the viewport and draws clean bracket forks ( ]-- )
+         * strictly between its immediate parent matches, preventing continuous vertical cross-bleeding.
          */
         drawConnectors: function (canvasElem, wrapperElem, matchesMap, scale) {
             if (!canvasElem || !wrapperElem || !matchesMap) return;
@@ -262,60 +287,150 @@
             svg.innerHTML = '';
 
             var cards = wrapperElem.querySelectorAll('.bracket-node-card');
+            if (!cards || cards.length === 0) return;
+
+            // 1. Build an exact map of DOM cards in the current wrapper
             var cardMap = {};
+            var cardList = [];
             for (var c = 0; c < cards.length; c++) {
-                var mId = cards[c].getAttribute('data-match-id') || (cards[c].dataset ? cards[c].dataset.matchId : null);
+                var card = cards[c];
+                var mId = card.getAttribute('data-match-id') || (card.dataset ? card.dataset.matchId : null);
                 if (mId) {
                     var sMid = String(mId).trim();
-                    cardMap[sMid] = cards[c];
-                    var idx = sMid.lastIndexOf('_M');
-                    var numOnly = (idx !== -1) ? sMid.substring(idx + 2) : sMid.replace(/[^0-9]/g, '');
-                    if (numOnly && !cardMap[numOnly]) cardMap[numOnly] = cards[c];
+                    cardMap[sMid] = card;
+                    cardList.push({ id: sMid, card: card });
                 }
             }
 
-            // Group source matches by nextMatchId
-            var targetGroups = {};
+            // Flatten unique matches from matchesMap
+            var allMatches = [];
+            var seenMatches = [];
             var keys = Object.keys(matchesMap);
             for (var i = 0; i < keys.length; i++) {
-                var m = matchesMap[keys[i]];
-                var nId = m ? (m.nextMatchId || m.next_match_id) : null;
-                if (!m || !nId) continue;
-                var targetId = String(nId).trim();
-                if (!targetGroups[targetId]) targetGroups[targetId] = [];
-                targetGroups[targetId].push(m);
+                var mat = matchesMap[keys[i]];
+                if (mat && seenMatches.indexOf(mat) === -1) {
+                    seenMatches.push(mat);
+                    allMatches.push(mat);
+                }
             }
 
-            var targetIds = Object.keys(targetGroups);
-            for (var t = 0; t < targetIds.length; t++) {
-                var targetId = targetIds[t];
-                var sources = targetGroups[targetId];
-                var tIdx = targetId.lastIndexOf('_M');
-                var tNumOnly = (tIdx !== -1) ? targetId.substring(tIdx + 2) : targetId.replace(/[^0-9]/g, '');
-                var targetCard = cardMap[targetId] || (tNumOnly ? cardMap[tNumOnly] : null);
-                if (!targetCard) continue;
+            var self = this;
 
-                var tgtPos = this.getRelativePos(targetCard, canvasElem);
-                var x2 = tgtPos.left;
-                var yTargetCenter = tgtPos.top + (tgtPos.height / 2);
+            // Helper to find a match object by exact card ID (with suffix tolerance)
+            var findMatchForCard = function (cardId) {
+                if (!cardId) return null;
+                var strId = String(cardId).trim();
+                if (matchesMap[strId]) return matchesMap[strId];
 
-                sources.sort(function (a, b) {
-                    return (a.nextMatchSlot || a.next_match_slot || 1) - (b.nextMatchSlot || b.next_match_slot || 1);
-                });
+                for (var j = 0; j < allMatches.length; j++) {
+                    var m = allMatches[j];
+                    var mId = m.matchId ? String(m.matchId).trim() : null;
+                    var id = m.id ? String(m.id).trim() : null;
+                    var rawId = m.rawId ? String(m.rawId).trim() : null;
+                    if (mId && (mId === strId || mId.endsWith('_' + strId) || strId.endsWith('_' + mId))) return m;
+                    if (id && (id === strId || id.endsWith('_' + strId) || strId.endsWith('_' + id))) return m;
+                    if (rawId && (rawId === strId || rawId.endsWith('_' + strId) || strId.endsWith('_' + rawId))) return m;
+                }
+                return null;
+            };
 
+            // Helper to find the DOM card corresponding to a source match within the current viewport
+            var findCardForMatch = function (matchObj) {
+                if (!matchObj) return null;
+                var exactIds = [
+                    matchObj.matchId ? String(matchObj.matchId).trim() : null,
+                    matchObj.id ? String(matchObj.id).trim() : null,
+                    matchObj.rawId ? String(matchObj.rawId).trim() : null
+                ];
+                for (var i = 0; i < exactIds.length; i++) {
+                    var id = exactIds[i];
+                    if (id && cardMap[id]) return cardMap[id];
+                }
+                for (var j = 0; j < cardList.length; j++) {
+                    var item = cardList[j];
+                    for (var k = 0; k < exactIds.length; k++) {
+                        var eId = exactIds[k];
+                        if (eId && (item.id === eId || item.id.endsWith('_' + eId) || eId.endsWith('_' + item.id))) {
+                            return item.card;
+                        }
+                    }
+                }
+                return null;
+            };
+
+            // 2. Iterate each target card in the viewport and draw connectors from its immediate feeders
+            for (var c = 0; c < cards.length; c++) {
+                var targetCard = cards[c];
+                if (targetCard.classList.contains('bye-empty-slot')) continue;
+
+                var targetCardId = targetCard.getAttribute('data-match-id') || (targetCard.dataset ? targetCard.dataset.matchId : null);
+                if (!targetCardId) continue;
+
+                var targetMatch = findMatchForCard(targetCardId);
+                if (!targetMatch) continue;
+
+                var rNum = parseInt(targetMatch.roundNumber || 1, 10);
+                var targetBType = (targetMatch.bracketType || '').toUpperCase();
+                var isTargetLb = (targetBType.indexOf('LOWER') !== -1 || targetBType.indexOf('LOSER') !== -1 || (canvasElem && canvasElem.id === 'lowerViewportCanvas'));
+                var isTargetUb = (targetBType.indexOf('UPPER') !== -1 || targetBType.indexOf('WINNER') !== -1 || targetBType === 'MAIN');
+                var isTargetGf = (targetBType.indexOf('GRAND') !== -1 || targetBType === 'GF');
+
+                // Round 1 matches in SE, UB, and LB have no preceding rounds in their bracket
+                if (rNum <= 1 && !isTargetGf) continue;
+
+                // Find feeder source matches that advance to targetMatch (Exact & Suffix Match)
+                var tIds = [
+                    targetMatch.matchId ? String(targetMatch.matchId).trim() : null,
+                    targetMatch.id ? String(targetMatch.id).trim() : null,
+                    targetMatch.rawId ? String(targetMatch.rawId).trim() : null
+                ];
+
+                var feederMatches = [];
+                for (var m = 0; m < allMatches.length; m++) {
+                    var src = allMatches[m];
+                    if (src === targetMatch || src.matchId === targetMatch.matchId || src.id === targetMatch.id || src.rawId === targetMatch.rawId) continue;
+
+                    var srcNextId = src.nextMatchId || src.next_match_id;
+                    if (!srcNextId || srcNextId === 'null' || srcNextId === 'TBD') continue;
+                    var sNextStr = String(srcNextId).trim();
+
+                    var isMatched = false;
+                    for (var k = 0; k < tIds.length; k++) {
+                        var tId = tIds[k];
+                        if (tId && (sNextStr === tId || sNextStr.endsWith('_' + tId) || tId.endsWith('_' + sNextStr))) {
+                            isMatched = true;
+                            break;
+                        }
+                    }
+
+                    if (!isMatched) continue;
+
+                    // Bracket branch filter: ensure UB matches feed UB, and LB matches feed LB
+                    var srcBType = (src.bracketType || '').toUpperCase();
+                    var isSrcLb = (srcBType.indexOf('LOWER') !== -1 || srcBType.indexOf('LOSER') !== -1);
+                    var isSrcUb = (srcBType.indexOf('UPPER') !== -1 || srcBType.indexOf('WINNER') !== -1 || srcBType === 'MAIN');
+
+                    if (isTargetUb && !isSrcUb) continue;
+                    if (isTargetLb && !isSrcLb) continue;
+
+                    feederMatches.push(src);
+                }
+
+                if (feederMatches.length === 0) continue;
+
+                // Map feeder matches to DOM cards inside current viewport
                 var validSources = [];
-                for (var s = 0; s < sources.length; s++) {
-                    var srcMatch = sources[s];
-                    var sId = (srcMatch.matchId !== undefined && srcMatch.matchId !== null) ? String(srcMatch.matchId).trim()
-                              : ((srcMatch.id !== undefined && srcMatch.id !== null) ? String(srcMatch.id).trim()
-                              : ((srcMatch.matchNumber !== undefined && srcMatch.matchNumber !== null) ? String(srcMatch.matchNumber).trim() : ''));
-                    var sIdx = sId.lastIndexOf('_M');
-                    var sNumOnly = (sIdx !== -1) ? sId.substring(sIdx + 2) : sId.replace(/[^0-9]/g, '');
-                    var srcCard = cardMap[sId] || (sNumOnly ? cardMap[sNumOnly] : null);
-                    if (srcCard && !srcCard.classList.contains('bye-empty-slot')) {
+                var seenSrcCards = [];
+                for (var f = 0; f < feederMatches.length; f++) {
+                    var fMatch = feederMatches[f];
+                    var srcCard = findCardForMatch(fMatch);
+                    if (srcCard && srcCard !== targetCard && !srcCard.classList.contains('bye-empty-slot')) {
+                        if (seenSrcCards.indexOf(srcCard) !== -1) continue;
+                        seenSrcCards.push(srcCard);
+
                         var srcPos = this.getRelativePos(srcCard, canvasElem);
                         validSources.push({
-                            match: srcMatch,
+                            match: fMatch,
                             card: srcCard,
                             pos: srcPos,
                             x1: srcPos.right,
@@ -326,22 +441,33 @@
 
                 if (validSources.length === 0) continue;
 
-                if (validSources.length === 2) {
-                    // Standard Bracket Fork ( ]-- )
+                var tgtPos = this.getRelativePos(targetCard, canvasElem);
+                var x2 = tgtPos.left;
+                var yTargetCenter = tgtPos.top + (tgtPos.height / 2);
+
+                var groupColor = (canvasElem && canvasElem.getAttribute('data-group-color')) || (wrapperElem && wrapperElem.getAttribute('data-group-color'));
+                if (!groupColor && canvasElem && canvasElem.style && canvasElem.style.getPropertyValue) {
+                    groupColor = canvasElem.style.getPropertyValue('--grp-color') || (wrapperElem && wrapperElem.style && wrapperElem.style.getPropertyValue('--grp-color'));
+                }
+                var isGsl = (canvasElem && canvasElem.classList && canvasElem.classList.contains('gsl-viewport-canvas')) || (wrapperElem && wrapperElem.classList && wrapperElem.classList.contains('gsl-single-viewport-wrapper'));
+                var isLowerCanvas = (canvasElem && (canvasElem.id === 'lowerViewportCanvas' || canvasElem.classList.contains('lower-canvas'))) ||
+                                    (wrapperElem && (wrapperElem.id === 'lowerBracketColumnsWrapper' || wrapperElem.classList.contains('lower-wrapper') || wrapperElem.getAttribute('data-bracket-type') === 'LOWER'));
+                var themeColor = isGsl ? (groupColor || '#2dd4bf') : ((isTargetLb || isLowerCanvas) ? '#ff4655' : (isTargetGf ? '#fbbf24' : '#2dd4bf'));
+
+                if (validSources.length >= 2) {
+                    // Standard Bracket Fork ( ]-- ) strictly for this target match
+                    validSources.sort(function (a, b) { return a.y1 - b.y1; });
                     var s1 = validSources[0];
-                    var s2 = validSources[1];
+                    var s2 = validSources[validSources.length - 1];
                     var maxX1 = Math.max(s1.x1, s2.x1);
                     var midX = maxX1 + (x2 - maxX1) / 2;
 
-                    var minY = Math.min(s1.y1, s2.y1);
-                    var maxY = Math.max(s1.y1, s2.y1);
+                    var minY = s1.y1;
+                    var maxY = s2.y1;
 
-                    var isLb = (s1.match.bracketType === 'LOWER' || s2.match.bracketType === 'LOWER' || (canvasElem && canvasElem.id === 'lowerViewportCanvas'));
-                    var doneColor = isLb ? '#f43f5e' : '#2dd4bf';
-
-                    var isBothDone = (s1.match.status === 'COMPLETED' || s1.match.status === 'done') &&
-                                     (s2.match.status === 'COMPLETED' || s2.match.status === 'done');
-                    var strokeColor = isBothDone ? doneColor : 'rgba(255, 255, 255, 0.4)';
+                    var isBothDone = (s1.match.status === 'COMPLETED' || s1.match.status === 'done' || s1.match.status === 'FINISHED' || s1.match.winnerId) &&
+                                     (s2.match.status === 'COMPLETED' || s2.match.status === 'done' || s2.match.status === 'FINISHED' || s2.match.winnerId);
+                    var strokeColor = isBothDone ? themeColor : 'rgba(255, 255, 255, 0.4)';
                     var strokeWidth = isBothDone ? '2.2' : '1.6';
 
                     var d = 'M ' + s1.x1.toFixed(1) + ' ' + s1.y1.toFixed(1) + ' H ' + midX.toFixed(1) + ' ' +
@@ -361,12 +487,12 @@
                 } else {
                     // Single feeder match line (1-to-1 connector)
                     var s = validSources[0];
-                    var isLb = (s.match.bracketType === 'LOWER' || (canvasElem && canvasElem.id === 'lowerViewportCanvas'));
-                    var doneColor = isLb ? '#f43f5e' : '#2dd4bf';
-                    var isDone = (s.match.status === 'COMPLETED' || s.match.status === 'done');
+                    var isDone = (s.match.status === 'COMPLETED' || s.match.status === 'done' || s.match.status === 'FINISHED' || s.match.winnerId);
+                    var strokeColor = isDone ? themeColor : 'rgba(255, 255, 255, 0.4)';
+                    var strokeWidth = isDone ? '2.2' : '1.6';
                     var d = '';
 
-                    // If almost horizontal (difference <= 8px), draw a 100% clean straight horizontal line!
+                    // If almost horizontal (difference <= 8px), draw a 100% clean straight horizontal line
                     if (Math.abs(s.y1 - yTargetCenter) <= 8) {
                         d = 'M ' + s.x1.toFixed(1) + ' ' + yTargetCenter.toFixed(1) +
                             ' H ' + x2.toFixed(1);
@@ -381,8 +507,8 @@
                     var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.setAttribute('d', d);
                     path.setAttribute('fill', 'none');
-                    path.setAttribute('stroke', isDone ? doneColor : 'rgba(255, 255, 255, 0.4)');
-                    path.setAttribute('stroke-width', isDone ? '2.2' : '1.6');
+                    path.setAttribute('stroke', strokeColor);
+                    path.setAttribute('stroke-width', strokeWidth);
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');
 

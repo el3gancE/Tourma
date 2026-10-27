@@ -36,6 +36,13 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             tournamentId = request.getParameter("tournamentId");
         }
 
+        String copiedFromParam = request.getParameter("copiedFrom");
+        if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()
+                && !new TournamentDAO().canCopyTournamentConfig(copiedFromParam, tournamentId)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Chỉ được sao chép cấu hình từ giải khác trong cùng Series.");
+            return;
+        }
+
         SeriesDAO seriesDAO = new SeriesDAO();
         ParticipantDAO participantDAO = new ParticipantDAO();
 
@@ -72,12 +79,17 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         }
 
         if (tournamentId != null && ((fmt != null && !fmt.trim().isEmpty()) || advSeats > 0)) {
-            updateTournamentFormatAndTypeSafe(tournamentId.trim(), fmt, tType, s1F, s2F, advSeats);
+            if (!new TournamentDAO().updateTournamentFormatAndType(tournamentId.trim(), fmt, tType, s1F, s2F, advSeats, request.getParameter("multiConfig"))) {
+                response.sendError(409, "Không lưu được cấu hình. Stage đã có trận không thể đổi cấu trúc.");
+                return;
+            }
         }
 
-        String copiedFromParam = request.getParameter("copiedFrom");
         if (copiedFromParam != null && !copiedFromParam.trim().isEmpty() && tournamentId != null && !tournamentId.trim().isEmpty()) {
-            new TournamentDAO().copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim());
+            if (!new TournamentDAO().copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim(), request.getParameter("multiConfig") == null)) {
+                response.sendError(409, "Không thể lưu cấu hình sao chép.");
+                return;
+            }
         }
 
         Tournament tournament = null;
@@ -113,13 +125,14 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             }
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
             standingsDTOList = service.RollingWindowPointService.getInstance().calculateSeriesStandingsWithExpiry(seriesId.trim());
-            tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId.trim());
+            tournamentsList = new TournamentDAO().getTournamentsBySeriesId(seriesId.trim());
             try {
                 serverTourneyPoints = service.RollingWindowPointService.getInstance().getTourneyPointsPerTournament(seriesId.trim());
                 serverTourneyParticipation = service.RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(seriesId.trim());
             } catch (Exception ignore) {}
         }
 
+        request.setAttribute("seriesTournamentTeams", participantDAO.getTeamsBySeriesId(seriesId));
         request.setAttribute("tournament", tournament);
         request.setAttribute("series", series);
         request.setAttribute("currentTeams", currentTeams);
@@ -141,6 +154,20 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         String tournamentId = request.getParameter("tournamentId");
         String seriesId = request.getParameter("seriesId");
         ParticipantDAO participantDAO = new ParticipantDAO();
+        if ("addPartnerTeams".equalsIgnoreCase(action)) {
+            try {
+                validatePartnerExclusions(tournamentId, request.getParameterValues("excludedTournamentIds"),
+                        request.getParameterValues("selectedTeamNames"), participantDAO);
+            } catch (IllegalArgumentException e) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+                return;
+            }
+        }
+        if (!new TournamentDAO().saveTopSeedCount(tournamentId, request.getParameter("topSeedCount"))
+                || !new TournamentDAO().saveClassicDraw(tournamentId, request.getParameter("classicDraw"))) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu cấu hình phân cặp vào DB.");
+            return;
+        }
 
         String advSeatsParam = request.getParameter("advancingSeatsCount");
         if (advSeatsParam == null || advSeatsParam.trim().isEmpty()) {
@@ -217,11 +244,38 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                 response.sendRedirect(nextUrl);
                 return;
             }
-            response.sendRedirect(request.getContextPath() + "/rolling/point-config?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : ""));
+            String nextFormat = new dao.TournamentDAO().getStage1Format(tournamentId);
+            String nextPath = "GSL".equalsIgnoreCase(nextFormat) || "GROUP_STAGE".equalsIgnoreCase(nextFormat)
+                    ? "/common/manage-group.jsp?id=" + tournamentId + "&format=" + nextFormat
+                    : "/rolling/point-config?id=" + tournamentId;
+            response.sendRedirect(request.getContextPath() + nextPath + "&seriesId=" + (seriesId != null ? seriesId : ""));
             return;
         }
 
         response.sendRedirect(request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : ""));
+    }
+
+    /** Resolve the Series from the target tournament, never from submitted seriesId. */
+    private void validatePartnerExclusions(String tournamentId, String[] excludedIds, String[] selectedNames,
+            ParticipantDAO participantDAO) {
+        if (excludedIds == null || excludedIds.length == 0) return;
+        Tournament target = getTournamentByIdSafe(tournamentId);
+        if (target == null || target.getSeriesId() == null)
+            throw new IllegalArgumentException("Không tìm thấy giải con trong Series.");
+        java.util.Set<String> allowed = new java.util.HashSet<>();
+        for (Tournament sibling : new TournamentDAO().getTournamentsBySeriesId(target.getSeriesId()))
+            if (!sibling.getId().equals(target.getId())) allowed.add(sibling.getId());
+        java.util.Set<String> excludedNames = new java.util.HashSet<>();
+        java.util.Map<String, List<Team>> teams = participantDAO.getTeamsBySeriesId(target.getSeriesId());
+        for (String excluded : excludedIds) {
+            if (!allowed.contains(excluded))
+                throw new IllegalArgumentException("Chỉ được loại trừ giải khác trong cùng Series.");
+            for (Team team : teams.getOrDefault(excluded, java.util.Collections.emptyList()))
+                if (team.getRawName() != null) excludedNames.add(team.getRawName().trim().toLowerCase(java.util.Locale.ROOT));
+        }
+        if (selectedNames != null) for (String name : selectedNames)
+            if (name != null && excludedNames.contains(name.trim().toLowerCase(java.util.Locale.ROOT)))
+                throw new IllegalArgumentException("Có đội đã tham gia giải đang được loại trừ. Hãy mở lại danh sách Partner.");
     }
 
     private Tournament getTournamentByIdSafe(String id) {
@@ -283,68 +337,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
     }
 
     private boolean updateTournamentFormatAndTypeSafe(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format, int advancingSeatsCount) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        if (format == null || format.trim().isEmpty()) format = "SINGLE_ELIMINATION";
-        if (tournamentType == null || tournamentType.trim().isEmpty()) tournamentType = "SINGLE_STAGE";
-
-        String sqlTourney = (advancingSeatsCount > 0)
-            ? "UPDATE tournaments SET tournament_type = ?, advancing_seats_count = ? WHERE id = ?"
-            : "UPDATE tournaments SET tournament_type = ? WHERE id = ?";
-        dao.DBContext db = new dao.DBContext();
-        try (Connection conn = db.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(sqlTourney)) {
-                if (advancingSeatsCount > 0) {
-                    ps.setString(1, tournamentType.trim().toUpperCase());
-                    ps.setInt(2, advancingSeatsCount);
-                    ps.setString(3, tournamentId.trim());
-                } else {
-                    ps.setString(1, tournamentType.trim().toUpperCase());
-                    ps.setString(2, tournamentId.trim());
-                }
-                ps.executeUpdate();
-            }
-
-            String sqlDeleteStages = "DELETE FROM tournament_stages WHERE tournament_id = ?";
-            try (PreparedStatement ps = conn.prepareStatement(sqlDeleteStages)) {
-                ps.setString(1, tournamentId.trim());
-                ps.executeUpdate();
-            }
-
-            if ("MULTI_STAGE".equalsIgnoreCase(tournamentType)) {
-                String s1 = (stage1Format != null && !stage1Format.trim().isEmpty()) ? stage1Format.trim().toUpperCase() : "GROUP_STAGE";
-                String s2 = (stage2Format != null && !stage2Format.trim().isEmpty()) ? stage2Format.trim().toUpperCase() : "SINGLE_ELIMINATION";
-
-                String sqlInsert1 = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 1, N'Stage 1', ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsert1)) {
-                    ps.setString(1, "STAGE_1_" + System.currentTimeMillis());
-                    ps.setString(2, tournamentId.trim());
-                    ps.setString(3, s1);
-                    ps.executeUpdate();
-                }
-
-                String sqlInsert2 = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 2, N'Stage 2', ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsert2)) {
-                    ps.setString(1, "STAGE_2_" + System.currentTimeMillis());
-                    ps.setString(2, tournamentId.trim());
-                    ps.setString(3, s2);
-                    ps.executeUpdate();
-                }
-            } else {
-                String sqlInsertStage = "INSERT INTO tournament_stages (id, tournament_id, stage_order, stage_name, format) VALUES (?, ?, 1, N'Main Stage', ?)";
-                try (PreparedStatement ps = conn.prepareStatement(sqlInsertStage)) {
-                    ps.setString(1, "STAGE_" + System.currentTimeMillis());
-                    ps.setString(2, tournamentId.trim());
-                    ps.setString(3, format.trim().toUpperCase());
-                    ps.executeUpdate();
-                }
-            }
-            conn.commit();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        return new TournamentDAO().updateTournamentFormatAndType(tournamentId, format, tournamentType, stage1Format, stage2Format, advancingSeatsCount);
     }
 
     /**

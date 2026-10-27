@@ -1,9 +1,10 @@
 /**
  * Tourma Manage Group JS Engine
  * Default state: Clean empty workspace initially.
- * Supports HTML5 Drag & Drop moving teams between group columns,
- * Auto distribution ("Chia Đều Đội Về Bảng"), Modal popup team selection,
- * and minimum 2 groups requirement validation.
+ * Clean, compact group card layout.
+ * Click a group (or "+ Thêm Đội") to open modal popup with unassigned teams.
+ * Supports manual group creation, Modal popup team selection,
+ * Auto distribution ("Ngẫu Nhiên"), and format validation.
  */
 
 (function () {
@@ -24,54 +25,102 @@
         },
 
         loadData: function () {
-            // Load teams list
-            var rawTeams = localStorage.getItem('tourma_teams_' + this.tournamentId);
-            if (rawTeams) {
-                try { 
-                    var parsed = JSON.parse(rawTeams);
-                    this.teamsList = parsed.map(function (item, idx) {
-                        if (typeof item === 'string') {
-                            return { id: idx + 1, name: item };
-                        }
-                        if (item && !item.id) {
-                            item.id = idx + 1;
-                        }
-                        return item;
-                    });
-                } catch (e) { this.teamsList = []; }
+            // Prioritize window.DB_TEAMS to ensure exact database team IDs (TM_...)
+            if (window.DB_TEAMS && Array.isArray(window.DB_TEAMS) && window.DB_TEAMS.length > 0) {
+                this.teamsList = window.DB_TEAMS.map(function (item, idx) {
+                    if (typeof item === 'string') {
+                        return { id: idx + 1, name: item, seed: idx + 1 };
+                    }
+                    if (item && !item.id) {
+                        item.id = idx + 1;
+                    }
+                    if (item && !item.seed) {
+                        item.seed = idx + 1;
+                    }
+                    return item;
+                });
+                try {
+                    localStorage.setItem('tourma_teams_' + this.tournamentId, JSON.stringify(this.teamsList));
+                } catch (e) {}
+            } else {
+                var rawTeams = localStorage.getItem('tourma_teams_' + this.tournamentId);
+                if (rawTeams) {
+                    try { 
+                        var parsed = JSON.parse(rawTeams);
+                        this.teamsList = parsed.map(function (item, idx) {
+                            if (typeof item === 'string') {
+                                return { id: idx + 1, name: item, seed: idx + 1 };
+                            }
+                            if (item && !item.id) {
+                                item.id = idx + 1;
+                            }
+                            if (item && !item.seed) {
+                                item.seed = idx + 1;
+                            }
+                            return item;
+                        });
+                    } catch (e) { this.teamsList = []; }
+                }
             }
 
-            // Priority 1: From Database (window.DB_GROUP_ASSIGNMENTS)
+            // Load Group Assignments: Prefer DB assignments, fallback to localStorage
             if (window.DB_GROUP_ASSIGNMENTS && typeof window.DB_GROUP_ASSIGNMENTS === 'object' && Object.keys(window.DB_GROUP_ASSIGNMENTS).length > 0) {
                 this.groups = window.DB_GROUP_ASSIGNMENTS;
                 try {
                     localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
                 } catch (e) {}
             } else {
-                // Priority 2: Fallback to localStorage
-                var savedGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
-                if (savedGroupsRaw) {
-                    try { this.groups = JSON.parse(savedGroupsRaw); } catch (e) { this.groups = {}; }
+                var localGroups = null;
+                try {
+                    var rawG = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
+                    if (rawG) {
+                        var parsedG = JSON.parse(rawG);
+                        if (parsedG && typeof parsedG === 'object' && Object.keys(parsedG).length > 0) {
+                            localGroups = parsedG;
+                        }
+                    }
+                } catch (e) {}
+
+                if (localGroups && Object.keys(localGroups).length > 0) {
+                    this.groups = localGroups;
                 } else {
-                    this.groups = {}; // Default: NO groups created initially!
+                    this.groups = {};
                 }
+            }
+
+            // Clean workspace: Groups are strictly created manually by user, or via "Ngẫu Nhiên" button.
+            if (!this.groups || typeof this.groups !== 'object') {
+                this.groups = {};
             }
         },
 
         getTeamSeedNumber: function (team) {
+            if (!team) return 1;
+            if (typeof team === 'object') {
+                if (team.seed && team.seed > 0) return team.seed;
+                if (team.originalSeed && team.originalSeed > 0) return team.originalSeed;
+            }
             var tid = (typeof team === 'object') ? team.id : team;
+            var tName = (typeof team === 'object') ? (team.name || team.rawName) : String(team);
+
             for (var i = 0; i < this.teamsList.length; i++) {
                 var item = this.teamsList[i];
                 var itemTid = (typeof item === 'object') ? item.id : item;
-                if (itemTid == tid) {
+                var itemName = (typeof item === 'object') ? (item.name || item.rawName) : String(item);
+                if (String(itemTid) === String(tid) || (tName && itemName && tName.trim().toLowerCase() === itemName.trim().toLowerCase())) {
+                    if (item.seed && item.seed > 0) return item.seed;
+                    if (item.originalSeed && item.originalSeed > 0) return item.originalSeed;
                     return i + 1;
                 }
             }
+
+            if (typeof tid === 'number' && tid > 0) return tid;
+            var num = parseInt(tName, 10);
+            if (!isNaN(num) && num > 0) return num;
             return 1;
         },
 
         getUnassignedTeams: function () {
-            // Find teams that are NOT assigned to any group
             var assignedIds = {};
             for (var gKey in this.groups) {
                 var teamList = this.groups[gKey] || [];
@@ -98,17 +147,17 @@
 
             for (var i = 0; i < 26; i++) {
                 var charKey = letters.charAt(i);
-                if (!this.groups[charKey]) {
+                if (!this.groups[charKey] && !this.groups['Bảng ' + charKey]) {
                     nextName = charKey;
                     break;
                 }
             }
             if (!nextName) {
                 for (var i = 26; i < 702; i++) {
-                    var first = letters.charAt(Math.floor(i / 26) - 1);
-                    var second = letters.charAt(i % 26);
+                    var first = letters.charAt(Math.floor((i - 26) / 26));
+                    var second = letters.charAt((i - 26) % 26);
                     var doubleKey = first + second;
-                    if (!this.groups[doubleKey]) {
+                    if (!this.groups[doubleKey] && !this.groups['Bảng ' + doubleKey]) {
                         nextName = doubleKey;
                         break;
                     }
@@ -124,6 +173,57 @@
             this.renderWorkspace();
         },
 
+        toggleQuickDropdown: function (e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            var menu = document.getElementById('quickGroupDropdownMenu');
+            var btn = document.getElementById('btnQuickGroupDropdown');
+            if (!menu) return;
+            var isOpen = menu.classList.contains('show');
+            if (isOpen) {
+                menu.classList.remove('show');
+                if (btn) btn.classList.remove('active');
+            } else {
+                menu.classList.add('show');
+                if (btn) btn.classList.add('active');
+            }
+        },
+
+        closeQuickDropdown: function () {
+            var menu = document.getElementById('quickGroupDropdownMenu');
+            var btn = document.getElementById('btnQuickGroupDropdown');
+            if (menu) menu.classList.remove('show');
+            if (btn) btn.classList.remove('active');
+        },
+
+        getGroupNameByIndex: function (i) {
+            var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            if (i < 26) {
+                return letters.charAt(i);
+            }
+            var first = letters.charAt(Math.floor((i - 26) / 26));
+            var second = letters.charAt((i - 26) % 26);
+            return first + second;
+        },
+
+        quickCreateGroups: function (targetCount) {
+            targetCount = parseInt(targetCount, 10);
+            if (isNaN(targetCount) || targetCount < 1) return;
+
+            // Close dropdown immediately
+            this.closeQuickDropdown();
+
+            // Tạo ngay lập tức số bảng trống (chỉ tạo bảng chứ KHÔNG chia đội)
+            // Toàn bộ đội bóng đều nằm ở danh sách chưa xếp để người dùng tự phân bổ
+            this.groups = {};
+            for (var i = 0; i < targetCount; i++) {
+                var gName = this.getGroupNameByIndex(i);
+                this.groups[gName] = [];
+            }
+
+            this.saveGroupsState();
+            this.renderWorkspace();
+        },
+
         deleteGroup: function (gKey) {
             if (!this.groups[gKey]) return;
 
@@ -135,10 +235,21 @@
             }
         },
 
-        handleAutoDistribute: function () {
+        clearAllGroups: function () {
             var groupKeys = Object.keys(this.groups);
+            if (groupKeys.length === 0) return;
+
+            if (confirm('⚠️ Bạn có chắc chắn muốn xóa tất cả các bảng đấu và đưa toàn bộ đội bóng về danh sách chưa xếp?')) {
+                this.groups = {};
+                this.saveGroupsState();
+                this.renderWorkspace();
+            }
+        },
+
+        handleAutoDistribute: function () {
+            var groupKeys = Object.keys(this.groups).sort(this.compareGroupKeys);
             if (groupKeys.length < 2) {
-                alert('⚠️ Cần có tối thiểu 2 BẢNG ĐẤU để chia ngẫu nhiên các đội!\n\nVui lòng bấm "+ Thêm Bảng Mới" để tạo ít nhất 2 bảng (Bảng A, Bảng B...) trước.');
+                alert('⚠️ Cần có tối thiểu 2 BẢNG ĐẤU để chia ngẫu nhiên các đội!\n\nVui lòng bấm "+ Thêm Bảng Mới" để tạo ít nhất 2 bảng (Bảng A, Bảng B...) trước khi chia ngẫu nhiên.');
                 return;
             }
 
@@ -168,7 +279,6 @@
             }
 
             // Seeded Pot Distribution: Group teams into pots of size K (#1..#K, #K+1..#2K, etc.)
-            // For each pot, randomly shuffle target groups so top seeds are split 1 per group randomly!
             for (var startIdx = 0; startIdx < totalTeams; startIdx += K) {
                 var potTeams = this.teamsList.slice(startIdx, startIdx + K);
                 var shuffledGroups = shuffleArray(groupKeys);
@@ -189,8 +299,12 @@
             var titleElem = document.getElementById('modalGroupTitleDisplay');
             var container = document.getElementById('modalTeamChecklistContainer');
             var countElem = document.getElementById('modalSelectedCountDisplay');
+            var searchInput = document.getElementById('modalTeamSearchInput');
 
-            if (titleElem) titleElem.innerText = 'Thêm Đội Vào Bảng ' + gKey;
+            if (searchInput) searchInput.value = '';
+
+            var dispTitle = (gKey.toUpperCase().indexOf('BẢNG') !== -1) ? gKey.toUpperCase() : ('BẢNG ' + gKey.toUpperCase());
+            if (titleElem) titleElem.innerText = 'Thêm Đội Vào ' + dispTitle;
 
             var availableTeams = this.getUnassignedTeams();
             if (container) {
@@ -207,6 +321,8 @@
                         var seedNum = this.getTeamSeedNumber(team);
 
                         var row = document.createElement('label');
+                        row.className = 'modal-team-row';
+                        row.dataset.teamName = String(tName).toLowerCase();
                         row.style.display = 'flex';
                         row.style.alignItems = 'center';
                         row.style.justifyContent = 'space-between';
@@ -216,12 +332,22 @@
                         row.style.padding = '0.65rem 0.85rem';
                         row.style.marginBottom = '0.4rem';
                         row.style.cursor = 'pointer';
+                        row.style.transition = 'all 0.2s ease';
+
+                        row.onmouseover = function() {
+                            this.style.borderColor = 'rgba(45, 212, 191, 0.4)';
+                            this.style.background = 'rgba(45, 212, 191, 0.04)';
+                        };
+                        row.onmouseout = function() {
+                            this.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                            this.style.background = '#181d29';
+                        };
 
                         row.innerHTML = '<div style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; font-weight:600; color:#f8fafc;">' +
                             '<span class="mg-seed-badge">' + seedNum + '</span>' +
                             '<span>' + tName + '</span>' +
                             '</div>' +
-                            '<input type="checkbox" class="modal-team-checkbox" value="' + tId + '" onchange="TourmaManageGroup.updateModalSelectedCount()" style="width:16px; height:16px; accent-color:#2dd4bf; cursor:pointer;">';
+                            '<input type="checkbox" class="modal-team-checkbox" value="' + tId + '" onchange="TourmaManageGroup.updateModalSelectedCount()" style="width:17px; height:17px; accent-color:#2dd4bf; cursor:pointer;">';
 
                         container.appendChild(row);
                     }
@@ -230,6 +356,31 @@
 
             if (countElem) countElem.innerText = '0';
             if (modal) modal.style.display = 'flex';
+        },
+
+        filterModalTeams: function (query) {
+            var q = String(query || '').trim().toLowerCase();
+            var rows = document.querySelectorAll('.modal-team-row');
+            rows.forEach(function (row) {
+                var name = row.dataset.teamName || '';
+                if (!q || name.indexOf(q) !== -1) {
+                    row.style.display = 'flex';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        },
+
+        selectAllModalTeams: function (select) {
+            var checkboxes = document.querySelectorAll('.modal-team-checkbox');
+            checkboxes.forEach(function (cb) {
+                // only select visible checkboxes
+                var parentRow = cb.closest('.modal-team-row');
+                if (!parentRow || parentRow.style.display !== 'none') {
+                    cb.checked = !!select;
+                }
+            });
+            this.updateModalSelectedCount();
         },
 
         closeAddTeamModal: function () {
@@ -323,13 +474,35 @@
             }
         },
 
+        compareGroupKeys: function (a, b) {
+            var getIndex = function (str) {
+                var s = String(str || '').trim();
+                var match = s.match(/([A-Za-z]+)$/);
+                if (match) {
+                    var letters = match[1].toUpperCase();
+                    if (letters.length === 1) {
+                        return letters.charCodeAt(0) - 65; // A=0..Z=25
+                    } else if (letters.length === 2) {
+                        return 26 + (letters.charCodeAt(0) - 65) * 26 + (letters.charCodeAt(1) - 65); // AA=26..AF=31
+                    }
+                }
+                var numMatch = s.match(/(\d+)$/);
+                if (numMatch) return parseInt(numMatch[1], 10) - 1;
+                return 9999;
+            };
+            var idxA = getIndex(a);
+            var idxB = getIndex(b);
+            if (idxA !== idxB) return idxA - idxB;
+            return String(a).localeCompare(String(b));
+        },
+
         renderWorkspace: function () {
             var container = document.getElementById('mgWorkspace');
             if (!container) return;
             container.innerHTML = '';
             var self = this;
 
-            var groupKeys = Object.keys(this.groups);
+            var groupKeys = Object.keys(this.groups).sort(this.compareGroupKeys);
             var unassignedTeams = this.getUnassignedTeams();
 
             // 1. TOP SUMMARY BAR
@@ -352,7 +525,7 @@
                 '<span style="font-size: 0.8rem; color: #94a3b8; margin-left: 1rem;">| Đội chưa xếp bảng: <strong style="color: ' + (unassignedCount > 0 ? '#fbbf24' : '#2dd4bf') + ';">' + unassignedCount + ' Đội</strong></span>' +
                 '</div>' +
                 '<div style="font-size: 0.78rem; color: #94a3b8;">' +
-                '<i class="fa-solid fa-hand-pointer text-mint"></i> Kéo thả đội hoặc bấm ô <strong>"+"</strong> để xếp đội vào bảng' +
+                '<i class="fa-solid fa-hand-pointer text-mint"></i> Bấm vào từng bảng để chọn đội bóng vào bảng thi đấu.' +
                 '</div>';
 
             container.appendChild(summaryBar);
@@ -366,25 +539,34 @@
                 emptyNotice.style.flexDirection = 'column';
                 emptyNotice.style.alignItems = 'center';
                 emptyNotice.style.justifyContent = 'center';
-                emptyNotice.style.padding = '3.5rem 1.5rem';
+                emptyNotice.style.padding = '3rem 1.5rem';
                 emptyNotice.style.textAlign = 'center';
                 emptyNotice.style.background = '#121620';
                 emptyNotice.style.borderRadius = '12px';
-                emptyNotice.style.border = '1px dashed rgba(255, 255, 255, 0.12)';
+                emptyNotice.style.border = '1px dashed rgba(255, 255, 255, 0.15)';
 
                 emptyNotice.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size: 2.8rem; color: #2dd4bf; margin-bottom: 1rem;"></i>' +
                     '<h3 style="font-size: 1.15rem; font-weight: 800; color: #f8fafc; margin: 0 0 0.5rem 0;">Chưa có bảng đấu nào</h3>' +
-                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.5rem 0; max-width: 420px;">Giải đấu Vòng Bảng bắt buộc cần <strong>tối thiểu 2 BẢNG ĐẤU</strong>.<br>Vui lòng bấm <strong>"+ Thêm Bảng Mới"</strong> hoặc <strong>"Chia Đều Đội Về Bảng"</strong> để tạo bảng.</p>' +
-                    '<div style="display:flex; gap: 0.75rem;">' +
-                    '<button type="button" class="btn-mg-add" onclick="TourmaManageGroup.addNewGroup()" style="padding: 0.55rem 1.25rem;"><i class="fa-solid fa-plus"></i> Thêm Bảng Mới</button>' +
-                    '<button type="button" class="btn-mg-distribute" onclick="TourmaManageGroup.handleAutoDistribute()" style="padding: 0.55rem 1.25rem;">Ngẫu Nhiên</button>' +
+                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.25rem 0; max-width: 520px;">Chọn nhanh số lượng bảng rỗng muốn tạo (chỉ tạo bảng, các đội vẫn giữ nguyên ở danh sách chưa xếp):</p>' +
+                    '<div style="display:flex; gap: 0.5rem; justify-content: center; align-items: center; flex-wrap: wrap; max-width: 650px; margin-bottom: 1.25rem;">' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(2)"><i class="fa-solid fa-bolt"></i> 2 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(4)"><i class="fa-solid fa-bolt"></i> 4 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(6)"><i class="fa-solid fa-bolt"></i> 6 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(8)"><i class="fa-solid fa-bolt"></i> 8 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(12)"><i class="fa-solid fa-bolt"></i> 12 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(16)"><i class="fa-solid fa-bolt"></i> 16 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(24)"><i class="fa-solid fa-bolt"></i> 24 Bảng</button>' +
+                    '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(32)"><i class="fa-solid fa-bolt"></i> 32 Bảng</button>' +
+                    '</div>' +
+                    '<div>' +
+                    '<button type="button" class="btn-mg-add" onclick="TourmaManageGroup.addNewGroup()" style="padding: 0.5rem 1.25rem;"><i class="fa-solid fa-plus"></i> Hoặc Tạo Từng Bảng (+1)</button>' +
                     '</div>';
 
                 container.appendChild(emptyNotice);
                 return;
             }
 
-            // 3. RENDER GROUP COLUMNS WITH DRAG & DROP
+            // 3. RENDER GROUP COLUMNS ONLY (NO UNASSIGNED COLUMN ON LEFT)
             for (var k = 0; k < groupKeys.length; k++) {
                 (function(gKey) {
                     var teamList = self.groups[gKey] || [];
@@ -412,11 +594,14 @@
                         } catch (err) {}
                     });
 
+                    var dispTitle = (gKey.toUpperCase().indexOf('BẢNG') !== -1) ? gKey.toUpperCase() : ('BẢNG ' + gKey.toUpperCase());
                     var headerHtml = '<div class="mg-group-header">' +
-                        '<div class="mg-group-title"><i class="fa-solid fa-layer-group"></i> BẢNG ' + gKey + '</div>' +
+                        '<div class="mg-group-title" onclick="TourmaManageGroup.openAddTeamModal(\'' + gKey + '\')" style="cursor:pointer;" title="Bấm để chọn đội vào ' + dispTitle + '">' +
+                        '<i class="fa-solid fa-layer-group"></i> ' + dispTitle +
+                        '</div>' +
                         '<div style="display: flex; align-items: center; gap: 0.5rem;">' +
-                        '<span style="font-size: 0.75rem; color: #94a3b8;">' + teamList.length + ' Đội</span>' +
-                        '<button type="button" class="btn-delete-group" onclick="TourmaManageGroup.deleteGroup(\'' + gKey + '\')" title="Xóa Bảng ' + gKey + '">' +
+                        '<span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">' + teamList.length + ' Đội</span>' +
+                        '<button type="button" class="btn-delete-group" onclick="TourmaManageGroup.deleteGroup(\'' + gKey + '\')" title="Xóa ' + dispTitle + '">' +
                         '<i class="fa-solid fa-trash-can"></i>' +
                         '</button>' +
                         '</div>' +
@@ -428,13 +613,13 @@
                     listWrapper.className = 'mg-team-list-wrapper';
 
                     if (teamList.length === 0) {
-                        // Fully Clickable Middle Dashed Box
+                        // Fully Clickable Compact Middle Dashed Box
                         var emptyBox = document.createElement('div');
                         emptyBox.onclick = function() { self.openAddTeamModal(gKey); };
                         emptyBox.style.fontSize = '0.8rem';
                         emptyBox.style.color = '#94a3b8';
                         emptyBox.style.textAlign = 'center';
-                        emptyBox.style.padding = '1.75rem 1rem';
+                        emptyBox.style.padding = '1.25rem 0.75rem';
                         emptyBox.style.border = '1px dashed rgba(45, 212, 191, 0.35)';
                         emptyBox.style.borderRadius = '8px';
                         emptyBox.style.cursor = 'pointer';
@@ -450,8 +635,8 @@
                             this.style.background = 'rgba(45, 212, 191, 0.03)';
                         };
 
-                        emptyBox.innerHTML = '<div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;"><i class="fa-solid fa-plus"></i></div><br>' +
-                            'Bảng này đang trống.<br><strong style="color: #2dd4bf;">Bấm vào đây để chọn đội vào bảng.</strong>';
+                        emptyBox.innerHTML = '<div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.35rem;"><i class="fa-solid fa-plus"></i></div><br>' +
+                            '<span style="font-size: 0.78rem;">Bảng này đang trống.</span><br><strong style="color: #2dd4bf; font-size: 0.8rem;">Bấm vào đây để chọn đội vào bảng.</strong>';
 
                         listWrapper.appendChild(emptyBox);
                     } else {
@@ -479,11 +664,13 @@
                                     '<span>' + tName + '</span>' +
                                     '</div>';
 
-                                var removeBtnHtml = '<button type="button" onclick="TourmaManageGroup.removeTeamFromGroup(\'' + gKey + '\', ' + tId + ')" title="Bỏ đội ra khỏi bảng" style="background:transparent; border:none; color:#94a3b8; font-size:0.85rem; cursor:pointer; padding:0.2rem 0.4rem; border-radius:4px; transition:color 0.2s ease;">' +
+                                var actionsHtml = '<div style="display:flex; align-items:center; gap:0.4rem;">';
+                                actionsHtml += '<button type="button" onclick="TourmaManageGroup.removeTeamFromGroup(\'' + gKey + '\', ' + tId + ')" title="Bỏ đội ra khỏi bảng" style="background:transparent; border:none; color:#94a3b8; font-size:0.85rem; cursor:pointer; padding:0.2rem 0.4rem; border-radius:4px; transition:color 0.2s ease;">' +
                                     '<i class="fa-solid fa-xmark"></i>' +
-                                    '</button>';
+                                    '</button>' +
+                                    '</div>';
 
-                                item.innerHTML = infoHtml + removeBtnHtml;
+                                item.innerHTML = infoHtml + actionsHtml;
                                 listWrapper.appendChild(item);
                             })(teamList[i]);
                         }
@@ -494,14 +681,14 @@
                         addMoreRow.style.fontSize = '0.78rem';
                         addMoreRow.style.color = '#2dd4bf';
                         addMoreRow.style.textAlign = 'center';
-                        addMoreRow.style.padding = '0.5rem';
+                        addMoreRow.style.padding = '0.45rem';
                         addMoreRow.style.border = '1px dashed rgba(45, 212, 191, 0.3)';
                         addMoreRow.style.borderRadius = '6px';
-                        addMoreRow.style.marginTop = '0.6rem';
+                        addMoreRow.style.marginTop = '0.5rem';
                         addMoreRow.style.cursor = 'pointer';
                         addMoreRow.style.fontWeight = '600';
                         addMoreRow.style.background = 'rgba(45, 212, 191, 0.03)';
-                        addMoreRow.innerHTML = '<i class="fa-solid fa-plus"></i> Thêm Đội Vào Bảng ' + gKey;
+                        addMoreRow.innerHTML = '<i class="fa-solid fa-plus"></i> Thêm Đội Vào ' + dispTitle;
 
                         listWrapper.appendChild(addMoreRow);
                     }
@@ -512,26 +699,11 @@
             }
         },
 
-        saveGroupsState: function () {
-            var oldGroupsRaw = localStorage.getItem('tourma_group_assignments_' + this.tournamentId);
-            var oldTotalCount = 0;
-            if (oldGroupsRaw) {
-                try {
-                    var oldG = JSON.parse(oldGroupsRaw);
-                    Object.keys(oldG).forEach(function(k) { if (Array.isArray(oldG[k])) oldTotalCount += oldG[k].length; });
-                } catch(e) {}
-            }
-
-            var newTotalCount = 0;
-            var self = this;
-            Object.keys(this.groups).forEach(function(k) {
-                if (Array.isArray(self.groups[k])) newTotalCount += self.groups[k].length;
-            });
-
+        saveGroupsState: function (skipSync) {
             localStorage.setItem('tourma_group_assignments_' + this.tournamentId, JSON.stringify(this.groups));
 
-            // Sync directly to DB in background
-            try {
+            // The Continue action awaits its own save before leaving this page.
+            if (!skipSync) try {
                 var cPath = window.contextPath || '';
                 var targetUrl = (cPath ? cPath : '') + '/group-stage';
                 var params = new URLSearchParams();
@@ -548,14 +720,32 @@
 
             // Reset match schedule whenever team count or assignments change
             localStorage.removeItem('tourma_group_matches_' + this.tournamentId);
+            localStorage.removeItem('tourma_gsl_matches_' + this.tournamentId);
             localStorage.removeItem('tourma_matches_' + this.tournamentId);
         },
 
         saveAndReturn: function () {
-            var groupKeys = Object.keys(this.groups);
-            if (groupKeys.length < 2) {
-                alert('⚠️ Giải đấu Vòng Bảng bắt buộc phải có tối thiểu 2 BẢNG ĐẤU!\n\nVui lòng bấm "+ Thêm Bảng Mới" hoặc "Chia Đều Đội Về Bảng" để tạo tối thiểu 2 bảng (Bảng A, Bảng B...) trước khi thi đấu.');
-                return;
+            var urlParams = new URLSearchParams(window.location.search);
+            var formatParam = urlParams.get('format') || '';
+            var s1Format = window.STAGE1_FORMAT || '';
+            var isGsl = (formatParam.toUpperCase().indexOf('GSL') !== -1) || (s1Format.toUpperCase().indexOf('GSL') !== -1);
+            if (!isGsl && this.tournamentId) {
+                var storedFmt = localStorage.getItem('tourma_format_' + this.tournamentId) || '';
+                if (storedFmt.toUpperCase().indexOf('GSL') !== -1) isGsl = true;
+            }
+
+            var groupKeys = Object.keys(this.groups).sort(this.compareGroupKeys);
+            if (isGsl) {
+                var numGroups = groupKeys.length;
+                if (numGroups < 2 || (numGroups & (numGroups - 1)) !== 0) {
+                    alert('⚠️ Thể thức GSL yêu cầu số bảng đấu tối thiểu là 2 và phải là lũy thừa của 2: 2, 4, 8, 16, 32 bảng!\n\nHiện tại đang có ' + numGroups + ' bảng.');
+                    return;
+                }
+            } else {
+                if (groupKeys.length < 2) {
+                    alert('⚠️ Giải đấu Vòng Bảng bắt buộc phải có tối thiểu 2 BẢNG ĐẤU!\n\nVui lòng bấm "+ Thêm Bảng Mới" hoặc "Ngẫu Nhiên" để tạo tối thiểu 2 bảng (Bảng A, Bảng B...) trước khi thi đấu.');
+                    return;
+                }
             }
 
             var unassigned = this.getUnassignedTeams();
@@ -564,21 +754,51 @@
                 return;
             }
 
+            var expectedGslCount = null;
             for (var k = 0; k < groupKeys.length; k++) {
                 var gKey = groupKeys[k];
                 var tCount = (this.groups[gKey]) ? this.groups[gKey].length : 0;
-                if (tCount < 2) {
-                    alert('⚠️ Mỗi bảng đấu bắt buộc phải có tối thiểu 2 đội bóng! (Bảng ' + gKey + ' hiện chỉ có ' + tCount + ' đội).\n\nVui lòng bấm "+ Thêm Đội" để bổ sung đội vào Bảng ' + gKey + ' hoặc xóa bớt bảng đấu thừa!');
-                    return;
+                if (isGsl) {
+                    if (tCount !== 4 && tCount !== 8 && tCount !== 16 && tCount !== 32) {
+                        alert('⚠️ Thể thức GSL yêu cầu số đội mỗi bảng tối thiểu là 4 và phải là lũy thừa của 2: 4, 8, 16 hoặc 32 đội!\n\nBảng ' + gKey + ' hiện có ' + tCount + ' đội.');
+                        return;
+                    }
+                    if (expectedGslCount === null) {
+                        expectedGslCount = tCount;
+                    } else if (tCount !== expectedGslCount) {
+                        alert('⚠️ Thể thức GSL yêu cầu tất cả các bảng phải có cùng số lượng đội (' + expectedGslCount + ' đội/bảng)!\n\nBảng ' + gKey + ' hiện có ' + tCount + ' đội.');
+                        return;
+                    }
+                } else {
+                    if (tCount < 2) {
+                        alert('⚠️ Mỗi bảng đấu bắt buộc phải có tối thiểu 2 đội bóng! (Bảng ' + gKey + ' hiện chỉ có ' + tCount + ' đội).\n\nVui lòng bấm "+ Thêm Đội" để bổ sung đội vào Bảng ' + gKey + ' hoặc xóa bớt bảng đấu thừa!');
+                        return;
+                    }
                 }
             }
 
-            this.saveGroupsState();
-            var urlParams = new URLSearchParams(window.location.search);
-            var seriesId = urlParams.get('seriesId');
-            var target = 'group-stage.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GROUP_STAGE';
+            this.saveGroupsState(true);
+            var seriesId = window.TOURNAMENT_SERIES_ID || urlParams.get('seriesId');
+            var target = isGsl
+                ? ('gsl.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GSL')
+                : ('group-stage.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GROUP_STAGE');
             if (seriesId) {
-                target += '&seriesId=' + encodeURIComponent(seriesId);
+                target = (window.contextPath || '') + '/rolling/point-config?id='
+                    + encodeURIComponent(this.tournamentId) + '&seriesId=' + encodeURIComponent(seriesId);
+            }
+
+            var nextBtn = document.querySelector('button[onclick*="saveAndReturn"]');
+            if (nextBtn) {
+                nextBtn.disabled = true;
+                nextBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+            }
+
+            function saveFailed(message) {
+                alert('⚠️ Không thể lưu chia bảng: ' + (message || 'Vui lòng thử lại.'));
+                if (nextBtn) {
+                    nextBtn.disabled = false;
+                    nextBtn.innerHTML = 'Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>';
+                }
             }
 
             // Ensure DB persistence completes before redirect
@@ -594,11 +814,23 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                     body: params.toString()
-                }).finally(function() {
+                })
+                .then(function(res) {
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    return res.json();
+                })
+                .then(function(data) {
+                    if (!data || data.status !== 'success') {
+                        saveFailed(data && data.message);
+                        return;
+                    }
                     window.location.href = target;
+                })
+                .catch(function(err) {
+                    saveFailed(err.message);
                 });
             } catch (e) {
-                window.location.href = target;
+                saveFailed(e.message);
             }
         }
     };
@@ -607,5 +839,14 @@
         if (document.getElementById('mgWorkspace')) {
             window.TourmaManageGroup.init();
         }
+
+        document.addEventListener('click', function (e) {
+            var container = document.getElementById('quickGroupDropdownContainer');
+            if (container && !container.contains(e.target)) {
+                if (window.TourmaManageGroup && typeof window.TourmaManageGroup.closeQuickDropdown === 'function') {
+                    window.TourmaManageGroup.closeQuickDropdown();
+                }
+            }
+        });
     });
 })();

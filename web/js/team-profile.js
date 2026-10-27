@@ -1,7 +1,7 @@
 /**
  * TOURMA - UNIFIED TEAM PROFILE SCRIPT (team-profile.js)
  * Synchronizes Server + LocalStorage sub-tournament placements and BXH series stats.
- * Uses canonical TourmaRollingStandingsEngine to compute exact live team stats, W-L records,
+ * Uses canonical TourmaRollingStandingsEngine to compute live team stats,
  * achievements, tournament performance table, and TeamBadgeEngine honors.
  */
 
@@ -30,7 +30,8 @@
       subTourneys: window.seriesSubTournaments || [],
       phaseSize: window.seriesPhaseSize || 26,
       serverTourneyPoints: window.serverTourneyPoints || [],
-      serverTourneyParticipation: window.serverTourneyParticipation || []
+      serverTourneyParticipation: window.serverTourneyParticipation || [],
+      serverTourneyAchievements: window.serverTourneyAchievements || []
     });
 
     if (!prof) {
@@ -106,23 +107,7 @@
       tpEl.innerHTML = (prof.totalAccumulatedPoints || 0) + '<span class="pts-unit">pts</span>';
     }
 
-    // 5. Win / Loss
-    var wlEl = document.getElementById('profWinLoss');
-    if (wlEl) {
-      var w = prof.wins || 0;
-      var l = prof.losses || 0;
-      if (w === 0 && l === 0 && prof.performances && prof.performances.length > 0) {
-        prof.performances.forEach(function (perf) {
-          var isMulti = perf.format && perf.format.indexOf('➔') !== -1;
-          var d = (TourmaRollingStandingsEngine && TourmaRollingStandingsEngine.deduceMatchStatsFromAchievement) ?
-                  TourmaRollingStandingsEngine.deduceMatchStatsFromAchievement(perf.format, perf.achievement, isMulti) :
-                  { wins: 0, losses: 1 };
-          w += d.wins;
-          l += d.losses;
-        });
-      }
-      wlEl.textContent = w + 'W - ' + l + 'L';
-    }
+    // Win/loss is rendered from DB matches by the server; browser estimates must not overwrite it.
 
     // 6. Tournaments Played
     var tpCountEl = document.getElementById('profTourneysPlayed');

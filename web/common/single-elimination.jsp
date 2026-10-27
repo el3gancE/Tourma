@@ -103,6 +103,10 @@
             }
         } catch (Exception e) {}
     }
+    if (currentStage == 2 && !("LOCKED".equals(dbStage1Status) || "COMPLETED".equals(dbStage1Status))) {
+        dbMatchesJson = "[]";
+        dbStage2Teams = null;
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -145,7 +149,6 @@
         <jsp:include page="/common/component/stage-end-popup.jsp" />
 
         <!-- Stage Finish Alert Component (Locked Stage 2) -->
-        <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
@@ -180,6 +183,7 @@
                 <jsp:param name="view2Icon" value="fa-list-ol" />
                 <jsp:param name="view2Label" value="Danh Sách Trận" />
             </jsp:include>
+            <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
             <div id="singleEmptyAlertContainer" style="display: none; width: 100%;"></div>
@@ -237,6 +241,8 @@
         <script src="${pageContext.request.contextPath}/js/bracket-viewport.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/stage-end-popup.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/single-elimination.js?v=<%= System.currentTimeMillis() %>"></script>
 
         <script>
@@ -244,9 +250,25 @@
             window.TourmaTournamentId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
             window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
             window.TourmaDbStage1Status["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbStage1Status %>";
+            window.TourmaDbTournamentStatus = window.TourmaDbTournamentStatus || {};
+            window.TourmaDbTournamentStatus["<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>"] = "<%= dbTournamentStatus %>";
+            window.TourmaTournamentType = "<%= tournamentType %>";
+            window.TourmaCurrentStage = <%= currentStage %>;
+            window.TourmaMultiStageConfig = <%= (dbMultiStageConfig != null && !dbMultiStageConfig.trim().isEmpty() && !dbMultiStageConfig.trim().equals("{}")) ? dbMultiStageConfig : "null" %>;
             
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
+                var dbTournamentStatus = '<%= dbTournamentStatus %>';
+                if (dbTournamentStatus === 'COMPLETED') {
+                    try { localStorage.setItem('tourma_final_locked_' + tourneyId, 'true'); } catch(e) {}
+                } else {
+                    try {
+                        localStorage.removeItem('tourma_final_locked_' + tourneyId);
+                        localStorage.removeItem('tourma_champion_' + tourneyId);
+                        localStorage.removeItem('tourma_final_champion_' + tourneyId);
+                    } catch(e) {}
+                }
+
                 var preloadedTeams = <%= teamsJson %>;
                 var cutTarget = <%= cutTarget %>;
                 var currentStage = <%= currentStage %>;

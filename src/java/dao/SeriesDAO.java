@@ -245,87 +245,7 @@ public class SeriesDAO {
             return copy;
         }
 
-        String sql = "SELECT t.*, " +
-                "(SELECT TOP 1 format FROM tournament_stages WHERE tournament_id = t.id ORDER BY stage_order ASC) AS stage_format " +
-                "FROM tournaments t WHERE t.series_id = ? ORDER BY t.tournament_index_in_series ASC, t.created_at ASC";
-        DBContext db = new DBContext();
-        try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, sid);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Tournament t = new Tournament(
-                        rs.getString("id"),
-                        rs.getString("series_id"),
-                        rs.getString("name"),
-                        rs.getString("tournament_type"),
-                        rs.getString("series_event_type"),
-                        rs.getString("tier_name"),
-                        rs.getInt("tournament_index_in_series"),
-                        rs.getInt("phase_number"),
-                        rs.getInt("max_teams_per_group"),
-                        rs.getInt("advancing_seats_count"),
-                        rs.getString("linked_qualifier_tournament_id"),
-                        rs.getString("status"),
-                        rs.getTimestamp("created_at")
-                    );
-                    try {
-                        String fmt = rs.getString("stage_format");
-                        if (fmt != null && !fmt.trim().isEmpty()) {
-                            t.setFormat(fmt.trim());
-                        }
-                    } catch (Exception ignore) {}
-                    try {
-                        t.setSeriesRewardPoints(rs.getInt("series_reward_points"));
-                    } catch (Exception ignore) {}
-                    try {
-                        t.setSeriesPointsConfig(rs.getString("series_points_config"));
-                    } catch (Exception ignore) {}
-                    try {
-                        String champDirect = rs.getString("champion_name");
-                        if (champDirect != null && !champDirect.trim().isEmpty()) {
-                            t.setChampionName(champDirect.trim());
-                        }
-                    } catch (Exception ignore) {}
-                    list.add(t);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // Fast batch lookup for champions using Window Function (<200ms instead of 9000ms!)
-        if (!list.isEmpty()) {
-            Map<String, String> champMap = new HashMap<>();
-            String sqlBatchChamp = "WITH RankedWinners AS (" +
-                " SELECT m.tournament_id, tm.raw_name, " +
-                "        ROW_NUMBER() OVER (PARTITION BY m.tournament_id ORDER BY ISNULL(ts.stage_order, 1) DESC, m.round_number DESC) as rn " +
-                " FROM matches m " +
-                " JOIN tournaments t ON m.tournament_id = t.id " +
-                " JOIN teams tm ON m.winner_id = tm.id " +
-                " LEFT JOIN tournament_stages ts ON m.stage_id = ts.id " +
-                " WHERE t.series_id = ? AND m.winner_id IS NOT NULL" +
-                ") " +
-                "SELECT tournament_id, raw_name FROM RankedWinners WHERE rn = 1";
-            try (Connection conn = db.getConnection();
-                 PreparedStatement psChamp = conn.prepareStatement(sqlBatchChamp)) {
-                psChamp.setString(1, sid);
-                try (ResultSet rsChamp = psChamp.executeQuery()) {
-                    while (rsChamp.next()) {
-                        champMap.put(rsChamp.getString("tournament_id"), rsChamp.getString("raw_name"));
-                    }
-                }
-            } catch (Exception ignore) {}
-
-            for (Tournament t : list) {
-                if (t.getChampionName() == null || t.getChampionName().trim().isEmpty()) {
-                    String c = champMap.get(t.getId());
-                    if (c != null && !c.trim().isEmpty()) {
-                        t.setChampionName(c.trim());
-                    }
-                }
-            }
-        }
+        list = new TournamentDAO().getTournamentsBySeriesId(sid);
         if (!list.isEmpty()) {
             list.sort((a, b) -> {
                 int idxA = a.getTournamentIndexInSeries();
@@ -347,7 +267,7 @@ public class SeriesDAO {
         
         DBContext db = new DBContext();
         String sqlPartner = "INSERT INTO partner_participants (id, series_id, name, group_name) VALUES (?, ?, ?, ?)";
-        String sqlStanding = "INSERT INTO series_standings (id, series_id, phase_number, normalized_team_name, partner_participant_id, total_rolling_points) VALUES (?, ?, 1, ?, ?, ?)";
+        String sqlStanding = "INSERT INTO series_standings (id, series_id, phase_number, normalized_team_name, partner_participant_id, total_rolling_points) SELECT ?, ?, current_phase, ?, ?, ? FROM series WHERE id=?";
 
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
@@ -366,6 +286,7 @@ public class SeriesDAO {
                     psS.setString(3, cleanName);
                     psS.setString(4, partnerId);
                     psS.setInt(5, initialPoints);
+                    psS.setString(6, seriesId);
                     psS.executeUpdate();
                 }
 
@@ -394,7 +315,7 @@ public class SeriesDAO {
 
         DBContext db = new DBContext();
         String sqlPartner = "INSERT INTO partner_participants (id, series_id, name, group_name) VALUES (?, ?, ?, ?)";
-        String sqlStanding = "INSERT INTO series_standings (id, series_id, phase_number, normalized_team_name, partner_participant_id, total_rolling_points) VALUES (?, ?, 1, ?, ?, ?)";
+        String sqlStanding = "INSERT INTO series_standings (id, series_id, phase_number, normalized_team_name, partner_participant_id, total_rolling_points) SELECT ?, ?, current_phase, ?, ?, ? FROM series WHERE id=?";
 
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
@@ -431,6 +352,7 @@ public class SeriesDAO {
                     psS.setString(3, tName);
                     psS.setString(4, partnerId);
                     psS.setInt(5, initialPoints);
+                    psS.setString(6, seriesId);
                     psS.addBatch();
 
                     count++;
@@ -493,6 +415,51 @@ public class SeriesDAO {
         return false;
     }
 
+    public static int phaseForIndex(int index, int phaseSize) {
+        return (Math.max(1,index)-1)/Math.max(1,phaseSize)+1;
+    }
+
+    public static int phaseForTournament(Connection conn,String seriesId,int index) throws java.sql.SQLException {
+        try(PreparedStatement ps=conn.prepareStatement("SELECT phase_size FROM series WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+            ps.setString(1,seriesId);try(ResultSet rs=ps.executeQuery()) {
+                if(!rs.next())throw new java.sql.SQLException("Series not found");
+                return phaseForIndex(index,rs.getInt(1));
+            }
+        }
+    }
+
+    /** Caller commits phase metadata together with the corresponding lifecycle transition. */
+    public static int synchronizePhaseMetadata(Connection conn,String seriesId,String changingId,String targetStatus) throws java.sql.SQLException {
+        if(conn.getAutoCommit())throw new java.sql.SQLException("Phase synchronization requires a transaction");
+        int size;
+        try(PreparedStatement ps=conn.prepareStatement("SELECT phase_size FROM series WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+            ps.setString(1,seriesId);try(ResultSet rs=ps.executeQuery()){if(!rs.next())throw new java.sql.SQLException("Series not found");size=Math.max(1,rs.getInt(1));}
+        }
+        int completedThrough=0;boolean prefix=true;
+        Map<String,Integer> phases=new java.util.LinkedHashMap<>();
+        try(PreparedStatement ps=conn.prepareStatement("SELECT id,tournament_index_in_series,status FROM tournaments WITH (HOLDLOCK) WHERE series_id=? ORDER BY tournament_index_in_series,created_at,id")) {
+            ps.setString(1,seriesId);try(ResultSet rs=ps.executeQuery()){while(rs.next()) {
+                String id=rs.getString(1),status=id.equals(changingId)?targetStatus:rs.getString(3);int index=Math.max(1,rs.getInt(2));
+                phases.put(id,phaseForIndex(index,size));
+                if(prefix&&"COMPLETED".equalsIgnoreCase(status))completedThrough=Math.max(completedThrough,index);else prefix=false;
+            }}
+        }
+        int current=phaseForIndex(completedThrough+1,size);
+        try(PreparedStatement ps=conn.prepareStatement("UPDATE tournaments SET phase_number=? WHERE id=? AND ISNULL(phase_number,0)<>?")) {
+            for(Map.Entry<String,Integer> entry:phases.entrySet()){ps.setInt(1,entry.getValue());ps.setString(2,entry.getKey());ps.setInt(3,entry.getValue());ps.addBatch();}ps.executeBatch();
+        }
+        try(PreparedStatement ps=conn.prepareStatement("UPDATE series SET current_phase=? WHERE id=? AND ISNULL(current_phase,0)<>?")) {
+            ps.setInt(1,current);ps.setString(2,seriesId);ps.setInt(3,current);ps.executeUpdate();
+        }
+        try(PreparedStatement ps=conn.prepareStatement("UPDATE series_standings SET phase_number=? WHERE series_id=? AND ISNULL(phase_number,0)<>?")) {
+            ps.setInt(1,current);ps.setString(2,seriesId);ps.setInt(3,current);ps.executeUpdate();
+        }
+        try(PreparedStatement ps=conn.prepareStatement("UPDATE h SET phase_number=t.phase_number FROM series_tournament_history h JOIN tournaments t ON t.id=h.tournament_id AND t.series_id=h.series_id WHERE h.series_id=? AND ISNULL(h.phase_number,0)<>t.phase_number")) {
+            ps.setString(1,seriesId);ps.executeUpdate();
+        }
+        return current;
+    }
+
     public boolean createSubTournamentInSeries(Tournament t) {
         if (t == null || t.getId() == null || t.getName() == null) return false;
         String sql = "INSERT INTO tournaments (id, series_id, name, tournament_type, tier_name, tournament_index_in_series, phase_number, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -508,6 +475,12 @@ public class SeriesDAO {
 
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            conn.setAutoCommit(false);
+            int phase=phaseForTournament(conn,t.getSeriesId(),1);
+            try(PreparedStatement next=conn.prepareStatement("SELECT ISNULL(MAX(tournament_index_in_series),0)+1 FROM tournaments WITH (HOLDLOCK) WHERE series_id=?")) {
+                next.setString(1,t.getSeriesId());try(ResultSet rs=next.executeQuery()){rs.next();t.setTournamentIndexInSeries(rs.getInt(1));}
+            }
+            phase=phaseForTournament(conn,t.getSeriesId(),t.getTournamentIndexInSeries());t.setPhaseNumber(phase);
             ps.setString(1, t.getId());
             ps.setString(2, t.getSeriesId());
             ps.setString(3, t.getName());
@@ -518,6 +491,8 @@ public class SeriesDAO {
             ps.setString(8, t.getStatus() != null ? t.getStatus() : "DRAFT");
             boolean res = ps.executeUpdate() > 0;
             if (res) {
+                synchronizePhaseMetadata(conn,t.getSeriesId(),null,null);
+                conn.commit();
                 clearSeriesCaches();
                 service.RollingWindowPointService.clearAllCaches();
                 dao.TournamentDAO.clearTournamentCaches();

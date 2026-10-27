@@ -144,6 +144,13 @@
                         return null;
                     }
 
+                    // With one final, the stored winner also covers a tied score
+                    // decided by penalties or an explicit winner selection.
+                    if (!gfReset) {
+                        if (gfMain.winnerId === 'team1' || (gfT1.id && String(gfMain.winnerId) === String(gfT1.id))) return gft1Name;
+                        if (gfMain.winnerId === 'team2' || (gfT2.id && String(gfMain.winnerId) === String(gfT2.id))) return gft2Name;
+                    }
+
                     var gfS1 = (gfT1.score !== '' && gfT1.score !== null && !isNaN(Number(gfT1.score))) ? Number(gfT1.score) : null;
                     var gfS2 = (gfT2.score !== '' && gfT2.score !== null && !isNaN(Number(gfT2.score))) ? Number(gfT2.score) : null;
 
@@ -224,6 +231,11 @@
         isTournamentLocked: function (tournamentId) {
             if (!tournamentId) return false;
             try {
+                if (window.TourmaDbTournamentStatus && window.TourmaDbTournamentStatus[tournamentId] !== undefined) {
+                    var s = window.TourmaDbTournamentStatus[tournamentId];
+                    if (s === 'COMPLETED') return true;
+                    if (s === 'ONGOING' || s === 'IN_PROGRESS' || s === 'DRAFT' || s === 'INCOMING') return false;
+                }
                 return localStorage.getItem('tourma_final_locked_' + tournamentId) === 'true';
             } catch (e) {
                 return false;
@@ -376,24 +388,67 @@
         /**
          * User confirms conclusion -> Lock tournament & transition to Step 2
          */
-        confirmConclusion: function () {
-            if (!this.tournamentId) return;
+
+        requestJson: async function (url, options) {
+            var controller = new AbortController();
+            var timedOut = false;
+            var timer = setTimeout(function () { timedOut = true; controller.abort(); }, 45000);
+            try {
+                var response = await fetch(url, Object.assign({}, options, {signal: controller.signal}));
+                var data = await response.json();
+                if (!response.ok || !data || data.status !== 'success')
+                    throw new Error((data && data.message) || 'Không thể xác nhận kết quả. Vui lòng thử lại.');
+                return data;
+            } catch (error) {
+                if (timedOut) throw new Error('Máy chủ xử lý quá lâu. Hãy tải lại trang để kiểm tra trạng thái trước khi xác nhận lại.');
+                throw error;
+            } finally { clearTimeout(timer); }
+        },
+
+        confirmConclusion: async function () {
+            if (!this.tournamentId || this.isFinishing || this.isUnlocking || this.isLocked) return;
+            var tournamentId = this.tournamentId;
+            var confirmButton = document.getElementById('finalStageConfirmBtn');
+            var originalLabel = confirmButton ? confirmButton.textContent : '';
+            this.isFinishing = true;
+            if (confirmButton) {
+                confirmButton.disabled = true;
+                confirmButton.textContent = 'Đang kiểm tra…';
+            }
 
             try {
                 var rootPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
                 if (!rootPath || rootPath === '/common') rootPath = '';
                 var ctx = window.TourmaContextPath || rootPath || '';
-                fetch(ctx + '/api/match-update', {
+                await this.requestJson(ctx + '/api/match-update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                    body: 'action=finishTournament&tournamentId=' + encodeURIComponent(this.tournamentId) + '&championName=' + encodeURIComponent(this.championName || '')
-                }).catch(function(err) { console.error('Error saving tournament finish to DB:', err); });
-            } catch (e) {}
+                    body: 'action=finishTournament&tournamentId=' + encodeURIComponent(tournamentId) + '&championName=' + encodeURIComponent(this.championName || '')
+                });
+
+                if (this.tournamentId !== tournamentId) return;
+            } catch (error) {
+                window.alert(error.message || 'Không thể xác nhận hoàn thành giải. Vui lòng tải lại trang và thử lại.');
+                return;
+            } finally {
+                this.isFinishing = false;
+                if (confirmButton) {
+                    confirmButton.disabled = false;
+                    confirmButton.textContent = originalLabel;
+                }
+            }
 
             this.isLocked = true;
 
+            if (!window.TourmaDbTournamentStatus) window.TourmaDbTournamentStatus = {};
+            window.TourmaDbTournamentStatus[this.tournamentId] = 'COMPLETED';
+
             try {
                 localStorage.setItem('tourma_final_locked_' + this.tournamentId, 'true');
+                if (this.championName) {
+                    localStorage.setItem('tourma_champion_' + this.tournamentId, this.championName);
+                    localStorage.setItem('tourma_final_champion_' + this.tournamentId, this.championName);
+                }
             } catch (e) {}
 
             if (typeof this.onLockCallback === 'function') {
@@ -424,23 +479,52 @@
         /**
          * User unlocks tournament -> Re-enable editing & transition back to Step 1
          */
-        unlockTournament: function () {
-            if (!this.tournamentId) return;
+        unlockTournament: async function () {
+            if (!this.tournamentId || this.isFinishing || this.isUnlocking) return;
+            var tournamentId = this.tournamentId;
+            var unlockButton = document.getElementById('finalStageUnlockBtn');
+            var originalLabel = unlockButton ? unlockButton.textContent : '';
+            var unlockError = '';
+            this.isUnlocking = true;
+            if (unlockButton) {
+                unlockButton.disabled = true;
+                unlockButton.textContent = 'Đang cập nhật…';
+            }
 
             try {
                 var rootPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
                 if (!rootPath || rootPath === '/common') rootPath = '';
                 var ctx = window.TourmaContextPath || rootPath || '';
-                fetch(ctx + '/api/match-update', {
+                var response = await fetch(ctx + '/api/match-update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                    body: 'action=unlockTournament&tournamentId=' + encodeURIComponent(this.tournamentId)
-                }).catch(function(err) { console.error('Error unlocking tournament in DB:', err); });
-            } catch (e) {}
+                    body: 'action=unlockTournament&tournamentId=' + encodeURIComponent(tournamentId)
+                });
+                var data = await response.json();
+                if (!response.ok || data.status !== 'success') {
+                    unlockError = data.message || 'Chưa thể mở khóa giải. Vui lòng thử lại.';
+                    throw new Error(unlockError);
+                }
+                if (this.tournamentId !== tournamentId) return;
+            } catch (error) {
+                window.alert(unlockError || 'Không thể mở khóa giải. Vui lòng tải lại trang và thử lại.');
+                return;
+            } finally {
+                this.isUnlocking = false;
+                if (unlockButton) {
+                    unlockButton.disabled = false;
+                    unlockButton.textContent = originalLabel;
+                }
+            }
 
             try {
                 localStorage.removeItem('tourma_final_locked_' + this.tournamentId);
+                localStorage.removeItem('tourma_champion_' + this.tournamentId);
+                localStorage.removeItem('tourma_final_champion_' + this.tournamentId);
             } catch (e) {}
+
+            if (!window.TourmaDbTournamentStatus) window.TourmaDbTournamentStatus = {};
+            window.TourmaDbTournamentStatus[this.tournamentId] = 'ONGOING';
 
             this.isLocked = false;
 

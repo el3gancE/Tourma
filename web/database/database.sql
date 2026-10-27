@@ -80,7 +80,7 @@ CREATE TABLE tournament_stages (
     tournament_id VARCHAR(50) NOT NULL,
     stage_order INT NOT NULL DEFAULT 1, -- Thứ tự Stage: 1, 2, 3...
     stage_name NVARCHAR(100) NOT NULL, -- e.g. Stage 1: Group Stage, Stage 2: Knockout
-    format VARCHAR(30) NOT NULL CHECK (format IN ('SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'ROUND_ROBIN', 'SWISS_LITE', 'GROUP_STAGE')),
+    format VARCHAR(30) NOT NULL CHECK (format IN ('SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'ROUND_ROBIN', 'SWISS_LITE', 'GROUP_STAGE', 'GSL')),
     target_wins INT DEFAULT 3, -- Thắng 3 trận là đủ điều kiện đi tiếp (Swiss System)
     elimination_losses INT DEFAULT 3, -- Thua 3 trận là bị loại về nước (Swiss System)
     win_points INT DEFAULT 3, -- Tùy chỉnh điểm cho 1 trận Thắng (Group Stage & Round Robin, e.g. 3 điểm)
@@ -108,7 +108,7 @@ CREATE TABLE teams (
     FOREIGN KEY (current_stage_id) REFERENCES tournament_stages(id)
 );
 
--- 6. BẢNG GROUPS (CÁC BẢNG ĐẤU TRONG GROUP STAGE)
+-- 6. BẢNG GROUPS (CÁC BẢNG ĐẤU TRONG GROUP STAGE & GSL)
 CREATE TABLE groups (
     id VARCHAR(50) PRIMARY KEY,
     stage_id VARCHAR(50) NOT NULL,
@@ -122,6 +122,9 @@ CREATE TABLE group_teams (
     id VARCHAR(50) PRIMARY KEY,
     group_id VARCHAR(50) NOT NULL,
     team_id VARCHAR(50) NOT NULL,
+    seed_in_group INT DEFAULT 1,
+    rank_in_group INT DEFAULT 0,
+    matches_played INT DEFAULT 0,
     points INT DEFAULT 0,
     wins INT DEFAULT 0,
     draws INT DEFAULT 0,
@@ -129,27 +132,32 @@ CREATE TABLE group_teams (
     goals_scored INT DEFAULT 0,
     goals_conceded INT DEFAULT 0,
     goal_difference INT DEFAULT 0,
-    rank_in_group INT DEFAULT 0,
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES teams(id)
 );
 
 -- 8. BẢNG MATCHES (DANH SÁCH TRẬN ĐẤU / MATCH NODES)
 CREATE TABLE matches (
-    id VARCHAR(50) PRIMARY KEY,
+    id VARCHAR(100) PRIMARY KEY,
     tournament_id VARCHAR(50) NOT NULL,
     stage_id VARCHAR(50) NOT NULL,
     group_id VARCHAR(50) NULL, -- NULL nếu không phải thi đấu vòng bảng
     round_number INT NOT NULL, -- Vòng 1, Vòng 2...
-    match_code NVARCHAR(100) NOT NULL, -- e.g. Match #1, Match #16, NHÓM 0-0 #1
-    bracket_type VARCHAR(30) DEFAULT 'MAIN' CHECK (bracket_type IN ('WINNER_BRACKET', 'LOSER_BRACKET', 'GRAND_FINAL', 'SWISS', 'GROUP', 'MAIN')),
+    match_code NVARCHAR(100) NULL, -- e.g. Match #1, Match #16, NHÓM 0-0 #1
+    match_order INT DEFAULT 1,
+    bracket_type VARCHAR(30) DEFAULT 'MAIN' CHECK (bracket_type IN ('WINNER_BRACKET', 'LOSER_BRACKET', 'GRAND_FINAL', 'SWISS', 'GROUP', 'GROUP_STAGE', 'GSL', 'MAIN')),
     team1_id VARCHAR(50) NULL,
     team2_id VARCHAR(50) NULL,
     score1 INT NULL,
     score2 INT NULL,
+    penalty1 INT NULL,
+    penalty2 INT NULL,
     winner_id VARCHAR(50) NULL,
-    next_match_id VARCHAR(50) NULL, -- Nút cây dẫn đến trận tiếp theo
+    loser_id VARCHAR(50) NULL,
+    next_match_id VARCHAR(100) NULL, -- Nút cây dẫn đến trận tiếp theo
+    loser_next_match_id VARCHAR(100) NULL, -- Nút cây dẫn đến nhánh thua
     next_slot VARCHAR(10) NULL CHECK (next_slot IN ('SLOT_1', 'SLOT_2')),
+    loser_next_slot VARCHAR(10) NULL CHECK (loser_next_slot IN ('SLOT_1', 'SLOT_2')),
     is_bye BIT DEFAULT 0, -- Suất BYE miễn đấu Vòng 1
     status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'READY', 'IN_PROGRESS', 'FINISHED')),
     created_at DATETIME DEFAULT GETDATE(),
@@ -159,7 +167,9 @@ CREATE TABLE matches (
     FOREIGN KEY (team1_id) REFERENCES teams(id),
     FOREIGN KEY (team2_id) REFERENCES teams(id),
     FOREIGN KEY (winner_id) REFERENCES teams(id),
-    FOREIGN KEY (next_match_id) REFERENCES matches(id)
+    FOREIGN KEY (loser_id) REFERENCES teams(id),
+    FOREIGN KEY (next_match_id) REFERENCES matches(id),
+    FOREIGN KEY (loser_next_match_id) REFERENCES matches(id)
 );
 
 -- 9. BẢNG SERIES_STANDINGS (BẢNG XẾP HẠNG SERIES TÍCH LŨY CỬA SỔ TRƯỢT & THEO PHASE)

@@ -25,6 +25,8 @@
             }
             if (!tid && window.FinalStagePopup) tid = window.FinalStagePopup.tournamentId;
             if (!tid && window.StageEndPopup) tid = window.StageEndPopup.tournamentId;
+            if (!tid && window.TourmaGSL) tid = window.TourmaGSL.tournamentId;
+            if (!tid && window.GSLEngine) tid = window.GSLEngine.tournamentId;
             if (!tid && window.SingleEliminationEngine) tid = window.SingleEliminationEngine.tournamentId;
             if (!tid && window.TourmaDoubleElimination) tid = window.TourmaDoubleElimination.tournamentId;
             if (!tid && window.TourmaRoundRobin) tid = window.TourmaRoundRobin.tournamentId;
@@ -45,6 +47,8 @@
                 isMultiStage = (
                     localStorage.getItem('tourma_type_' + tid) === 'MULTI_STAGE' ||
                     !!localStorage.getItem('tourma_multi_config_' + tid) ||
+                    (window.TourmaGSL && (window.TourmaGSL.cutTarget > 0 || window.TourmaGSL.tournamentType === 'MULTI_STAGE')) ||
+                    (window.GSLEngine && (window.GSLEngine.cutTarget > 0 || window.GSLEngine.tournamentType === 'MULTI_STAGE')) ||
                     (window.TourmaDoubleElimination && window.TourmaDoubleElimination.cutTarget > 1) ||
                     (window.SingleEliminationEngine && window.SingleEliminationEngine.cutTarget > 1) ||
                     (window.TourmaRoundRobin && window.TourmaRoundRobin.cutTarget > 1)

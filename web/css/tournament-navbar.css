@@ -43,6 +43,31 @@
 }
 
 /* Format Badges */
+.tournament-live-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+.live-status-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid;
+    border-radius: 50px;
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+.live-status-count strong { font-weight: inherit; }
+.tournament-live-status.is-stale .live-status-count { border-style: dashed; }
+
 .format-badge-single,
 .format-badge-double,
 .format-badge-rr,

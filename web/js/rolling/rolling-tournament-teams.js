@@ -474,8 +474,34 @@
     reindexSubtourneyRows();
   };
 
+  window.applyPartnerExclusions = function () {
+    var selected = new Set(Array.from(document.querySelectorAll('.partner-exclusion-input:checked')).map(function (cb) { return cb.value; }));
+    var blocked = 0, available = 0;
+    document.querySelectorAll('#partnerModalCheckboxList .partner-checkbox-item').forEach(function (item) {
+      var cb = item.querySelector('.partner-cb-input');
+      if (!cb) return;
+      var excluded = (item.getAttribute('data-played-tournaments') || '').split(' ').some(function (id) { return selected.has(id); });
+      var alreadyIn = item.getAttribute('data-already-in') === 'true';
+      cb.disabled = alreadyIn || excluded;
+      if (excluded && !alreadyIn) cb.checked = false;
+      item.classList.toggle('partner-is-excluded', excluded);
+      item.title = excluded ? 'Đội đã tham gia một trong các giải đang loại trừ' : '';
+      var note = item.querySelector('.partner-excluded-label');
+      if (note) note.hidden = !excluded;
+      if (excluded) blocked++;
+      if (!cb.disabled) available++;
+    });
+    var count = document.getElementById('partnerExclusionCount');
+    if (count) count.textContent = selected.size + ' giải';
+    var hint = document.getElementById('partnerExclusionHint');
+    if (hint) hint.textContent = selected.size ? 'Loại trừ ' + blocked + ' đội · Còn ' + available + ' đội có thể chọn' : '';
+    var input = document.getElementById('quickSelectNum');
+    if (input) input.max = available;
+  };
+
   window.openPartnerSelectModal = function () {
     window.calculateAndSyncModalStandings();
+    window.applyPartnerExclusions();
     var modal = document.getElementById('partnerSelectModal');
     if (modal) modal.style.display = 'flex';
   };
@@ -499,7 +525,7 @@
     if (!numInput) return;
 
     var availableCbs = Array.from(document.querySelectorAll('.partner-cb-input:not(:disabled)'));
-    var totalPartnerCount = document.querySelectorAll('.partner-cb-input').length;
+    var totalPartnerCount = availableCbs.length;
 
     var count = parseInt(numInput.value, 10);
     if (isNaN(count) || count < 2) {
@@ -509,6 +535,11 @@
     if (count > totalPartnerCount) {
       count = totalPartnerCount;
       numInput.value = totalPartnerCount;
+    }
+    var fmt = (window.tourneyFormat || '').toUpperCase();
+    if (fmt === 'ROUND_ROBIN' && count > 24) {
+      count = 24;
+      numInput.value = 24;
     }
 
     // Clear selection on enabled checkboxes first
@@ -627,6 +658,7 @@
       input.value = visibleCount;
     }
     window.applyHideSeedUI(isEnabled);
+    window.saveHideSeedConfig();
   };
 
   window.applyHideSeedUI = function (isEnabled) {
@@ -660,6 +692,17 @@
     var input = document.getElementById('lockTopSeedsInput');
     var isEnabled = (btn && btn.dataset.active === 'true');
     var visibleCount = input ? input.value.trim() : '';
+    document.querySelectorAll('form').forEach(function (form) {
+      var field = form.querySelector('input[name="topSeedCount"]');
+      if (!field) { field = document.createElement('input'); field.type = 'hidden'; field.name = 'topSeedCount'; form.appendChild(field); }
+      field.value = visibleCount || '0';
+                    var classic = document.getElementById('classicDrawInput');
+                    if (classic) {
+                        var drawField = form.querySelector('input[name="classicDraw"]');
+                        if (!drawField) { drawField = document.createElement('input'); drawField.type = 'hidden'; drawField.name = 'classicDraw'; form.appendChild(drawField); }
+                        drawField.value = classic.checked ? 'true' : 'false';
+                    }
+    });
 
     var cfg = {
       isEnabled: isEnabled,
@@ -690,6 +733,18 @@
     if (window.targetTeamCount && window.targetTeamCount > 0) {
       if (teamNames.length !== window.targetTeamCount) {
         alert('RÀNG BUỘC SỐ LƯỢNG ĐỘI:\nGiải đấu này được thiết lập cấu hình sao chép với đúng ' + window.targetTeamCount + ' đội.\nHiện tại danh sách có ' + teamNames.length + ' đội. Vui lòng thêm hoặc bớt để có đúng ' + window.targetTeamCount + ' đội trước khi tiếp tục sang bước tiếp theo!');
+        return false;
+      }
+    }
+
+    var fmt = (window.tourneyFormat || '').toUpperCase();
+    if (fmt === 'ROUND_ROBIN') {
+      if (teamNames.length > 24) {
+        alert('⚠️ Thể thức Vòng Tròn (Round Robin) chỉ hỗ trợ tối đa 24 đội bóng. Hiện tại danh sách có ' + teamNames.length + ' đội. Vui lòng bớt đội để tiếp tục!');
+        return false;
+      }
+      if (teamNames.length < 2) {
+        alert('⚠️ Cần ít nhất 2 đội bóng để sinh sơ đồ thi đấu Vòng Tròn (Round Robin)!');
         return false;
       }
     }
@@ -727,6 +782,10 @@
   };
 
   document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.partner-exclusion-input').forEach(function (cb) {
+      cb.addEventListener('change', window.applyPartnerExclusions);
+    });
+    window.applyPartnerExclusions();
     var tid = getSubtourneyId();
     if (tid) {
       if (window.targetTeamCount && window.targetTeamCount > 0) {

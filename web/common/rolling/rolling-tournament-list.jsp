@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="model.Series, model.Tournament, dao.SeriesDAO, dao.TournamentDAO, dao.ParticipantDAO, model.Team, java.util.List, java.util.Map, java.util.HashMap"%>
 <%
     String seriesIdVal = request.getParameter("id");
@@ -36,7 +37,10 @@
 
     List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
     if (tournamentsList == null && series != null) {
-        tournamentsList = seriesDAO.getTournamentsBySeriesId(series.getId());
+        TournamentDAO.TournamentPage pageInfo = tournamentDAO.getTournamentPage(series.getId(),
+                request.getParameter("q"), "ALL", request.getParameter("page"));
+        tournamentsList = pageInfo.getTournaments();
+        request.setAttribute("pageInfo", pageInfo);
     }
 
     Map<String, Integer> teamCountMap = (Map<String, Integer>) request.getAttribute("teamCountMap");
@@ -44,28 +48,22 @@
         teamCountMap = new HashMap<>();
         if (tournamentsList != null) {
             for (Tournament t : tournamentsList) {
-                List<Team> teams = participantDAO.getTeamsByTournamentId(t.getId());
-                int count = (teams != null) ? teams.size() : 0;
-                teamCountMap.put(t.getId(), count);
+                teamCountMap.put(t.getId(), t.getTeamCount());
             }
         }
     }
 
     Map<String, List<String>> stageFormatsMap = (Map<String, List<String>>) request.getAttribute("stageFormatsMap");
     if (stageFormatsMap == null) {
-        stageFormatsMap = new HashMap<>();
-        if (tournamentsList != null) {
-            for (Tournament t : tournamentsList) {
-                stageFormatsMap.put(t.getId(), tournamentDAO.getStageFormats(t.getId()));
-            }
-        }
+        stageFormatsMap = series != null ? tournamentDAO.getStageFormatsBySeriesId(series.getId()) : new HashMap<>();
     }
 
     if (seriesIdVal == null && series != null) {
         seriesIdVal = series.getId();
     }
     String seriesName = (series != null) ? series.getName() : "Series Circuit";
-    int tourneyCount = (tournamentsList != null) ? tournamentsList.size() : 0;
+    TournamentDAO.TournamentPage pageInfo = (TournamentDAO.TournamentPage) request.getAttribute("pageInfo");
+    int tourneyCount = pageInfo != null ? pageInfo.getTotalCount() : 0;
 %>
 <%!
     private String getFmtName(String fmt) {
@@ -74,6 +72,7 @@
         if ("DOUBLE_ELIMINATION".equals(f)) return "Double Elimination";
         if ("ROUND_ROBIN".equals(f)) return "Round Robin";
         if ("GROUP_STAGE".equals(f)) return "Group Stage";
+        if ("GSL".equals(f)) return "GSL Format";
         if ("SWISS_LITE".equals(f) || "SWISS".equals(f)) return "Swiss System";
         return "Single Elimination";
     }
@@ -137,19 +136,20 @@
                 </div>
             </div>
 
-            <!-- Search Toolbar Row -->
-            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 1.25rem;">
+            <!-- Search the complete series before applying the 25-row page limit. -->
+            <form class="tourney-search-form" method="get" action="${pageContext.request.contextPath}/rolling/tournament-list">
+                <input type="hidden" name="seriesId" value="<c:out value='<%= series != null ? series.getId() : "" %>' />">
                 <div class="search-input-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm tên giải con..." onkeyup="filterTournaments(this.value)">
+                    <input type="text" id="searchInput" name="q" value="<c:out value="${pageInfo.query}" />" class="form-control" placeholder="Tìm kiếm tên giải con...">
+                    <button type="submit" class="tourney-search-submit">Tìm</button>
                 </div>
-            </div>
-
+            </form>
             <!-- Tournament Cards Grid -->
             <div class="tourney-cards-grid" id="tourneyCardList">
                 <% if (tournamentsList != null && !tournamentsList.isEmpty()) { 
-                    // Render newest sub-tournament first by iterating backwards without mutating the list
-                    for (int i = tournamentsList.size() - 1; i >= 0; i--) {
+                    // SQL returns this page in newest-first order.
+                    for (int i = 0; i < tournamentsList.size(); i++) {
                         Tournament t = tournamentsList.get(i);
                         int nTeams = teamCountMap.containsKey(t.getId()) ? teamCountMap.get(t.getId()) : 0;
                         String tierName = (t.getTierName() != null) ? t.getTierName().toUpperCase() : "S";
@@ -164,19 +164,14 @@
                         String s2Label = getFmtName(s2Fmt);
                         String fmtLabel = isMulti ? (s1Label + " ➔ " + s2Label) : s1Label;
 
-                        String bracketUrl = "/common/single-elimination.jsp";
-                        if ("DOUBLE_ELIMINATION".equals(s1Fmt)) bracketUrl = "/common/double-elimination.jsp";
-                        else if ("ROUND_ROBIN".equals(s1Fmt)) bracketUrl = "/common/round-robin.jsp";
-                        else if ("GROUP_STAGE".equals(s1Fmt)) bracketUrl = "/common/group-stage.jsp";
-                        else if ("SWISS_LITE".equals(s1Fmt) || "SWISS".equals(s1Fmt)) bracketUrl = "/common/swiss-stage.jsp";
-
                         String championName = t.getChampionName();
-                        boolean isFinished = (championName != null && !championName.trim().isEmpty()) || "COMPLETED".equalsIgnoreCase(t.getStatus());
-                        String statusStr = isFinished ? "Completed" : ("ONGOING".equalsIgnoreCase(t.getStatus()) ? "In Progress" : "Incoming");
-                        String statusClass = isFinished ? "completed" : ("ONGOING".equalsIgnoreCase(t.getStatus()) ? "in-progress" : "incoming");
+                        boolean isFinished = "COMPLETED".equalsIgnoreCase(t.getStatus()) || "FINISHED".equalsIgnoreCase(t.getStatus());
+                        boolean isOngoing = "ONGOING".equalsIgnoreCase(t.getStatus()) || "IN_PROGRESS".equalsIgnoreCase(t.getStatus());
+                        String statusStr = isFinished ? "Completed" : (isOngoing ? "In Progress" : "Incoming");
+                        String statusClass = isFinished ? "completed" : (isOngoing ? "in-progress" : "incoming");
                         String stageTypeLabel = isMulti ? "MULTI STAGE" : "SINGLE STAGE";
                 %>
-                    <div class="tourney-card" data-id="<%= t.getId() %>" data-stage-type="<%= isMulti ? "MULTI_STAGE" : "SINGLE_STAGE" %>" data-stage1-format="<%= s1Fmt %>" data-stage2-format="<%= s2Fmt %>" data-db-status="<%= t.getStatus() != null ? t.getStatus() : "" %>" data-db-champion="<%= championName != null ? championName.replace("\"", "&quot;") : "" %>" data-name="<%= t.getName() %>">
+                    <div class="tourney-card" data-id="<%= t.getId() %>" data-stage-type="<%= isMulti ? "MULTI_STAGE" : "SINGLE_STAGE" %>" data-stage1-format="<%= s1Fmt %>" data-stage2-format="<%= s2Fmt %>" data-status="<%= isFinished ? "COMPLETED" : (isOngoing ? "IN_PROGRESS" : "INCOMING") %>" data-db-status="<%= t.getStatus() != null ? t.getStatus() : "" %>" data-db-champion="<%= championName != null ? championName.replace("\"", "&quot;") : "" %>" data-name="<%= t.getName() %>">
                         <div class="tourney-card-main">
                             <div class="tourney-card-top-row">
                                 <h3 class="tourney-card-title" style="margin: 0; display: inline-flex; align-items: center;">
@@ -201,10 +196,10 @@
                                     <i class="fa-solid fa-diagram-project text-mint"></i> <%= fmtLabel %>
                                 </span>
                                 <span id="championMeta_<%= t.getId() %>" class="tourney-champion-meta" style="<%= (isFinished) ? "display: inline-flex;" : "display: none;" %>">
-                                    <span class="meta-divider">•</span>
                                     <i class="fa-solid fa-trophy text-gold"></i> Nhà vô địch: <span class="champion-name-val" style="color: #fbbf24;"><%= championName != null ? championName : "" %></span>
                                 </span>
                             </div>
+
                         </div>
 
                         <div class="tourney-card-footer">
@@ -218,9 +213,15 @@
                                 <a href="${pageContext.request.contextPath}/rolling/point-config?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Set điểm thưởng">
                                     <i class="fa-solid fa-star text-gold"></i> Set Điểm
                                 </a>
-                                <a href="${pageContext.request.contextPath}<%= bracketUrl %>?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-view-bracket-card">
+                                <a href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=<%= t.getId() %>" class="btn-view-bracket-card">
                                     Trận Đấu ➔
                                 </a>
+                            </div>
+                            <div class="tourney-progress" title="Số trận đã xong / tổng số trận cả giải, tính trước Stage 2 khi chưa tạo bracket. Không tính BYE; 100% khi xác nhận hoàn thành giải.">
+                                <div class="tourney-progress-label"><span>Tiến độ · <%= t.getCompletedMatches() %>/<%= t.getProgressTotalMatches() %> trận</span><strong><%= t.getProgressPercent() %>%</strong></div>
+                                <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= t.getProgressPercent() %>">
+                                    <span class="tourney-progress-fill" style="width: <%= t.getProgressPercent() %>%"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -228,8 +229,8 @@
                 } else { %>
                         <div style="text-align: center; padding: 3rem; background: rgba(18, 22, 31, 0.7); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 16px; color: #94a3b8;">
                             <i class="fa-solid fa-trophy" style="font-size: 2.5rem; margin-bottom: 0.75rem; color: #fbbf24; opacity: 0.5;"></i>
-                            <h4 style="color: #ffffff; font-weight: 700; margin-bottom: 0.5rem;">Chưa có giải con nào trong Series này</h4>
-                            <p style="font-size: 0.85rem; margin-bottom: 1.25rem;">Hãy bấm nút bên dưới để tạo giải đấu con đầu tiên cho Series.</p>
+                            <h4 style="color: #ffffff; font-weight: 700; margin-bottom: 0.5rem;">${not empty pageInfo.query ? 'Không có giải con phù hợp' : 'Chưa có giải con nào trong Series này'}</h4>
+                            <p style="font-size: 0.85rem; margin-bottom: 1.25rem;">${not empty pageInfo.query ? 'Thử tìm kiếm bằng từ khóa khác.' : 'Hãy bấm nút bên dưới để tạo giải đấu con đầu tiên cho Series.'}</p>
                             <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" style="font-weight: 800; text-decoration: none;">
                                 <i class="fa-solid fa-plus-circle"></i> + Tạo Giải Con Đầu Tiên
                             </a>
@@ -238,6 +239,37 @@
                 </div>
             </div>
 
+            <c:if test="${not empty pageInfo && pageInfo.totalCount > 0}">
+                <nav class="tourney-pagination" aria-label="Phân trang giải đấu">
+                    <span class="tourney-page-summary">${(pageInfo.page - 1) * 25 + 1}–${pageInfo.page * 25 < pageInfo.totalCount ? pageInfo.page * 25 : pageInfo.totalCount} / ${pageInfo.totalCount} giải</span>
+                    <div class="tourney-page-buttons">
+                        <c:choose>
+                            <c:when test="${pageInfo.page > 1}">
+                                <c:url var="previousPageUrl" value="/rolling/tournament-list"><c:param name="page" value="${pageInfo.page - 1}" /><c:param name="q" value="${pageInfo.query}" /><c:param name="filter" value="${pageInfo.filter}" /><c:param name="seriesId" value='<%= series != null ? series.getId() : "" %>' /></c:url>
+                                <a href="<c:out value='${previousPageUrl}' />" class="tourney-page-btn" rel="prev">‹ Trước</a>
+                            </c:when>
+                            <c:otherwise><span class="tourney-page-btn is-disabled" aria-disabled="true">‹ Trước</span></c:otherwise>
+                        </c:choose>
+                        <c:forEach var="pageNumber" begin="${pageInfo.page > 2 ? pageInfo.page - 2 : 1}" end="${pageInfo.page + 2 < pageInfo.totalPages ? pageInfo.page + 2 : pageInfo.totalPages}">
+                            <c:choose>
+                                <c:when test="${pageNumber == pageInfo.page}"><span class="tourney-page-btn is-current" aria-current="page">${pageNumber}</span></c:when>
+                                <c:otherwise>
+                                    <c:url var="numberedPageUrl" value="/rolling/tournament-list"><c:param name="page" value="${pageNumber}" /><c:param name="q" value="${pageInfo.query}" /><c:param name="filter" value="${pageInfo.filter}" /><c:param name="seriesId" value='<%= series != null ? series.getId() : "" %>' /></c:url>
+                                    <a href="<c:out value='${numberedPageUrl}' />" class="tourney-page-btn" aria-label="Trang ${pageNumber}">${pageNumber}</a>
+                                </c:otherwise>
+                            </c:choose>
+                        </c:forEach>
+                        <c:choose>
+                            <c:when test="${pageInfo.page < pageInfo.totalPages}">
+                                <c:url var="nextPageUrl" value="/rolling/tournament-list"><c:param name="page" value="${pageInfo.page + 1}" /><c:param name="q" value="${pageInfo.query}" /><c:param name="filter" value="${pageInfo.filter}" /><c:param name="seriesId" value='<%= series != null ? series.getId() : "" %>' /></c:url>
+                                <a href="<c:out value='${nextPageUrl}' />" class="tourney-page-btn" rel="next">Sau ›</a>
+                            </c:when>
+                            <c:otherwise><span class="tourney-page-btn is-disabled" aria-disabled="true">Sau ›</span></c:otherwise>
+                        </c:choose>
+                        <span class="tourney-page-total">Trang ${pageInfo.page}/${pageInfo.totalPages}</span>
+                    </div>
+                </nav>
+            </c:if>
             <!-- DELETE SUB-TOURNAMENT CONFIRMATION MODAL -->
             <div id="deleteTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeDeleteTourneyModal();">
                 <div class="tourma-modal-card" style="border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
@@ -398,249 +430,6 @@
                 .catch(function(err) { console.warn('Backend delete fetch note:', err); });
             }
 
-            function filterTournaments(query) {
-                var q = (query || '').toLowerCase().trim();
-                var cards = document.querySelectorAll('.tourney-card');
-                cards.forEach(function (card) {
-                    var name = card.getAttribute('data-name') || card.innerText;
-                    if (!q || name.toLowerCase().includes(q)) {
-                        card.style.display = 'flex';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-            }
-
-            function extractWinnerFromMatchesMap(matchesMap, isRealTeam) {
-                if (!matchesMap || typeof matchesMap !== 'object') return null;
-
-                // 1. Check Grand Final Reset / Grand Final
-                var gfReset = matchesMap['GF_RESET'];
-                if (gfReset) {
-                    var wObj = gfReset.winner || ((gfReset.winnerId === 'team1') ? gfReset.team1 : ((gfReset.winnerId === 'team2') ? gfReset.team2 : null));
-                    var cName = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                    if (isRealTeam(cName)) return String(cName).trim();
-                }
-
-                var gf = matchesMap['GF'];
-                if (gf) {
-                    var wObj = gf.winner || ((gf.winnerId === 'team1') ? gf.team1 : ((gf.winnerId === 'team2') ? gf.team2 : null));
-                    var cName = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                    if (isRealTeam(cName)) return String(cName).trim();
-                }
-
-                // 2. Scan matches for highest round / final match
-                var matchKeys = Object.keys(matchesMap);
-                var maxRound = 0;
-                matchKeys.forEach(function(k) {
-                    var m = matchesMap[k];
-                    if (m && !m.isThirdPlace) {
-                        var r = (m.roundNumber !== undefined) ? Number(m.roundNumber) : ((m.roundIndex !== undefined) ? Number(m.roundIndex) + 1 : 0);
-                        if (r > maxRound) maxRound = r;
-                    }
-                });
-
-                var finalWinner = null;
-                matchKeys.forEach(function(k) {
-                    var m = matchesMap[k];
-                    if (m && !m.isThirdPlace) {
-                        var r = (m.roundNumber !== undefined) ? Number(m.roundNumber) : ((m.roundIndex !== undefined) ? Number(m.roundIndex) + 1 : 0);
-                        if (m.isFinalMatch && (m.winner || m.winnerId)) {
-                            var wObj = m.winner || ((m.winnerId === 'team1') ? m.team1 : ((m.winnerId === 'team2') ? m.team2 : null));
-                            var n = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                            if (isRealTeam(n)) finalWinner = String(n).trim();
-                        } else if (maxRound > 0 && r === maxRound && (m.winner || m.winnerId)) {
-                            var wObj = m.winner || ((m.winnerId === 'team1') ? m.team1 : ((m.winnerId === 'team2') ? m.team2 : null));
-                            var n = (typeof wObj === 'object') ? (wObj.name || wObj.rawName) : wObj;
-                            if (isRealTeam(n)) finalWinner = String(n).trim();
-                        }
-                    }
-                });
-                return finalWinner;
-            }
-
-            function findChampionName(card) {
-                var tid = card.getAttribute('data-id');
-                var dbChamp = card.getAttribute('data-db-champion');
-                var saved = localStorage.getItem("tourma_champion_" + tid) || localStorage.getItem("tourma_final_champion_" + tid);
-                if (saved && saved.trim() !== "" && saved.trim() !== "BYE" && saved.trim() !== "TBD") return saved.trim();
-                if (dbChamp && dbChamp.trim() !== "" && dbChamp.trim() !== "BYE" && dbChamp.trim() !== "TBD") return dbChamp.trim();
-
-                var isRealTeam = function(n) {
-                    if (!n) return false;
-                    var s = String(n).trim();
-                    return s !== "" && s !== "BYE" && s !== "TBD" && !s.startsWith("W #") && !s.startsWith("L #") && !s.startsWith("Winner ") && !s.startsWith("Loser ");
-                };
-
-                // 1. Stage 2 (Final Stage) match keys for multi-stage tournaments
-                var stage2Keys = ["tourma_stage2_matches_", "tourma_matches_stage2_", "tourma_bracket_stage2_", "tourma_final_matches_"];
-                for (var s = 0; s < stage2Keys.length; s++) {
-                    try {
-                        var raw2 = localStorage.getItem(stage2Keys[s] + tid);
-                        if (!raw2) continue;
-                        var d2 = JSON.parse(raw2);
-                        var mMap2 = d2.matchesMap || d2;
-                        if (!mMap2 || typeof mMap2 !== 'object') continue;
-                        var c2 = extractWinnerFromMatchesMap(mMap2, isRealTeam);
-                        if (c2) return c2;
-                    } catch(e) {}
-                }
-
-                // 2. If tournament is MULTI_STAGE, NEVER read Stage 1 matches to determine tournament champion!
-                var stageType = card.getAttribute('data-stage-type') || '';
-                var localType = localStorage.getItem("tourma_type_" + tid);
-                var multiConfigRaw = localStorage.getItem("tourma_multi_config_" + tid);
-                if (stageType === 'MULTI_STAGE' || localType === 'MULTI_STAGE' || multiConfigRaw !== null) {
-                    return "";
-                }
-
-                // 3. Single-stage tournament match keys
-                var singleKeys = ["tourma_de_matches_", "tourma_matches_", "tourma_rr_matches_", "tourma_group_matches_", "tourma_swiss_matches_"];
-                for (var i = 0; i < singleKeys.length; i++) {
-                    try {
-                        var raw = localStorage.getItem(singleKeys[i] + tid);
-                        if (!raw) continue;
-                        var data = JSON.parse(raw);
-                        var matchesMap = data.matchesMap || data;
-                        if (!matchesMap || typeof matchesMap !== 'object') continue;
-                        var c = extractWinnerFromMatchesMap(matchesMap, isRealTeam);
-                        if (c) return c;
-                    } catch(e) {}
-                }
-                return "";
-            }
-
-            function getFormatDisplayName(fmt) {
-                if (!fmt) return 'Single Elimination';
-                var f = fmt.toUpperCase();
-                if (f === 'DOUBLE_ELIMINATION') return 'Double Elimination';
-                if (f === 'ROUND_ROBIN') return 'Round Robin';
-                if (f === 'GROUP_STAGE') return 'Group Stage';
-                if (f === 'SWISS_LITE' || f === 'SWISS') return 'Swiss System';
-                return 'Single Elimination';
-            }
-
-            function updateCardStatuses() {
-                var cards = document.querySelectorAll('.tourney-card');
-                cards.forEach(function(card) {
-                    var tid = card.getAttribute('data-id');
-                    if (!tid) return;
-
-                    var dbStatus = card.getAttribute('data-db-status');
-                    var championName = findChampionName(card);
-                    var isFinished = (championName && championName.trim() !== '') || dbStatus === 'COMPLETED' || (localStorage.getItem('tourma_stage2_locked_' + tid) === 'true' && championName && championName.trim() !== '');
-
-                    var statusPill = card.querySelector('.status-pill');
-                    var championMeta = card.querySelector('.tourney-champion-meta');
-
-                    var hasMatchesPlayed = !!(
-                        localStorage.getItem('tourma_bracket_' + tid) ||
-                        localStorage.getItem('tourma_de_matches_' + tid) ||
-                        localStorage.getItem('tourma_rr_matches_' + tid) ||
-                        localStorage.getItem('tourma_group_matches_' + tid) ||
-                        localStorage.getItem('tourma_swiss_matches_' + tid) ||
-                        localStorage.getItem('tourma_matches_' + tid) ||
-                        localStorage.getItem('tourma_stage2_matches_' + tid) ||
-                        localStorage.getItem('tourma_matches_stage2_' + tid) ||
-                        localStorage.getItem('tourma_bracket_stage2_' + tid) ||
-                        localStorage.getItem('tourma_stage1_locked_' + tid)
-                    );
-
-                    if (isFinished) {
-                        card.setAttribute('data-status', 'COMPLETED');
-                        if (statusPill) {
-                            statusPill.className = 'status-pill completed';
-                            statusPill.innerText = 'Completed';
-                        }
-                        if (championMeta) {
-                            var nameValEl = championMeta.querySelector('.champion-name-val');
-                            if (nameValEl) nameValEl.innerText = championName;
-                            championMeta.style.display = 'inline-flex';
-                        }
-                    } else if (dbStatus === 'ONGOING' || hasMatchesPlayed) {
-                        card.setAttribute('data-status', 'IN_PROGRESS');
-                        if (statusPill) {
-                            statusPill.className = 'status-pill in-progress';
-                            statusPill.innerText = 'In Progress';
-                        }
-                        if (championMeta) championMeta.style.display = 'none';
-                    } else {
-                        card.setAttribute('data-status', 'INCOMING');
-                        if (statusPill) {
-                            statusPill.className = 'status-pill incoming';
-                            statusPill.innerText = 'Incoming';
-                        }
-                    }
-
-                    // Multi-stage check & format label update
-                    var localType = localStorage.getItem("tourma_type_" + tid);
-                    var multiConfigRaw = localStorage.getItem("tourma_multi_config_" + tid);
-                    var multiConfig = null;
-                    if (multiConfigRaw) {
-                        try { multiConfig = JSON.parse(multiConfigRaw); } catch(e) {}
-                    }
-
-                    var dbStageType = card.getAttribute('data-stage-type');
-                    var isMulti = (localType === 'MULTI_STAGE' || multiConfig !== null || dbStageType === 'MULTI_STAGE');
-
-                    var s1Fmt = card.getAttribute('data-stage1-format') || 'SINGLE_ELIMINATION';
-                    var s2Fmt = card.getAttribute('data-stage2-format') || 'SINGLE_ELIMINATION';
-
-                    if (multiConfig) {
-                        if (multiConfig.stage1Format) s1Fmt = multiConfig.stage1Format;
-                        if (multiConfig.stage2Format) s2Fmt = multiConfig.stage2Format;
-                    } else if (localStorage.getItem("tourma_format_" + tid)) {
-                        s1Fmt = localStorage.getItem("tourma_format_" + tid);
-                    }
-
-                    var badgeType = card.querySelector('.tourney-badge-type');
-                    if (badgeType) {
-                        if (isMulti) {
-                            badgeType.innerText = 'MULTI STAGE';
-                            badgeType.style.background = 'rgba(251, 191, 36, 0.15)';
-                            badgeType.style.color = '#fbbf24';
-                            badgeType.style.border = '1px solid rgba(251, 191, 36, 0.3)';
-                        } else {
-                            badgeType.innerText = 'SINGLE STAGE';
-                            badgeType.style.background = '';
-                            badgeType.style.color = '';
-                            badgeType.style.border = '';
-                        }
-                    }
-
-                    var formatSpan = card.querySelector('.tourney-format-span');
-                    if (formatSpan) {
-                        if (isMulti) {
-                            var s1Name = getFormatDisplayName(s1Fmt);
-                            var s2Name = getFormatDisplayName(s2Fmt);
-                            formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> ' + s1Name + ' <span style="color: #94a3b8; margin: 0 2px;">➔</span> ' + s2Name;
-                        } else {
-                            var s1Name = getFormatDisplayName(s1Fmt);
-                            formatSpan.innerHTML = '<i class="fa-solid fa-diagram-project text-mint"></i> ' + s1Name;
-                        }
-                    }
-
-                    // Dynamically update Trận Đấu ➔ link based on Stage 1 format
-                    var btnView = card.querySelector('.btn-view-bracket-card');
-                    if (btnView) {
-                        var ctx = "${pageContext.request.contextPath}";
-                        var seriesId = "<%= seriesIdVal %>";
-                        var s1Upper = s1Fmt.toUpperCase();
-                        if (s1Upper === 'DOUBLE_ELIMINATION') {
-                            btnView.href = ctx + '/common/double-elimination.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        } else if (s1Upper === 'ROUND_ROBIN') {
-                            btnView.href = ctx + '/common/round-robin.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        } else if (s1Upper === 'GROUP_STAGE') {
-                            btnView.href = ctx + '/common/group-stage.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        } else if (s1Upper === 'SWISS_LITE' || s1Upper === 'SWISS') {
-                            btnView.href = ctx + '/common/swiss-stage.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        } else {
-                            btnView.href = ctx + '/common/single-elimination.jsp?id=' + tid + '&seriesId=' + seriesId;
-                        }
-                    }
-                });
-            }
-
             function openCloneTourneyModal(id, currentName) {
                 var srcInput = document.getElementById('cloneSourceTournamentId');
                 var nameInput = document.getElementById('cloneNewTourneyName');
@@ -673,7 +462,7 @@
                 }
             });
 
-            document.addEventListener('DOMContentLoaded', updateCardStatuses);
+
         </script>
     </body>
 </html>

@@ -137,7 +137,7 @@ CREATE TABLE tournament_stages (
     stage_order INT NOT NULL DEFAULT 1,     -- Thứ tự Giai đoạn: 1 (Stage 1), 2 (Stage 2), 3 (Stage 3)...
     stage_name NVARCHAR(100) NOT NULL,      -- VD: "Stage 1: Vòng Bảng", "Stage 2: Knockout Trực Tiếp"
     format VARCHAR(30) NOT NULL 
-        CHECK (format IN ('SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'ROUND_ROBIN', 'SWISS_LITE', 'GROUP_STAGE')),
+        CHECK (format IN ('SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'ROUND_ROBIN', 'SWISS_LITE', 'GROUP_STAGE', 'GSL')),
     advancing_teams_count INT DEFAULT 0,    -- Số đội giành quyền tiến vào Stage kế tiếp
     target_wins INT DEFAULT 3,              -- Swiss: Số trận thắng đạt chuẩn đi tiếp
     elimination_losses INT DEFAULT 3,       -- Swiss: Số trận thua bị loại
@@ -242,15 +242,15 @@ GO
 -- Hỗ trợ next_match_id (nhánh thắng), loser_next_match_id (nhánh thua), penalty, leg
 -- ============================================================================
 CREATE TABLE matches (
-    id VARCHAR(50) PRIMARY KEY,
+    id VARCHAR(100) PRIMARY KEY,
     tournament_id VARCHAR(50) NOT NULL,
     stage_id VARCHAR(50) NOT NULL,
-    group_id VARCHAR(50) NULL,               -- NULL nếu là Knockout/Swiss; Có giá trị nếu là trận Vòng Bảng
+    group_id VARCHAR(50) NULL,               -- NULL nếu là Knockout/Swiss; Có giá trị nếu là trận Vòng Bảng / GSL
     round_number INT NOT NULL,               -- Vòng 1, Vòng 2, Vòng Bán Kết, Chung Kết...
     match_order INT DEFAULT 1,               -- Thứ tự trận đấu trong vòng
-    match_code NVARCHAR(100) NOT NULL,       -- VD: "Trận #1", "Nhóm 0-0 #1", "Bảng A - Vòng 1"
+    match_code NVARCHAR(100) NULL,           -- VD: "Trận #1", "Nhóm 0-0 #1", "Bảng A - Vòng 1"
     bracket_type VARCHAR(30) DEFAULT 'MAIN' 
-        CHECK (bracket_type IN ('WINNER_BRACKET', 'LOSER_BRACKET', 'GRAND_FINAL', 'GRAND_FINAL_RESET', 'THIRD_PLACE', 'SWISS', 'ROUND_ROBIN', 'GROUP_STAGE', 'MAIN')),
+        CHECK (bracket_type IN ('WINNER_BRACKET', 'LOSER_BRACKET', 'GRAND_FINAL', 'GRAND_FINAL_RESET', 'THIRD_PLACE', 'SWISS', 'ROUND_ROBIN', 'GROUP_STAGE', 'GSL', 'MAIN')),
     team1_id VARCHAR(50) NULL,               -- Đội 1
     team2_id VARCHAR(50) NULL,               -- Đội 2
     score1 INT NULL,                         -- Điểm / Bàn thắng Đội 1
@@ -261,12 +261,12 @@ CREATE TABLE matches (
     loser_id VARCHAR(50) NULL,               -- Đội thua cuộc
     
     -- Cây điều hướng người THẮNG (Winner Advancement):
-    next_match_id VARCHAR(50) NULL,          -- Trận kế tiếp mà đội Thắng sẽ tiến vào
+    next_match_id VARCHAR(100) NULL,         -- Trận kế tiếp mà đội Thắng sẽ tiến vào
     next_slot VARCHAR(10) NULL 
         CHECK (next_slot IN ('SLOT_1', 'SLOT_2')), -- Vị trí Slot 1 hay Slot 2 ở trận tiếp theo
     
-    -- Cây điều hướng người THUA (Loser Advancement - Dành cho Double Elimination):
-    loser_next_match_id VARCHAR(50) NULL,    -- Trận kế tiếp ở Nhánh Thua (Loser Bracket) mà đội Thua sẽ rơi xuống
+    -- Cây điều hướng người THUA (Loser Advancement - Dành cho Double Elimination / GSL):
+    loser_next_match_id VARCHAR(100) NULL,   -- Trận kế tiếp ở Nhánh Thua (Loser Bracket) mà đội Thua sẽ rơi xuống
     loser_next_slot VARCHAR(10) NULL 
         CHECK (loser_next_slot IN ('SLOT_1', 'SLOT_2')), -- Vị trí Slot 1 hay Slot 2 ở nhánh thua
     

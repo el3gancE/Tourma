@@ -24,12 +24,21 @@
         },
 
         /**
-         * Standard International Seeding Pairs
+         * Standard International Seeding Pairs:
+         * Seed #1 is at top of upper branch, Seed #2 is at top of lower branch.
          */
         generateSeedPairs: function (pow2) {
+            var isPow2 = (pow2 > 0 && (pow2 & (pow2 - 1)) === 0);
+            if (!isPow2 && pow2 % 2 === 0) {
+                var pairs = [];
+                for (var i = 1; i <= pow2 / 2; i++) {
+                    pairs.push([i, pow2 - i + 1]);
+                }
+                return pairs;
+            }
+
             var rounds = Math.log2(pow2) - 1;
             var pls = [1, 2];
-
             for (var i = 0; i < rounds; i++) {
                 var nextPls = [];
                 var sum = Math.pow(2, i + 2) + 1;
@@ -42,24 +51,26 @@
 
             var pairs = [];
             for (var k = 0; k < pls.length; k += 2) {
-                pairs.push([pls[k], pls[k + 1]]);
+                var a = pls[k];
+                var b = pls[k + 1];
+                pairs.push([Math.min(a, b), Math.max(a, b)]);
             }
             return pairs;
         },
 
         /**
-         * Standard Round Titles for Upper Bracket: UB Round 1, UB Round 2, ... UB Final
+         * Standard Round Titles for Upper Bracket: UB Round 1, UB Round 2, ...; qualification only at a cut
          */
-        getUpperRoundTitle: function (r, totalUbRounds) {
-            if (r === totalUbRounds) return 'UB Final';
+        getUpperRoundTitle: function (r, totalUbRounds, isCutStage) {
+            if (isCutStage && r === totalUbRounds) return "Winner's Qualification";
             return 'UB Round ' + r;
         },
 
         /**
-         * Standard Round Titles for Lower Bracket: LB Round 1, LB Round 2, ... LB Final
+         * Standard Round Titles for Lower Bracket: LB Round 1, LB Round 2, ...; qualification only at a cut
          */
-        getLowerRoundTitle: function (r, totalLbRounds) {
-            if (r === totalLbRounds) return 'LB Final';
+        getLowerRoundTitle: function (r, totalLbRounds, isCutStage) {
+            if (isCutStage && r === totalLbRounds) return "Loser's Qualification";
             return 'LB Round ' + r;
         },
 
@@ -133,8 +144,8 @@
                     bracketType: 'UPPER',
                     roundNumber: 1,
                     status: isBye ? 'COMPLETED' : 'SCHEDULED',
-                    team1: { name: t1Name, seed: t1Seed, score: '' },
-                    team2: { name: t2Name, seed: t2Seed, score: '' },
+                    team1: { id: item1 && typeof item1 === 'object' ? (item1.id || '') : '', name: t1Name, seed: t1Seed, score: '' },
+                    team2: { id: item2 && typeof item2 === 'object' ? (item2.id || '') : '', name: t2Name, seed: t2Seed, score: '' },
                     winnerId: null,
                     nextMatchId: null,
                     nextMatchSlot: (i % 2 === 0) ? 1 : 2,
@@ -390,7 +401,6 @@
                 var lbFinalMatch = (lowerRounds.length > 0) ? lowerRounds[lowerRounds.length - 1].matches[0] : null;
 
                 var gf1Id = internalIdCounter++;
-                var gf2Id = internalIdCounter++;
 
                 var grandFinal1 = {
                     matchId: gf1Id,
@@ -401,24 +411,9 @@
                     team1: { name: 'Winner UB', seed: '', score: '' },
                     team2: { name: lbFinalMatch ? 'Winner LB' : 'Loser UB', seed: '', score: '' },
                     winnerId: null,
-                    nextMatchId: gf2Id,
-                    nextMatchSlot: 1,
-                    isResetMatch: false
-                };
-
-                var grandFinalReset = {
-                    matchId: gf2Id,
-                    matchNumber: null,
-                    bracketType: 'GRAND_FINAL',
-                    roundNumber: totalUbRounds + 1,
-                    status: 'SCHEDULED',
-                    team1: { name: 'Winner UB', seed: '', score: '' },
-                    team2: { name: lbFinalMatch ? 'Winner LB' : 'Loser UB', seed: '', score: '' },
-                    winnerId: null,
                     nextMatchId: null,
                     nextMatchSlot: 1,
-                    isResetMatch: true,
-                    isUnlocked: false
+                    isResetMatch: false
                 };
 
                 if (ubFinalMatch) {
@@ -435,13 +430,12 @@
                 }
 
                 matchesMap[gf1Id] = grandFinal1;
-                matchesMap[gf2Id] = grandFinalReset;
 
                 grandFinalsRound = {
                     roundNumber: totalUbRounds + 1,
                     bracketType: 'GRAND_FINAL',
-                    title: 'Grand Final',
-                    matches: [grandFinal1, grandFinalReset]
+                    title: 'Final',
+                    matches: [grandFinal1]
                 };
             }
 
@@ -511,7 +505,8 @@
                     else if ((t1 === 'BYE' && t2 && t2 !== 'BYE' && !String(t2).startsWith('W #') && !String(t2).startsWith('L #') && !String(t2).startsWith('Winner')) ||
                              (t2 === 'BYE' && t1 && t1 !== 'BYE' && !String(t1).startsWith('W #') && !String(t1).startsWith('L #') && !String(t1).startsWith('Winner'))) {
                         var realWinnerSlot = (t1 === 'BYE') ? 'team2' : 'team1';
-                        var realWinnerName = (t1 === 'BYE') ? t2 : t1;
+                        var realWinner = (t1 === 'BYE') ? m.team2 : m.team1;
+                    var realWinnerName = realWinner.name;
                         var realWinnerSeed = (t1 === 'BYE') ? (m.team2 ? m.team2.seed : '') : (m.team1 ? m.team1.seed : '');
 
                         if (m.status !== 'COMPLETED' || m.winnerId !== realWinnerSlot) {
@@ -527,11 +522,9 @@
                             var currSlotName = (slot === 1) ? nextM.team1.name : nextM.team2.name;
                             if (currSlotName !== realWinnerName) {
                                 if (slot === 1) {
-                                    nextM.team1.name = realWinnerName;
-                                    nextM.team1.seed = realWinnerSeed;
+                                    nextM.team1 = Object.assign({}, realWinner, {score: ''});
                                 } else {
-                                    nextM.team2.name = realWinnerName;
-                                    nextM.team2.seed = realWinnerSeed;
+                                    nextM.team2 = Object.assign({}, realWinner, {score: ''});
                                 }
                                 changed = true;
                             }
@@ -686,15 +679,45 @@
         },
 
         /**
+         * Robust Helper to find a match in matchesMap by exact ID, rawId, matchNumber, or numeric suffix
+         */
+        findMatchInMap: function (matchesMap, targetId) {
+            if (!matchesMap || targetId === undefined || targetId === null) return null;
+            var strId = String(targetId).trim();
+            if (matchesMap[strId]) return matchesMap[strId];
+
+            // 1. Exact ID check across items
+            for (var k in matchesMap) {
+                var m = matchesMap[k];
+                if (!m) continue;
+                if (m.matchId && String(m.matchId) === strId) return m;
+                if (m.id && String(m.id) === strId) return m;
+                if (m.rawId && String(m.rawId) === strId) return m;
+            }
+
+            // 2. Exact matchNumber check if targetId is a pure number
+            if (/^\d+$/.test(strId)) {
+                for (var k2 in matchesMap) {
+                    var m2 = matchesMap[k2];
+                    if (!m2) continue;
+                    if (m2.matchNumber && String(m2.matchNumber) === strId) return m2;
+                }
+            }
+
+            return null;
+        },
+
+        /**
          * Recursively reset subsequent descendant matches to placeholders and clear stale scores/winners
          */
         cascadeResetPlaceholders: function (matchesMap, resetMatchId) {
-            var curr = matchesMap[resetMatchId];
+            var curr = this.findMatchInMap(matchesMap, resetMatchId);
             if (!curr) return;
 
             // 1. Reset downstream winner branch
-            if (curr.nextMatchId && matchesMap[curr.nextMatchId]) {
-                var nextMatch = matchesMap[curr.nextMatchId];
+            var nextId = curr.nextMatchId;
+            var nextMatch = nextId ? this.findMatchInMap(matchesMap, nextId) : null;
+            if (nextMatch) {
                 var slot = curr.nextMatchSlot || 1;
                 var placeholderName = (curr.bracketType === 'UPPER' && nextMatch.bracketType === 'GRAND_FINAL') ? 'Winner UB' :
                                       (curr.bracketType === 'LOWER' && nextMatch.bracketType === 'GRAND_FINAL') ? 'Winner LB' :
@@ -717,13 +740,14 @@
                 nextMatch.winnerId = null;
                 nextMatch.status = 'SCHEDULED';
 
-                this.cascadeResetPlaceholders(matchesMap, curr.nextMatchId);
+                this.cascadeResetPlaceholders(matchesMap, nextMatch.matchId || nextId);
             }
 
             // 2. Reset downstream loser drop-down branch (if this was an Upper Bracket match)
-            if (curr.dropToMatchId && matchesMap[curr.dropToMatchId]) {
-                var dropMatch = matchesMap[curr.dropToMatchId];
-                var dropSlot = curr.dropToMatchSlot || 1;
+            var dropId = curr.dropToMatchId || curr.loserNextMatchId;
+            var dropMatch = dropId ? this.findMatchInMap(matchesMap, dropId) : null;
+            if (dropMatch) {
+                var dropSlot = curr.dropToMatchSlot || curr.loserNextSlot || 1;
                 var lPlaceholder = curr.matchNumber ? ('L #' + curr.matchNumber) : '';
 
                 if (lPlaceholder) {
@@ -740,7 +764,7 @@
                     dropMatch.winnerId = null;
                     dropMatch.status = 'SCHEDULED';
 
-                    this.cascadeResetPlaceholders(matchesMap, curr.dropToMatchId);
+                    this.cascadeResetPlaceholders(matchesMap, dropMatch.matchId || dropId);
                 }
             }
         },
@@ -749,24 +773,25 @@
          * Propagate Match Result Realtime (Winners up, Losers down to LB, Grand Finals reset)
          */
         propagateMatchResult: function (matchesMap, matchId, winnerId, isT1Winner) {
-            var currMatch = matchesMap[matchId];
+            var currMatch = this.findMatchInMap(matchesMap, matchId);
             if (!currMatch) return;
 
-            var winnerName = isT1Winner ? currMatch.team1.name : currMatch.team2.name;
+            var winnerTeam = isT1Winner ? currMatch.team1 : currMatch.team2;
+            var loserTeam = isT1Winner ? currMatch.team2 : currMatch.team1;
+            var winnerName = winnerTeam.name;
             var winnerSeed = isT1Winner ? currMatch.team1.seed : currMatch.team2.seed;
             var loserName = isT1Winner ? currMatch.team2.name : currMatch.team1.name;
             var loserSeed = isT1Winner ? currMatch.team2.seed : currMatch.team1.seed;
 
             // 1. Advance Winner to next match & recursively reset descendants
-            if (currMatch.nextMatchId && matchesMap[currMatch.nextMatchId]) {
-                var nextM = matchesMap[currMatch.nextMatchId];
+            var nextId = currMatch.nextMatchId;
+            var nextM = nextId ? this.findMatchInMap(matchesMap, nextId) : null;
+            if (nextM) {
                 var slot = currMatch.nextMatchSlot || 1;
                 if (slot === 1) {
-                    nextM.team1.name = winnerName;
-                    nextM.team1.seed = winnerSeed;
+                    nextM.team1 = Object.assign({}, winnerTeam, {score: ''});
                 } else {
-                    nextM.team2.name = winnerName;
-                    nextM.team2.seed = winnerSeed;
+                    nextM.team2 = Object.assign({}, winnerTeam, {score: ''});
                 }
                 nextM.team1.score = '';
                 nextM.team2.score = '';
@@ -774,45 +799,41 @@
                 nextM.status = 'SCHEDULED';
 
                 // Reset any downstream matches from nextM
-                this.cascadeResetPlaceholders(matchesMap, nextM.matchId);
+                this.cascadeResetPlaceholders(matchesMap, nextM.matchId || nextId);
             }
 
             // 2. Drop Loser to Lower Bracket & recursively reset descendants
-            if (currMatch.dropToMatchId && matchesMap[currMatch.dropToMatchId]) {
-                var dropM = matchesMap[currMatch.dropToMatchId];
-                var dropSlot = currMatch.dropToMatchSlot || 1;
-                
-                // If loser is not BYE, drop to LB
-                if (loserName && loserName !== 'BYE') {
-                    if (dropSlot === 1) {
-                        dropM.team1.name = loserName;
-                        dropM.team1.seed = loserSeed;
-                    } else {
-                        dropM.team2.name = loserName;
-                        dropM.team2.seed = loserSeed;
-                    }
-                    dropM.team1.score = '';
-                    dropM.team2.score = '';
-                    dropM.winnerId = null;
-                    dropM.status = 'SCHEDULED';
+            var dropId = currMatch.dropToMatchId || currMatch.loserNextMatchId;
+            var dropM = dropId ? this.findMatchInMap(matchesMap, dropId) : null;
+            var dropSlot = currMatch.dropToMatchSlot || currMatch.loserNextSlot || 1;
 
-                    // Reset any downstream matches from dropM
-                    this.cascadeResetPlaceholders(matchesMap, dropM.matchId);
+            if (dropM && loserName && loserName !== 'BYE') {
+                if (dropSlot === 1) {
+                    dropM.team1 = Object.assign({}, loserTeam, {score: ''});
+                } else {
+                    dropM.team2 = Object.assign({}, loserTeam, {score: ''});
+                }
+                dropM.team1.score = '';
+                dropM.team2.score = '';
+                dropM.winnerId = null;
+                dropM.status = 'SCHEDULED';
 
-                    // If opponent in this LB match is a BYE, auto-advance the real team!
-                    var opponentName = (dropSlot === 1) ? dropM.team2.name : dropM.team1.name;
-                    if (opponentName === 'BYE') {
-                        var realWinnerSlot = (dropSlot === 1) ? 'team1' : 'team2';
-                        dropM.status = 'COMPLETED';
-                        dropM.winnerId = realWinnerSlot;
-                        this.propagateMatchResult(matchesMap, dropM.matchId, realWinnerSlot, (realWinnerSlot === 'team1'));
-                    }
+                // Reset any downstream matches from dropM
+                this.cascadeResetPlaceholders(matchesMap, dropM.matchId || dropId);
+
+                // If opponent in this LB match is a BYE, auto-advance the real team!
+                var opponentName = (dropSlot === 1) ? dropM.team2.name : dropM.team1.name;
+                if (opponentName === 'BYE') {
+                    var realWinnerSlot = (dropSlot === 1) ? 'team1' : 'team2';
+                    dropM.status = 'COMPLETED';
+                    dropM.winnerId = realWinnerSlot;
+                    this.propagateMatchResult(matchesMap, dropM.matchId || dropId, realWinnerSlot, (realWinnerSlot === 'team1'));
                 }
             }
 
             // 3. Handle Grand Finals Reset Match Logic
             if (currMatch.bracketType === 'GRAND_FINAL' && !currMatch.isResetMatch) {
-                var resetMatch = currMatch.nextMatchId ? matchesMap[currMatch.nextMatchId] : null;
+                var resetMatch = nextId ? this.findMatchInMap(matchesMap, nextId) : null;
                 if (resetMatch && resetMatch.isResetMatch) {
                     if (!isT1Winner) {
                         // Winner of LB won GF1! Unlock Bracket Reset Match (GF2)

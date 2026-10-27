@@ -1,6 +1,14 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="model.Series, model.Tournament, model.Team, model.PartnerParticipant, model.SeriesStanding, service.RollingWindowPointService.RollingStandingDTO, java.util.List, java.util.ArrayList, java.util.Map, java.util.HashMap"%>
+<%!
+    private String partnerAttr(String value) {
+        return value == null ? "" : value.replace("&", "&amp;").replace("\"", "&quot;")
+                .replace("<", "&lt;").replace(">", "&gt;").replace("'", "&#39;");
+    }
+%>
 <%
+    Map<String, List<Team>> seriesTournamentTeams = (Map<String, List<Team>>) request.getAttribute("seriesTournamentTeams");
+    if (seriesTournamentTeams == null) seriesTournamentTeams = java.util.Collections.emptyMap();
     Tournament tournament = (Tournament) request.getAttribute("tournament");
     Series series = (Series) request.getAttribute("series");
     List<Team> currentTeams = (List<Team>) request.getAttribute("currentTeams");
@@ -36,6 +44,10 @@
     }
 
     String nextStepUrl = request.getContextPath() + "/rolling/point-config?id=" + tourneyId + "&seriesId=" + seriesIdVal;
+    if ("GSL".equals(tourneyFormat) || "GROUP_STAGE".equals(tourneyFormat)) {
+        nextStepUrl = request.getContextPath() + "/common/manage-group.jsp?id=" + tourneyId
+                + "&seriesId=" + seriesIdVal + "&format=" + tourneyFormat;
+    }
     if (targetTeamCountVal > 0) {
         nextStepUrl += "&targetTeamCount=" + targetTeamCountVal;
     }
@@ -127,7 +139,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-teams.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-teams.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-teams.css?v=20261024-partner-columns">
     </head>
     <body>
         <!-- Shared Navigation Header Component -->
@@ -235,6 +247,12 @@
                                     style="background: rgba(255, 255, 255, 0.06); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
                                 Ẩn seed
                             </button>
+                                        <% if ("SINGLE_ELIMINATION".equalsIgnoreCase(tourneyFormat) || "DOUBLE_ELIMINATION".equalsIgnoreCase(tourneyFormat)) { %>
+                                        <label style="display:inline-flex;align-items:center;gap:0.4rem;color:#cbd5e1;font-size:0.85rem;cursor:pointer;" title="Giữ sơ đồ seed cố định; bỏ chọn để bốc thăm theo nhóm seed">
+                                            <input type="checkbox" id="classicDrawInput" <%= new dao.TournamentDAO().isClassicDraw(tourneyId) ? "checked" : "" %> onchange="window.saveHideSeedConfig()">
+                                            Classic draw
+                                        </label>
+                                        <% } %>
                             <button type="button" class="btn btn-secondary" onclick="window.sortByRollingStandings()"
                                     style="background: rgba(45, 212, 191, 0.12); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;"
                                     title="Sắp xếp danh sách đội tham gia theo Bảng Xếp Hạng tổng sau giải gần nhất">
@@ -340,7 +358,7 @@
 
         <!-- MODAL: SELECT QUICKLY FROM PARTNER TEAMS ORDERED BY STANDINGS -->
         <div id="partnerSelectModal" class="team-modal-overlay" style="display: none;">
-            <div class="team-modal-card" style="max-width: 520px;">
+            <div class="team-modal-card partner-select-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                     <h3 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin: 0;">
                         <i class="fa-solid fa-check-double text-mint"></i> Chọn Đội Partner Trong Series
@@ -354,6 +372,14 @@
                     Tích chọn các đội Partner chính thức của Series <strong><%= seriesName %></strong> để đưa vào giải con này:
                 </p>
 
+                <form id="partnerSelectForm" method="POST" action="${pageContext.request.contextPath}/rolling/tournament-teams">
+                    <input type="hidden" name="action" value="addPartnerTeams">
+                    <input type="hidden" name="tournamentId" value="<%= tourneyId %>">
+                    <input type="hidden" name="seriesId" value="<%= seriesIdVal %>">
+
+                <div class="partner-selection-columns">
+                <section class="partner-selection-teams" aria-labelledby="partnerSelectionTitle">
+                    <h4 id="partnerSelectionTitle">Chọn đội Partner</h4>
                 <!-- QUICK SELECTION TOOLBAR -->
                 <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.85rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
@@ -382,11 +408,6 @@
                     </div>
                 </div>
 
-                <form method="POST" action="${pageContext.request.contextPath}/rolling/tournament-teams">
-                    <input type="hidden" name="action" value="addPartnerTeams">
-                    <input type="hidden" name="tournamentId" value="<%= tourneyId %>">
-                    <input type="hidden" name="seriesId" value="<%= seriesIdVal %>">
-
                     <!-- SINGLE COLUMN VERTICAL LIST - ORDERED BY ROLLING STANDINGS -->
                     <div class="partner-checkbox-list" id="partnerModalCheckboxList">
                         <% if (orderedPartners != null && !orderedPartners.isEmpty()) {
@@ -396,6 +417,15 @@
                                 int pRank = partnerRankMap.containsKey(pKey) ? partnerRankMap.get(pKey) : (pIdx + 1);
                                 int pPts = partnerPointsMap.containsKey(pKey) ? partnerPointsMap.get(pKey) : 0;
 
+                                List<String> playedTournaments = new ArrayList<>();
+                                for (Map.Entry<String, List<Team>> played : seriesTournamentTeams.entrySet()) {
+                                    for (Team member : played.getValue()) {
+                                        if (member.getRawName() != null && member.getRawName().trim().equalsIgnoreCase(p.getName().trim())) {
+                                            playedTournaments.add(played.getKey());
+                                            break;
+                                        }
+                                    }
+                                }
                                 boolean isAlreadyIn = false;
                                 if (currentTeams != null) {
                                     for (Team ct : currentTeams) {
@@ -406,13 +436,14 @@
                                     }
                                 }
                         %>
-                            <label class="partner-checkbox-item" data-index="<%= pIdx %>" data-team-name="<%= p.getName() != null ? p.getName() : "" %>" data-rank="<%= pRank %>" data-points="<%= pPts %>" style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; border-radius: 8px; margin-bottom: 0.4rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); cursor: pointer; transition: all 0.2s ease;">
+                            <label class="partner-checkbox-item" data-played-tournaments="<%= partnerAttr(String.join(" ", playedTournaments)) %>" data-already-in="<%= isAlreadyIn %>" data-index="<%= pIdx %>" data-team-name="<%= p.getName() != null ? p.getName() : "" %>" data-rank="<%= pRank %>" data-points="<%= pPts %>" style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; border-radius: 8px; margin-bottom: 0.4rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); cursor: pointer; transition: all 0.2s ease;">
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                                     <input type="checkbox" name="selectedTeamNames" value="<%= p.getName() %>" class="partner-cb-input" data-index="<%= pIdx %>" <%= isAlreadyIn ? "checked disabled" : "" %>>
                                     <span class="rank-badge rank-<%= pRank %>" style="display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 24px; padding: 0 6px; font-size: 0.75rem; font-weight: 800; border-radius: 6px; background: rgba(255,255,255,0.08); color: <%= (pRank == 1) ? "#fbbf24" : (pRank == 2 ? "#e2e8f0" : (pRank == 3 ? "#f97316" : "#cbd5e1")) %>; border: 1px solid <%= (pRank == 1) ? "rgba(251,191,36,0.3)" : (pRank == 2 ? "rgba(226,232,240,0.2)" : (pRank == 3 ? "rgba(249,115,22,0.3)" : "rgba(255,255,255,0.1)")) %>;">#<%= pRank %></span>
                                     <span style="font-size: 0.9rem; font-weight: 700; color: <%= isAlreadyIn ? "#94a3b8" : "#ffffff" %>;">
                                         <%= p.getName() %> <%= isAlreadyIn ? "<span style='font-size: 0.75rem; font-weight: 500; color: #64748b; margin-left: 0.35rem;'>(Đã thêm)</span>" : "" %>
                                     </span>
+                                    <small class="partner-excluded-label" hidden>Đã tham gia giải loại trừ</small>
                                 </div>
                                 <div style="font-size: 0.82rem; font-weight: 800; color: #fbbf24;">
                                     <%= pPts %> pts
@@ -426,7 +457,32 @@
                         <% } %>
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; gap: 0.65rem; margin-top: 1.25rem;">
+                </section>
+                <aside class="partner-exclusion-filter" aria-labelledby="partnerExclusionTitle">
+                    <h4 id="partnerExclusionTitle">Không chọn đội từ… <span id="partnerExclusionCount">0 giải</span></h4>
+                    <p>Các đội có mặt trong bất kỳ giải nào được chọn sẽ bị khóa chọn.</p>
+                    <div class="partner-exclusion-tournaments">
+                        <% int exclusionOptions = 0;
+                           if (tournamentsList != null) for (int exclusionIndex = tournamentsList.size() - 1; exclusionIndex >= 0; exclusionIndex--) {
+                               Tournament other = tournamentsList.get(exclusionIndex);
+                               if (other == null || tourneyId.equals(other.getId()) || !seriesIdVal.equals(other.getSeriesId())) continue;
+                               exclusionOptions++;
+                        %>
+                        <label>
+                            <input type="checkbox" class="partner-exclusion-input" name="excludedTournamentIds"
+                                   form="partnerSelectForm" value="<%= partnerAttr(other.getId()) %>">
+                            <span><%= partnerAttr(other.getName()) %></span>
+                            <small>#<%= other.getTournamentIndexInSeries() %></small>
+                        </label>
+                        <% } if (exclusionOptions == 0) { %>
+                        <p>Chưa có giải con khác trong Series.</p>
+                        <% } %>
+                    </div>
+                <div id="partnerExclusionHint" class="partner-exclusion-hint" aria-live="polite"></div>
+                </aside>
+
+                </div>
+                    <div class="partner-selection-footer">
                         <button type="button" onclick="closePartnerSelectModal()" class="btn btn-secondary">Hủy Bỏ</button>
                         <button type="submit" class="btn btn-mint" style="font-weight: 800;">
                             Thêm Đội Đã Chọn VÀO Giải Con
@@ -527,6 +583,7 @@
                 } %>
             ];
             window.seriesPhaseSize = <%= phaseSize %>;
+            window.tourneyFormat = "<%= tourneyFormat %>";
             window.seriesStandingsRankMap = {
                 <% 
                 int mapIdx = 0;

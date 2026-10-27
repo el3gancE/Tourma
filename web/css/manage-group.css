@@ -43,8 +43,9 @@
 
 .mg-workspace {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 340px));
     gap: 1.25rem;
+    align-items: start;
     margin-bottom: 1.5rem;
 }
 
@@ -53,7 +54,8 @@
     border: 1px solid var(--mg-border);
     border-radius: 12px;
     padding: 1rem;
-    min-height: 280px;
+    height: fit-content;
+    min-height: auto;
     transition: border-color 0.2s ease, background 0.2s ease;
 }
 
@@ -198,6 +200,12 @@
     box-shadow: 0 0 20px rgba(45, 212, 191, 0.25);
 }
 
+.mg-unassigned-column.mg-drag-over {
+    border-color: #fbbf24 !important;
+    background: rgba(251, 191, 36, 0.1) !important;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.25);
+}
+
 .mg-team-card[draggable="true"] {
     cursor: grab;
 }
@@ -205,3 +213,147 @@
 .mg-team-card[draggable="true"]:active {
     cursor: grabbing;
 }
+
+/* Custom Quick Create Group Dropdown Component */
+.mg-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.btn-mg-quick-dropdown {
+    background: #181d29;
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.45rem 0.95rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.btn-mg-quick-dropdown:hover,
+.btn-mg-quick-dropdown.active {
+    background: rgba(45, 212, 191, 0.14);
+    border-color: #2dd4bf;
+    color: #ffffff;
+    box-shadow: 0 0 14px rgba(45, 212, 191, 0.3);
+}
+
+.mg-dd-arrow {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+}
+
+.btn-mg-quick-dropdown.active .mg-dd-arrow {
+    transform: rotate(180deg);
+    color: #2dd4bf;
+}
+
+.mg-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 230px;
+    background: #121620;
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    border-radius: 10px;
+    padding: 0.35rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75), 0 0 16px rgba(45, 212, 191, 0.15);
+    z-index: 9999;
+    backdrop-filter: blur(12px);
+    animation: mgDropdownFadeIn 0.15s ease-out;
+}
+
+.mg-dropdown-menu.show {
+    display: block;
+}
+
+@keyframes mgDropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mg-dropdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #f8fafc;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.mg-dropdown-item:hover {
+    background: rgba(45, 212, 191, 0.16);
+    color: #2dd4bf;
+}
+
+.mg-dropdown-item:active {
+    transform: scale(0.98);
+}
+
+.mg-dd-count {
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.mg-dd-desc {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.mg-dropdown-item:hover .mg-dd-desc {
+    color: #cbd5e1;
+}
+
+/* Quick Selection Pills on Empty Workspace Notice */
+.btn-mg-quick-pill {
+    background: #181d29;
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.4rem 0.85rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.btn-mg-quick-pill:hover {
+    background: #2dd4bf;
+    color: #0b0d12;
+    border-color: #2dd4bf;
+    box-shadow: 0 0 12px rgba(45, 212, 191, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-mg-quick-pill:active {
+    transform: translateY(0);
+}
+
+
+

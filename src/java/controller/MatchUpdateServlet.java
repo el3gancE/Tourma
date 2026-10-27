@@ -55,17 +55,69 @@ public class MatchUpdateServlet extends HttpServlet {
         }
 
         try {
+            if ("initializeTopSeedCount".equalsIgnoreCase(action)) {
+                TournamentDAO dao=new TournamentDAO();
+                boolean ok=tournamentId!=null && !tournamentId.trim().isEmpty() && params.get("topSeedCount")!=null
+                        && dao.saveTopSeedCount(tournamentId,params.get("topSeedCount"),true);
+                if(!ok) response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print("{\"status\":\""+(ok?"success":"error")+"\",\"topSeedCount\":"
+                        +(ok?dao.getTopSeedCount(tournamentId):"null")+"}");
+                return;
+            }
+
+            if ("liveStatus".equalsIgnoreCase(action)) {
+                if (tournamentId == null || tournamentId.trim().isEmpty()) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.print("{\"status\":\"error\"}");
+                    return;
+                }
+                String branchStage = params.get("branchStage");
+                String branches = branchStage == null ? "" : ",\"branchLiveStatus\":" + new TournamentDAO().getDEBranchLiveStatusJson(tournamentId.trim(), Integer.parseInt(branchStage));
+                response.setHeader("Cache-Control", "no-store");
+                out.print("{\"status\":\"success\",\"liveStatus\":"
+                        + new TournamentDAO().getLiveStatusJson(tournamentId.trim()) + branches + "}");
+                return;
+            }
+
             if ("finishTournament".equalsIgnoreCase(action)) {
                 String championName = params.get("championName");
                 if (championName == null) championName = params.get("champion");
                 boolean ok = handleFinishTournament(tournamentId, championName);
-                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã hoàn thành giải đấu!" : "Lỗi hoàn thành giải đấu!") + "\"}");
+                if (!ok) response.setStatus(HttpServletResponse.SC_CONFLICT);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã hoàn thành giải đấu!" : "Chưa thể hoàn thành giải: hãy kiểm tra lịch đấu và kết quả các trận.") + "\"}");
                 return;
             }
 
             if ("unlockTournament".equalsIgnoreCase(action)) {
                 boolean ok = handleUnlockTournament(tournamentId);
+                if (!ok) response.setStatus(HttpServletResponse.SC_CONFLICT);
                 out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã mở khóa giải đấu!" : "Lỗi mở khóa giải đấu!") + "\"}");
+                return;
+            }
+
+            if ("saveStage1Status".equalsIgnoreCase(action)) {
+                String stage1Status = params.get("stage1Status");
+                if (stage1Status == null) stage1Status = params.get("status");
+                TournamentDAO tDao = new TournamentDAO();
+                boolean ok = tDao.updateTournamentStage1Status(tournamentId, stage1Status != null ? stage1Status : "LOCKED");
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã cập nhật trạng thái Stage 1!" : "Lỗi cập nhật Stage 1!") + "\"}");
+                return;
+            }
+
+            if ("saveStage2Teams".equalsIgnoreCase(action)) {
+                String stage2TeamsJson = params.get("stage2Teams");
+                if (stage2TeamsJson == null) stage2TeamsJson = params.get("teams");
+                TournamentDAO tDao = new TournamentDAO();
+                boolean ok = tDao.saveStage2Teams(tournamentId, stage2TeamsJson);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu danh sách Vòng 2 vào CSDL!" : "Lỗi lưu Vòng 2!") + "\"}");
+                return;
+            }
+
+            if ("saveMultiStageConfig".equalsIgnoreCase(action)) {
+                String multiConfigJson = params.get("multiConfig");
+                TournamentDAO tDao = new TournamentDAO();
+                boolean ok = tDao.saveMultiStageConfig(tournamentId, multiConfigJson);
+                out.print("{\"status\":\"" + (ok ? "success" : "error") + "\",\"message\":\"" + (ok ? "Đã lưu cấu hình Multi-Stage!" : "Lỗi lưu cấu hình!") + "\"}");
                 return;
             }
 
@@ -84,7 +136,9 @@ public class MatchUpdateServlet extends HttpServlet {
                 String fmt = (tourney != null && tourney.getFormat() != null) ? tourney.getFormat().trim().toUpperCase() : "SINGLE_ELIMINATION";
 
                 boolean ok = false;
-                if (fmt.contains("DOUBLE")) {
+                if (fmt.contains("GSL")) {
+                    ok = new dao.GSLStageDAO().resetBracketMatches(tournamentId, stage);
+                } else if (fmt.contains("DOUBLE")) {
                     ok = new dao.DoubleEliminationDAO().resetBracketMatches(tournamentId, stage);
                 } else if (fmt.contains("ROUND") || fmt.contains("ROBIN")) {
                     ok = new dao.RoundRobinDAO().resetBracketMatches(tournamentId, stage);
@@ -118,8 +172,10 @@ public class MatchUpdateServlet extends HttpServlet {
 
             String team1Name = params.get("team1Name");
             String team2Name = params.get("team2Name");
+            String groupIdParam = params.get("groupId");
+            if (groupIdParam == null) groupIdParam = params.get("group");
 
-            MatchUpdateResult result = handleUpdateMatch(tournamentId, matchId, score1, score2, penalty1, penalty2, winnerFlag, team1Name, team2Name);
+            MatchUpdateResult result = handleUpdateMatch(tournamentId, matchId, score1, score2, penalty1, penalty2, winnerFlag, team1Name, team2Name, parseInteger(params.get("stage")), groupIdParam);
 
             if (result.success) {
                 out.print("{"
@@ -133,6 +189,7 @@ public class MatchUpdateServlet extends HttpServlet {
                         + "\"nextSlot\":\"" + escapeJson(result.nextSlot != null ? result.nextSlot : "") + "\","
                         + "\"loserNextMatchId\":\"" + escapeJson(result.loserNextMatchId != null ? result.loserNextMatchId : "") + "\","
                         + "\"loserNextSlot\":\"" + escapeJson(result.loserNextSlot != null ? result.loserNextSlot : "") + "\""
+                        + (result.matchesJson != null ? ",\"matchesData\":" + result.matchesJson : "")
                         + "}");
             } else {
                 out.print("{\"status\":\"error\",\"message\":\"" + escapeJson(result.errorMessage) + "\"}");
@@ -155,6 +212,7 @@ public class MatchUpdateServlet extends HttpServlet {
         public String nextSlot = null;
         public String loserNextMatchId = null;
         public String loserNextSlot = null;
+        public String matchesJson = null;
     }
 
     /**
@@ -163,22 +221,108 @@ public class MatchUpdateServlet extends HttpServlet {
     public MatchUpdateResult handleUpdateMatch(String tournamentId, String matchId, Integer score1, Integer score2,
                                               Integer penalty1, Integer penalty2, String winnerFlag,
                                               String team1Name, String team2Name) {
+        return handleUpdateMatch(tournamentId, matchId, score1, score2, penalty1, penalty2, winnerFlag, team1Name, team2Name, 1, null);
+    }
+
+    public MatchUpdateResult handleUpdateMatch(String tournamentId, String matchId, Integer score1, Integer score2,
+                                              Integer penalty1, Integer penalty2, String winnerFlag,
+                                              String team1Name, String team2Name, Integer stage) {
+        return handleUpdateMatch(tournamentId, matchId, score1, score2, penalty1, penalty2, winnerFlag, team1Name, team2Name, stage, null);
+    }
+
+    public MatchUpdateResult handleUpdateMatch(String tournamentId, String matchId, Integer score1, Integer score2,
+                                              Integer penalty1, Integer penalty2, String winnerFlag,
+                                              String team1Name, String team2Name, Integer stage, String groupHint) {
+        int maxRetries = 5;
+        MatchUpdateResult lastResult = null;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            lastResult = executeUpdateMatchAttempt(tournamentId, matchId, score1, score2, penalty1, penalty2,
+                    winnerFlag, team1Name, team2Name, stage, groupHint);
+
+            if (lastResult.success) {
+                return lastResult;
+            }
+
+            // Check if error is a SQL deadlock error (code 1205 or deadlock victim message)
+            if (lastResult.errorMessage != null && (
+                    lastResult.errorMessage.toLowerCase().contains("deadlock") ||
+                    lastResult.errorMessage.contains("1205")
+            )) {
+                if (attempt < maxRetries) {
+                    try {
+                        // Exponential jitter backoff (50ms to 200ms)
+                        Thread.sleep(50 + (long) (Math.random() * 150));
+                    } catch (InterruptedException ignore) {}
+                    continue; // Retry!
+                }
+            } else {
+                // Non-deadlock error -> return immediately
+                return lastResult;
+            }
+        }
+
+        return (lastResult != null) ? lastResult : new MatchUpdateResult();
+    }
+
+    private MatchUpdateResult executeUpdateMatchAttempt(String tournamentId, String matchId, Integer score1, Integer score2,
+                                                       Integer penalty1, Integer penalty2, String winnerFlag,
+                                                       String team1Name, String team2Name, Integer stage, String groupHint) {
         MatchUpdateResult res = new MatchUpdateResult();
         if (matchId == null || matchId.trim().isEmpty()) {
             res.errorMessage = "Thiếu matchId!";
             return res;
         }
 
+        int currentStage = (stage != null && stage > 0) ? stage : 1;
+        String activeFormat = new TournamentDAO().getStageFormat(tournamentId, currentStage);
+        if (activeFormat != null && activeFormat.toUpperCase().contains("SWISS")) {
+            dao.SwissSystemDAO swiss = new dao.SwissSystemDAO();
+            res.success = score1 != null && score2 != null
+                    && swiss.saveMatchScore(tournamentId,currentStage,matchId,score1,score2,winnerFlag);
+            res.matchId=matchId;
+            res.errorMessage = res.success ? "" : "Không thể sửa kết quả Swiss: kiểm tra khóa stage, tỷ số và các vòng sau đã thi đấu.";
+            res.matchesJson=swiss.getMatchesJsonForFrontend(tournamentId,currentStage);
+            return res;
+        }
         String mIdClean = matchId.trim();
+        String lastPart = mIdClean;
+        int lastUnderscore = mIdClean.lastIndexOf('_');
+        if (lastUnderscore != -1 && lastUnderscore < mIdClean.length() - 1) {
+            lastPart = mIdClean.substring(lastUnderscore + 1);
+        }
+
         DBContext db = new DBContext();
 
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
 
-            // Auto-initialize bracket in DB if needed
-            if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+            TournamentDAO.assertStage2Ready(conn,tournamentId,currentStage);
+            if(currentStage>1) {
+                try(PreparedStatement ps=conn.prepareStatement("SELECT 1 FROM matches m JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id WHERE m.id=? AND m.tournament_id=? AND s.stage_order=?")) {
+                    ps.setString(1,matchId);ps.setString(2,tournamentId);ps.setInt(3,currentStage);
+                    try(ResultSet rs=ps.executeQuery()){if(!rs.next())throw new IllegalStateException("Nhánh Stage 2 đã thay đổi. Vui lòng tải lại trang.");}
+                }
+            }
+            // Auto-initialize bracket in DB if needed according to tournament format
+            if (currentStage == 1 && tournamentId != null && !tournamentId.trim().isEmpty()) {
                 try {
-                    new dao.SingleEliminationDAO().ensureBracketInitialized(tournamentId.trim(), 1);
+                    Tournament tourney = new TournamentDAO().getTournamentById(tournamentId.trim());
+                    String selectedFormat = new TournamentDAO().getStageFormat(tournamentId.trim(), currentStage);
+                    String fmt = selectedFormat == null ? "" : selectedFormat.trim().toUpperCase();
+                    if (fmt.contains("GSL")) {
+                        new dao.GSLStageDAO().ensureGSLInitialized(tournamentId.trim(), currentStage);
+                    } else if (fmt.contains("DOUBLE") || fmt.contains("DE")) {
+                        new dao.DoubleEliminationDAO().ensureBracketInitialized(tournamentId.trim(), currentStage);
+                    } else if (fmt.contains("ROUND") || fmt.contains("ROBIN")) {
+                        new dao.RoundRobinDAO().ensureRoundRobinInitialized(tournamentId.trim(), currentStage);
+                    } else if (fmt.contains("SWISS")) {
+                        new dao.SwissSystemDAO().ensureSwissRoundsInitialized(tournamentId.trim(), currentStage);
+                    } else if (fmt.contains("GROUP")) {
+                        new dao.GroupStageDAO().ensureGroupStageInitialized(tournamentId.trim(), currentStage);
+                    } else {
+                        new dao.SingleEliminationDAO().ensureBracketInitialized(tournamentId.trim(), currentStage);
+                    }
                 } catch (Exception ignore) {}
             }
 
@@ -186,10 +330,12 @@ public class MatchUpdateServlet extends HttpServlet {
 
             String selectSql = "SELECT m.*, "
                     + "t1.raw_name AS t1_name, t2.raw_name AS t2_name "
-                    + "FROM matches m "
-                    + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                    + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                    + "WHERE (m.id = ? OR m.id LIKE '%[_]' + ? OR m.id LIKE '%[_]S1[_]' + ? OR m.id LIKE '%[_]S2[_]' + ? OR m.match_code = ? OR m.match_code = 'Match #' + ? OR CAST(m.match_order AS VARCHAR) = ?)"
+                    + "FROM matches m WITH (NOLOCK) "
+                    + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                    + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
+                    + "WHERE (m.id = ? OR m.id = ? OR m.id LIKE '%[_]' + ? OR m.id LIKE '%[_]UB[_]' + ? OR m.id LIKE '%[_]LB[_]' + ? OR m.id LIKE '%[_]GF[_]' + ? "
+                    + "OR m.id LIKE '%[_]S1[_]' + ? OR m.id LIKE '%[_]S2[_]' + ? "
+                    + "OR m.match_code = ? OR m.match_code = 'Match #' + ? OR CAST(m.match_order AS VARCHAR) = ? OR CAST(m.match_order AS VARCHAR) = ?)"
                     + (hasValidTourneyId ? " AND m.tournament_id = ?" : "");
 
             String dbMatchId = null;
@@ -205,18 +351,21 @@ public class MatchUpdateServlet extends HttpServlet {
             String loserNextMatchId = null;
             String loserNextSlot = null;
 
-            try (PreparedStatement psSel = conn.prepareStatement(selectSql)) {
-                psSel.setString(1, mIdClean);
-                psSel.setString(2, mIdClean);
-                psSel.setString(3, mIdClean);
-                psSel.setString(4, mIdClean);
-                psSel.setString(5, mIdClean);
-                psSel.setString(6, mIdClean);
-                psSel.setString(7, mIdClean);
+            // 1. Try EXACT MATCH by match ID first!
+            String exactSql = "SELECT m.*, t1.raw_name AS t1_name, t2.raw_name AS t2_name "
+                    + "FROM matches m WITH (NOLOCK) "
+                    + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                    + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
+                    + "WHERE (m.id = ? OR m.id = ?)"
+                    + (hasValidTourneyId ? " AND m.tournament_id = ?" : "");
+
+            try (PreparedStatement psExact = conn.prepareStatement(exactSql)) {
+                psExact.setString(1, mIdClean);
+                psExact.setString(2, (hasValidTourneyId ? (tournamentId.trim() + "_" + mIdClean) : mIdClean));
                 if (hasValidTourneyId) {
-                    psSel.setString(8, tournamentId.trim());
+                    psExact.setString(3, tournamentId.trim());
                 }
-                try (ResultSet rs = psSel.executeQuery()) {
+                try (ResultSet rs = psExact.executeQuery()) {
                     if (rs.next()) {
                         dbMatchId = rs.getString("id");
                         resolvedTourneyId = rs.getString("tournament_id");
@@ -230,6 +379,92 @@ public class MatchUpdateServlet extends HttpServlet {
                         nextSlot = rs.getString("next_slot");
                         loserNextMatchId = rs.getString("loser_next_match_id");
                         loserNextSlot = rs.getString("loser_next_slot");
+                    }
+                }
+            }
+
+            // 2. Try match with group filter if groupHint provided
+            if (dbMatchId == null && groupHint != null && !groupHint.trim().isEmpty()) {
+                String grpClean = groupHint.trim();
+                String groupMatchSql = "SELECT m.*, t1.raw_name AS t1_name, t2.raw_name AS t2_name "
+                        + "FROM matches m WITH (NOLOCK) "
+                        + "LEFT JOIN groups g WITH (NOLOCK) ON (m.group_id = g.id OR m.group_id = g.group_name) "
+                        + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                        + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
+                        + "WHERE (g.id = ? OR g.group_name = ? OR m.group_id = ? OR m.group_id LIKE '%' + ? + '%') "
+                        + "AND (m.match_code = ? OR m.match_code = 'Match #' + ? OR CAST(m.match_order AS VARCHAR) = ? OR m.id LIKE '%[_]' + ?) "
+                        + (hasValidTourneyId ? " AND m.tournament_id = ?" : "")
+                        + " ORDER BY CASE WHEN m.id = ? THEN 0 ELSE 1 END";
+                try (PreparedStatement psGrp = conn.prepareStatement(groupMatchSql)) {
+                    psGrp.setString(1, grpClean);
+                    psGrp.setString(2, grpClean);
+                    psGrp.setString(3, grpClean);
+                    psGrp.setString(4, grpClean);
+                    psGrp.setString(5, mIdClean);
+                    psGrp.setString(6, lastPart);
+                    psGrp.setString(7, mIdClean);
+                    psGrp.setString(8, mIdClean);
+                    if (hasValidTourneyId) {
+                        psGrp.setString(9, tournamentId.trim());
+                        psGrp.setString(10, mIdClean);
+                    } else {
+                        psGrp.setString(9, mIdClean);
+                    }
+                    try (ResultSet rs = psGrp.executeQuery()) {
+                        if (rs.next()) {
+                            dbMatchId = rs.getString("id");
+                            resolvedTourneyId = rs.getString("tournament_id");
+                            stageId = rs.getString("stage_id");
+                            groupId = rs.getString("group_id");
+                            team1Id = rs.getString("team1_id");
+                            team2Id = rs.getString("team2_id");
+                            if (t1Name == null) t1Name = rs.getString("t1_name");
+                            if (t2Name == null) t2Name = rs.getString("t2_name");
+                            nextMatchId = rs.getString("next_match_id");
+                            nextSlot = rs.getString("next_slot");
+                            loserNextMatchId = rs.getString("loser_next_match_id");
+                            loserNextSlot = rs.getString("loser_next_slot");
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback to match_order or suffix ONLY IF exact match not found
+            if (dbMatchId == null) {
+                String fallbackSql = "SELECT m.*, t1.raw_name AS t1_name, t2.raw_name AS t2_name "
+                        + "FROM matches m WITH (NOLOCK) "
+                        + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                        + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
+                        + "WHERE (m.match_code = ? OR m.match_code = 'Match #' + ? OR CAST(m.match_order AS VARCHAR) = ? OR m.id LIKE '%[_]' + ?) "
+                        + (hasValidTourneyId ? " AND m.tournament_id = ?" : "")
+                        + " ORDER BY CASE WHEN m.id = ? THEN 0 ELSE 1 END";
+
+                try (PreparedStatement psSel = conn.prepareStatement(fallbackSql)) {
+                    psSel.setString(1, mIdClean);
+                    psSel.setString(2, lastPart);
+                    psSel.setString(3, mIdClean);
+                    psSel.setString(4, mIdClean);
+                    if (hasValidTourneyId) {
+                        psSel.setString(5, tournamentId.trim());
+                        psSel.setString(6, mIdClean);
+                    } else {
+                        psSel.setString(5, mIdClean);
+                    }
+                    try (ResultSet rs = psSel.executeQuery()) {
+                        if (rs.next()) {
+                            dbMatchId = rs.getString("id");
+                            resolvedTourneyId = rs.getString("tournament_id");
+                            stageId = rs.getString("stage_id");
+                            groupId = rs.getString("group_id");
+                            team1Id = rs.getString("team1_id");
+                            team2Id = rs.getString("team2_id");
+                            if (t1Name == null) t1Name = rs.getString("t1_name");
+                            if (t2Name == null) t2Name = rs.getString("t2_name");
+                            nextMatchId = rs.getString("next_match_id");
+                            nextSlot = rs.getString("next_slot");
+                            loserNextMatchId = rs.getString("loser_next_match_id");
+                            loserNextSlot = rs.getString("loser_next_slot");
+                        }
                     }
                 }
             }
@@ -263,7 +498,11 @@ public class MatchUpdateServlet extends HttpServlet {
 
             if (winnerFlag != null && !winnerFlag.trim().isEmpty()) {
                 String wf = winnerFlag.trim();
-                if ("team1".equalsIgnoreCase(wf) || "1".equals(wf)) {
+                if ("draw".equalsIgnoreCase(wf) || "hoa".equalsIgnoreCase(wf) || "0".equals(wf) || "none".equalsIgnoreCase(wf)) {
+                    winnerId = null;
+                    loserId = null;
+                    winnerName = null;
+                } else if ("team1".equalsIgnoreCase(wf) || "1".equals(wf)) {
                     winnerId = team1Id;
                     loserId = team2Id;
                     winnerName = t1Name;
@@ -305,6 +544,30 @@ public class MatchUpdateServlet extends HttpServlet {
                 }
             }
 
+            boolean isDoubleElimination = false;
+            int resolvedStageOrder = currentStage;
+            String previousWinner = null;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT m.winner_id, s.format, s.stage_order, t.stage1_status FROM matches m WITH (UPDLOCK, HOLDLOCK) LEFT JOIN tournament_stages s ON s.id = m.stage_id JOIN tournaments t ON t.id = m.tournament_id WHERE m.id = ? AND m.tournament_id = ?")) {
+                ps.setString(1, dbMatchId); ps.setString(2, resolvedTourneyId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        previousWinner = rs.getString(1);
+                        isDoubleElimination = "DOUBLE_ELIMINATION".equalsIgnoreCase(rs.getString(2));
+                        if (rs.getObject(3) != null) resolvedStageOrder = rs.getInt(3);
+                        if (isDoubleElimination && resolvedStageOrder == 1 && ("LOCKED".equalsIgnoreCase(rs.getString(4)) || "COMPLETED".equalsIgnoreCase(rs.getString(4)))) {
+                            throw new IllegalStateException("Stage 1 đã khóa. Cần mở khóa trước khi sửa kết quả.");
+                        }
+                    }
+                }
+            }
+            if (isDoubleElimination && (team1Id == null || team2Id == null || team1Id.equals(team2Id) || winnerId == null)) {
+                throw new IllegalStateException("Trận DE cần đủ hai đội và một đội thắng hợp lệ.");
+            }
+            if (isDoubleElimination && previousWinner != null && !java.util.Objects.equals(previousWinner, winnerId)) {
+                new dao.DoubleEliminationDAO().assertResultChangeAllowed(conn, resolvedTourneyId, stageId, dbMatchId);
+            }
+
             // 4. Update match in matches table
             String matchStatus = (score1 != null && score2 != null) ? "FINISHED" : ((team1Id != null && team2Id != null) ? "READY" : "PENDING");
             String updateSql = "UPDATE matches SET "
@@ -326,37 +589,75 @@ public class MatchUpdateServlet extends HttpServlet {
                 psUp.executeUpdate();
             }
 
-            // 5. Advance Winner to next_match_id
+            // 5. Advance Winner to next_match_id (Exact Match Priority!)
             if (winnerId != null && nextMatchId != null && !nextMatchId.trim().isEmpty() && resolvedTourneyId != null) {
+                String nextClean = nextMatchId.trim();
                 String slotCol = ("SLOT_2".equalsIgnoreCase(nextSlot) || "2".equals(nextSlot)) ? "team2_id" : "team1_id";
-                String advSql = "UPDATE matches SET " + slotCol + " = ?, "
-                        + "status = CASE WHEN (" + (slotCol.equals("team1_id") ? "team2_id" : "team1_id") + " IS NOT NULL) THEN 'READY' ELSE status END "
-                        + "WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)";
-                try (PreparedStatement psAdv = conn.prepareStatement(advSql)) {
-                    psAdv.setString(1, winnerId);
-                    psAdv.setString(2, resolvedTourneyId);
-                    psAdv.setString(3, nextMatchId);
-                    psAdv.setString(4, nextMatchId);
-                    psAdv.setString(5, nextMatchId);
-                    psAdv.setString(6, nextMatchId);
-                    psAdv.executeUpdate();
+                String otherSlotCol = slotCol.equals("team1_id") ? "team2_id" : "team1_id";
+
+                String exactAdvSql = "UPDATE matches SET " + slotCol + " = ?, "
+                        + "status = CASE WHEN (" + otherSlotCol + " IS NOT NULL) THEN 'READY' ELSE status END "
+                        + "WHERE tournament_id = ? AND id = ?";
+                int updatedCount = 0;
+                try (PreparedStatement psAdvExact = conn.prepareStatement(exactAdvSql)) {
+                    psAdvExact.setString(1, winnerId);
+                    psAdvExact.setString(2, resolvedTourneyId);
+                    psAdvExact.setString(3, nextClean);
+                    updatedCount = psAdvExact.executeUpdate();
+                }
+
+                if (updatedCount == 0) {
+                    String advSql = "UPDATE matches SET " + slotCol + " = ?, "
+                            + "status = CASE WHEN (" + otherSlotCol + " IS NOT NULL) THEN 'READY' ELSE status END "
+                            + "WHERE tournament_id = ? AND (id LIKE '%[_]' + ? OR match_code = ?)"
+                            + (groupId != null ? " AND (group_id = ? OR group_id LIKE '%' + ? + '%')" : "");
+                    try (PreparedStatement psAdv = conn.prepareStatement(advSql)) {
+                        psAdv.setString(1, winnerId);
+                        psAdv.setString(2, resolvedTourneyId);
+                        psAdv.setString(3, nextClean);
+                        psAdv.setString(4, nextClean);
+                        if (groupId != null) {
+                            psAdv.setString(5, groupId);
+                            psAdv.setString(6, groupId);
+                        }
+                        psAdv.executeUpdate();
+                    }
                 }
             }
 
-            // 6. Advance Loser to loser_next_match_id (Double Elimination Lower Bracket Drop)
+            // 6. Advance Loser to loser_next_match_id (Double Elimination Lower Bracket Drop - Exact Match Priority!)
             if (loserId != null && loserNextMatchId != null && !loserNextMatchId.trim().isEmpty() && resolvedTourneyId != null) {
+                String dropClean = loserNextMatchId.trim();
                 String slotCol = ("SLOT_2".equalsIgnoreCase(loserNextSlot) || "2".equals(loserNextSlot)) ? "team2_id" : "team1_id";
-                String dropSql = "UPDATE matches SET " + slotCol + " = ?, "
-                        + "status = CASE WHEN (" + (slotCol.equals("team1_id") ? "team2_id" : "team1_id") + " IS NOT NULL) THEN 'READY' ELSE status END "
-                        + "WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)";
-                try (PreparedStatement psDrop = conn.prepareStatement(dropSql)) {
-                    psDrop.setString(1, loserId);
-                    psDrop.setString(2, resolvedTourneyId);
-                    psDrop.setString(3, loserNextMatchId);
-                    psDrop.setString(4, loserNextMatchId);
-                    psDrop.setString(5, loserNextMatchId);
-                    psDrop.setString(6, loserNextMatchId);
-                    psDrop.executeUpdate();
+                String otherSlotCol = slotCol.equals("team1_id") ? "team2_id" : "team1_id";
+
+                String exactDropSql = "UPDATE matches SET " + slotCol + " = ?, "
+                        + "status = CASE WHEN (" + otherSlotCol + " IS NOT NULL) THEN 'READY' ELSE status END "
+                        + "WHERE tournament_id = ? AND id = ?";
+                int droppedCount = 0;
+                try (PreparedStatement psDropExact = conn.prepareStatement(exactDropSql)) {
+                    psDropExact.setString(1, loserId);
+                    psDropExact.setString(2, resolvedTourneyId);
+                    psDropExact.setString(3, dropClean);
+                    droppedCount = psDropExact.executeUpdate();
+                }
+
+                if (droppedCount == 0) {
+                    String dropSql = "UPDATE matches SET " + slotCol + " = ?, "
+                            + "status = CASE WHEN (" + otherSlotCol + " IS NOT NULL) THEN 'READY' ELSE status END "
+                            + "WHERE tournament_id = ? AND (id LIKE '%[_]' + ? OR match_code = ?)"
+                            + (groupId != null ? " AND (group_id = ? OR group_id LIKE '%' + ? + '%')" : "");
+                    try (PreparedStatement psDrop = conn.prepareStatement(dropSql)) {
+                        psDrop.setString(1, loserId);
+                        psDrop.setString(2, resolvedTourneyId);
+                        psDrop.setString(3, dropClean);
+                        psDrop.setString(4, dropClean);
+                        if (groupId != null) {
+                            psDrop.setString(5, groupId);
+                            psDrop.setString(6, groupId);
+                        }
+                        psDrop.executeUpdate();
+                    }
                 }
             }
 
@@ -365,10 +666,27 @@ public class MatchUpdateServlet extends HttpServlet {
                 updateGroupTableStandings(conn, groupId);
             }
 
+            // 8. Auto-advance tournament status to ONGOING if currently DRAFT / INCOMING
+            if (resolvedTourneyId != null) {
+                try (PreparedStatement psTourn = conn.prepareStatement(
+                        "UPDATE tournaments SET status = 'ONGOING' WHERE id = ? AND (status IS NULL OR status = 'DRAFT' OR status = 'INCOMING')")) {
+                    psTourn.setString(1, resolvedTourneyId);
+                    psTourn.executeUpdate();
+                } catch (Exception ignore) {}
+            }
+
+            if (isDoubleElimination) {
+                new dao.DoubleEliminationDAO().syncByeAdvancementsInDB(conn, resolvedTourneyId, resolvedStageOrder);
+            }
             conn.commit();
 
             // Clear in-memory caches to reflect new match state immediately
             RollingWindowPointService.clearAllCaches();
+            TournamentDAO.clearTournamentCaches();
+
+            if (isDoubleElimination) {
+                res.matchesJson = new dao.DoubleEliminationDAO().getMatchesJsonForFrontend(resolvedTourneyId, resolvedStageOrder);
+            }
 
             res.success = true;
             res.matchId = dbMatchId;
@@ -392,16 +710,61 @@ public class MatchUpdateServlet extends HttpServlet {
      * Resets a match: clears score, winner, loser and resets status to PENDING/READY.
      */
     public boolean handleResetMatch(String tournamentId, String matchId) {
+        int maxRetries = 5;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            boolean ok = executeResetMatchAttempt(tournamentId, matchId);
+            if (ok) return true;
+            try {
+                Thread.sleep(50 + (long) (Math.random() * 150));
+            } catch (InterruptedException ignore) {}
+        }
+        return false;
+    }
+
+    private boolean executeResetMatchAttempt(String tournamentId, String matchId) {
         if (matchId == null || matchId.trim().isEmpty()) return false;
         String mIdClean = matchId.trim();
+        String lastPart = mIdClean;
+        int lastUnderscore = mIdClean.lastIndexOf('_');
+        if (lastUnderscore != -1 && lastUnderscore < mIdClean.length() - 1) {
+            lastPart = mIdClean.substring(lastUnderscore + 1);
+        }
 
         String selectSql = "SELECT id, tournament_id, team1_id, team2_id, next_match_id, next_slot, loser_next_match_id, loser_next_slot, group_id "
-                + "FROM matches WHERE (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)"
+                + "FROM matches WITH (NOLOCK) WHERE ("
+                + "id = ? OR id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? "
+                + "OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? "
+                + "OR CAST(match_order AS VARCHAR) = ? OR CAST(match_order AS VARCHAR) = ?)"
                 + (tournamentId != null && !tournamentId.trim().isEmpty() ? " AND tournament_id = ?" : "");
 
         DBContext db = new DBContext();
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
+            try(PreparedStatement ps=conn.prepareStatement("SELECT s.stage_order FROM matches m LEFT JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id WHERE m.id=? AND m.tournament_id=?")) {
+                ps.setString(1,mIdClean);ps.setString(2,tournamentId);
+                try(ResultSet rs=ps.executeQuery()) {
+                    if(rs.next()) TournamentDAO.assertStage2Ready(conn,tournamentId,rs.getInt(1));
+                    else if(mIdClean.startsWith("M_")) return false;
+                }
+            }
+            // Swiss results affect subsequent pairings. Use the explicit round reset API.
+            try (PreparedStatement ps=conn.prepareStatement("SELECT 1 FROM matches WHERE id=? AND tournament_id=? AND bracket_type='SWISS'")) {
+                ps.setString(1,mIdClean);ps.setString(2,tournamentId);
+                try(ResultSet rs=ps.executeQuery()) { if(rs.next()) { conn.rollback(); return false; } }
+            }
+            // Full DE match IDs must not fall through ambiguous numeric-suffix lookup.
+            try (PreparedStatement ps = conn.prepareStatement("SELECT m.stage_id, s.format FROM matches m JOIN tournament_stages s ON s.id = m.stage_id WHERE m.id = ? AND m.tournament_id = ?")) {
+                ps.setString(1, mIdClean); ps.setString(2, tournamentId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && "DOUBLE_ELIMINATION".equalsIgnoreCase(rs.getString(2))) {
+                        new dao.DoubleEliminationDAO().resetMatchAndDependants(conn, tournamentId, rs.getString(1), mIdClean);
+                        conn.commit();
+                        RollingWindowPointService.clearAllCaches();
+                        return true;
+                    }
+                }
+            }
+
 
             String dbMatchId = null;
             String resolvedTourneyId = tournamentId;
@@ -415,11 +778,19 @@ public class MatchUpdateServlet extends HttpServlet {
 
             try (PreparedStatement psSel = conn.prepareStatement(selectSql)) {
                 psSel.setString(1, mIdClean);
-                psSel.setString(2, mIdClean);
-                psSel.setString(3, mIdClean);
-                psSel.setString(4, mIdClean);
+                psSel.setString(2, lastPart);
+                psSel.setString(3, lastPart);
+                psSel.setString(4, lastPart);
+                psSel.setString(5, lastPart);
+                psSel.setString(6, lastPart);
+                psSel.setString(7, lastPart);
+                psSel.setString(8, lastPart);
+                psSel.setString(9, mIdClean);
+                psSel.setString(10, lastPart);
+                psSel.setString(11, lastPart);
+                psSel.setString(12, mIdClean);
                 if (tournamentId != null && !tournamentId.trim().isEmpty()) {
-                    psSel.setString(5, tournamentId.trim());
+                    psSel.setString(13, tournamentId.trim());
                 }
                 try (ResultSet rs = psSel.executeQuery()) {
                     if (rs.next()) {
@@ -452,30 +823,66 @@ public class MatchUpdateServlet extends HttpServlet {
 
             // If advanced winner was propagated, clear it from next match
             if (nextMatchId != null && !nextMatchId.trim().isEmpty() && resolvedTourneyId != null) {
+                String nextClean = nextMatchId.trim();
+                String nextLast = nextClean;
+                int nIdx = nextClean.lastIndexOf('_');
+                if (nIdx != -1 && nIdx < nextClean.length() - 1) {
+                    nextLast = nextClean.substring(nIdx + 1);
+                }
+
                 String slotCol = ("SLOT_2".equalsIgnoreCase(nextSlot) || "2".equals(nextSlot)) ? "team2_id" : "team1_id";
                 String clearAdvSql = "UPDATE matches SET " + slotCol + " = NULL, status = 'PENDING' "
-                        + "WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)";
+                        + "WHERE tournament_id = ? AND ("
+                        + "id = ? OR id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? "
+                        + "OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? "
+                        + "OR CAST(match_order AS VARCHAR) = ? OR CAST(match_order AS VARCHAR) = ?)";
                 try (PreparedStatement psClear = conn.prepareStatement(clearAdvSql)) {
                     psClear.setString(1, resolvedTourneyId);
-                    psClear.setString(2, nextMatchId);
-                    psClear.setString(3, nextMatchId);
-                    psClear.setString(4, nextMatchId);
-                    psClear.setString(5, nextMatchId);
+                    psClear.setString(2, nextClean);
+                    psClear.setString(3, nextLast);
+                    psClear.setString(4, nextLast);
+                    psClear.setString(5, nextLast);
+                    psClear.setString(6, nextLast);
+                    psClear.setString(7, nextLast);
+                    psClear.setString(8, nextLast);
+                    psClear.setString(9, nextLast);
+                    psClear.setString(10, nextClean);
+                    psClear.setString(11, nextLast);
+                    psClear.setString(12, nextLast);
+                    psClear.setString(13, nextClean);
                     psClear.executeUpdate();
                 }
             }
 
             // If loser was dropped to loser bracket, clear it
             if (loserNextMatchId != null && !loserNextMatchId.trim().isEmpty() && resolvedTourneyId != null) {
+                String dropClean = loserNextMatchId.trim();
+                String dropLast = dropClean;
+                int dIdx = dropClean.lastIndexOf('_');
+                if (dIdx != -1 && dIdx < dropClean.length() - 1) {
+                    dropLast = dropClean.substring(dIdx + 1);
+                }
+
                 String slotCol = ("SLOT_2".equalsIgnoreCase(loserNextSlot) || "2".equals(loserNextSlot)) ? "team2_id" : "team1_id";
                 String clearDropSql = "UPDATE matches SET " + slotCol + " = NULL, status = 'PENDING' "
-                        + "WHERE tournament_id = ? AND (id = ? OR id LIKE '%[_]' + ? OR match_code = ? OR match_code = 'Match #' + ?)";
+                        + "WHERE tournament_id = ? AND ("
+                        + "id = ? OR id = ? OR id LIKE '%[_]' + ? OR id LIKE '%[_]UB[_]' + ? OR id LIKE '%[_]LB[_]' + ? OR id LIKE '%[_]GF[_]' + ? "
+                        + "OR id LIKE '%[_]S1[_]' + ? OR id LIKE '%[_]S2[_]' + ? OR match_code = ? OR match_code = 'Match #' + ? "
+                        + "OR CAST(match_order AS VARCHAR) = ? OR CAST(match_order AS VARCHAR) = ?)";
                 try (PreparedStatement psClearDrop = conn.prepareStatement(clearDropSql)) {
                     psClearDrop.setString(1, resolvedTourneyId);
-                    psClearDrop.setString(2, loserNextMatchId);
-                    psClearDrop.setString(3, loserNextMatchId);
-                    psClearDrop.setString(4, loserNextMatchId);
-                    psClearDrop.setString(5, loserNextMatchId);
+                    psClearDrop.setString(2, dropClean);
+                    psClearDrop.setString(3, dropLast);
+                    psClearDrop.setString(4, dropLast);
+                    psClearDrop.setString(5, dropLast);
+                    psClearDrop.setString(6, dropLast);
+                    psClearDrop.setString(7, dropLast);
+                    psClearDrop.setString(8, dropLast);
+                    psClearDrop.setString(9, dropLast);
+                    psClearDrop.setString(10, dropClean);
+                    psClearDrop.setString(11, dropLast);
+                    psClearDrop.setString(12, dropLast);
+                    psClearDrop.setString(13, dropClean);
                     psClearDrop.executeUpdate();
                 }
             }
@@ -497,26 +904,158 @@ public class MatchUpdateServlet extends HttpServlet {
      * Completes a tournament and records champion name in database.
      */
     public boolean handleFinishTournament(String tournamentId, String championName) {
-        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        TournamentDAO tDao = new TournamentDAO();
-        boolean ok = tDao.updateTournamentStatus(tournamentId.trim(), "COMPLETED");
-        if (championName != null && !championName.trim().isEmpty()) {
-            tDao.updateTournamentChampion(tournamentId.trim(), championName.trim());
-        }
-        RollingWindowPointService.clearAllCaches();
-        return ok;
+        return retryTournamentTransition(() -> finishTournamentAttempt(tournamentId, championName), "Cannot finish tournament and save standings");
     }
 
-    /**
-     * Unlocks a tournament and resets status back to DRAFT with no champion.
-     */
-    public boolean handleUnlockTournament(String tournamentId) {
+    private boolean finishTournamentAttempt(String tournamentId, String championName) throws Exception {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
-        TournamentDAO tDao = new TournamentDAO();
-        boolean ok = tDao.updateTournamentStatus(tournamentId.trim(), "DRAFT");
-        tDao.updateTournamentChampion(tournamentId.trim(), null);
-        RollingWindowPointService.clearAllCaches();
-        return ok;
+        try(Connection conn=new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            boolean multi;
+            try(PreparedStatement ps=conn.prepareStatement("SELECT tournament_type FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+                ps.setQueryTimeout(20);
+                ps.setString(1,tournamentId);try(ResultSet rs=ps.executeQuery()){if(!rs.next())return false;multi="MULTI_STAGE".equalsIgnoreCase(rs.getString(1));}
+            }
+            if(multi) {
+                TournamentDAO.assertStage2Ready(conn,tournamentId,2);
+            }
+            if (!hasCompleteFinalSchedule(conn, tournamentId, multi)) return false;
+            if (!RollingWindowPointService.getInstance().refreshForTournamentTransition(conn, tournamentId, "COMPLETED")) return false;
+            try(PreparedStatement ps=conn.prepareStatement("UPDATE tournaments SET status='COMPLETED',champion_name=COALESCE(?,champion_name) WHERE id=?")) {
+                ps.setString(1,championName==null || championName.trim().isEmpty()?null:championName.trim());ps.setString(2,tournamentId);ps.executeUpdate();
+            }
+            conn.commit();RollingWindowPointService.clearAllCaches();TournamentDAO.clearTournamentCaches();return true;
+        }
+    }
+
+    private boolean retryTournamentTransition(java.util.concurrent.Callable<Boolean> operation, String message) {
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            try { return operation.call(); }
+            catch (Exception failure) {
+                RollingWindowPointService.clearAllCaches();
+                boolean transientLock = false;
+                for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+                    if (cause instanceof java.sql.SQLException) {
+                        java.sql.SQLException sql = (java.sql.SQLException) cause;
+                        transientLock = sql.getErrorCode() == 1205 || sql.getErrorCode() == 1222 || "40001".equals(sql.getSQLState());
+                        if (transientLock) break;
+                    }
+                }
+                if (!transientLock || attempt == 5) {
+                    java.util.logging.Logger.getLogger(MatchUpdateServlet.class.getName()).log(java.util.logging.Level.WARNING, message, failure);
+                    return false;
+                }
+                // A deadlock victim was rolled back when its connection closed; retry the whole transaction.
+                try { Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextInt(50, 201)); }
+                catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); return false; }
+            }
+        }
+        return false;
+    }
+
+    /** Validate persisted results under tournament/match locks before committing completion. */
+    private boolean hasCompleteFinalSchedule(Connection conn, String tournamentId, boolean multi) throws java.sql.SQLException {
+        int stage = multi ? 2 : 1;
+        String format;
+        try (PreparedStatement ps = conn.prepareStatement("SELECT format FROM tournament_stages WHERE tournament_id=? AND stage_order=?")) {
+            ps.setString(1, tournamentId); ps.setInt(2, stage);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next() || rs.getString(1) == null) return false;
+                format = rs.getString(1).trim().toUpperCase(java.util.Locale.ROOT);
+            }
+        }
+        int participants;
+        String participantSql = multi
+                ? "SELECT COUNT(*) FROM tournaments t CROSS APPLY OPENJSON(t.stage2_teams) j WHERE t.id=?"
+                : "SELECT COUNT(*) FROM teams WHERE tournament_id=?";
+        try (PreparedStatement ps = conn.prepareStatement(participantSql)) {
+            ps.setString(1, tournamentId);
+            try (ResultSet rs = ps.executeQuery()) { rs.next(); participants = rs.getInt(1); }
+        }
+        if (participants < 2) return false;
+        boolean allowDraw = "ROUND_ROBIN".equals(format) || "GROUP_STAGE".equals(format);
+        int realMatches = 0;
+        boolean hasGrandFinal = false;
+        Map<Integer, Integer> rounds = new HashMap<>();
+        java.util.Set<String> scheduledTeams = new java.util.HashSet<>();
+        // Completion only reads scores. Shared serializable locks protect validation while
+        // allowing the standings calculator to read through its independent connection.
+        // UPDLOCK could escalate to a table X lock and block that same calculation.
+        String sql = "SELECT m.*, a.id AS valid_team1, b.id AS valid_team2 FROM matches m WITH (HOLDLOCK) "
+                + "LEFT JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id "
+                + "LEFT JOIN teams a ON a.id=m.team1_id AND a.tournament_id=m.tournament_id "
+                + "LEFT JOIN teams b ON b.id=m.team2_id AND b.tournament_id=m.tournament_id "
+                + "WHERE m.tournament_id=? AND (s.stage_order=? OR (m.stage_id IS NULL AND ?=1))";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setQueryTimeout(20);
+            ps.setString(1, tournamentId); ps.setInt(2, stage); ps.setInt(3, stage);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String status = rs.getString("status");
+                    if (!("FINISHED".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status) || "DONE".equalsIgnoreCase(status))) return false;
+                    String first = rs.getString("valid_team1"), second = rs.getString("valid_team2"), winner = rs.getString("winner_id");
+                    if ((rs.getString("team1_id") != null && first == null) || (rs.getString("team2_id") != null && second == null)) return false;
+                    if (first != null) scheduledTeams.add(first);
+                    if (second != null) scheduledTeams.add(second);
+                    if (rs.getBoolean("is_bye")) {
+                        // A resolved BYE can have one entrant or be an empty bracket node; never two real opponents.
+                        if (first != null && second != null) return false;
+                        String survivor = first != null ? first : second;
+                        if (!java.util.Objects.equals(survivor, winner)) return false;
+                        continue;
+                    }
+                    if (first == null || second == null || first.equals(second)) return false;
+                    Integer score1 = (Integer) rs.getObject("score1"), score2 = (Integer) rs.getObject("score2");
+                    if (score1 == null || score2 == null || score1 < 0 || score2 < 0) return false;
+                    String expectedWinner;
+                    if (!score1.equals(score2)) expectedWinner = score1 > score2 ? first : second;
+                    else if (allowDraw) expectedWinner = null;
+                    else {
+                        Integer penalty1 = (Integer) rs.getObject("penalty1"), penalty2 = (Integer) rs.getObject("penalty2");
+                        if (penalty1 == null || penalty2 == null || penalty1 < 0 || penalty2 < 0 || penalty1.equals(penalty2)
+                                || format.contains("SWISS")) return false;
+                        expectedWinner = penalty1 > penalty2 ? first : second;
+                    }
+                    if (!java.util.Objects.equals(expectedWinner, winner)) return false;
+                    realMatches++;
+                    rounds.merge(rs.getInt("round_number"), 1, Integer::sum);
+                    if ("GRAND_FINAL".equalsIgnoreCase(rs.getString("bracket_type"))) hasGrandFinal = true;
+                }
+            }
+        }
+        if (realMatches == 0 || scheduledTeams.size() != participants) return false;
+        // Also reject a partially generated schedule whose existing games all happen to be finished.
+        if ("SINGLE_ELIMINATION".equals(format)) return realMatches >= participants - 1;
+        if ("DOUBLE_ELIMINATION".equals(format)) return hasGrandFinal && realMatches >= 2L * participants - 2;
+        if ("ROUND_ROBIN".equals(format)) return realMatches >= (long) participants * (participants - 1) / 2;
+        if (format.contains("SWISS")) {
+            return participants == 16 && realMatches == 33 && rounds.size() == 5
+                    && rounds.getOrDefault(1,0) == 8 && rounds.getOrDefault(2,0) == 8 && rounds.getOrDefault(3,0) == 8
+                    && rounds.getOrDefault(4,0) == 6 && rounds.getOrDefault(5,0) == 3;
+        }
+        return "GSL".equals(format) || "GROUP_STAGE".equals(format);
+    }
+
+    public boolean handleUnlockTournament(String tournamentId) {
+        return retryTournamentTransition(() -> unlockTournamentAttempt(tournamentId), "Cannot unlock tournament and save standings");
+    }
+
+    private boolean unlockTournamentAttempt(String tournamentId) throws Exception {
+        if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
+        try (Connection conn = new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement("SELECT id FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+                ps.setString(1, tournamentId.trim());
+                try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) return false; }
+            }
+            if (!RollingWindowPointService.getInstance().refreshForTournamentTransition(conn, tournamentId.trim(), "ONGOING")) return false;
+            try (PreparedStatement ps = conn.prepareStatement("UPDATE tournaments SET status='ONGOING',champion_name=NULL WHERE id=?")) {
+                ps.setString(1, tournamentId.trim()); ps.executeUpdate();
+            }
+            conn.commit();
+            RollingWindowPointService.clearAllCaches();
+            return true;
+        }
     }
 
     /**
@@ -525,6 +1064,17 @@ public class MatchUpdateServlet extends HttpServlet {
     public static void updateGroupTableStandings(Connection conn, String groupId) {
         if (groupId == null || groupId.trim().isEmpty()) return;
         try {
+            // Check if group_teams table actually has rows for this groupId
+            String checkSql = "SELECT TOP 1 1 FROM group_teams WITH (NOLOCK) WHERE group_id = ?";
+            try (PreparedStatement psCheck = conn.prepareStatement(checkSql)) {
+                psCheck.setString(1, groupId.trim());
+                try (ResultSet rsCheck = psCheck.executeQuery()) {
+                    if (!rsCheck.next()) {
+                        return; // Not a group table (e.g. GSL bracket), skip to avoid locking!
+                    }
+                }
+            }
+
             // Recalculate stats for each group_team
             String calcSql = "UPDATE gt SET "
                     + "gt.matches_played = ISNULL(stats.mp, 0), "
@@ -550,13 +1100,13 @@ public class MatchUpdateServlet extends HttpServlet {
                     + "           CASE WHEN score1 > score2 THEN 1 ELSE 0 END AS is_win, "
                     + "           CASE WHEN score1 = score2 THEN 1 ELSE 0 END AS is_draw, "
                     + "           CASE WHEN score1 < score2 THEN 1 ELSE 0 END AS is_loss "
-                    + "    FROM matches WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
+                    + "    FROM matches WITH (NOLOCK) WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
                     + "    UNION ALL "
                     + "    SELECT team2_id AS t_id, score2 AS gf, score1 AS ga, "
                     + "           CASE WHEN score2 > score1 THEN 1 ELSE 0 END AS is_win, "
                     + "           CASE WHEN score2 = score1 THEN 1 ELSE 0 END AS is_draw, "
                     + "           CASE WHEN score2 < score1 THEN 1 ELSE 0 END AS is_loss "
-                    + "    FROM matches WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
+                    + "    FROM matches WITH (NOLOCK) WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL "
                     + "  ) sub GROUP BY t_id"
                     + ") stats ON gt.team_id = stats.t_id "
                     + "WHERE gt.group_id = ?";
@@ -590,6 +1140,8 @@ public class MatchUpdateServlet extends HttpServlet {
     private boolean matchesName(String name, Team tm) {
         if (name == null || tm == null) return false;
         String n = name.trim().toLowerCase();
+        if (tm.getId() != null && String.valueOf(tm.getId()).trim().toLowerCase().equals(n)) return true;
+        if (tm.getName() != null && tm.getName().trim().toLowerCase().equals(n)) return true;
         if (tm.getRawName() != null && tm.getRawName().trim().toLowerCase().equals(n)) return true;
         if (tm.getNormalizedName() != null && tm.getNormalizedName().trim().toLowerCase().equals(n)) return true;
         return false;

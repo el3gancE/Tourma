@@ -67,6 +67,25 @@ public class RollingPointConfigServlet extends HttpServlet {
         request.setAttribute("stage1Format", s1F);
         request.setAttribute("stage2Format", s2F);
 
+        if ("GSL".equalsIgnoreCase(s1F) || "GROUP_STAGE".equalsIgnoreCase(s1F)) {
+            int groupCount = 0, groupSize = 0;
+            try (java.sql.Connection conn = new dao.DBContext().getConnection();
+                 java.sql.PreparedStatement ps = conn.prepareStatement("SELECT g.id, COUNT(gt.team_id) FROM groups g JOIN tournament_stages s ON s.id=g.stage_id LEFT JOIN group_teams gt ON gt.group_id=g.id WHERE s.tournament_id=? AND s.stage_order=1 GROUP BY g.id")) {
+                ps.setString(1, tournament.getId());
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) { groupCount++; groupSize = Math.max(groupSize, rs.getInt(2)); }
+                }
+            } catch (Exception e) { throw new ServletException("Cannot load GSL point categories", e); }
+            if (groupCount < 2 || groupSize < 2) {
+                response.sendRedirect(request.getContextPath() + "/common/manage-group.jsp?id="
+                        + tournament.getId() + "&format=" + s1F
+                        + (seriesId != null ? "&seriesId=" + seriesId : ""));
+                return;
+            }
+            request.setAttribute("gslGroupCount", groupCount);
+            request.setAttribute("gslGroupSize", groupSize);
+        }
+
         request.getRequestDispatcher("/common/rolling/rolling-point-config.jsp").forward(request, response);
     }
 
@@ -116,7 +135,10 @@ public class RollingPointConfigServlet extends HttpServlet {
         }
         json.append("}");
 
-        saveTournamentPointsConfigSafe(tournamentId, champPoints, json.toString());
+        if (!saveTournamentPointsConfigSafe(tournamentId, champPoints, json.toString())) {
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Không thể lưu cấu hình điểm vào DB.");
+            return;
+        }
 
         dao.SeriesDAO.clearSeriesCaches();
         service.RollingWindowPointService.clearAllCaches();
@@ -144,18 +166,23 @@ public class RollingPointConfigServlet extends HttpServlet {
                 s1F = clientS1Fmt.trim().toUpperCase();
             }
 
+            boolean isGSL = "GSL".equals(fmt) || "GSL".equals(s1F);
             boolean isGroupStage = "GROUP_STAGE".equals(fmt) || "GROUP_STAGE".equals(s1F);
 
-            if (isGroupStage) {
-                redirectUrl = request.getContextPath() + "/common/manage-group.jsp?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : "") + "&format=GROUP_STAGE";
+            String sParam = (seriesId != null && !seriesId.trim().isEmpty()) ? ("&seriesId=" + seriesId.trim()) : "";
+
+            if (isGSL) {
+                redirectUrl = request.getContextPath() + "/common/gsl.jsp?id=" + tournamentId + sParam + "&format=GSL";
+            } else if (isGroupStage) {
+                redirectUrl = request.getContextPath() + "/common/group-stage.jsp?id=" + tournamentId + sParam + "&format=GROUP_STAGE";
             } else if ("SINGLE_ELIMINATION".equals(s1F) || "SINGLE_ELIMINATION".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/single-elimination.jsp?id=" + tournamentId;
+                redirectUrl = request.getContextPath() + "/common/single-elimination.jsp?id=" + tournamentId + sParam;
             } else if ("DOUBLE_ELIMINATION".equals(s1F) || "DOUBLE_ELIMINATION".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/double-elimination.jsp?id=" + tournamentId;
+                redirectUrl = request.getContextPath() + "/common/double-elimination.jsp?id=" + tournamentId + sParam;
             } else if ("ROUND_ROBIN".equals(s1F) || "ROUND_ROBIN".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/round-robin.jsp?id=" + tournamentId;
+                redirectUrl = request.getContextPath() + "/common/round-robin.jsp?id=" + tournamentId + sParam;
             } else if ("SWISS_LITE".equals(s1F) || "SWISS".equals(s1F) || "SWISS_LITE".equals(fmt) || "SWISS".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/swiss-stage.jsp?id=" + tournamentId;
+                redirectUrl = request.getContextPath() + "/common/swiss-stage.jsp?id=" + tournamentId + sParam;
             }
         }
 

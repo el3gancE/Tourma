@@ -23,14 +23,14 @@
             var urlParams = new URLSearchParams(window.location.search);
             var tid = urlParams.get('id') || 'demo';
 
-            if (!groups || Object.keys(groups).length === 0) {
+            if (groups === undefined || groups === null) {
                 var gRaw = localStorage.getItem('tourma_group_assignments_' + tid);
                 if (gRaw) {
                     try { groups = JSON.parse(gRaw); } catch(e) {}
                 }
             }
 
-            if (!groupMatches || Object.keys(groupMatches).length === 0) {
+            if (groupMatches === undefined || groupMatches === null) {
                 var mRaw = localStorage.getItem('tourma_group_matches_' + tid);
                 if (mRaw) {
                     try { groupMatches = JSON.parse(mRaw); } catch(e) {}
@@ -65,6 +65,7 @@
                 }
             } catch (e) {}
 
+            if (window.TourmaCutTarget > 0) this.rules.advanceCount = window.TourmaCutTarget;
             var self = this;
             var gstBadge = document.getElementById('gstTeamCountBadge');
             var gstAdvText = document.getElementById('gstAdvanceText');
@@ -177,6 +178,12 @@
                 var teamList = this.groups[gKey] || [];
                 var mList = this.groupMatches[gKey] || [];
 
+                var persistedSeeds = {};
+                mList.forEach(function(match){
+                    [match.team1,match.team2].forEach(function(team){
+                        if(team && team.id && Number(team.seed)>0)persistedSeeds[String(team.id)]=Number(team.seed);
+                    });
+                });
                 var standingsMap = {};
                 var teamIdToKey = {};
                 var teamNameToKey = {};
@@ -191,6 +198,7 @@
                         groupKey: gKey,
                         teamId: tId,
                         name: tName,
+                        seed: persistedSeeds[String(tId)] || Number(tm.seed || tm.originalSeed) || Number.MAX_SAFE_INTEGER,
                         mp: 0,
                         w: 0,
                         d: 0,
@@ -279,7 +287,7 @@
                     if (b.pts !== a.pts) return b.pts - a.pts;
                     if (b.gd !== a.gd) return b.gd - a.gd;
                     if (b.gf !== a.gf) return b.gf - a.gf;
-                    return a.name.localeCompare(b.name);
+                    return a.seed - b.seed || String(a.teamId).localeCompare(String(b.teamId));
                 });
 
                 results[gKey] = standingsArray;
@@ -293,13 +301,27 @@
 
             var groupKeys = Object.keys(this.groups);
             if (groupKeys.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:3rem; color:#94a3b8;">Chưa có bảng đấu. Vui lòng bấm "Quản Lý Chia Bảng" để chia bảng.</div>';
+                var urlParams = new URLSearchParams(window.location.search);
+                var tid = urlParams.get('id') || 'demo';
+                if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
+                    window.TourmaEmptyTeamAlert.checkAndRender(tid, [], container);
+                } else {
+                    container.innerHTML = '<div style="text-align:center; padding:3rem; color:#94a3b8;">Chưa có bảng đấu. Vui lòng thêm đội và chia bảng để xem bảng xếp hạng.</div>';
+                }
                 return;
             }
 
             var cfg = this.getAdvanceConfig();
             var groupStandingsData = this.calculateAllGroupStandings();
 
+            var wildcardWinners = new Set();
+            if (cfg.remainder > 0) {
+                var candidates = groupKeys.map(function(key){return (groupStandingsData[key] || [])[cfg.wildcardRankIndex];}).filter(Boolean);
+                candidates.sort(function(a,b){
+                    return b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.seed-b.seed || String(a.teamId).localeCompare(String(b.teamId));
+                });
+                candidates.slice(0,cfg.remainder).forEach(function(team){wildcardWinners.add(String(team.teamId));});
+            }
             // IF WILDCARD FILTER IS SELECTED AND REMAINDER > 0
             if (this.selectedGroupFilter === 'WILDCARD' && cfg.remainder > 0) {
                 this.renderWildcardTable(container, groupStandingsData, cfg);
@@ -345,7 +367,7 @@
                     var row = standingsArray[rank];
 
                     var isDirect = (rank < cfg.directPerGroup);
-                    var isWildcard = (cfg.remainder > 0 && rank === cfg.wildcardRankIndex);
+                    var isWildcard = (cfg.remainder > 0 && rank === cfg.wildcardRankIndex && wildcardWinners.has(String(row.teamId)));
 
                     var qClass = '';
                     if (isDirect) {
@@ -385,12 +407,13 @@
                 }
             }
 
-            // Sort candidates: PTS desc, GD desc, GF desc, Name asc
+            // Same wildcard order as DB: points, GD, GF, original seed, team ID.
             wildcardCandidates.sort(function (a, b) {
                 if (b.pts !== a.pts) return b.pts - a.pts;
                 if (b.gd !== a.gd) return b.gd - a.gd;
                 if (b.gf !== a.gf) return b.gf - a.gf;
-                return a.name.localeCompare(b.name);
+                return (a.seed || Number.MAX_SAFE_INTEGER) - (b.seed || Number.MAX_SAFE_INTEGER)
+                    || String(a.teamId || a.id).localeCompare(String(b.teamId || b.id));
             });
 
             var block = document.createElement('div');
@@ -476,6 +499,7 @@
                         name: tm.name,
                         groupKey: gKey,
                         groupRank: i + 1,
+                        seed: tm.seed,
                         points: tm.pts,
                         goalDifference: tm.gd,
                         goalsFor: tm.gf,
@@ -499,6 +523,7 @@
                             name: candidate.name,
                             groupKey: gKey,
                             groupRank: wildcardRankIndex + 1,
+                            seed: candidate.seed,
                             points: candidate.pts,
                             goalDifference: candidate.gd,
                             goalsFor: candidate.gf,
@@ -511,7 +536,8 @@
                     if (b.points !== a.points) return b.points - a.points;
                     if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
                     if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-                    return (a.name || '').localeCompare(b.name || '');
+                    return (a.seed || Number.MAX_SAFE_INTEGER) - (b.seed || Number.MAX_SAFE_INTEGER)
+                        || String(a.id).localeCompare(String(b.id));
                 });
 
                 var takeCount = Math.min(remainder, wildcardCandidates.length);

@@ -10,18 +10,21 @@
     String safeTourneyId = (tourneyId != null) ? tourneyId : "";
     String tourneyName = "Bảng Xếp Hạng Giải Đấu";
     String teamsJson = "[]";
+    String dbMatchesJson = "[]";
     String stageParam = request.getParameter("stage");
     int currentStage = (stageParam != null && "2".equals(stageParam.trim())) ? 2 : 1;
     String activeStepVal = (currentStage == 2) ? "standings2" : "standings1";
     String currentStageStr = (currentStage == 2) ? "2" : "1";
     int cutTarget = 0;
+    String dbStage1Status = "PENDING";
+    String dbTournamentStatus = "DRAFT";
     String dbStage2Teams = null;
     String dbMultiStageConfig = null;
 
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
-            Tournament t = tDao.getTournamentById(tourneyId);
+            Tournament t = tDao.getTournamentById(tourneyId, false);
             if (t != null) {
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
@@ -29,6 +32,8 @@
                 if ("MULTI_STAGE".equals(t.getTournamentType()) && currentStage == 1) {
                     cutTarget = t.getAdvancingSeatsCount();
                 }
+                dbStage1Status = t.getStage1Status() == null ? "PENDING" : t.getStage1Status();
+                dbTournamentStatus = t.getStatus() == null ? "DRAFT" : t.getStatus();
                 dbStage2Teams = t.getStage2Teams();
                 dbMultiStageConfig = t.getMultiStageConfig();
             }
@@ -46,10 +51,15 @@
                     if (tName == null || tName.trim().isEmpty()) {
                         tName = "Đội #" + (i + 1);
                     }
-                    sb.append("\"").append(tName.replace("\"", "\\\"")).append("\"");
+                    sb.append("{\"id\":\"").append(tm.getId()).append("\",\"name\":\"").append(tName.replace("\"", "\\\"")).append("\",\"seed\":").append(tm.getOriginalSeed()).append("}");
                 }
                 sb.append("]");
                 teamsJson = sb.toString();
+            }
+            dao.RoundRobinDAO rrDao = new dao.RoundRobinDAO();
+            String jsonM = rrDao.getMatchesJsonForFrontend(tourneyId, currentStage);
+            if (jsonM != null && !jsonM.trim().isEmpty() && !jsonM.trim().equals("[]")) {
+                dbMatchesJson = jsonM;
             }
         } catch (Exception e) {}
     }
@@ -75,15 +85,21 @@
         <!-- Main Stylesheets -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin-standings.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     </head>
     <body>
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp"/>
 
+        <!-- Stage Finish Alert Component (Locked Stage 2) -->
+        <jsp:include page="/common/component/stage-finish-alert.jsp"/>
+
+        <jsp:include page="/common/component/stage-end-popup.jsp"/>
         <!-- Final Stage Popup Banner -->
         <jsp:include page="/common/component/final-stage-popup.jsp"/>
 
@@ -107,10 +123,10 @@
             <div class="rr-control-bar">
                 <div class="rr-info-group">
                     <h1 class="rr-tourney-title">
-                        <i class="fa-solid fa-ranking-star text-gold"></i> 
-                        <span>Bảng Xếp Hạng: <%= tourneyName %></span>
+                        <i class="fa-solid fa-trophy text-gold"></i> 
+                        <span><%= tourneyName %></span>
                     </h1>
-                    <span class="format-badge-rr"><%= (currentStage == 2) ? "Stage 2: Round Robin" : "Round Robin" %></span>
+                    <span class="format-badge-rr" title="Round Robin"><%= (currentStage == 2) ? "S2 · RR" : "RR" %></span>
                     <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
                     <span id="rrAdvancingBadge" class="format-badge-pill" style="display: <%= (currentStage == 1 && cutTarget > 1) ? "inline-flex" : "none" %>; background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.35); color: #2dd4bf; border-radius: 9999px; font-weight: 800; font-size: 0.8rem; padding: 0.25rem 0.75rem; align-items: center; gap: 0.45rem;">
                         <i class="fa-solid fa-trophy" style="color: #2dd4bf; font-size: 0.85rem;"></i>
@@ -119,16 +135,53 @@
                 </div>
 
                 <div class="rr-actions-group" style="display: flex; align-items: center; gap: 0.75rem;">
+                    <!-- Standalone Reset Bracket / Tournament Action Button -->
+                    <button type="button" class="btn-reset-bracket-action" onclick="window.TourmaRoundRobinStandings.openResetModal()" title="Xóa toàn bộ kết quả và thiết lập lại từ đầu">
+                        <i class="fa-solid fa-rotate-right"></i> Reset
+                    </button>
+
                     <!-- View Mode Segmented Toggle Buttons (Fixtures List ↔ Standings Table) -->
                     <div class="view-mode-toggle-group">
                         <a href="${pageContext.request.contextPath}/common/round-robin.jsp?id=<%= safeTourneyId %>&format=ROUND_ROBIN<%= (currentStage == 2) ? "&stage=2" : "" %>" 
                            class="btn-view-toggle" style="text-decoration: none;">
-                            <i class="fa-solid fa-calendar-days"></i> Lịch Thi Đấu
+                            <i class="fa-solid fa-calendar-days"></i> Lịch
                         </a>
                         <a href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= safeTourneyId %>&format=ROUND_ROBIN<%= (currentStage == 2) ? "&stage=2" : "" %>" 
                            class="btn-view-toggle active" style="text-decoration: none;">
-                            <i class="fa-solid fa-ranking-star"></i> Bảng Xếp Hạng
+                            <i class="fa-solid fa-ranking-star"></i> BXH
                         </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Modal for Reset Tournament -->
+            <div id="rrResetModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) window.TourmaRoundRobinStandings.closeResetModal();">
+                <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
+                        <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span>Xác Nhận Reset Toàn Bộ Giải</span>
+                        </div>
+                        <button type="button" class="modal-close-btn" onclick="window.TourmaRoundRobinStandings.closeResetModal()" title="Đóng">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+                        <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
+                            <strong style="color: #f43f5e;">⚠️ Cảnh báo quan trọng:</strong><br>
+                            Hành động này sẽ <strong style="color: #ffffff;">XÓA TOÀN BỘ tỷ số và kết quả của tất cả các vòng</strong>, đưa Bảng Xếp Hạng về 0 điểm ban đầu.
+                        </div>
+                        <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
+                            Bạn có chắc chắn muốn thiết lập lại toàn bộ giải đấu không?
+                        </p>
+                    </div>
+
+                    <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.75rem 1rem;">
+                        <button type="button" class="btn btn-secondary" onclick="window.TourmaRoundRobinStandings.closeResetModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
+                        <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="window.TourmaRoundRobinStandings.confirmResetTournament()">
+                            <i class="fa-solid fa-rotate-right"></i> Xác Nhận Reset
+                        </button>
                     </div>
                 </div>
             </div>
@@ -173,13 +226,21 @@
 
         </main>
 
+        <jsp:include page="/common/component/tournament-config-state.jsp"/>
         <!-- Scripts -->
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
+        <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin-standings.js"></script>
 
         <script>
+            window.TourmaContextPath = '${pageContext.request.contextPath}';
+            window.TourmaDbStage1Status = window.TourmaDbStage1Status || {};
+            window.TourmaDbStage1Status['<%= safeTourneyId %>'] = '<%= dbStage1Status %>';
+            window.TourmaDbTournamentStatus = window.TourmaDbTournamentStatus || {};
+            window.TourmaDbTournamentStatus['<%= safeTourneyId %>'] = '<%= dbTournamentStatus %>';
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var preloadedTeams = <%= teamsJson %>;
@@ -206,20 +267,16 @@
                     }
 
                     var s2TeamsRaw = <%= (dbStage2Teams != null && !dbStage2Teams.trim().isEmpty() && !dbStage2Teams.trim().equals("[]")) ? dbStage2Teams : "null" %>;
-                    if (!s2TeamsRaw || s2TeamsRaw.length === 0) {
-                        try { s2TeamsRaw = JSON.parse(localStorage.getItem('tourma_stage2_teams_' + tourneyId)); } catch(e) {}
-                    }
                     if (s2TeamsRaw && s2TeamsRaw.length > 0) {
                         preloadedTeams = s2TeamsRaw.filter(function(t) {
                             var n = (typeof t === 'object') ? (t.name || t.rawName || '') : String(t);
                             return n !== 'BYE' && n.trim() !== '';
                         });
-                    } else if (advCount && advCount > 1 && preloadedTeams && preloadedTeams.length > advCount) {
-                        preloadedTeams = preloadedTeams.slice(0, advCount);
-                    }
+                    } else preloadedTeams = [];
                     cutTarget = 0; // Stage 2 plays to find a champion!
                 }
-                window.TourmaRoundRobinStandings.init(tourneyId, preloadedTeams, null, currentStage, cutTarget);
+                var dbMatches = <%= dbMatchesJson %>;
+                window.TourmaRoundRobinStandings.init(tourneyId, preloadedTeams, null, currentStage, cutTarget, dbMatches);
             });
         </script>
     </body>
