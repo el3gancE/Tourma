@@ -913,6 +913,7 @@ public class MatchUpdateServlet extends HttpServlet {
             conn.setAutoCommit(false);
             boolean multi;
             try(PreparedStatement ps=conn.prepareStatement("SELECT tournament_type FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+                ps.setQueryTimeout(20);
                 ps.setString(1,tournamentId);try(ResultSet rs=ps.executeQuery()){if(!rs.next())return false;multi="MULTI_STAGE".equalsIgnoreCase(rs.getString(1));}
             }
             if(multi) {
@@ -977,12 +978,16 @@ public class MatchUpdateServlet extends HttpServlet {
         boolean hasGrandFinal = false;
         Map<Integer, Integer> rounds = new HashMap<>();
         java.util.Set<String> scheduledTeams = new java.util.HashSet<>();
-        String sql = "SELECT m.*, a.id AS valid_team1, b.id AS valid_team2 FROM matches m WITH (UPDLOCK,HOLDLOCK) "
+        // Completion only reads scores. Shared serializable locks protect validation while
+        // allowing the standings calculator to read through its independent connection.
+        // UPDLOCK could escalate to a table X lock and block that same calculation.
+        String sql = "SELECT m.*, a.id AS valid_team1, b.id AS valid_team2 FROM matches m WITH (HOLDLOCK) "
                 + "LEFT JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id "
                 + "LEFT JOIN teams a ON a.id=m.team1_id AND a.tournament_id=m.tournament_id "
                 + "LEFT JOIN teams b ON b.id=m.team2_id AND b.tournament_id=m.tournament_id "
                 + "WHERE m.tournament_id=? AND (s.stage_order=? OR (m.stage_id IS NULL AND ?=1))";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setQueryTimeout(20);
             ps.setString(1, tournamentId); ps.setInt(2, stage); ps.setInt(3, stage);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

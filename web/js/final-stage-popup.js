@@ -388,12 +388,28 @@
         /**
          * User confirms conclusion -> Lock tournament & transition to Step 2
          */
+
+        requestJson: async function (url, options) {
+            var controller = new AbortController();
+            var timedOut = false;
+            var timer = setTimeout(function () { timedOut = true; controller.abort(); }, 45000);
+            try {
+                var response = await fetch(url, Object.assign({}, options, {signal: controller.signal}));
+                var data = await response.json();
+                if (!response.ok || !data || data.status !== 'success')
+                    throw new Error((data && data.message) || 'Không thể xác nhận kết quả. Vui lòng thử lại.');
+                return data;
+            } catch (error) {
+                if (timedOut) throw new Error('Máy chủ xử lý quá lâu. Hãy tải lại trang để kiểm tra trạng thái trước khi xác nhận lại.');
+                throw error;
+            } finally { clearTimeout(timer); }
+        },
+
         confirmConclusion: async function () {
             if (!this.tournamentId || this.isFinishing || this.isUnlocking || this.isLocked) return;
             var tournamentId = this.tournamentId;
             var confirmButton = document.getElementById('finalStageConfirmBtn');
             var originalLabel = confirmButton ? confirmButton.textContent : '';
-            var finishError = '';
             this.isFinishing = true;
             if (confirmButton) {
                 confirmButton.disabled = true;
@@ -404,19 +420,15 @@
                 var rootPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
                 if (!rootPath || rootPath === '/common') rootPath = '';
                 var ctx = window.TourmaContextPath || rootPath || '';
-                var response = await fetch(ctx + '/api/match-update', {
+                await this.requestJson(ctx + '/api/match-update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                     body: 'action=finishTournament&tournamentId=' + encodeURIComponent(tournamentId) + '&championName=' + encodeURIComponent(this.championName || '')
                 });
-                var data = await response.json();
-                if (!response.ok || data.status !== 'success') {
-                    finishError = data.message || 'Chưa thể hoàn thành giải. Vui lòng kiểm tra kết quả các trận.';
-                    throw new Error(finishError);
-                }
+
                 if (this.tournamentId !== tournamentId) return;
             } catch (error) {
-                window.alert(finishError || 'Không thể xác nhận hoàn thành giải. Vui lòng tải lại trang và thử lại.');
+                window.alert(error.message || 'Không thể xác nhận hoàn thành giải. Vui lòng tải lại trang và thử lại.');
                 return;
             } finally {
                 this.isFinishing = false;

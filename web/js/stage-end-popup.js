@@ -484,6 +484,23 @@
             }).catch(function (error) { window.alert(error.message || 'Không reset được stage. Vui lòng thử lại.'); });
         },
 
+
+        requestJson: async function (url, options) {
+            var controller = new AbortController();
+            var timedOut = false;
+            var timer = setTimeout(function () { timedOut = true; controller.abort(); }, 45000);
+            try {
+                var response = await fetch(url, Object.assign({}, options, {signal: controller.signal}));
+                var data = await response.json();
+                if (!response.ok || !data || data.status !== 'success')
+                    throw new Error((data && data.message) || 'Không thể xác nhận kết quả. Vui lòng thử lại.');
+                return data;
+            } catch (error) {
+                if (timedOut) throw new Error('Máy chủ xử lý quá lâu. Hãy tải lại trang để kiểm tra trạng thái trước khi xác nhận lại.');
+                throw error;
+            } finally { clearTimeout(timer); }
+        },
+
         confirmStageEnd: async function () {
             var tid = this.tournamentId;
             if (!tid || this.transitionInProgress) return;
@@ -534,10 +551,10 @@
                 // Extract and draw once; retain the draw when retrying a failed save.
                 if (!this.pendingStage2Teams || this.format === 'SWISS' || this.format === 'SWISS_LITE') {
                     var advTeams = league
-                        ? await fetch((window.TourmaContextPath || '') + '/api/cut-stage', {
+                        ? await this.requestJson((window.TourmaContextPath || '') + '/api/cut-stage', {
                             method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
                             body: new URLSearchParams({action:'qualify',tournamentId:tid}).toString()
-                        }).then(function(res){return res.json();}).then(requireSuccess).then(function(data){return data.qualifiedTeams;})
+                        }).then(function(data){return data.qualifiedTeams;})
                         : (this.format === 'SWISS' || this.format === 'SWISS_LITE')
                         ? await window.TourmaSwiss.getAdvancingTeams()
                         : this.getAdvancingTeamsFromCurrentEngine();
@@ -558,18 +575,18 @@
                 var teams = this.pendingStage2Teams;
                 var save;
                 if (['SINGLE_ELIMINATION', 'GSL', 'DOUBLE_ELIMINATION', 'SWISS', 'SWISS_LITE', 'ROUND_ROBIN', 'GROUP_STAGE'].indexOf(this.format) !== -1) {
-                    save = fetch((window.TourmaContextPath || '') + '/api/cut-stage', {
+                    save = this.requestJson((window.TourmaContextPath || '') + '/api/cut-stage', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
                         body: new URLSearchParams({action: 'finalizeStage1', tournamentId: tid, stage2Teams: JSON.stringify(teams)}).toString()
-                    }).then(function (res) { return res.json(); }).then(requireSuccess);
+                    });
                 } else {
                     save = window.TourmaStageEndPopup_saveStage2TeamsToDB(tid, teams)
                         .then(requireSuccess).then(function () {
                             return window.TourmaStageEndPopup_saveStage1StatusToDB(tid, 'LOCKED');
                         }).then(requireSuccess);
                 }
-                save
+                await save
                     .then(function () {
                         try {
                             localStorage.setItem('tourma_stage2_teams_' + tid, JSON.stringify(teams));

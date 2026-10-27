@@ -49,7 +49,7 @@ public class RollingCreateTournamentServlet extends HttpServlet {
         int nextIndex = 1;
         if (selectedSeries != null) {
             List<Tournament> existingTourneys = seriesDAO.getTournamentsBySeriesId(selectedSeries.getId());
-            nextIndex = existingTourneys.size() + 1;
+            nextIndex = existingTourneys.stream().mapToInt(Tournament::getTournamentIndexInSeries).max().orElse(0) + 1;
         }
 
         request.setAttribute("allSeries", allSeries);
@@ -95,7 +95,7 @@ public class RollingCreateTournamentServlet extends HttpServlet {
         t.setSeriesId(seriesId);
         t.setTierName(tierName.trim().toUpperCase());
         t.setTournamentIndexInSeries(indexInSeries);
-        t.setPhaseNumber(1);
+        // Index and phase are assigned atomically by SeriesDAO.
         t.setStatus("DRAFT");
         t.setFormat("KNOCKOUT");
         t.setTournamentType("SINGLE_STAGE");
@@ -120,32 +120,6 @@ public class RollingCreateTournamentServlet extends HttpServlet {
     }
 
     private boolean createSubTournamentSafe(Tournament t) {
-        if (t == null || t.getId() == null || t.getName() == null) return false;
-        String sql = "INSERT INTO tournaments (id, series_id, name, tournament_type, tier_name, tournament_index_in_series, phase_number, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        dao.DBContext db = new dao.DBContext();
-        
-        String tier = t.getTierName();
-        if (tier != null) {
-            tier = tier.replace("Tier ", "").trim();
-        }
-        if (tier == null || (!tier.equals("S") && !tier.equals("A") && !tier.equals("B") && !tier.equals("C") && !tier.equals("D"))) {
-            tier = "S";
-        }
-
-        try (java.sql.Connection conn = db.getConnection();
-             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, t.getId());
-            ps.setString(2, t.getSeriesId());
-            ps.setString(3, t.getName());
-            ps.setString(4, t.getTournamentType() != null ? t.getTournamentType() : "SINGLE_STAGE");
-            ps.setString(5, tier);
-            ps.setInt(6, t.getTournamentIndexInSeries() > 0 ? t.getTournamentIndexInSeries() : 1);
-            ps.setInt(7, t.getPhaseNumber() > 0 ? t.getPhaseNumber() : 1);
-            ps.setString(8, t.getStatus() != null ? t.getStatus() : "DRAFT");
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        return new SeriesDAO().createSubTournamentInSeries(t);
     }
 }

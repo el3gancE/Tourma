@@ -417,7 +417,10 @@ public class RollingWindowPointService {
                 seriesId = rs.getString(1);
                 if (seriesId == null || seriesId.trim().isEmpty()) return true;
                 if (rs.getString(2) == null) return false;
-                if (!"ROLLING_WINDOW".equalsIgnoreCase(rs.getString(2))) return true;
+                if (!"ROLLING_WINDOW".equalsIgnoreCase(rs.getString(2))) {
+                    SeriesDAO.synchronizePhaseMetadata(conn,seriesId,tournamentId,targetStatus);
+                    return true;
+                }
             }
         }
         return recalculateAndPersistStandings(conn, seriesId, tournamentId, targetStatus);
@@ -435,7 +438,11 @@ public class RollingWindowPointService {
         try (PreparedStatement ps = conn.prepareStatement("SELECT ranking_model FROM series WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
             ps.setString(1, seriesId.trim());
             try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next() || !"ROLLING_WINDOW".equalsIgnoreCase(rs.getString(1))) return false;
+                if (!rs.next()) return false;
+                if (!"ROLLING_WINDOW".equalsIgnoreCase(rs.getString(1))) {
+                    SeriesDAO.synchronizePhaseMetadata(conn,seriesId,changingTournamentId,targetStatus);
+                    return true;
+                }
             }
         }
         SeriesDAO seriesDAO = new SeriesDAO();
@@ -462,10 +469,13 @@ public class RollingWindowPointService {
             psDelH.executeUpdate();
         }
 
+        Series phaseSeries=seriesDAO.getSeriesById(seriesId.trim());
+        int phaseSize=phaseSeries!=null?Math.max(1,phaseSeries.getPhaseSize()):3;
+        int snapshotPhase=phaseSeries!=null?Math.max(1,phaseSeries.getCurrentPhase()):1;
         // 2. Insert fresh calculated series_standings
         String sqlInsertStanding = "INSERT INTO series_standings (id, series_id, phase_number, normalized_team_name, " +
                 "partner_participant_id, group_name, total_rolling_points, current_elo, matches_played, rank_overall, updated_at) " +
-                "VALUES (?, ?, 1, ?, ?, 'General', ?, 1000.0, ?, ?, CURRENT_TIMESTAMP)";
+                "VALUES (?, ?, ?, ?, ?, 'General', ?, 1000.0, ?, ?, CURRENT_TIMESTAMP)";
 
         try (PreparedStatement psS = conn.prepareStatement(sqlInsertStanding)) {
             int r = 1;
@@ -473,11 +483,12 @@ public class RollingWindowPointService {
                 String standingId = "ST_" + seriesId.trim() + "_" + (dto.getPartnerParticipantId() != null ? dto.getPartnerParticipantId() : ("T_" + r));
                 psS.setString(1, standingId);
                 psS.setString(2, seriesId.trim());
-                psS.setString(3, dto.getTeamName());
-                psS.setString(4, dto.getPartnerParticipantId());
-                psS.setInt(5, dto.getTotalActivePoints());
-                psS.setInt(6, dto.getActiveTourneysCount());
-                psS.setInt(7, dto.getRank() > 0 ? dto.getRank() : r);
+                psS.setInt(3,snapshotPhase);
+                psS.setString(4, dto.getTeamName());
+                psS.setString(5, dto.getPartnerParticipantId());
+                psS.setInt(6, dto.getTotalActivePoints());
+                psS.setInt(7, dto.getActiveTourneysCount());
+                psS.setInt(8, dto.getRank() > 0 ? dto.getRank() : r);
                 psS.addBatch();
                 r++;
             }
@@ -488,7 +499,7 @@ public class RollingWindowPointService {
         if (allTourneys != null && !allTourneys.isEmpty()) {
             String sqlInsertHistory = "INSERT INTO series_tournament_history (id, series_id, tournament_id, phase_number, " +
                     "normalized_team_name, tournament_rank, points_earned, points_deducted, elo_change, completed_at) " +
-                    "VALUES (?, ?, ?, 1, ?, ?, ?, 0, 0.0, ?)";
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0.0, ?)";
 
             try (PreparedStatement psH = conn.prepareStatement(sqlInsertHistory)) {
                 for (Tournament t : allTourneys) {
@@ -515,10 +526,11 @@ public class RollingWindowPointService {
                             psH.setString(1, histId);
                             psH.setString(2, seriesId.trim());
                             psH.setString(3, t.getId());
-                            psH.setString(4, tm.getNormalizedName() != null ? tm.getNormalizedName() : tm.getRawName());
-                            psH.setInt(5, pos);
-                            psH.setInt(6, pts);
-                            psH.setTimestamp(7, completedAt);
+                            psH.setInt(4,SeriesDAO.phaseForIndex(t.getTournamentIndexInSeries(),phaseSize));
+                            psH.setString(5, tm.getNormalizedName() != null ? tm.getNormalizedName() : tm.getRawName());
+                            psH.setInt(6, pos);
+                            psH.setInt(7, pts);
+                            psH.setTimestamp(8, completedAt);
                             psH.addBatch();
                         }
                     }
@@ -528,6 +540,7 @@ public class RollingWindowPointService {
         }
 
 
+        SeriesDAO.synchronizePhaseMetadata(conn,seriesId.trim(),changingTournamentId,targetStatus);
         return true;
     }
 

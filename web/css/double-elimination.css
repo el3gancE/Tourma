@@ -325,11 +325,11 @@ body, button, input, select, textarea, .bracket-header-title, .de-viewport-title
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(244, 63, 94, 0.15) !important;
 }
 
-.de-round-header.gf {
+#upperBracketColumnsWrapper .de-round-header.gf {
     border-color: rgba(251, 191, 36, 0.35) !important;
 }
 
-.de-round-header.gf .round-header-title {
+#upperBracketColumnsWrapper .de-round-header.gf .round-header-title {
     color: #fbbf24 !important;
 }
 
@@ -344,6 +344,10 @@ body, button, input, select, textarea, .bracket-header-title, .de-viewport-title
 
 /* Grand Finals Column Styling in Upper Viewport */
 .de-round-column.grand-finals {
+    --grp-color: #fbbf24;
+    --grp-rgb: 251, 191, 36;
+    --grp-hover: rgba(251, 191, 36, 0.22);
+    --grp-glow: rgba(251, 191, 36, 0.45);
     padding-left: 0;
     margin-left: 0;
 }

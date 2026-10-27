@@ -225,6 +225,7 @@ public class TournamentDAO {
 
     private static void lockCutTournament(Connection conn, String id) throws java.sql.SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT id FROM tournaments WITH (UPDLOCK, HOLDLOCK) WHERE id = ?")) {
+            ps.setQueryTimeout(20);
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw new IllegalStateException("Không tìm thấy giải đấu."); }
         }
@@ -316,6 +317,7 @@ public class TournamentDAO {
         }
         List<CutMatch> games = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement("SELECT m.* FROM matches m WITH (UPDLOCK, HOLDLOCK) LEFT JOIN tournament_stages s ON s.id = m.stage_id WHERE m.tournament_id = ? AND ((s.stage_order = 1 AND s.tournament_id=m.tournament_id) OR m.stage_id IS NULL) ORDER BY m.round_number, m.match_order, m.id")) {
+            ps.setQueryTimeout(20);
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -1161,6 +1163,8 @@ public class TournamentDAO {
 
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
+            String phaseSeries=null;
+            try(PreparedStatement phaseQuery=conn.prepareStatement("SELECT series_id FROM tournaments WHERE id=?")){phaseQuery.setString(1,tid);try(ResultSet rs=phaseQuery.executeQuery()){if(rs.next())phaseSeries=rs.getString(1);}}
             try {
                 try (PreparedStatement ps = conn.prepareStatement(sqlUpdateTourneys)) {
                     ps.setString(1, tid);
@@ -1218,6 +1222,7 @@ public class TournamentDAO {
                     rows = ps.executeUpdate();
                 }
 
+                if(phaseSeries!=null)SeriesDAO.synchronizePhaseMetadata(conn,phaseSeries,null,null);
                 conn.commit();
                 return rows > 0;
             } catch (Exception ex) {
@@ -1231,33 +1236,7 @@ public class TournamentDAO {
     }
 
     public boolean createSubTournamentInSeries(Tournament t) {
-        if (t == null || t.getId() == null || t.getName() == null) return false;
-        String sql = "INSERT INTO tournaments (id, series_id, name, tournament_type, tier_name, tournament_index_in_series, phase_number, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        DBContext db = new DBContext();
-        
-        String tier = t.getTierName();
-        if (tier != null) {
-            tier = tier.replace("Tier ", "").trim();
-        }
-        if (tier == null || (!tier.equals("S") && !tier.equals("A") && !tier.equals("B") && !tier.equals("C") && !tier.equals("D"))) {
-            tier = "S";
-        }
-
-        try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, t.getId());
-            ps.setString(2, t.getSeriesId());
-            ps.setString(3, t.getName());
-            ps.setString(4, t.getTournamentType() != null ? t.getTournamentType() : "SINGLE_STAGE");
-            ps.setString(5, tier);
-            ps.setInt(6, t.getTournamentIndexInSeries() > 0 ? t.getTournamentIndexInSeries() : 1);
-            ps.setInt(7, t.getPhaseNumber() > 0 ? t.getPhaseNumber() : 1);
-            ps.setString(8, t.getStatus() != null ? t.getStatus() : "DRAFT");
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        return new SeriesDAO().createSubTournamentInSeries(t);
     }
 
     public boolean saveTournamentPointsConfig(String tournamentId, int rewardPoints, String pointsConfigJson) {
@@ -1960,6 +1939,7 @@ public class TournamentDAO {
 
             int nextIndex = src.getTournamentIndexInSeries();
             if (src.getSeriesId() != null && !src.getSeriesId().trim().isEmpty()) {
+                SeriesDAO.phaseForTournament(conn,src.getSeriesId().trim(),1); // Serialize allocation per Series.
                 nextIndex = getNextTournamentIndexInSeries(conn, src.getSeriesId().trim());
             }
 
@@ -1976,7 +1956,8 @@ public class TournamentDAO {
                     ps.setNull(7, java.sql.Types.INTEGER);
                 }
                 ps.setInt(8, nextIndex);
-                ps.setInt(9, src.getPhaseNumber() > 0 ? src.getPhaseNumber() : 1);
+                ps.setInt(9, src.getSeriesId() != null && !src.getSeriesId().trim().isEmpty()
+                        ? SeriesDAO.phaseForTournament(conn,src.getSeriesId().trim(),nextIndex) : 1);
                 ps.setInt(10, src.getMaxTeamsPerGroup() > 0 ? src.getMaxTeamsPerGroup() : 4);
                 ps.setInt(11, src.getAdvancingSeatsCount() > 0 ? src.getAdvancingSeatsCount() : 16);
                 ps.setString(12, src.getSeriesPointsConfig());
@@ -2035,8 +2016,10 @@ public class TournamentDAO {
             }
 
             // Clone custom placement points if any
-            String selectPointsSql = "SELECT rank_position, points_awarded, elo_weight FROM tournament_placement_points WHERE tournament_id = ?";
-            String insertPointsSql = "INSERT INTO tournament_placement_points (id, tournament_id, rank_position, points_awarded, elo_weight) VALUES (?, ?, ?, ?, ?)";
+            boolean hasEloWeight;
+            try(ResultSet columns=conn.getMetaData().getColumns(conn.getCatalog(),null,"tournament_placement_points","elo_weight")){hasEloWeight=columns.next();}
+            String selectPointsSql = "SELECT rank_position, points_awarded" + (hasEloWeight ? ", elo_weight" : "") + " FROM tournament_placement_points WHERE tournament_id = ?";
+            String insertPointsSql = "INSERT INTO tournament_placement_points (id, tournament_id, rank_position, points_awarded" + (hasEloWeight ? ", elo_weight" : "") + ") VALUES (?, ?, ?, ?" + (hasEloWeight ? ", ?" : "") + ")";
             try (PreparedStatement psPts = conn.prepareStatement(selectPointsSql)) {
                 psPts.setString(1, sourceTournamentId.trim());
                 try (ResultSet rs = psPts.executeQuery()) {
@@ -2046,7 +2029,7 @@ public class TournamentDAO {
                             psIns.setString(2, newId);
                             psIns.setInt(3, rs.getInt("rank_position"));
                             psIns.setInt(4, rs.getInt("points_awarded"));
-                            psIns.setDouble(5, rs.getDouble("elo_weight"));
+                            if(hasEloWeight)psIns.setDouble(5, rs.getDouble("elo_weight"));
                             psIns.executeUpdate();
                         }
                     }
@@ -2075,6 +2058,7 @@ public class TournamentDAO {
                 }
             }
 
+            if(src.getSeriesId()!=null&&!src.getSeriesId().trim().isEmpty())SeriesDAO.synchronizePhaseMetadata(conn,src.getSeriesId().trim(),null,null);
             conn.commit();
             TOURNAMENT_BY_ID_CACHE.clear();
 

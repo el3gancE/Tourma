@@ -955,6 +955,10 @@
           };
         }
       }
+      return null;
+    }
+  });
+
   /**
    * 10C. PHASE 3 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 3)
    * Nền xanh lôi thần Electric Cyan, tia sét chói lòa giáng sấm sét
