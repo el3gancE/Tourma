@@ -24,22 +24,22 @@
             <input type="hidden" name="action" value="bulkAddPartners">
             <input type="hidden" name="seriesId" value="<%= seriesIdParam %>">
 
-            <div style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.88rem; font-weight: 700; color: #e2e8f0; margin-bottom: 0.4rem;">
-                    Danh Sách Tên Đội Bóng (Mỗi đội 1 dòng) <span style="color: #ef4444;">*</span>
+            <div data-ui-style="add-team-popup-jsp-001">
+                <label data-ui-style="add-team-popup-jsp-002" style="display: block;">
+                    Danh Sách Tên Đội Bóng (Mỗi đội 1 dòng) <span data-ui-style="add-team-popup-jsp-003">*</span>
                 </label>
                 <textarea name="bulkTeamNames" required class="add-team-textarea" placeholder="Nhập hoặc dán danh sách tên các đội bóng tại đây...&#10;Ví dụ:&#10;Saigon Heat&#10;Thang Long Warriors&#10;Hanoi Buffaloes&#10;Danang Dragons"></textarea>
-                <p style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.35rem; margin-bottom: 0;">
+                <p data-ui-style="add-team-popup-jsp-004">
                     <i class="fa-solid fa-info-circle text-mint"></i> Mã Partner ID sẽ được tự động sinh ngẫu nhiên và điểm khởi đầu mặc định là 0.
                 </p>
             </div>
 
             <!-- MODAL FOOTER BUTTONS -->
-            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 1rem;">
-                <button type="button" class="btn" onclick="closeAddTeamPopup()" style="background: rgba(255, 255, 255, 0.08); color: #cbd5e1; font-weight: 700; border-radius: 8px;">
+            <div data-ui-style="add-team-popup-jsp-005" style="display: flex;">
+                <button type="button" class="btn" onclick="closeAddTeamPopup()" data-ui-style="add-team-popup-jsp-006">
                     Hủy Bỏ
                 </button>
-                <button type="submit" class="btn btn-mint" style="font-weight: 700; border-radius: 8px; padding: 0.65rem 1.35rem;">
+                <button type="submit" class="btn btn-mint" data-ui-style="add-team-popup-jsp-007">
                     <i class="fa-solid fa-check-circle"></i> Xác Nhận Đăng Ký
                 </button>
             </div>

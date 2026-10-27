@@ -357,3 +357,349 @@
 
 
 
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-001"]:not(#tourma-inline-specificity) {
+    background: #0b0d12;
+    color: #f8fafc;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-002"]:not(#tourma-inline-specificity) {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-003"]:not(#tourma-inline-specificity) {
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-004"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    padding: 0.45rem 0.85rem;
+    border-color: rgba(244,63,94,0.3);
+    color: #f43f5e;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-005"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    padding: 0.45rem 0.9rem;
+    font-weight: 700;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-006"]:not(#tourma-inline-specificity) {
+    margin-left: 0.4rem;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-007"]:not(#tourma-inline-specificity) {
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background:rgba(0,0,0,0.75);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-008"]:not(#tourma-inline-specificity) {
+    background:#121620;
+    border:1px solid rgba(45,212,191,0.3);
+    border-radius:12px;
+    max-width:480px;
+    width:90%;
+    padding:1.25rem;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-009"]:not(#tourma-inline-specificity) {
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid rgba(255,255,255,0.1);
+    padding-bottom:0.75rem;
+    margin-bottom:1rem;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-010"]:not(#tourma-inline-specificity) {
+    font-weight:800;
+    font-size:1rem;
+    color:#2dd4bf;
+    align-items:center;
+    gap:0.5rem;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-011"]:not(#tourma-inline-specificity) {
+    background:transparent;
+    border:none;
+    color:#94a3b8;
+    font-size:1.2rem;
+    cursor:pointer;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-012"]:not(#tourma-inline-specificity) {
+    gap:0.5rem;
+    margin-bottom:0.75rem;
+    align-items:center;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-013"]:not(#tourma-inline-specificity) {
+    position:relative;
+    flex:1;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-014"]:not(#tourma-inline-specificity) {
+    position:absolute;
+    left:0.75rem;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:0.75rem;
+    color:#94a3b8;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-015"]:not(#tourma-inline-specificity) {
+    width:100%;
+    box-sizing:border-box;
+    background:#0b0d12;
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:6px;
+    padding:0.4rem 0.6rem 0.4rem 2rem;
+    color:#f8fafc;
+    font-size:0.8rem;
+    font-family:inherit;
+    outline:none;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-016"]:not(#tourma-inline-specificity) {
+    font-size:0.72rem;
+    padding:0.35rem 0.65rem;
+    white-space:nowrap;
+    background:#181d29;
+    border-color:rgba(255,255,255,0.15);
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-017"]:not(#tourma-inline-specificity) {
+    font-size:0.72rem;
+    padding:0.35rem 0.65rem;
+    white-space:nowrap;
+    background:#181d29;
+    border-color:rgba(255,255,255,0.15);
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-018"]:not(#tourma-inline-specificity) {
+    max-height:280px;
+    overflow-y:auto;
+    padding-right:0.25rem;
+    margin-bottom:1.25rem;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-019"]:not(#tourma-inline-specificity) {
+    justify-content:space-between;
+    align-items:center;
+    border-top:1px solid rgba(255,255,255,0.1);
+    padding-top:0.85rem;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-020"]:not(#tourma-inline-specificity) {
+    font-size:0.78rem;
+    color:#94a3b8;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-021"]:not(#tourma-inline-specificity) {
+    color:#2dd4bf;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-022"]:not(#tourma-inline-specificity) {
+    gap:0.5rem;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-023"]:not(#tourma-inline-specificity) {
+    font-size:0.8rem;
+    padding:0.45rem 0.9rem;
+}
+
+/* web/common/manage-group.jsp */
+[data-ui-style="manage-group-jsp-024"]:not(#tourma-inline-specificity) {
+    font-size:0.8rem;
+    padding:0.45rem 1rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-001"]:not(#tourma-inline-specificity) {
+    text-align:center;
+    padding: 2rem 0;
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-002"]:not(#tourma-inline-specificity) {
+    color: #2dd4bf;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-003"]:not(#tourma-inline-specificity) {
+    align-items:center;
+    gap:0.4rem;
+    font-size:0.85rem;
+    font-weight:600;
+    color:#f8fafc;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-004"]:not(#tourma-inline-specificity) {
+    width:17px;
+    height:17px;
+    accent-color:#2dd4bf;
+    cursor:pointer;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-005"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-006"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-left: 1rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-007"]:not(#tourma-inline-specificity) {
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-008"]:not(#tourma-inline-specificity) {
+    font-size: 2.8rem;
+    color: #2dd4bf;
+    margin-bottom: 1rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-009"]:not(#tourma-inline-specificity) {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0 0 0.5rem 0;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-010"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0 0 1.25rem 0;
+    max-width: 520px;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-011"]:not(#tourma-inline-specificity) {
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 650px;
+    margin-bottom: 1.25rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-012"]:not(#tourma-inline-specificity) {
+    padding: 0.5rem 1.25rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-013"]:not(#tourma-inline-specificity) {
+    cursor:pointer;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-014"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-015"]:not(#tourma-inline-specificity) {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-016"]:not(#tourma-inline-specificity) {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(45, 212, 191, 0.15);
+    color: #2dd4bf;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.35rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-017"]:not(#tourma-inline-specificity) {
+    font-size: 0.78rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-018"]:not(#tourma-inline-specificity) {
+    color: #2dd4bf;
+    font-size: 0.8rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-019"]:not(#tourma-inline-specificity) {
+    align-items:center;
+    gap:0.4rem;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-020"]:not(#tourma-inline-specificity) {
+    background:transparent;
+    border:none;
+    color:#94a3b8;
+    font-size:0.85rem;
+    cursor:pointer;
+    padding:0.2rem 0.4rem;
+    border-radius:4px;
+    transition:color 0.2s ease;
+}
+
+/* web/js/manage-group.js */
+[data-ui-style="manage-group-js-021"]:not(#tourma-inline-specificity) {
+    margin-left: 0.4rem;
+}

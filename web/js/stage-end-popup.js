@@ -414,10 +414,10 @@
             if (!loader) {
                 loader = document.createElement('div');
                 loader.id = 'stageEndTransitionOverlay';
-                loader.style.cssText = 'position: fixed; inset: 0; z-index: 99999; background: rgba(10, 15, 29, 0.75); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #fff; font-family: Lexend, sans-serif;';
-                loader.innerHTML = '<div style="width: 44px; height: 44px; border: 4px solid rgba(45, 212, 191, 0.2); border-top-color: #2dd4bf; border-radius: 50%; animation: stageSpin 0.7s linear infinite;"></div>' +
-                                   '<div id="stageEndTransitionMsg" style="font-size: 1.05rem; font-weight: 600; color: #f1f5f9; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">' + (msg || 'Đang chuyển sang Vòng 2...') + '</div>' +
-                                   '<style>@keyframes stageSpin { to { transform: rotate(360deg); } }</style>';
+                loader.setAttribute('data-ui-style', 'stage-end-transition-overlay');
+                loader.style.display = 'flex';
+                loader.innerHTML = '<div data-ui-style="stage-end-popup-js-001"></div>' +
+                                   '<div id="stageEndTransitionMsg" data-ui-style="stage-end-popup-js-002">' + (msg || 'Đang chuyển sang Vòng 2...') + '</div>';
                 document.body.appendChild(loader);
             } else {
                 var msgEl = document.getElementById('stageEndTransitionMsg');
@@ -662,7 +662,7 @@
                     '</div>' +
                     '<div class="stage-end-modal-body">' +
                         '<p>Mở khóa Vòng 1 sẽ cho phép chỉnh sửa lại tỉ số các trận đấu.</p>' +
-                        '<p style="margin-top: 0.5rem; color: #f59e0b; font-size: 0.85rem;">' +
+                        '<p data-ui-style="stage-end-popup-js-003">' +
                             '⚠️ Mở khóa sẽ xóa toàn bộ nhánh và kết quả Vòng 2. Xác nhận lại Vòng 1 sẽ tạo nhánh Vòng 2 mới.' +
                         '</p>' +
                     '</div>' +

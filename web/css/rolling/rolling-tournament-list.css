@@ -1,4 +1,4 @@
-/* 
+/*
     TOURMA - ROLLING SUB-TOURNAMENT LIST STYLESHEET
     Modern dark mode glassmorphism design for sub-tournament cards & table
 */
@@ -187,4 +187,322 @@
 .btn-action-edit:hover {
     background: rgba(255, 255, 255, 0.12);
     color: #ffffff;
+}
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-001"]:not(#tourma-inline-specificity) {
+    max-width: 950px;
+    padding: 1.5rem 1rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-002"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-003"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-004"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1.5rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-005"]:not(#tourma-inline-specificity) {
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-006"]:not(#tourma-inline-specificity) {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 0.25rem 0;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-007"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-008"]:not(#tourma-inline-specificity) {
+    font-weight: 800;
+    font-size: 0.9rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 10px;
+    text-decoration: none;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-009"]:not(#tourma-inline-specificity) {
+    margin: 0;
+    align-items: center;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-010"]:not(#tourma-inline-specificity) {
+    margin-left: 0.55rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-011"]:not(#tourma-inline-specificity) {
+    margin-top: 0.4rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-012"]:not(#tourma-inline-specificity) {
+    color: #f8fafc;
+    font-weight: 700;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-013"]:not(#tourma-inline-specificity) {
+    color: #fbbf24;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-014"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    padding: 3rem;
+    background: rgba(18, 22, 31, 0.7);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    color: #94a3b8;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-015"]:not(#tourma-inline-specificity) {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: #fbbf24;
+    opacity: 0.5;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-016"]:not(#tourma-inline-specificity) {
+    color: #ffffff;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-017"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    margin-bottom: 1.25rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-018"]:not(#tourma-inline-specificity) {
+    font-weight: 800;
+    text-decoration: none;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-019"]:not(#tourma-inline-specificity) {
+    border-color: rgba(244, 63, 94, 0.4);
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-020"]:not(#tourma-inline-specificity) {
+    border-bottom: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-021"]:not(#tourma-inline-specificity) {
+    color: #f43f5e;
+    font-size: 0.95rem;
+    font-weight: 800;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-022"]:not(#tourma-inline-specificity) {
+    padding: 1.25rem 1rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-023"]:not(#tourma-inline-specificity) {
+    background: rgba(244, 63, 94, 0.08);
+    border: 1px solid rgba(244, 63, 94, 0.2);
+    border-radius: 8px;
+    padding: 0.85rem;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-024"]:not(#tourma-inline-specificity) {
+    color: #f43f5e;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-025"]:not(#tourma-inline-specificity) {
+    color: #ffffff;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-026"]:not(#tourma-inline-specificity) {
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    margin: 0 0 0.35rem 0;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-027"]:not(#tourma-inline-specificity) {
+    color: #f43f5e;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-028"]:not(#tourma-inline-specificity) {
+    justify-content: flex-end;
+    gap: 0.65rem;
+    padding: 0.85rem 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-029"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    padding: 0.45rem 1rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-030"]:not(#tourma-inline-specificity) {
+    background: #f43f5e;
+    color: #ffffff;
+    border: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.45rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-031"]:not(#tourma-inline-specificity) {
+    border-color: rgba(45, 212, 191, 0.4);
+    max-width: 490px;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-032"]:not(#tourma-inline-specificity) {
+    border-bottom: 1px solid rgba(45, 212, 191, 0.2);
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-033"]:not(#tourma-inline-specificity) {
+    color: #2dd4bf;
+    font-size: 0.95rem;
+    font-weight: 800;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-034"]:not(#tourma-inline-specificity) {
+    padding: 1.25rem 1rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-035"]:not(#tourma-inline-specificity) {
+    background: rgba(45, 212, 191, 0.08);
+    border: 1px solid rgba(45, 212, 191, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-036"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-037"]:not(#tourma-inline-specificity) {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    margin-bottom: 0.35rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-038"]:not(#tourma-inline-specificity) {
+    width: 100%;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-039"]:not(#tourma-inline-specificity) {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 0.5rem;
+    align-items: flex-start;
+    gap: 0.6rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-040"]:not(#tourma-inline-specificity) {
+    margin-top: 0.15rem;
+    font-size: 0.9rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-041"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-042"]:not(#tourma-inline-specificity) {
+    justify-content: flex-end;
+    gap: 0.65rem;
+    padding: 0.85rem 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-043"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    padding: 0.45rem 1rem;
+}
+
+/* web/common/rolling/rolling-tournament-list.jsp */
+[data-ui-style="rolling-tournament-list-jsp-044"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.45rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+    align-items: center;
+    gap: 0.4rem;
 }

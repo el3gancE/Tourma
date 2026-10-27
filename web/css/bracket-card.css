@@ -367,3 +367,58 @@ body.quick-mode-active .match-card:not(.disabled-unconfirmed):not(.bye-match-car
 body.quick-mode-active .match-card-item:not(.disabled-unconfirmed):not(.bye-match-item) .match-team-side:not(.bye-team):hover .match-list-name {
     color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/js/bracket-card.js */
+[data-ui-style="bracket-card-js-001"]:not(#tourma-inline-specificity) {
+    color:#2dd4bf;
+}
+
+/* web/js/bracket-card.js */
+[data-ui-style="bracket-card-js-002"]:not(#tourma-inline-specificity) {
+    background:rgba(45,212,191,0.2);
+    color:#2dd4bf;
+    border-color:rgba(45,212,191,0.4);
+}
+
+/* web/js/bracket-card.js */
+[data-ui-style="bracket-card-js-003"]:not(#tourma-inline-specificity) {
+    background:rgba(45,212,191,0.25);
+    color:#2dd4bf;
+}
+
+/* web/js/bracket-card.js */
+[data-ui-style="bracket-card-js-004"]:not(#tourma-inline-specificity) {
+    color:#2dd4bf;
+}
+
+/* web/js/bracket-card.js */
+[data-ui-style="bracket-card-js-005"]:not(#tourma-inline-specificity) {
+    font-size:0.75rem;
+}
+
+/* web/js/bracket-card.js */
+[data-ui-style="bracket-card-js-006"]:not(#tourma-inline-specificity) {
+    background:rgba(45,212,191,0.25);
+    color:#2dd4bf;
+}
+
+/* web/js/bracket-card.js */
+[data-ui-style="bracket-card-js-007"]:not(#tourma-inline-specificity) {
+    color:#2dd4bf;
+}
+
+/* web/js/bracket-card.js */
+[data-ui-style="bracket-card-js-008"]:not(#tourma-inline-specificity) {
+    font-size:0.75rem;
+}
+
+/* web/js/bracket-card.js */
+[data-ui-style="bracket-card-js-009"]:not(#tourma-inline-specificity) {
+    color: #64748b;
+    font-style: italic;
+    font-size: 0.65rem;
+}

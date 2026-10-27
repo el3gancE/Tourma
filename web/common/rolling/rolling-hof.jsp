@@ -70,11 +70,11 @@
     </jsp:include>
 
     <!-- Main Content with Sidebar Layout -->
-    <main class="container has-sidebar" style="max-width: 1280px; padding: 1.5rem 1.25rem;">
+    <main class="container has-sidebar" data-ui-style="rolling-hof-jsp-001">
 
         <!-- Breadcrumb -->
-        <div style="margin-bottom: 1.1rem;">
-            <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= seriesIdVal %>" class="text-muted" style="font-size: 0.85rem; font-weight: 600; text-decoration: none;">
+        <div data-ui-style="rolling-hof-jsp-002">
+            <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= seriesIdVal %>" class="text-muted" data-ui-style="rolling-hof-jsp-003">
                 <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard Series
             </a>
         </div>
@@ -129,15 +129,15 @@
                 <div class="hof-table-wrapper">
                     <table class="hof-table" id="hofTourneyTable">
                         <colgroup>
-                            <col style="width: 44%;">
-                            <col style="width: 42%;">
-                            <col style="width: 14%;">
+                            <col data-ui-style="rolling-hof-jsp-004">
+                            <col data-ui-style="rolling-hof-jsp-005">
+                            <col data-ui-style="rolling-hof-jsp-006">
                         </colgroup>
                         <thead>
                             <tr>
-                                <th class="text-left" style="text-align: left !important;">Giải</th>
-                                <th class="text-left" style="text-align: left !important;">Nhà vô địch</th>
-                                <th class="text-right" style="text-align: right !important;">Lần thứ</th>
+                                <th class="text-left" data-ui-style="rolling-hof-jsp-007">Giải</th>
+                                <th class="text-left" data-ui-style="rolling-hof-jsp-008">Nhà vô địch</th>
+                                <th class="text-right" data-ui-style="rolling-hof-jsp-009">Lần thứ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -149,7 +149,7 @@
                                     boolean isCompleted = (tc.getChampionTeamName() != null && !tc.getChampionTeamName().trim().isEmpty());
                             %>
                                 <tr data-tourney-id="<%= t.getId() %>" data-tier="<%= tier %>">
-                                    <td class="text-left" style="text-align: left !important;">
+                                    <td class="text-left" data-ui-style="rolling-hof-jsp-010">
                                         <div class="hof-tourney-name-wrap">
                                             <a href="<%= tc.getFinalStageUrl() %>" class="hof-tourney-link" title="Bấm để xem giai đoạn cuối giải <%= t.getName() %>">
                                                 <%= t.getName() %>
@@ -157,7 +157,7 @@
                                             <span class="hof-tier-text tier-<%= tier.toLowerCase() %>">[<%= tier %>]</span>
                                         </div>
                                     </td>
-                                    <td class="hof-tourney-champ-cell text-left" style="text-align: left !important;">
+                                    <td class="hof-tourney-champ-cell text-left" data-ui-style="rolling-hof-jsp-011">
                                         <% if (isCompleted) { %>
                                             <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&teamName=<%= java.net.URLEncoder.encode(tc.getChampionTeamName(), "UTF-8") %>" class="hof-champ-name-link" title="Xem hồ sơ đội <%= tc.getChampionTeamName() %>">
                                                 <%= tc.getChampionTeamName() %>
@@ -166,7 +166,7 @@
                                             <span class="hof-champ-empty">-</span>
                                         <% } %>
                                     </td>
-                                    <td class="hof-tourney-ordinal-cell text-right" style="text-align: right !important;">
+                                    <td class="hof-tourney-ordinal-cell text-right" data-ui-style="rolling-hof-jsp-012">
                                         <% if (isCompleted) { %>
                                             <span class="hof-ordinal-text"><%= tc.getChampionshipOrdinal() %></span>
                                         <% } else { %>
@@ -177,7 +177,7 @@
                             <% }
                             } else { %>
                                 <tr>
-                                    <td colspan="3" style="text-align: center; padding: 2rem; color: #64748b;">
+                                    <td colspan="3" data-ui-style="rolling-hof-jsp-013">
                                         Chưa có giải đấu con nào trong chuỗi giải này.
                                     </td>
                                 </tr>
@@ -222,13 +222,13 @@
                 <div class="hof-table-wrapper">
                     <table class="hof-table" id="hofChampionsTable">
                         <colgroup>
-                            <col style="width: 65%;">
-                            <col style="width: 35%;">
+                            <col data-ui-style="rolling-hof-jsp-014">
+                            <col data-ui-style="rolling-hof-jsp-015">
                         </colgroup>
                         <thead>
                             <tr>
-                                <th class="text-left" style="text-align: left !important;">Tên</th>
-                                <th class="text-right" style="text-align: right !important;">Số lần vô địch</th>
+                                <th class="text-left" data-ui-style="rolling-hof-jsp-016">Tên</th>
+                                <th class="text-right" data-ui-style="rolling-hof-jsp-017">Số lần vô địch</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -237,19 +237,19 @@
                                     TeamChampionStatsDTO champ = topChampionsList.get(idx);
                             %>
                                 <tr data-team-name="<%= champ.getTeamName() %>" data-tier-s="<%= champ.getTierSCount() %>" data-tier-a="<%= champ.getTierACount() %>" data-tier-b="<%= champ.getTierBCount() %>" data-tier-c="<%= champ.getTierCCount() %>" data-tier-d="<%= champ.getTierDCount() %>" data-total="<%= champ.getTotalChampionships() %>">
-                                    <td class="text-left" style="text-align: left !important;">
+                                    <td class="text-left" data-ui-style="rolling-hof-jsp-018">
                                         <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&teamName=<%= java.net.URLEncoder.encode(champ.getTeamName(), "UTF-8") %>" class="hof-team-link" title="Xem hồ sơ đội <%= champ.getTeamName() %>">
                                             <%= champ.getTeamName() %>
                                         </a>
                                     </td>
-                                    <td class="text-right" style="text-align: right !important;">
+                                    <td class="text-right" data-ui-style="rolling-hof-jsp-019">
                                         <span class="hof-win-count-text"><%= champ.getTotalChampionships() %></span>
                                     </td>
                                 </tr>
                             <% }
                             } else { %>
                                 <tr>
-                                    <td colspan="2" style="text-align: center; padding: 2rem; color: #64748b;">
+                                    <td colspan="2" data-ui-style="rolling-hof-jsp-020">
                                         Chưa có đội bóng nào lên ngôi vô địch.
                                     </td>
                                 </tr>

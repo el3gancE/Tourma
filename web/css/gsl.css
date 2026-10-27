@@ -592,3 +592,103 @@ textarea,
     color: var(--grp-color, #2dd4bf) !important;
     border: 1px solid var(--grp-color, #2dd4bf) !important;
 }
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/gsl.jsp */
+[data-ui-style="gsl-jsp-001"]:not(#tourma-inline-specificity) {
+    width: 100%;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-001"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: #121620;
+    border: 1px dashed rgba(45,212,191,0.3);
+    border-radius: 12px;
+    margin: 2rem auto;
+    max-width: 560px;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-002"]:not(#tourma-inline-specificity) {
+    font-size: 2.8rem;
+    color: #2dd4bf;
+    margin-bottom: 1rem;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-003"]:not(#tourma-inline-specificity) {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0 0 0.5rem 0;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-004"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0 0 1.5rem 0;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-005"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    padding: 0.55rem 1.35rem;
+    text-decoration: none;
+    border-radius: 8px;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-006"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: #121620;
+    border: 1px dashed rgba(45,212,191,0.3);
+    border-radius: 12px;
+    margin: 2rem auto;
+    max-width: 560px;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-007"]:not(#tourma-inline-specificity) {
+    font-size: 2.8rem;
+    color: #2dd4bf;
+    margin-bottom: 1rem;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-008"]:not(#tourma-inline-specificity) {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0 0 0.5rem 0;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-009"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0 0 1.5rem 0;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-010"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    padding: 0.55rem 1.35rem;
+    text-decoration: none;
+    border-radius: 8px;
+}
+
+/* web/js/gsl.js */
+[data-ui-style="gsl-js-011"]:not(#tourma-inline-specificity) {
+    padding:10px;
+    font-size:0.8rem;
+}

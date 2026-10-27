@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%-- 
+<%--
     Document   : tournament-navbar.jsp
     Description: Reusable Top Navigation & Control Bar Component for All Tournament Formats
 --%>
@@ -148,11 +148,11 @@
 <!-- RESET BRACKET CONFIRMATION MODAL -->
 <div id="seResetModalBackdrop" class="tourma-modal-backdrop"
     onclick="if(event.target === this) window.TourmaNavbar && window.TourmaNavbar.closeResetModal();">
-    <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);"
+    <div class="tourma-modal-card" data-ui-style="tournament-navbar-jsp-001"
         onclick="event.stopPropagation();">
-        <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
+        <div class="modal-header-bar" data-ui-style="tournament-navbar-jsp-002">
             <div class="modal-header-title"
-                style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                data-ui-style="tournament-navbar-jsp-003" style="display: flex;">
                 <i class="fa-solid fa-rotate-right"></i>
                 <span><%= resetModalTitle %></span>
             </div>
@@ -162,23 +162,23 @@
             </button>
         </div>
 
-        <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+        <div class="modal-body-content" data-ui-style="tournament-navbar-jsp-004">
             <div
-                style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
-                <strong style="color: #f43f5e;">⚠️ Cảnh báo quan trọng:</strong><br>
+                data-ui-style="tournament-navbar-jsp-005">
+                <strong data-ui-style="tournament-navbar-jsp-006">⚠️ Cảnh báo quan trọng:</strong><br>
                 <%= resetWarningText %>
             </div>
-            <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
+            <p data-ui-style="tournament-navbar-jsp-007">
                 Bạn có chắc chắn muốn thiết lập lại toàn bộ không?
             </p>
         </div>
 
-        <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem;">
+        <div class="modal-footer-bar" data-ui-style="tournament-navbar-jsp-008" style="display: flex;">
             <button type="button" class="btn btn-secondary"
                 onclick="window.TourmaNavbar && window.TourmaNavbar.closeResetModal()"
-                style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
+                data-ui-style="tournament-navbar-jsp-009">Hủy Bỏ</button>
             <button type="button" class="btn"
-                style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;"
+                data-ui-style="tournament-navbar-jsp-010"
                 onclick="window.TourmaNavbar && window.TourmaNavbar.confirmReset()">
                 <i class="fa-solid fa-rotate-right"></i> Xác Nhận Reset
             </button>

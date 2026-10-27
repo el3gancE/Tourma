@@ -388,3 +388,259 @@
   display: inline-block;
 }
 
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-001"]:not(#tourma-inline-specificity) {
+    max-width: 1050px;
+    padding: 1.5rem 1.25rem 3rem 1.25rem;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-002"]:not(#tourma-inline-specificity) {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-003"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-004"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-005"]:not(#tourma-inline-specificity) {
+    color: #cbd5e1;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-006"]:not(#tourma-inline-specificity) {
+    color: #cbd5e1;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-007"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-008"]:not(#tourma-inline-specificity) {
+    color: #f97316;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-009"]:not(#tourma-inline-specificity) {
+    color: #f97316;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-010"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-011"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-012"]:not(#tourma-inline-specificity) {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-013"]:not(#tourma-inline-specificity) {
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-014"]:not(#tourma-inline-specificity) {
+    margin: 0;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-015"]:not(#tourma-inline-specificity) {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-016"]:not(#tourma-inline-specificity) {
+    width: 50px;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-017"]:not(#tourma-inline-specificity) {
+    text-align: right;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-018"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-019"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-020"]:not(#tourma-inline-specificity) {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 700;
+    transition: color 0.18s ease;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-021"]:not(#tourma-inline-specificity) {
+    margin-left: 0.55rem;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-022"]:not(#tourma-inline-specificity) {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-023"]:not(#tourma-inline-specificity) {
+    text-align: right;
+    font-weight: 800;
+    color: #fbbf24;
+}
+
+/* web/common/team-profile.jsp */
+[data-ui-style="team-profile-jsp-024"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    padding: 2.5rem;
+    color: var(--text-muted);
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-001"]:not(#tourma-inline-specificity) {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-002"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-003"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-004"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-005"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-006"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-007"]:not(#tourma-inline-specificity) {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-008"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-009"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-010"]:not(#tourma-inline-specificity) {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 700;
+    transition: color 0.18s ease;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-011"]:not(#tourma-inline-specificity) {
+    margin-left: 0.55rem;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-012"]:not(#tourma-inline-specificity) {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-013"]:not(#tourma-inline-specificity) {
+    text-align: right;
+    font-weight: 800;
+    color: #fbbf24;
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-014"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    padding: 2.5rem;
+    color: var(--text-muted);
+}
+
+/* web/js/team-profile.js */
+[data-ui-style="team-profile-js-015"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}

@@ -56,7 +56,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manage-group.css?v=<%= System.currentTimeMillis() %>">
 </head>
-<body style="background: #0b0d12; color: #f8fafc;">
+<body data-ui-style="manage-group-jsp-001">
 
     <jsp:include page="/common/component/header.jsp">
         <jsp:param name="active" value="tournaments"/>
@@ -69,19 +69,19 @@
     </jsp:include>
 
     <div class="mg-container has-sidebar">
-        
+
         <!-- HEADER BAR -->
         <div class="mg-header">
             <div>
                 <h1 class="mg-title">
                     <i class="fa-solid fa-pen-to-square"></i> Quản Lý & Điều Chỉnh Chia Bảng
                 </h1>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #94a3b8;">
+                <p data-ui-style="manage-group-jsp-002">
                     Bạn có thể chọn bảng đấu để di chuyển các đội bóng giữa các bảng trước khi thi đấu.
                 </p>
             </div>
 
-            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <div data-ui-style="manage-group-jsp-003" style="display: flex;">
                 <!-- Custom Quick Create Dropdown Menu -->
                 <div class="mg-dropdown-container" id="quickGroupDropdownContainer">
                     <button type="button" class="btn-mg-quick-dropdown" id="btnQuickGroupDropdown" onclick="TourmaManageGroup.toggleQuickDropdown(event)" title="Tạo nhanh số lượng bảng đấu">
@@ -130,11 +130,11 @@
                 <button type="button" class="btn-mg-distribute" onclick="TourmaManageGroup.handleAutoDistribute()">
                     Ngẫu Nhiên
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.clearAllGroups()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; border-color: rgba(244,63,94,0.3); color: #f43f5e;" title="Xóa tất cả các bảng và đưa toàn bộ đội về danh sách chưa xếp">
+                <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.clearAllGroups()" data-ui-style="manage-group-jsp-004" title="Xóa tất cả các bảng và đưa toàn bộ đội về danh sách chưa xếp">
                     <i class="fa-solid fa-rotate-left"></i> Xóa Hết Bảng
                 </button>
-                <button type="button" class="btn btn-mint" onclick="TourmaManageGroup.saveAndReturn()" style="font-size: 0.8rem; padding: 0.45rem 0.9rem; font-weight: 700;">
-                    Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>
+                <button type="button" class="btn btn-mint" onclick="TourmaManageGroup.saveAndReturn()" data-ui-style="manage-group-jsp-005">
+                    Tiếp theo <i class="fa-solid fa-arrow-right" data-ui-style="manage-group-jsp-006"></i>
                 </button>
             </div>
         </div>
@@ -144,38 +144,38 @@
     </div>
 
     <!-- MODAL POPUP: CHỌN ĐỘI VÀO BẢNG -->
-    <div id="addTeamToGroupModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) TourmaManageGroup.closeAddTeamModal();" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:9999; justify-content:center; align-items:center;">
-        <div class="tourma-modal-card" style="background:#121620; border:1px solid rgba(45,212,191,0.3); border-radius:12px; max-width:480px; width:90%; padding:1.25rem; box-shadow:0 8px 32px rgba(0,0,0,0.5);" onclick="event.stopPropagation();">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:0.75rem; margin-bottom:1rem;">
-                <div style="font-weight:800; font-size:1rem; color:#2dd4bf; display:flex; align-items:center; gap:0.5rem;">
+    <div id="addTeamToGroupModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) TourmaManageGroup.closeAddTeamModal();" data-ui-style="manage-group-jsp-007" style="display:none;">
+        <div class="tourma-modal-card" data-ui-style="manage-group-jsp-008" onclick="event.stopPropagation();">
+            <div data-ui-style="manage-group-jsp-009" style="display:flex;">
+                <div data-ui-style="manage-group-jsp-010" style="display:flex;">
                     <i class="fa-solid fa-user-plus"></i> <span id="modalGroupTitleDisplay">Thêm Đội Vào Bảng</span>
                 </div>
-                <button type="button" onclick="TourmaManageGroup.closeAddTeamModal()" style="background:transparent; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer;">
+                <button type="button" onclick="TourmaManageGroup.closeAddTeamModal()" data-ui-style="manage-group-jsp-011">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            
+
             <!-- Search and Quick Action Bar -->
-            <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; align-items:center;">
-                <div style="position:relative; flex:1;">
-                    <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); font-size:0.75rem; color:#94a3b8;"></i>
-                    <input type="text" id="modalTeamSearchInput" placeholder="Tìm kiếm tên đội..." oninput="TourmaManageGroup.filterModalTeams(this.value)" style="width:100%; box-sizing:border-box; background:#0b0d12; border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:0.4rem 0.6rem 0.4rem 2rem; color:#f8fafc; font-size:0.8rem; font-family:inherit; outline:none;">
+            <div data-ui-style="manage-group-jsp-012" style="display:flex;">
+                <div data-ui-style="manage-group-jsp-013">
+                    <i class="fa-solid fa-magnifying-glass" data-ui-style="manage-group-jsp-014"></i>
+                    <input type="text" id="modalTeamSearchInput" placeholder="Tìm kiếm tên đội..." oninput="TourmaManageGroup.filterModalTeams(this.value)" data-ui-style="manage-group-jsp-015">
                 </div>
-                <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.selectAllModalTeams(true)" style="font-size:0.72rem; padding:0.35rem 0.65rem; white-space:nowrap; background:#181d29; border-color:rgba(255,255,255,0.15);">Chọn Tất Cả</button>
-                <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.selectAllModalTeams(false)" style="font-size:0.72rem; padding:0.35rem 0.65rem; white-space:nowrap; background:#181d29; border-color:rgba(255,255,255,0.15);">Bỏ Chọn</button>
+                <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.selectAllModalTeams(true)" data-ui-style="manage-group-jsp-016">Chọn Tất Cả</button>
+                <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.selectAllModalTeams(false)" data-ui-style="manage-group-jsp-017">Bỏ Chọn</button>
             </div>
 
-            <div style="max-height:280px; overflow-y:auto; padding-right:0.25rem; margin-bottom:1.25rem;" id="modalTeamChecklistContainer">
+            <div data-ui-style="manage-group-jsp-018" id="modalTeamChecklistContainer">
                 <!-- Checklist items injected via JS -->
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.1); padding-top:0.85rem;">
-                <div style="font-size:0.78rem; color:#94a3b8;">
-                    Đã chọn: <strong id="modalSelectedCountDisplay" style="color:#2dd4bf;">0</strong> đội
+            <div data-ui-style="manage-group-jsp-019" style="display:flex;">
+                <div data-ui-style="manage-group-jsp-020">
+                    Đã chọn: <strong id="modalSelectedCountDisplay" data-ui-style="manage-group-jsp-021">0</strong> đội
                 </div>
-                <div style="display:flex; gap:0.5rem;">
-                    <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.closeAddTeamModal()" style="font-size:0.8rem; padding:0.45rem 0.9rem;">Hủy Bỏ</button>
-                    <button type="button" class="btn btn-mint" onclick="TourmaManageGroup.confirmAddTeamsToGroup()" style="font-size:0.8rem; padding:0.45rem 1rem;">
+                <div data-ui-style="manage-group-jsp-022" style="display:flex;">
+                    <button type="button" class="btn btn-secondary" onclick="TourmaManageGroup.closeAddTeamModal()" data-ui-style="manage-group-jsp-023">Hủy Bỏ</button>
+                    <button type="button" class="btn btn-mint" onclick="TourmaManageGroup.confirmAddTeamsToGroup()" data-ui-style="manage-group-jsp-024">
                         <i class="fa-solid fa-check"></i> Xác Nhận Thêm
                     </button>
                 </div>

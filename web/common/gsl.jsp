@@ -173,7 +173,7 @@
 
         <!-- Main Content Area -->
         <main class="container has-sidebar">
-            
+
             <!-- Tournament Navbar Component -->
             <jsp:include page="/common/component/tournament-navbar.jsp">
                 <jsp:param name="tourneyName" value="<%= tourneyName %>" />
@@ -195,7 +195,7 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
-            <div id="gslEmptyAlertContainer" style="display: none; width: 100%;"></div>
+            <div id="gslEmptyAlertContainer" data-ui-style="gsl-jsp-001" style="display: none;"></div>
 
             <!-- 1. MULTI-GROUP VIEWPORTS WORKSPACE -->
             <div id="gslGroupsWorkspace" class="gsl-groups-workspace"></div>

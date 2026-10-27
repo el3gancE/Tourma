@@ -90,3 +90,382 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
   position: relative;
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-001"]:not(#tourma-inline-specificity) {
+    max-width: 900px;
+    padding: 1.5rem 1rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-002"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-003"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-004"]:not(#tourma-inline-specificity) {
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-005"]:not(#tourma-inline-specificity) {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 0.25rem 0;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-006"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-007"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-008"]:not(#tourma-inline-specificity) {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #f1f5f9;
+    font-weight: 700;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    align-items: center;
+    gap: 0.45rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-009"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-010"]:not(#tourma-inline-specificity) {
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-011"]:not(#tourma-inline-specificity) {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-012"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-013"]:not(#tourma-inline-specificity) {
+    max-width: 230px;
+    font-size: 0.82rem;
+    border-radius: 8px;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-014"]:not(#tourma-inline-specificity) {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    cursor: pointer;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-015"]:not(#tourma-inline-specificity) {
+    width: 50px;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-016"]:not(#tourma-inline-specificity) {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-017"]:not(#tourma-inline-specificity) {
+    margin-left: 4px;
+    color: #2dd4bf;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-018"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    width: 170px;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-019"]:not(#tourma-inline-specificity) {
+    margin-left: 4px;
+    color: #64748b;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-020"]:not(#tourma-inline-specificity) {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-021"]:not(#tourma-inline-specificity) {
+    margin-left: 4px;
+    color: #64748b;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-022"]:not(#tourma-inline-specificity) {
+    text-align: right;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-023"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    color: var(--team-text-muted);
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-024"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-025"]:not(#tourma-inline-specificity) {
+    color: #ffffff;
+    text-decoration: none;
+    transition: color 0.18s ease;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-026"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    font-weight: 700;
+    color: var(--team-text-muted);
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-027"]:not(#tourma-inline-specificity) {
+    color: var(--team-text-muted);
+    font-size: 0.82rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-028"]:not(#tourma-inline-specificity) {
+    text-align: right;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-029"]:not(#tourma-inline-specificity) {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-030"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    padding: 3rem;
+    color: var(--team-text-muted);
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-031"]:not(#tourma-inline-specificity) {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.5;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-032"]:not(#tourma-inline-specificity) {
+    max-width: 560px;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-033"]:not(#tourma-inline-specificity) {
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-034"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.65rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-035"]:not(#tourma-inline-specificity) {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: rgba(45, 212, 191, 0.15);
+    align-items: center;
+    justify-content: center;
+    color: #2dd4bf;
+    font-size: 1.15rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-036"]:not(#tourma-inline-specificity) {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-037"]:not(#tourma-inline-specificity) {
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-038"]:not(#tourma-inline-specificity) {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: color 0.15s ease;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-039"]:not(#tourma-inline-specificity) {
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-040"]:not(#tourma-inline-specificity) {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-041"]:not(#tourma-inline-specificity) {
+    color: #2dd4bf;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-042"]:not(#tourma-inline-specificity) {
+    font-size: 0.78rem;
+    color: #2dd4bf;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-043"]:not(#tourma-inline-specificity) {
+    width: 100%;
+    height: 280px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #f8fafc;
+    padding: 0.85rem 1rem;
+    resize: vertical;
+    outline: none;
+    box-sizing: border-box;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-044"]:not(#tourma-inline-specificity) {
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.25rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-045"]:not(#tourma-inline-specificity) {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    font-weight: 600;
+    font-size: 0.82rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-046"]:not(#tourma-inline-specificity) {
+    gap: 0.65rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-047"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+/* web/common/rolling/rolling-team-list.jsp */
+[data-ui-style="rolling-team-list-jsp-048"]:not(#tourma-inline-specificity) {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+}

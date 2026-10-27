@@ -49,7 +49,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
 </head>
-<body style="background: #0b0d12; color: #f8fafc;">
+<body data-ui-style="group-standing-jsp-001">
 
     <!-- EMPTY TEAM ALERT COMPONENT -->
     <jsp:include page="/common/component/empty-team-alert.jsp" />
@@ -67,7 +67,7 @@
     </jsp:include>
 
     <main class="container has-sidebar round-robin-container">
-        
+
         <!-- TOP CONTROL BAR (Round Robin / Group Stage Design Style) -->
         <div class="rr-control-bar">
             <div class="rr-info-group">
@@ -77,8 +77,8 @@
                 </h1>
                 <span class="format-badge-rr" title="Group Stage">GS</span>
                 <span id="gsTeamCountBadge" class="team-count-badge">0 Đội</span>
-                <span id="gsAdvanceBadge" class="team-count-badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <i class="fa-solid fa-circle-check" style="font-size: 0.75rem;"></i>
+                <span id="gsAdvanceBadge" class="team-count-badge" data-ui-style="group-standing-jsp-002" style="display: inline-flex;">
+                    <i class="fa-solid fa-circle-check" data-ui-style="group-standing-jsp-003"></i>
                     <span id="gsAdvanceText">0 Đội đi tiếp</span>
                 </span>
             </div>
@@ -89,10 +89,10 @@
                 </button>
 
                 <div class="view-mode-toggle-group">
-                    <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle" style="text-decoration: none;">
+                    <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle" data-ui-style="group-standing-jsp-004">
                         <i class="fa-solid fa-calendar-days"></i> Lịch
                     </a>
-                    <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle active" style="text-decoration: none;">
+                    <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle active" data-ui-style="group-standing-jsp-005">
                         <i class="fa-solid fa-ranking-star"></i> BXH
                     </a>
                 </div>
@@ -105,7 +105,7 @@
         </div>
 
         <!-- STANDINGS CONTAINER -->
-        <div id="gsStandingsContainer" class="gst-container" style="padding: 0;"></div>
+        <div id="gsStandingsContainer" class="gst-container" data-ui-style="group-standing-jsp-006"></div>
     </main>
 
     <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>

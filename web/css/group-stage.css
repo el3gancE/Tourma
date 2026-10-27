@@ -186,3 +186,94 @@
     font-family: 'Lexend', sans-serif !important;
 }
 
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/group-stage.jsp */
+[data-ui-style="group-stage-jsp-001"]:not(#tourma-inline-specificity) {
+    background: #0b0d12;
+    color: #f8fafc;
+}
+
+/* web/common/group-stage.jsp */
+[data-ui-style="group-stage-jsp-002"]:not(#tourma-inline-specificity) {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* web/common/group-stage.jsp */
+[data-ui-style="group-stage-jsp-003"]:not(#tourma-inline-specificity) {
+    font-size: 0.75rem;
+}
+
+/* web/common/group-stage.jsp */
+[data-ui-style="group-stage-jsp-004"]:not(#tourma-inline-specificity) {
+    text-decoration: none;
+}
+
+/* web/common/group-stage.jsp */
+[data-ui-style="group-stage-jsp-005"]:not(#tourma-inline-specificity) {
+    text-decoration: none;
+}
+
+/* web/common/group-stage.jsp */
+[data-ui-style="group-stage-jsp-006"]:not(#tourma-inline-specificity) {
+    width: 100%;
+}
+
+/* web/common/group-stage.jsp */
+[data-ui-style="group-stage-jsp-007"]:not(#tourma-inline-specificity) {
+    padding: 0;
+}
+
+/* web/js/group-stage.js */
+[data-ui-style="group-stage-js-001"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: #121620;
+    border: 1px dashed rgba(255,255,255,0.15);
+    border-radius: 12px;
+    margin: 1.5rem auto;
+    max-width: 540px;
+}
+
+/* web/js/group-stage.js */
+[data-ui-style="group-stage-js-002"]:not(#tourma-inline-specificity) {
+    font-size: 2.8rem;
+    color: #2dd4bf;
+    margin-bottom: 1rem;
+}
+
+/* web/js/group-stage.js */
+[data-ui-style="group-stage-js-003"]:not(#tourma-inline-specificity) {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0 0 0.5rem 0;
+}
+
+/* web/js/group-stage.js */
+[data-ui-style="group-stage-js-004"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0 0 1.5rem 0;
+}
+
+/* web/js/group-stage.js */
+[data-ui-style="group-stage-js-005"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    padding: 0.55rem 1.25rem;
+    text-decoration: none;
+}
+
+/* web/js/group-stage.js */
+[data-ui-style="group-stage-js-006"]:not(#tourma-inline-specificity) {
+    color: #fbbf24;
+}

@@ -421,7 +421,7 @@
 
             var totalRounds = this.roundsList.length;
             if (totalRounds === 0) {
-                container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted, #94a3b8); font-size: 15px;">Chưa có dữ liệu nhánh đấu.</div>';
+                container.innerHTML = '<div data-ui-style="single-elimination-js-001">Chưa có dữ liệu nhánh đấu.</div>';
                 return;
             }
 
@@ -745,7 +745,7 @@
             container.innerHTML = '';
 
             if (this.roundsList.length === 0) {
-                container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted, #94a3b8);">Chưa có trận đấu nào.</div>';
+                container.innerHTML = '<div data-ui-style="single-elimination-js-002">Chưa có trận đấu nào.</div>';
                 return;
             }
 

@@ -186,7 +186,7 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
-            <div id="singleEmptyAlertContainer" style="display: none; width: 100%;"></div>
+            <div id="singleEmptyAlertContainer" data-ui-style="single-elimination-jsp-001" style="display: none;"></div>
 
             <!-- MODE 1: BRACKET TREE VIEW (Inside Drag-to-Pan Viewport Frame) -->
             <div id="bracketViewportFrame" class="bracket-viewport-frame">
@@ -255,7 +255,7 @@
             window.TourmaTournamentType = "<%= tournamentType %>";
             window.TourmaCurrentStage = <%= currentStage %>;
             window.TourmaMultiStageConfig = <%= (dbMultiStageConfig != null && !dbMultiStageConfig.trim().isEmpty() && !dbMultiStageConfig.trim().equals("{}")) ? dbMultiStageConfig : "null" %>;
-            
+
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var dbTournamentStatus = '<%= dbTournamentStatus %>';

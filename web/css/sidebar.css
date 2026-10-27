@@ -145,3 +145,29 @@
 .sidebar-menu-link.active .active-thunder-icon {
     color: #2dd4bf;
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/component/sidebar.jsp */
+[data-ui-style="sidebar-jsp-001"]:not(#tourma-inline-specificity) {
+    color: #fbbf24;
+}
+
+/* web/common/component/sidebar.jsp */
+[data-ui-style="sidebar-jsp-002"]:not(#tourma-inline-specificity) {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.12);
+}
+
+/* web/common/component/sidebar.jsp */
+[data-ui-style="sidebar-jsp-003"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1.5rem;
+}
+
+/* web/common/component/sidebar.jsp */
+[data-ui-style="sidebar-jsp-004"]:not(#tourma-inline-specificity) {
+    margin-left: 0.55rem;
+    font-weight: 800;
+}

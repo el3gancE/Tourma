@@ -225,14 +225,14 @@
                         formHtml += '<span class="rr-form-badge ' + fClass + '">' + res + '</span>';
                     }
                 } else {
-                    formHtml += '<span style="color:#64748b; font-size:0.75rem;">-</span>';
+                    formHtml += '<span data-ui-style="round-robin-standings-js-001">-</span>';
                 }
                 formHtml += '</div>';
 
                 var gdDisplay = (row.goalDifference > 0) ? ('+' + row.goalDifference) : String(row.goalDifference);
 
                 tr.innerHTML =
-                    '<td style="width: 50px;">' +
+                    '<td data-ui-style="round-robin-standings-js-002">' +
                         '<span class="rr-rank-badge">' + row.rank + '</span>' +
                     '</td>' +
                     '<td>' +
@@ -240,14 +240,14 @@
                             '<span>' + row.team + '</span>' +
                         '</div>' +
                     '</td>' +
-                    '<td style="text-align: center;" class="rr-stat-cell">' + row.played + '</td>' +
-                    '<td style="text-align: center;" class="rr-stat-green">' + row.won + '</td>' +
-                    '<td style="text-align: center;" class="rr-stat-green">' + row.drawn + '</td>' +
-                    '<td style="text-align: center;" class="rr-stat-green">' + row.lost + '</td>' +
-                    '<td style="text-align: center;" class="rr-stat-cell">' + row.goalsFor + '</td>' +
-                    '<td style="text-align: center;" class="rr-stat-cell">' + row.goalsAgainst + '</td>' +
-                    '<td style="text-align: center;" class="rr-stat-cell">' + gdDisplay + '</td>' +
-                    '<td style="text-align: center;" class="rr-points-cell">' + row.points + '</td>' +
+                    '<td data-ui-style="round-robin-standings-js-003" class="rr-stat-cell">' + row.played + '</td>' +
+                    '<td data-ui-style="round-robin-standings-js-004" class="rr-stat-green">' + row.won + '</td>' +
+                    '<td data-ui-style="round-robin-standings-js-005" class="rr-stat-green">' + row.drawn + '</td>' +
+                    '<td data-ui-style="round-robin-standings-js-006" class="rr-stat-green">' + row.lost + '</td>' +
+                    '<td data-ui-style="round-robin-standings-js-007" class="rr-stat-cell">' + row.goalsFor + '</td>' +
+                    '<td data-ui-style="round-robin-standings-js-008" class="rr-stat-cell">' + row.goalsAgainst + '</td>' +
+                    '<td data-ui-style="round-robin-standings-js-009" class="rr-stat-cell">' + gdDisplay + '</td>' +
+                    '<td data-ui-style="round-robin-standings-js-010" class="rr-points-cell">' + row.points + '</td>' +
                     '<td>' + formHtml + '</td>';
 
                 tbody.appendChild(tr);

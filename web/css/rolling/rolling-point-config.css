@@ -1,0 +1,216 @@
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-001"]:not(#tourma-inline-specificity) {
+    max-width: 650px;
+    padding: 1.5rem 1rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-002"]:not(#tourma-inline-specificity) {
+    margin-bottom: 0.75rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-003"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-004"]:not(#tourma-inline-specificity) {
+    font-size: 1.5rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-005"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1rem;
+    font-size: 0.82rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-006"]:not(#tourma-inline-specificity) {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.78rem;
+    color: #fef3c7;
+    line-height: 1.5;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-007"]:not(#tourma-inline-specificity) {
+    font-weight: 800;
+    color: #fbbf24;
+    margin-bottom: 0.25rem;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-008"]:not(#tourma-inline-specificity) {
+    background: rgba(11, 13, 18, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-009"]:not(#tourma-inline-specificity) {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 1rem 0;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-010"]:not(#tourma-inline-specificity) {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-011"]:not(#tourma-inline-specificity) {
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-012"]:not(#tourma-inline-specificity) {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-013"]:not(#tourma-inline-specificity) {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-014"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-015"]:not(#tourma-inline-specificity) {
+    font-weight: 800;
+    color: #fbbf24;
+    font-size: 0.9rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-016"]:not(#tourma-inline-specificity) {
+    margin-right: 0.35rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-017"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-018"]:not(#tourma-inline-specificity) {
+    width: 110px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #fbbf24;
+    text-align: right;
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-019"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fbbf24;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-020"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-021"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    color: #f8fafc;
+    font-size: 0.85rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-022"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-023"]:not(#tourma-inline-specificity) {
+    width: 100px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-align: right;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-024"]:not(#tourma-inline-specificity) {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-025"]:not(#tourma-inline-specificity) {
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.75rem;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-026"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-027"]:not(#tourma-inline-specificity) {
+    font-weight: 800;
+    font-size: 0.95rem;
+    padding: 0.65rem 1.5rem;
+    border-radius: 8px;
+}
+
+/* web/common/rolling/rolling-point-config.jsp */
+[data-ui-style="rolling-point-config-jsp-028"]:not(#tourma-inline-specificity) {
+    margin-left: 0.4rem;
+}

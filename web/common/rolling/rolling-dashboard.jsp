@@ -31,13 +31,13 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><%= seriesName %> - Dashboard</title>
-        
+
         <!-- Google Fonts & FontAwesome -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        
+
         <!-- Design System CSS, Team Badges CSS & Dedicated Rolling Dashboard CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=<%= System.currentTimeMillis() %>">
@@ -57,7 +57,7 @@
         </jsp:include>
 
         <main class="container has-sidebar rolling-dashboard-wrapper">
-            
+
             <!-- Breadcrumb Navigation -->
             <div class="dashboard-breadcrumb">
                 <a href="${pageContext.request.contextPath}/my-series">
@@ -66,8 +66,8 @@
             </div>
 
             <!-- Series Title & Create Sub-Tournament CTA Row -->
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-                <h1 class="series-main-title" style="margin: 0;"><%= seriesName %></h1>
+            <div data-ui-style="rolling-dashboard-jsp-001" style="display: flex;">
+                <h1 class="series-main-title" data-ui-style="rolling-dashboard-jsp-002"><%= seriesName %></h1>
                 <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn-create-tourney-cta">
                     <i class="fa-solid fa-plus"></i> Tạo Giải Con Mới
                 </a>
@@ -81,7 +81,7 @@
 
             <!-- Top 4 KPI Metrics Grid -->
             <div class="dashboard-kpi-grid">
-                
+
                 <!-- KPI Card 1: Đội Đối Tác -->
                 <div class="dashboard-kpi-card">
                     <div>
@@ -154,7 +154,7 @@
                                 <span class="kpi-large-num cyan"><%= phaseSize %></span>
                                 <span class="kpi-unit">Giải mới nhất</span>
                             </div>
-                            <div class="kpi-icon-box cyan" onclick="openEditSeriesPopup()" style="cursor: pointer;" title="Bấm để chỉnh sửa cửa sổ trượt W">
+                            <div class="kpi-icon-box cyan" onclick="openEditSeriesPopup()" data-ui-style="rolling-dashboard-jsp-003" title="Bấm để chỉnh sửa cửa sổ trượt W">
                                 <i class="fa-solid fa-clock-rotate-left"></i>
                             </div>
                         </div>
@@ -168,7 +168,7 @@
 
             <!-- Bottom 2-Column Main Section -->
             <div class="dashboard-main-columns">
-                
+
                 <!-- Left Panel: Top Dẫn Đầu Chuỗi -->
                 <div class="dashboard-section-card">
                     <div class="section-header-bar">
@@ -198,12 +198,12 @@
                                 </div>
                                 <span class="rank-team-pts"><%= pts %> pts</span>
                             </div>
-                        <% } 
+                        <% }
                         } else { %>
-                            <div style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
-                                <i class="fa-solid fa-trophy" style="font-size: 2rem; color: #fbbf24; opacity: 0.45; margin-bottom: 0.65rem; display: block;"></i>
-                                <span style="font-size: 0.88rem; font-weight: 600;">Chưa có dữ liệu bảng xếp hạng</span>
-                                <p style="font-size: 0.78rem; margin-top: 0.25rem; color: #64748b;">Hãy tạo giải con và bắt đầu thi đấu để ghi nhận điểm tích lũy.</p>
+                            <div data-ui-style="rolling-dashboard-jsp-004">
+                                <i class="fa-solid fa-trophy" data-ui-style="rolling-dashboard-jsp-005" style="display: block;"></i>
+                                <span data-ui-style="rolling-dashboard-jsp-006">Chưa có dữ liệu bảng xếp hạng</span>
+                                <p data-ui-style="rolling-dashboard-jsp-007">Hãy tạo giải con và bắt đầu thi đấu để ghi nhận điểm tích lũy.</p>
                             </div>
                         <% } %>
                     </div>
@@ -221,8 +221,8 @@
                     </div>
 
                     <!-- Showcase of all 13 implemented badges in exact profile format -->
-                    <div class="tag-showcase-grid team-profile-badges-top" style="justify-content: flex-start; gap: 0.65rem;">
-                        
+                    <div class="tag-showcase-grid team-profile-badges-top" data-ui-style="rolling-dashboard-jsp-008">
+
                         <!-- 1. Defending Champion -->
                         <div class="tourma-badge-pill tourma-badge-defending" tabindex="0">
                             <svg class="tourma-badge-svg-border" aria-hidden="true">

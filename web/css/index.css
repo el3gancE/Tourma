@@ -1,0 +1,25 @@
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/index.jsp */
+[data-ui-style="index-jsp-001"]:not(#tourma-inline-specificity) {
+    width: 100%;
+}
+
+/* web/index.jsp */
+[data-ui-style="index-jsp-002"]:not(#tourma-inline-specificity) {
+    width: 100%;
+}
+
+/* web/index.jsp */
+[data-ui-style="index-jsp-003"]:not(#tourma-inline-specificity) {
+    padding: 2rem 0;
+}
+
+/* web/index.jsp */
+[data-ui-style="index-jsp-004"]:not(#tourma-inline-specificity) {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}

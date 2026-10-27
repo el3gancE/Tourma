@@ -434,3 +434,134 @@
         justify-content: space-between;
     }
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-001"]:not(#tourma-inline-specificity) {
+    background: rgba(45, 212, 191, 0.15);
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    color: #2dd4bf;
+    border-radius: 9999px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.75rem;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-002"]:not(#tourma-inline-specificity) {
+    color: #2dd4bf;
+    font-size: 0.85rem;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-003"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-004"]:not(#tourma-inline-specificity) {
+    text-decoration: none;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-005"]:not(#tourma-inline-specificity) {
+    text-decoration: none;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-006"]:not(#tourma-inline-specificity) {
+    width: 100%;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-007"]:not(#tourma-inline-specificity) {
+    max-width: 480px;
+    border-color: rgba(244, 63, 94, 0.4);
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-008"]:not(#tourma-inline-specificity) {
+    border-bottom: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-009"]:not(#tourma-inline-specificity) {
+    color: #f43f5e;
+    font-size: 0.95rem;
+    font-weight: 800;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-010"]:not(#tourma-inline-specificity) {
+    padding: 1.25rem 1rem;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-011"]:not(#tourma-inline-specificity) {
+    background: rgba(244, 63, 94, 0.08);
+    border: 1px solid rgba(244, 63, 94, 0.2);
+    border-radius: 8px;
+    padding: 0.85rem;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-012"]:not(#tourma-inline-specificity) {
+    color: #f43f5e;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-013"]:not(#tourma-inline-specificity) {
+    color: #ffffff;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-014"]:not(#tourma-inline-specificity) {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-015"]:not(#tourma-inline-specificity) {
+    justify-content: flex-end;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-016"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    padding: 0.45rem 1rem;
+}
+
+/* web/common/round-robin.jsp */
+[data-ui-style="round-robin-jsp-017"]:not(#tourma-inline-specificity) {
+    background: #f43f5e;
+    color: #ffffff;
+    border: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.45rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* web/js/round-robin.js */
+[data-ui-style="round-robin-js-001"]:not(#tourma-inline-specificity) {
+    text-align: center;
+    color: #94a3b8;
+    padding: 2rem 0;
+    font-size: 0.9rem;
+}

@@ -167,23 +167,23 @@
                 byeCard.setAttribute('data-match-id', String(matchId));
                 byeCard.innerHTML =
                     '<div class="bracket-node-header">' +
-                    '<span class="bracket-match-id" style="color:#2dd4bf;">AUTO</span>' +
-                    '<span class="bracket-status-badge" style="background:rgba(45,212,191,0.2);color:#2dd4bf;border-color:rgba(45,212,191,0.4);">BYE</span>' +
+                    '<span class="bracket-match-id" data-ui-style="bracket-card-js-001">AUTO</span>' +
+                    '<span class="bracket-status-badge" data-ui-style="bracket-card-js-002">BYE</span>' +
                     '</div>' +
                     '<div class="bracket-teams-box">' +
                     '<div class="bracket-team-row winner" data-team-name="' + t1Name + '">' +
                     '<div class="bracket-team-info">' +
-                    '<span class="bracket-seed-badge"' + (seed1 ? ' style="background:rgba(45,212,191,0.25);color:#2dd4bf;"' : '') + '>' + (seed1 || '') + '</span>' +
+                    '<span class="bracket-seed-badge"' + (seed1 ? ' data-ui-style="bracket-card-js-003"' : '') + '>' + (seed1 || '') + '</span>' +
                     '<span class="bracket-team-name" title="' + t1Name + '">' + t1Name + '</span>' +
                     '</div>' +
-                    '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
+                    '<span class="bracket-score-box" data-ui-style="bracket-card-js-004" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" data-ui-style="bracket-card-js-005"></i></span>' +
                     '</div>' +
                     '<div class="bracket-team-row winner" data-team-name="' + t2Name + '">' +
                     '<div class="bracket-team-info">' +
-                    '<span class="bracket-seed-badge"' + (seed2 ? ' style="background:rgba(45,212,191,0.25);color:#2dd4bf;"' : '') + '>' + (seed2 || '') + '</span>' +
+                    '<span class="bracket-seed-badge"' + (seed2 ? ' data-ui-style="bracket-card-js-006"' : '') + '>' + (seed2 || '') + '</span>' +
                     '<span class="bracket-team-name" title="' + t2Name + '">' + t2Name + '</span>' +
                     '</div>' +
-                    '<span class="bracket-score-box" style="color:#2dd4bf;" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" style="font-size:0.75rem;"></i></span>' +
+                    '<span class="bracket-score-box" data-ui-style="bracket-card-js-007" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" data-ui-style="bracket-card-js-008"></i></span>' +
                     '</div>' +
                     '</div>';
                 return byeCard;
@@ -221,7 +221,7 @@
 
             var matchHeaderContent = matchHeaderLabel ?
                 ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') :
-                (hasBye ? '<span class="bracket-match-id" style="color: #64748b; font-style: italic; font-size: 0.65rem;">BYE</span>' : '<span class="bracket-match-id">&nbsp;</span>');
+                (hasBye ? '<span class="bracket-match-id" data-ui-style="bracket-card-js-009">BYE</span>' : '<span class="bracket-match-id">&nbsp;</span>');
 
             var statusBadgeContent = hasBye ?
                 '<span class="bracket-status-badge" style="visibility: hidden;">BYE</span>' :

@@ -103,16 +103,16 @@
     <!-- ========================================================= -->
     <!-- MỤC 1: QUẢN LÝ CHUỖI GIẢI (SERIES SECTION)                -->
     <!-- ========================================================= -->
-    <div class="sidebar-section-header" style="color: #fbbf24;">
+    <div class="sidebar-section-header" data-ui-style="sidebar-jsp-001">
         <i class="fa-solid fa-layer-group"></i> CHUỖI GIẢI (SERIES)
     </div>
 
-    <div class="sidebar-subtourney-badge" style="border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12);">
+    <div class="sidebar-subtourney-badge" data-ui-style="sidebar-jsp-002">
         <i class="fa-solid fa-chart-line text-gold"></i>
         <span><%= currentSeries.getName() %></span>
     </div>
 
-    <ul class="sidebar-menu-list" style="margin-bottom: 1.5rem;">
+    <ul class="sidebar-menu-list" data-ui-style="sidebar-jsp-003">
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "dashboard".equals(activeStep) ? "active" : "" %>">
@@ -166,11 +166,11 @@
     <div class="sidebar-subtourney-badge">
         <i class="fa-solid fa-trophy text-mint"></i>
         <span><%= tournamentName %></span>
-        <% if (hasSeries) { 
-             String tTier = (currentTournament != null && currentTournament.getTierName() != null && !currentTournament.getTierName().trim().isEmpty()) 
+        <% if (hasSeries) {
+             String tTier = (currentTournament != null && currentTournament.getTierName() != null && !currentTournament.getTierName().trim().isEmpty())
                  ? currentTournament.getTierName().toUpperCase() : "S";
         %>
-            <span class="tier-tag tier-<%= tTier.toLowerCase() %>" style="margin-left: 0.55rem; font-weight: 800;">[<%= tTier %>]</span>
+            <span class="tier-tag tier-<%= tTier.toLowerCase() %>" data-ui-style="sidebar-jsp-004">[<%= tTier %>]</span>
         <% } %>
     </div>
 
@@ -365,7 +365,7 @@
             else if (localFmt === 'GROUP_STAGE') page = 'group-stage.jsp';
             else if (localFmt === 'GSL') page = 'gsl.jsp';
             else if (localFmt === 'SWISS_LITE' || localFmt === 'SWISS') page = 'swiss-stage.jsp';
-            
+
             var aLink = sSingle.querySelector('a');
             if (aLink) {
                 var seriesId = '<%= seriesId %>';

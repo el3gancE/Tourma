@@ -193,7 +193,7 @@
 
             card.innerHTML =
                 '<div class="match-card-meta">' +
-                '<div class="' + accentClass + '"' + (hasBye ? ' style="background: #475569; box-shadow: none;"' : '') + '></div>' +
+                '<div class="' + accentClass + '"' + (hasBye ? ' data-ui-style="match-card-js-001"' : '') + '></div>' +
                 '<span class="match-card-id">' + matchHeaderLabel + '</span>' +
                 '</div>' +
 

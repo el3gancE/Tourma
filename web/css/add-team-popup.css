@@ -80,3 +80,56 @@
   border-color: #10b981;
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/component/add-team-popup.jsp */
+[data-ui-style="add-team-popup-jsp-001"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1.25rem;
+}
+
+/* web/common/component/add-team-popup.jsp */
+[data-ui-style="add-team-popup-jsp-002"]:not(#tourma-inline-specificity) {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 0.4rem;
+}
+
+/* web/common/component/add-team-popup.jsp */
+[data-ui-style="add-team-popup-jsp-003"]:not(#tourma-inline-specificity) {
+    color: #ef4444;
+}
+
+/* web/common/component/add-team-popup.jsp */
+[data-ui-style="add-team-popup-jsp-004"]:not(#tourma-inline-specificity) {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin-top: 0.35rem;
+    margin-bottom: 0;
+}
+
+/* web/common/component/add-team-popup.jsp */
+[data-ui-style="add-team-popup-jsp-005"]:not(#tourma-inline-specificity) {
+    justify-content: flex-end;
+    gap: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1rem;
+}
+
+/* web/common/component/add-team-popup.jsp */
+[data-ui-style="add-team-popup-jsp-006"]:not(#tourma-inline-specificity) {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    font-weight: 700;
+    border-radius: 8px;
+}
+
+/* web/common/component/add-team-popup.jsp */
+[data-ui-style="add-team-popup-jsp-007"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 0.65rem 1.35rem;
+}

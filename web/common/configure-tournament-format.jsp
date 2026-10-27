@@ -144,8 +144,8 @@
 
                             <!-- Top Stage Model Toggle Bar (Single Stage ↔ Multi-Stage) & Copy Config Button -->
                             <div
-                                style="max-width: 580px; margin: 1.25rem auto 0.75rem auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; width: 100%; box-sizing: border-box; padding: 0 0.25rem;">
-                                <div class="stage-toggle-bar" style="margin: 0;">
+                                data-ui-style="configure-tournament-format-jsp-001" style="display: flex;">
+                                <div class="stage-toggle-bar" data-ui-style="configure-tournament-format-jsp-002">
                                     <button type="button" id="btnToggleSingleStage" class="stage-toggle-btn active"
                                         onclick="selectStageType('SINGLE_STAGE', true)">
                                         <i class="fa-solid fa-trophy text-mint"></i> Single Stage
@@ -158,42 +158,42 @@
 
                                 <!-- Copy Configuration from Existing Tournament Button -->
                                 <button type="button" class="btn btn-secondary" onclick="openCopyConfigModal()"
-                                    style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 700; background: rgba(45, 212, 191, 0.12); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.35); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+                                    data-ui-style="configure-tournament-format-jsp-003" style="display: inline-flex;">
                                     <i class="fa-solid fa-copy"></i> Sao Chép Cấu Hình Từ Giải Khác
                                 </button>
                             </div>
 
                             <!-- Main Config Card Box -->
-                            <div class="form-container-box" style="margin-top: 0;">
+                            <div class="form-container-box" data-ui-style="configure-tournament-format-jsp-004">
 
                                 <!-- Active Copied Config Banner (Shown when a config is cloned / copied) -->
                                 <div id="copiedConfigBanner"
-                                    style="display: none; background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                                    data-ui-style="configure-tournament-format-jsp-005" style="display: none;">
                                     <div
-                                        style="display: flex; align-items: center; gap: 0.6rem; color: #f8fafc; font-size: 0.88rem;">
-                                        <i class="fa-solid fa-circle-check text-mint" style="font-size: 1.1rem;"></i>
+                                        data-ui-style="configure-tournament-format-jsp-006" style="display: flex;">
+                                        <i class="fa-solid fa-circle-check text-mint" data-ui-style="configure-tournament-format-jsp-007"></i>
                                         <span>Đang áp dụng cấu hình từ: <strong
                                                 id="copiedTourneyNameDisplay">...</strong> (Ràng buộc bắt buộc: <strong
-                                                id="copiedTourneyTeamCountDisplay" style="color: #2dd4bf;">...</strong>
+                                                id="copiedTourneyTeamCountDisplay" data-ui-style="configure-tournament-format-jsp-008">...</strong>
                                             đội)</span>
                                     </div>
                                     <button type="button" onclick="clearCopiedConfig()" class="btn btn-secondary"
-                                        style="font-size: 0.75rem; padding: 0.25rem 0.65rem; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer;">
+                                        data-ui-style="configure-tournament-format-jsp-009">
                                         <i class="fa-solid fa-xmark"></i> Bỏ Áp Dụng
                                     </button>
                                 </div>
 
                                 <!-- Top Controls Row: Stage Badge & Tier Switcher (Tier only for Rolling Series child tournaments) -->
                                 <div
-                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; flex-wrap: wrap; gap: 0.75rem;">
+                                    data-ui-style="configure-tournament-format-jsp-010" style="display: flex;">
                                     <span id="stageBadgeDisplay" class="stage-badge"
-                                        style="font-size: 0.72rem; padding: 0.2rem 0.65rem;">SINGLE STAGE</span>
+                                        data-ui-style="configure-tournament-format-jsp-011">SINGLE STAGE</span>
 
                                     <% if (isRollingSubTournament) { %>
                                         <!-- TIER CHANGER WIDGET (ONLY FOR ROLLING SUB-TOURNAMENTS) -->
                                         <div class="tier-switcher-box">
                                             <span
-                                                style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 0.35rem;">
+                                                data-ui-style="configure-tournament-format-jsp-012" style="display: flex;">
                                                 <i class="fa-solid fa-layer-group text-gold"></i> Cấp Độ (Tier):
                                             </span>
                                             <div class="tier-pills-row">
@@ -219,7 +219,7 @@
                                                 </button>
                                             </div>
                                             <span id="tierSaveIndicator"
-                                                style="display: none; font-size: 0.75rem; color: #34d399; font-weight: 700; margin-left: 0.25rem;">
+                                                data-ui-style="configure-tournament-format-jsp-013" style="display: none;">
                                                 <i class="fa-solid fa-circle-check"></i> Đã lưu
                                             </span>
                                         </div>
@@ -227,7 +227,7 @@
                                 </div>
 
                                 <!-- Main Card Title -->
-                                <h1 class="form-header-title" style="font-size: 1.4rem; margin-bottom: 1.25rem;">
+                                <h1 class="form-header-title" data-ui-style="configure-tournament-format-jsp-014">
                                     Chọn thể thức thi đấu
                                 </h1>
 
@@ -270,7 +270,7 @@
                                             <div id="singleStagePanel">
                                                 <div class="form-group">
                                                     <label class="form-label"
-                                                        style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                                                        data-ui-style="configure-tournament-format-jsp-015">
                                                         Thể thức giải đấu 1 giai đoạn:
                                                     </label>
                                                     <div class="format-pill-grid">
@@ -294,38 +294,38 @@
 
                                                 <!-- CHI TIẾT CẤU HÌNH ĐIỂM (Round Robin Single Stage) -->
                                                 <div id="wdlPointsPanel"
-                                                    style="display: none; background: var(--bg-dark-obsidian); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; margin-top: 1rem; margin-bottom: 1.25rem;">
+                                                    data-ui-style="configure-tournament-format-jsp-016" style="display: none;">
                                                     <div class="section-label-uppercase"
-                                                        style="margin-bottom: 0.6rem; color: var(--gold-primary);">
+                                                        data-ui-style="configure-tournament-format-jsp-017">
                                                         <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG ĐIỂM & SỐ LẦN
                                                         GẶP NHAU
                                                     </div>
                                                     <div
-                                                        style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem;">
+                                                        data-ui-style="configure-tournament-format-jsp-018" style="display: grid;">
                                                         <div>
                                                             <label class="form-label"
-                                                                style="font-size: 0.75rem; color: var(--text-muted);">Điểm
+                                                                data-ui-style="configure-tournament-format-jsp-019">Điểm
                                                                 Thắng</label>
                                                             <input type="number" name="winPoints" class="form-control"
                                                                 value="3" min="0" max="10">
                                                         </div>
                                                         <div>
                                                             <label class="form-label"
-                                                                style="font-size: 0.75rem; color: var(--text-muted);">Điểm
+                                                                data-ui-style="configure-tournament-format-jsp-020">Điểm
                                                                 Hòa</label>
                                                             <input type="number" name="drawPoints" class="form-control"
                                                                 value="1" min="0" max="10">
                                                         </div>
                                                         <div>
                                                             <label class="form-label"
-                                                                style="font-size: 0.75rem; color: var(--text-muted);">Điểm
+                                                                data-ui-style="configure-tournament-format-jsp-021">Điểm
                                                                 Thua</label>
                                                             <input type="number" name="lossPoints" class="form-control"
                                                                 value="0" min="0" max="10">
                                                         </div>
                                                         <div>
                                                             <label class="form-label"
-                                                                style="font-size: 0.75rem; color: var(--text-muted);">Số
+                                                                data-ui-style="configure-tournament-format-jsp-022">Số
                                                                 Lần Gặp
                                                                 Nhau</label>
                                                             <input type="number" name="legsCount" class="form-control"
@@ -342,17 +342,17 @@
 
                                                 <!-- STAGE 1 -->
                                                 <div
-                                                    style="background: rgba(11, 13, 18, 0.7); border: 1px solid rgba(45, 212, 191, 0.25); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                                                    data-ui-style="configure-tournament-format-jsp-023">
                                                     <div
-                                                        style="font-size: 0.95rem; font-weight: 800; color: #2dd4bf; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                        data-ui-style="configure-tournament-format-jsp-024" style="display: flex;">
                                                         <i class="fa-solid fa-layer-group"></i> STAGE 1
                                                     </div>
 
                                                     <label class="form-label"
-                                                        style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                                                        data-ui-style="configure-tournament-format-jsp-025">
                                                         Thể thức:
                                                     </label>
-                                                    <div class="format-pill-grid" style="margin-bottom: 1rem;">
+                                                    <div class="format-pill-grid" data-ui-style="configure-tournament-format-jsp-026">
                                                         <button type="button" class="format-pill-btn active"
                                                             id="pillStage1RR"
                                                             onclick="selectStage1Format('ROUND_ROBIN', true)">
@@ -383,69 +383,69 @@
 
                                                     <!-- DYNAMIC SUB-PANEL FOR STAGE 1 FORMAT CONFIG -->
                                                     <div id="stage1ConfigContainer"
-                                                        style="background: #181d29; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 1rem;">
+                                                        data-ui-style="configure-tournament-format-jsp-027">
 
                                                         <!-- 1. Round Robin Fields -->
                                                         <div id="stage1FieldsRR">
-                                                            <div style="margin-bottom: 0.75rem;">
+                                                            <div data-ui-style="configure-tournament-format-jsp-028">
                                                                 <label class="form-label"
-                                                                    style="font-size: 0.78rem; color: var(--text-muted);">Số
+                                                                    data-ui-style="configure-tournament-format-jsp-029">Số
                                                                     Đội Đi Tiếp
-                                                                    <span style="color: #f43f5e;">*</span> (Tối thiểu 4 đội)</label>
+                                                                    <span data-ui-style="configure-tournament-format-jsp-030">*</span> (Tối thiểu 4 đội)</label>
                                                                 <input type="number" id="stage1AdvanceRR"
                                                                     name="stage1AdvanceRR" class="form-control"
-                                                                    style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                    data-ui-style="configure-tournament-format-jsp-031"
                                                                     value="" min="4"
                                                                     placeholder="Nhập số đội đi tiếp (tối thiểu 4)...">
                                                             </div>
                                                             <div
-                                                                style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.85rem;">
+                                                                data-ui-style="configure-tournament-format-jsp-032">
                                                                 <div
-                                                                    style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">
+                                                                    data-ui-style="configure-tournament-format-jsp-033">
                                                                     <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG
                                                                     ĐIỂM & SỐ LẦN GẶP
                                                                     NHAU
                                                                 </div>
                                                                 <div
-                                                                    style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                                                                    data-ui-style="configure-tournament-format-jsp-034" style="display: grid;">
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Điểm
+                                                                            data-ui-style="configure-tournament-format-jsp-035">Điểm
                                                                             Thắng</label>
                                                                         <input type="number" id="stage1WinPointsRR"
                                                                             name="stage1WinPointsRR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-036"
                                                                             value="3" min="0" max="10">
                                                                     </div>
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Điểm
+                                                                            data-ui-style="configure-tournament-format-jsp-037">Điểm
                                                                             Hòa</label>
                                                                         <input type="number" id="stage1DrawPointsRR"
                                                                             name="stage1DrawPointsRR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-038"
                                                                             value="1" min="0" max="10">
                                                                     </div>
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Điểm
+                                                                            data-ui-style="configure-tournament-format-jsp-039">Điểm
                                                                             Thua</label>
                                                                         <input type="number" id="stage1LossPointsRR"
                                                                             name="stage1LossPointsRR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-040"
                                                                             value="0" min="0" max="10">
                                                                     </div>
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Số
+                                                                            data-ui-style="configure-tournament-format-jsp-041">Số
                                                                             Lượt Gặp Nhau</label>
                                                                         <input type="number" id="stage1LegsCountRR"
                                                                             name="stage1LegsCountRR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-042"
                                                                             value="1" min="1" max="10">
                                                                     </div>
                                                                 </div>
@@ -454,65 +454,65 @@
 
                                                         <!-- 2. Group Stage Fields -->
                                                         <div id="stage1FieldsGR" style="display: none;">
-                                                            <div style="margin-bottom: 0.75rem;">
+                                                            <div data-ui-style="configure-tournament-format-jsp-043">
                                                                 <label class="form-label"
-                                                                    style="font-size: 0.78rem; color: var(--text-muted);">Tổng
+                                                                    data-ui-style="configure-tournament-format-jsp-044">Tổng
                                                                     Số Đội Đi
-                                                                    Tiếp <span style="color: #f43f5e;">*</span> (Tối thiểu 4 đội)</label>
+                                                                    Tiếp <span data-ui-style="configure-tournament-format-jsp-045">*</span> (Tối thiểu 4 đội)</label>
                                                                 <input type="number" id="stage1AdvanceGR"
                                                                     name="stage1AdvanceGR" class="form-control"
-                                                                    style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                    data-ui-style="configure-tournament-format-jsp-046"
                                                                     value="" min="4"
                                                                     placeholder="Nhập tổng số đội đi tiếp (tối thiểu 4)...">
                                                             </div>
                                                             <div
-                                                                style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.85rem;">
+                                                                data-ui-style="configure-tournament-format-jsp-047">
                                                                 <div
-                                                                    style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">
+                                                                    data-ui-style="configure-tournament-format-jsp-048">
                                                                     <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG
                                                                     ĐIỂM & SỐ LẦN GẶP
                                                                     NHAU
                                                                 </div>
                                                                 <div
-                                                                    style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                                                                    data-ui-style="configure-tournament-format-jsp-049" style="display: grid;">
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Điểm
+                                                                            data-ui-style="configure-tournament-format-jsp-050">Điểm
                                                                             Thắng</label>
                                                                         <input type="number" id="stage1WinPointsGR"
                                                                             name="stage1WinPointsGR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-051"
                                                                             value="3" min="0" max="10">
                                                                     </div>
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Điểm
+                                                                            data-ui-style="configure-tournament-format-jsp-052">Điểm
                                                                             Hòa</label>
                                                                         <input type="number" id="stage1DrawPointsGR"
                                                                             name="stage1DrawPointsGR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-053"
                                                                             value="1" min="0" max="10">
                                                                     </div>
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Điểm
+                                                                            data-ui-style="configure-tournament-format-jsp-054">Điểm
                                                                             Thua</label>
                                                                         <input type="number" id="stage1LossPointsGR"
                                                                             name="stage1LossPointsGR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-055"
                                                                             value="0" min="0" max="10">
                                                                     </div>
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Số
+                                                                            data-ui-style="configure-tournament-format-jsp-056">Số
                                                                             Lượt Gặp Nhau</label>
                                                                         <input type="number" id="stage1LegsCountGR"
                                                                             name="stage1LegsCountGR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-057"
                                                                             value="1" min="1" max="10">
                                                                     </div>
                                                                 </div>
@@ -522,31 +522,31 @@
                                                         <!-- 3. Single Elimination Fields -->
                                                         <div id="stage1FieldsSE" style="display: none;">
                                                             <label class="form-label"
-                                                                style="font-size: 0.78rem; color: var(--text-muted);">Số
+                                                                data-ui-style="configure-tournament-format-jsp-058">Số
                                                                 Đội Đi Tiếp
-                                                                <span style="color: #f43f5e;">*</span> (Tối thiểu 4 đội)</label>
+                                                                <span data-ui-style="configure-tournament-format-jsp-059">*</span> (Tối thiểu 4 đội)</label>
                                                             <input type="number" id="stage1AdvanceSE"
                                                                 name="stage1AdvanceSE" class="form-control"
-                                                                style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                data-ui-style="configure-tournament-format-jsp-060"
                                                                 value="" min="4" placeholder="Nhập số đội đi tiếp (tối thiểu 4)...">
                                                         </div>
 
                                                         <!-- 4. Double Elimination Fields (Must be Power of 2, Min 4) -->
                                                         <div id="stage1FieldsDE" style="display: none;">
                                                             <label class="form-label"
-                                                                style="font-size: 0.78rem; color: var(--text-muted);">Số
+                                                                data-ui-style="configure-tournament-format-jsp-061">Số
                                                                 Đội Đi Tiếp
-                                                                <span style="color: #f43f5e;">*</span> <span
-                                                                    style="font-size: 0.72rem; color: #94a3b8;">Bắt buộc
+                                                                <span data-ui-style="configure-tournament-format-jsp-062">*</span> <span
+                                                                    data-ui-style="configure-tournament-format-jsp-063">Bắt buộc
                                                                     là số mũ của 2 (tối thiểu 4): 4, 8, 16</span></label>
                                                             <input type="number" id="stage1AdvanceDE"
                                                                 name="stage1AdvanceDE" class="form-control"
-                                                                style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                data-ui-style="configure-tournament-format-jsp-064"
                                                                 value="" min="4" step="2"
                                                                 placeholder="Ví dụ: 4, 8, 16"
                                                                 onchange="validatePowerOfTwoInput(this)">
                                                             <div id="dePowerErrorMsg1"
-                                                                style="display: none; color: #f43f5e; font-size: 0.75rem; margin-top: 0.4rem; font-weight: 600;">
+                                                                data-ui-style="configure-tournament-format-jsp-065" style="display: none;">
                                                                 Số đội đi tiếp của Double Elimination bắt buộc phải là
                                                                 số mũ của 2 và tối thiểu là 4: 4, 8, 16
                                                             </div>
@@ -555,19 +555,19 @@
                                                         <!-- 5. Swiss System Fields (Fixed 16 in / 8 advance) -->
                                                         <div id="stage1FieldsSwiss" style="display: none;">
                                                             <div
-                                                                style="display: flex; align-items: center; justify-content: space-between; background: rgba(45, 212, 191, 0.08); border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 8px; padding: 0.75rem 1rem;">
+                                                                data-ui-style="configure-tournament-format-jsp-066" style="display: flex;">
                                                                 <div
-                                                                    style="color: #cbd5e1; font-size: 0.82rem; font-weight: 600;">
+                                                                    data-ui-style="configure-tournament-format-jsp-067">
                                                                     <i class="fa-solid fa-lock"
-                                                                        style="color: #2dd4bf; margin-right: 0.4rem;"></i>
+                                                                        data-ui-style="configure-tournament-format-jsp-068"></i>
                                                                     Cấu hình cố định Swiss System:
                                                                 </div>
-                                                                <div style="display: flex; gap: 0.5rem;">
+                                                                <div data-ui-style="configure-tournament-format-jsp-069" style="display: flex;">
                                                                     <span class="stage-badge"
-                                                                        style="background: rgba(255,255,255,0.08); color: #ffffff; border-color: rgba(255,255,255,0.2);">16
+                                                                        data-ui-style="configure-tournament-format-jsp-070">16
                                                                         Đội Tham Gia</span>
                                                                     <span class="stage-badge"
-                                                                        style="background: rgba(45, 212, 191, 0.2); color: #2dd4bf; border-color: rgba(45, 212, 191, 0.4);">8
+                                                                        data-ui-style="configure-tournament-format-jsp-071">8
                                                                         Đội Đi Tiếp</span>
                                                                 </div>
                                                             </div>
@@ -576,19 +576,19 @@
                                                         <!-- 6. GSL Format Fields (Stage 1) -->
                                                         <div id="stage1FieldsGSL" style="display: none;">
                                                             <label class="form-label"
-                                                                style="font-size: 0.78rem; color: var(--text-muted);">Tổng
+                                                                data-ui-style="configure-tournament-format-jsp-072">Tổng
                                                                 Số Đội Đi Tiếp
-                                                                <span style="color: #f43f5e;">*</span> <span
-                                                                    style="font-size: 0.72rem; color: #94a3b8;">Bắt buộc
+                                                                <span data-ui-style="configure-tournament-format-jsp-073">*</span> <span
+                                                                    data-ui-style="configure-tournament-format-jsp-074">Bắt buộc
                                                                     là số mũ của 2 (tối thiểu 4): 4, 8, 16</span></label>
                                                             <input type="number" id="stage1AdvanceGSL"
                                                                 name="stage1AdvanceGSL" class="form-control"
-                                                                style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                data-ui-style="configure-tournament-format-jsp-075"
                                                                 value="" min="4" step="2"
                                                                 placeholder="Ví dụ: 4, 8, 16..."
                                                                 onchange="validatePowerOfTwoInput(this)">
                                                             <div id="gslStage1PowerErrorMsg"
-                                                                style="display: none; color: #f43f5e; font-size: 0.75rem; margin-top: 0.4rem; font-weight: 600;">
+                                                                data-ui-style="configure-tournament-format-jsp-076" style="display: none;">
                                                                 Tổng số đội đi tiếp của GSL bắt buộc phải là số mũ của
                                                                 2 và tối thiểu là 4: 4, 8, 16
                                                             </div>
@@ -599,17 +599,17 @@
 
                                                 <!-- STAGE 2 -->
                                                 <div
-                                                    style="background: rgba(11, 13, 18, 0.7); border: 1px solid rgba(45, 212, 191, 0.25); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                                                    data-ui-style="configure-tournament-format-jsp-077">
                                                     <div
-                                                        style="font-size: 0.95rem; font-weight: 800; color: #2dd4bf; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                        data-ui-style="configure-tournament-format-jsp-078" style="display: flex;">
                                                         <i class="fa-solid fa-trophy"></i> STAGE 2
                                                     </div>
 
                                                     <label class="form-label"
-                                                        style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                                                        data-ui-style="configure-tournament-format-jsp-079">
                                                         Thể thức:
                                                     </label>
-                                                    <div class="format-pill-grid" style="margin-bottom: 0.5rem;">
+                                                    <div class="format-pill-grid" data-ui-style="configure-tournament-format-jsp-080">
                                                         <button type="button" class="format-pill-btn active"
                                                             id="pillStage2SE"
                                                             onclick="selectStage2Format('SINGLE_ELIMINATION', true)">
@@ -627,57 +627,57 @@
 
                                                     <!-- DYNAMIC SUB-PANEL FOR STAGE 2 FORMAT CONFIG -->
                                                     <div id="stage2ConfigContainer"
-                                                        style="display: none; background: #181d29; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 1rem; margin-top: 0.85rem;">
+                                                        data-ui-style="configure-tournament-format-jsp-081" style="display: none;">
                                                         <!-- Round Robin Fields (Stage 2) -->
                                                         <div id="stage2FieldsRR">
                                                             <div
-                                                                style="background: rgba(11, 13, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.85rem;">
+                                                                data-ui-style="configure-tournament-format-jsp-082">
                                                                 <div
-                                                                    style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">
+                                                                    data-ui-style="configure-tournament-format-jsp-083">
                                                                     <i class="fa-solid fa-sliders"></i> QUY TẮC CỘNG
                                                                     ĐIỂM & SỐ LẦN GẶP
                                                                     NHAU (STAGE 2)
                                                                 </div>
                                                                 <div
-                                                                    style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                                                                    data-ui-style="configure-tournament-format-jsp-084" style="display: grid;">
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Điểm
+                                                                            data-ui-style="configure-tournament-format-jsp-085">Điểm
                                                                             Thắng</label>
                                                                         <input type="number" id="stage2WinPointsRR"
                                                                             name="stage2WinPointsRR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-086"
                                                                             value="3" min="0" max="10">
                                                                     </div>
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Điểm
+                                                                            data-ui-style="configure-tournament-format-jsp-087">Điểm
                                                                             Hòa</label>
                                                                         <input type="number" id="stage2DrawPointsRR"
                                                                             name="stage2DrawPointsRR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-088"
                                                                             value="1" min="0" max="10">
                                                                     </div>
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Điểm
+                                                                            data-ui-style="configure-tournament-format-jsp-089">Điểm
                                                                             Thua</label>
                                                                         <input type="number" id="stage2LossPointsRR"
                                                                             name="stage2LossPointsRR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-090"
                                                                             value="0" min="0" max="10">
                                                                     </div>
                                                                     <div>
                                                                         <label class="form-label"
-                                                                            style="font-size: 0.72rem; color: var(--text-muted);">Số
+                                                                            data-ui-style="configure-tournament-format-jsp-091">Số
                                                                             Lượt Gặp Nhau</label>
                                                                         <input type="number" id="stage2LegsCountRR"
                                                                             name="stage2LegsCountRR"
                                                                             class="form-control"
-                                                                            style="background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15);"
+                                                                            data-ui-style="configure-tournament-format-jsp-092"
                                                                             value="1" min="1" max="10">
                                                                     </div>
                                                                 </div>
@@ -689,7 +689,7 @@
 
                                             <!-- SUBMIT BUTTONS -->
                                             <div
-                                                style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.75rem;">
+                                                data-ui-style="configure-tournament-format-jsp-093" style="display: flex;">
                                                 <a href="${pageContext.request.contextPath}/common/my-tournaments.jsp"
                                                     class="btn btn-secondary">Quay Lại</a>
                                                 <button type="submit" class="btn btn-mint">
@@ -704,11 +704,11 @@
                         <div id="formatLockedModalBackdrop" class="tourma-modal-backdrop"
                             onclick="if(event.target === this) closeFormatLockedModal();">
                             <div class="tourma-modal-card"
-                                style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);"
+                                data-ui-style="configure-tournament-format-jsp-094"
                                 onclick="event.stopPropagation();">
-                                <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
+                                <div class="modal-header-bar" data-ui-style="configure-tournament-format-jsp-095">
                                     <div class="modal-header-title"
-                                        style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                                        data-ui-style="configure-tournament-format-jsp-096" style="display: flex;">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span>Đang Diễn Ra, Không Thể Đổi</span>
                                     </div>
@@ -718,23 +718,23 @@
                                     </button>
                                 </div>
 
-                                <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+                                <div class="modal-body-content" data-ui-style="configure-tournament-format-jsp-097">
                                     <div
-                                        style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
-                                        <strong style="color: #f43f5e;">⚠️ Thể thức đã cố định:</strong><br>
+                                        data-ui-style="configure-tournament-format-jsp-098">
+                                        <strong data-ui-style="configure-tournament-format-jsp-099">⚠️ Thể thức đã cố định:</strong><br>
                                         Giải đấu này đang diễn ra (đã có trận đấu có kết quả). Bạn không thể thay đổi
                                         thể thức
                                         thi đấu khi giải đấu đang diễn ra.
                                     </div>
-                                    <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
+                                    <p data-ui-style="configure-tournament-format-jsp-100">
                                         Vui lòng giữ nguyên thể thức hiện tại để tiếp tục quản lý giải đấu.
                                     </p>
                                 </div>
 
                                 <div class="modal-footer-bar"
-                                    style="display: flex; justify-content: flex-end; gap: 0.65rem;">
+                                    data-ui-style="configure-tournament-format-jsp-101" style="display: flex;">
                                     <button type="button" class="btn btn-mint" onclick="closeFormatLockedModal()"
-                                        style="font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem;">
+                                        data-ui-style="configure-tournament-format-jsp-102">
                                         Đã Hiểu & Đóng
                                     </button>
                                 </div>
@@ -745,11 +745,11 @@
                         <div id="legsChangeModalBackdrop" class="tourma-modal-backdrop"
                             onclick="if(event.target === this) closeLegsChangeModal();">
                             <div class="tourma-modal-card"
-                                style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);"
+                                data-ui-style="configure-tournament-format-jsp-103"
                                 onclick="event.stopPropagation();">
-                                <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
+                                <div class="modal-header-bar" data-ui-style="configure-tournament-format-jsp-104">
                                     <div class="modal-header-title"
-                                        style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                                        data-ui-style="configure-tournament-format-jsp-105" style="display: flex;">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span>Xác Nhận Đổi Số Lượt & Reset Lịch Đấu</span>
                                     </div>
@@ -759,26 +759,26 @@
                                     </button>
                                 </div>
 
-                                <div class="modal-body-content" style="padding: 1.25rem 1rem;">
+                                <div class="modal-body-content" data-ui-style="configure-tournament-format-jsp-106">
                                     <div
-                                        style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.88rem; line-height: 1.5;">
-                                        <strong style="color: #f43f5e;">⚠️ Cảnh báo quan trọng:</strong><br>
+                                        data-ui-style="configure-tournament-format-jsp-107">
+                                        <strong data-ui-style="configure-tournament-format-jsp-108">⚠️ Cảnh báo quan trọng:</strong><br>
                                         Việc thay đổi <strong>Số lần gặp nhau</strong> sẽ tạo lại cấu trúc giải và
-                                        <strong style="color: #ffffff;">RESET toàn bộ lịch thi đấu cùng kết quả các
+                                        <strong data-ui-style="configure-tournament-format-jsp-109">RESET toàn bộ lịch thi đấu cùng kết quả các
                                             trận</strong>
                                         của bạn.
                                     </div>
-                                    <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
+                                    <p data-ui-style="configure-tournament-format-jsp-110">
                                         Bạn có chắc chắn muốn áp dụng thay đổi này không?
                                     </p>
                                 </div>
 
                                 <div class="modal-footer-bar"
-                                    style="display: flex; justify-content: flex-end; gap: 0.65rem;">
+                                    data-ui-style="configure-tournament-format-jsp-111" style="display: flex;">
                                     <button type="button" class="btn btn-secondary" onclick="closeLegsChangeModal()"
-                                        style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
+                                        data-ui-style="configure-tournament-format-jsp-112">Hủy Bỏ</button>
                                     <button type="button" class="btn"
-                                        style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;"
+                                        data-ui-style="configure-tournament-format-jsp-113"
                                         onclick="confirmLegsChangeAndSubmit()">
                                         <i class="fa-solid fa-rotate-right"></i> Xác Nhận Đổi
                                     </button>
@@ -790,12 +790,12 @@
                         <div id="copyConfigModalBackdrop" class="tourma-modal-backdrop" style="display: none;"
                             onclick="if(event.target === this) closeCopyConfigModal();">
                             <div class="tourma-modal-card"
-                                style="border-color: rgba(45, 212, 191, 0.4); max-width: 620px;"
+                                data-ui-style="configure-tournament-format-jsp-114"
                                 onclick="event.stopPropagation();">
                                 <div class="modal-header-bar"
-                                    style="border-bottom: 1px solid rgba(45, 212, 191, 0.2); padding: 1rem 1.25rem;">
+                                    data-ui-style="configure-tournament-format-jsp-115">
                                     <div class="modal-header-title"
-                                        style="color: #2dd4bf; font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                                        data-ui-style="configure-tournament-format-jsp-116" style="display: flex;">
                                         <i class="fa-solid fa-copy"></i>
                                         <span>Sao Chép Cấu Hình Từ Giải Đấu Khác</span>
                                     </div>
@@ -806,9 +806,9 @@
                                 </div>
 
                                 <div class="modal-body-content"
-                                    style="padding: 1.25rem; max-height: 65vh; overflow-y: auto;">
+                                    data-ui-style="configure-tournament-format-jsp-117">
                                     <div
-                                        style="background: rgba(45, 212, 191, 0.08); border: 1px solid rgba(45, 212, 191, 0.2); border-radius: 8px; padding: 0.75rem 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
+                                        data-ui-style="configure-tournament-format-jsp-118">
                                         <i class="fa-solid fa-circle-info text-mint"></i>
                                         Cấu hình thể thức, điểm số và số lượng đội sẽ được sao chép vào giải này. Danh
                                         sách đội cụ thể <strong>không sao chép</strong>; ở bước tiếp theo bạn sẽ tự chọn
@@ -817,18 +817,18 @@
                                     </div>
 
                                     <!-- SEARCH BAR -->
-                                    <div style="margin-bottom: 1rem; position: relative;">
+                                    <div data-ui-style="configure-tournament-format-jsp-119">
                                         <i class="fa-solid fa-magnifying-glass"
-                                            style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 0.85rem;"></i>
+                                            data-ui-style="configure-tournament-format-jsp-120"></i>
                                         <input type="text" id="copyTourneySearchInput" class="form-control"
                                             placeholder="Tìm kiếm theo tên giải đấu..."
                                             oninput="filterCopyTournaments(this.value)"
-                                            style="padding-left: 2.5rem; width: 100%; box-sizing: border-box; font-size: 0.85rem; background: #0b0d12; color: #ffffff; border-color: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                            data-ui-style="configure-tournament-format-jsp-121">
                                     </div>
 
                                     <!-- TOURNAMENT LIST -->
                                     <div id="copyTourneyListContainer"
-                                        style="display: flex; flex-direction: column; gap: 0.6rem;">
+                                        data-ui-style="configure-tournament-format-jsp-122" style="display: flex;">
                                         <% if (!availableTournaments.isEmpty()) { for (Tournament at :
                                             availableTournaments) { String tType=(at.getTournamentType() !=null) ?
                                             at.getTournamentType() : "SINGLE_STAGE" ; boolean isMulti="MULTI_STAGE"
@@ -837,30 +837,30 @@
                                             tTier=at.getTierName() !=null ? at.getTierName().toUpperCase() : "" ; %>
                                             <div class="copy-tourney-item-card" data-tourney-id="<%= at.getId() %>"
                                                 data-tourney-name="<%= at.getName() != null ? at.getName().toLowerCase() : "" %>"
-                                                style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; transition: all 0.2s ease;">
-                                                <div style="flex: 1; min-width: 0;">
+                                                data-ui-style="configure-tournament-format-jsp-123" style="display: flex;">
+                                                <div data-ui-style="configure-tournament-format-jsp-124">
                                                     <div
-                                                        style="font-weight: 700; font-size: 0.92rem; color: #ffffff; margin-bottom: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                        data-ui-style="configure-tournament-format-jsp-125">
                                                         <%= at.getName() %>
                                                     </div>
                                                     <div
-                                                        style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                                        data-ui-style="configure-tournament-format-jsp-126" style="display: flex;">
                                                         <span class="stage-badge"
-                                                            style="font-size: 0.7rem; padding: 0.15rem 0.5rem; background: <%= isMulti ? "rgba(45, 212, 191, 0.15)" : "rgba(251, 191, 36, 0.15)" %>; color: <%= isMulti ? "#2dd4bf" : "#fbbf24" %>; border-color: <%= isMulti ? "rgba(45, 212, 191, 0.3)" : "rgba(251, 191, 36, 0.3)" %>;">
+                                                            data-ui-style="configure-tournament-format-jsp-127" style="background: <%= isMulti ? "rgba(45, 212, 191, 0.15)" : "rgba(251, 191, 36, 0.15)" %>; color: <%= isMulti ? "#2dd4bf" : "#fbbf24" %>; border-color: <%= isMulti ? "rgba(45, 212, 191, 0.3)" : "rgba(251, 191, 36, 0.3)" %>;">
                                                             <%= isMulti ? "MULTI STAGE" : "SINGLE STAGE" %>
                                                         </span>
                                                         <span class="stage-badge"
-                                                            style="font-size: 0.7rem; padding: 0.15rem 0.5rem; background: rgba(255,255,255,0.06); color: #cbd5e1; border-color: rgba(255,255,255,0.15);">
+                                                            data-ui-style="configure-tournament-format-jsp-128">
                                                             <%= fmt.replace("_", " " ) %>
                                                         </span>
                                                         <% if (!tTier.isEmpty()) { %>
                                                             <span class="tier-tag tier-<%= tTier.toLowerCase() %>"
-                                                                style="font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                                                                data-ui-style="configure-tournament-format-jsp-129">
                                                                 Tier <%= tTier %>
                                                             </span>
                                                             <% } %>
                                                                 <span class="stage-badge"
-                                                                    style="font-size: 0.7rem; padding: 0.15rem 0.5rem; background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); font-weight: 700;">
+                                                                    data-ui-style="configure-tournament-format-jsp-130">
                                                                     <i class="fa-solid fa-users"></i>
                                                                     <%= tCount %> Đội
                                                                 </span>
@@ -868,34 +868,34 @@
                                                 </div>
                                                 <button type="button" class="btn btn-mint"
                                                     onclick="applyTournamentConfig('<%= at.getId() %>')"
-                                                    style="font-size: 0.78rem; font-weight: 700; padding: 0.4rem 0.85rem; border-radius: 6px; white-space: nowrap; cursor: pointer;">
+                                                    data-ui-style="configure-tournament-format-jsp-131">
                                                     <i class="fa-solid fa-arrow-down-to-bracket"></i> Áp Dụng
                                                 </button>
                                             </div>
                                             <% } } else { %>
                                                 <div
-                                                    style="text-align: center; padding: 2rem 1rem; color: #94a3b8; font-size: 0.85rem;">
+                                                    data-ui-style="configure-tournament-format-jsp-132">
                                                     <%= isRollingSubTournament ? "Chưa có giải con khác trong Series để sao chép cấu hình." : "Chưa có giải đấu nào khác để sao chép cấu hình." %>
                                                 </div>
                                                 <% } %>
                                     </div>
                                     <div id="noCopyTourneyMatchMsg"
-                                        style="display: none; text-align: center; padding: 1.5rem 1rem; color: #94a3b8; font-size: 0.85rem;">
+                                        data-ui-style="configure-tournament-format-jsp-133" style="display: none;">
                                         Không tìm thấy giải đấu nào phù hợp với từ khóa tìm kiếm.
                                     </div>
                                 </div>
 
                                 <div class="modal-footer-bar"
-                                    style="display: flex; justify-content: flex-end; padding: 0.75rem 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2);">
+                                    data-ui-style="configure-tournament-format-jsp-134" style="display: flex;">
                                     <button type="button" class="btn btn-secondary" onclick="closeCopyConfigModal()"
-                                        style="font-size: 0.8rem; padding: 0.4rem 1rem;">Đóng</button>
+                                        data-ui-style="configure-tournament-format-jsp-135">Đóng</button>
                                 </div>
                             </div>
                         </div>
 
                         <script>
                             window.availableTournamentsToCopy = [
-                        <% 
+                        <%
                         for (int i = 0; i < availableTournaments.size(); i++) {
                             Tournament at = availableTournaments.get(i);
                             String safeId = (at.getId() != null) ? at.getId() : "";

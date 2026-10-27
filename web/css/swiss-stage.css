@@ -471,3 +471,76 @@ body, button, input, select, textarea {
   min-width: 42px !important;
   text-align: center !important;
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/swiss-stage.jsp */
+[data-ui-style="swiss-stage-jsp-001"]:not(#tourma-inline-specificity) {
+    background: rgba(18, 22, 32, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    border-radius: 14px;
+    padding: 3.5rem 2rem;
+    text-align: center;
+    margin-top: 1.5rem;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+/* web/common/swiss-stage.jsp */
+[data-ui-style="swiss-stage-jsp-002"]:not(#tourma-inline-specificity) {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: rgba(244, 63, 94, 0.12);
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+}
+
+/* web/common/swiss-stage.jsp */
+[data-ui-style="swiss-stage-jsp-003"]:not(#tourma-inline-specificity) {
+    font-size: 2.3rem;
+    color: #f43f5e;
+}
+
+/* web/common/swiss-stage.jsp */
+[data-ui-style="swiss-stage-jsp-004"]:not(#tourma-inline-specificity) {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 0.6rem;
+}
+
+/* web/common/swiss-stage.jsp */
+[data-ui-style="swiss-stage-jsp-005"]:not(#tourma-inline-specificity) {
+    font-size: 0.88rem;
+    color: #94a3b8;
+    max-width: 600px;
+    margin: 0 auto 1.75rem;
+    line-height: 1.6;
+}
+
+/* web/common/swiss-stage.jsp */
+[data-ui-style="swiss-stage-jsp-006"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    padding: 0.65rem 1.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    border-radius: 8px;
+}
+
+/* web/common/swiss-stage.jsp */
+[data-ui-style="swiss-stage-jsp-007"]:not(#tourma-inline-specificity) {
+    padding-top: 3.5rem;
+}
+
+/* web/js/swiss-stage.js */
+[data-ui-style="swiss-stage-js-001"]:not(#tourma-inline-specificity) {
+    color: #f43f5e;
+    font-weight: 800;
+}

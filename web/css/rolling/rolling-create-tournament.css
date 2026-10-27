@@ -65,3 +65,103 @@
   border-color: #10b981;
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-001"]:not(#tourma-inline-specificity) {
+    max-width: 580px;
+    padding: 1.5rem 1rem;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-002"]:not(#tourma-inline-specificity) {
+    margin-top: 0.5rem;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-003"]:not(#tourma-inline-specificity) {
+    font-size: 0.8rem;
+    text-decoration: none;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-004"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1.5rem;
+    font-size: 0.82rem;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-005"]:not(#tourma-inline-specificity) {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    margin-bottom: 1.25rem;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-006"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-007"]:not(#tourma-inline-specificity) {
+    color: #94a3b8;
+    font-weight: normal;
+    background: #12161f;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-008"]:not(#tourma-inline-specificity) {
+    color: #fbbf24;
+    font-weight: 800;
+    background: #12161f;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-009"]:not(#tourma-inline-specificity) {
+    color: #c084fc;
+    font-weight: 800;
+    background: #12161f;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-010"]:not(#tourma-inline-specificity) {
+    color: #34d399;
+    font-weight: 800;
+    background: #12161f;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-011"]:not(#tourma-inline-specificity) {
+    color: #60a5fa;
+    font-weight: 800;
+    background: #12161f;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-012"]:not(#tourma-inline-specificity) {
+    color: #ffffff;
+    font-weight: 800;
+    background: #12161f;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-013"]:not(#tourma-inline-specificity) {
+    color: #f87171;
+    font-size: 0.82rem;
+    margin-top: 0.4rem;
+    font-weight: 600;
+}
+
+/* web/common/rolling/rolling-create-tournament.jsp */
+[data-ui-style="rolling-create-tournament-jsp-014"]:not(#tourma-inline-specificity) {
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+}

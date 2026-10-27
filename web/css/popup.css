@@ -481,3 +481,22 @@
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(45, 212, 191, 0.4);
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/component/popup.jsp */
+[data-ui-style="popup-jsp-001"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    color: #f43f5e;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-top: 0.6rem;
+    background: rgba(244, 63, 94, 0.1);
+    border: 1px solid rgba(244, 63, 94, 0.25);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+}

@@ -99,7 +99,7 @@
         row.classList.add('top-10');
       }
 
-      var lastPtsText = data.lastPts > 0 ? ('<span style="color: #2dd4bf; font-weight: 700;">+' + data.lastPts + ' pts</span>') : '<span style="color: #94a3b8;">0 pts</span>';
+      var lastPtsText = data.lastPts > 0 ? ('<span data-ui-style="rolling-standings-js-001">+' + data.lastPts + ' pts</span>') : '<span data-ui-style="rolling-standings-js-002">0 pts</span>';
 
       var netChange = data.lastPts - (data.droppedPts || 0);
       var changeText = '0 pts';
@@ -118,27 +118,27 @@
       var badgeClass = 'rank-badge' + (isTop10 ? ' top-10' : '') + ' rank-' + rank;
 
       row.innerHTML = 
-        '<td style="font-weight: 800; color: ' + rankColor + ';">' +
+        '<td data-ui-style="rolling-standings-js-003" style="color: ' + rankColor + ';">' +
           '<div class="rank-wrap">' +
             '<span class="' + badgeClass + '">' + rank + '</span>' +
             rankChangeHtml +
           '</div>' +
         '</td>' +
-        '<td style="font-weight: 700; color: ' + nameColor + ';">' +
-          '<a href="' + ctx + '/team-profile?seriesId=' + encodeURIComponent(seriesId) + '&teamName=' + encodeURIComponent(data.name) + '" class="team-link" style="color: ' + nameColor + '; text-decoration: none; transition: color 0.18s ease;" onmouseover="this.style.color=\'' + nameHover + '\'" onmouseout="this.style.color=\'' + nameColor + '\'">' +
+        '<td data-ui-style="rolling-standings-js-004" style="color: ' + nameColor + ';">' +
+          '<a href="' + ctx + '/team-profile?seriesId=' + encodeURIComponent(seriesId) + '&teamName=' + encodeURIComponent(data.name) + '" class="team-link" data-ui-style="rolling-standings-js-005" style="color: ' + nameColor + ';" onmouseover="this.style.color=\'' + nameHover + '\'" onmouseout="this.style.color=\'' + nameColor + '\'">' +
             data.name +
           '</a>' +
         '</td>' +
-        '<td style="text-align: center; font-weight: 700; color: var(--rolling-text-muted);">' +
+        '<td data-ui-style="rolling-standings-js-006">' +
           data.activeTourneys +
         '</td>' +
-        '<td style="text-align: right; font-weight: 800; font-size: 1.05rem; color: #fbbf24;">' +
+        '<td data-ui-style="rolling-standings-js-007">' +
           data.totalPts + ' pts' +
         '</td>' +
-        '<td style="text-align: right; font-weight: 700;">' +
+        '<td data-ui-style="rolling-standings-js-008">' +
           lastPtsText +
         '</td>' +
-        '<td style="text-align: right; font-weight: 700; color: ' + changeColor + ';">' +
+        '<td data-ui-style="rolling-standings-js-009" style="color: ' + changeColor + ';">' +
           changeText +
         '</td>';
 

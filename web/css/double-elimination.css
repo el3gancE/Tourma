@@ -495,3 +495,63 @@ body, button, input, select, textarea, .bracket-header-title, .de-viewport-title
 
 .de-section-header-card { flex-wrap: wrap; gap: .65rem; }
 .de-branch-live-status { margin-left: auto; gap: .45rem; font-variant-numeric: tabular-nums; }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/double-elimination.jsp */
+[data-ui-style="double-elimination-jsp-001"]:not(#tourma-inline-specificity) {
+    width: 100%;
+}
+
+/* web/common/double-elimination.jsp */
+[data-ui-style="double-elimination-jsp-002"]:not(#tourma-inline-specificity) {
+    --grp-color: #2dd4bf;
+    --grp-rgb: 45, 212, 191;
+}
+
+/* web/common/double-elimination.jsp */
+[data-ui-style="double-elimination-jsp-003"]:not(#tourma-inline-specificity) {
+    --grp-color: #2dd4bf;
+    --grp-rgb: 45, 212, 191;
+}
+
+/* web/common/double-elimination.jsp */
+[data-ui-style="double-elimination-jsp-004"]:not(#tourma-inline-specificity) {
+    --grp-color: #ff4655;
+    --grp-rgb: 255, 70, 85;
+    --card-theme-color: #ff4655;
+    --card-theme-hover-bg: rgba(255, 70, 85, 0.22);
+    --card-theme-glow: rgba(255, 70, 85, 0.45);
+}
+
+/* web/common/double-elimination.jsp */
+[data-ui-style="double-elimination-jsp-005"]:not(#tourma-inline-specificity) {
+    --grp-color: #ff4655;
+    --grp-rgb: 255, 70, 85;
+    --card-theme-color: #ff4655;
+    --card-theme-hover-bg: rgba(255, 70, 85, 0.22);
+    --card-theme-glow: rgba(255, 70, 85, 0.45);
+}
+
+/* web/js/double-elimination.js */
+[data-ui-style="double-elimination-js-001"]:not(#tourma-inline-specificity) {
+    padding: 30px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+/* web/js/double-elimination.js */
+[data-ui-style="double-elimination-js-002"]:not(#tourma-inline-specificity) {
+    padding: 30px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+/* web/js/double-elimination.js */
+[data-ui-style="double-elimination-js-003"]:not(#tourma-inline-specificity) {
+    padding: 40px;
+    text-align: center;
+    color: #94a3b8;
+}

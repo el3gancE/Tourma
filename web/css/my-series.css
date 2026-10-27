@@ -300,3 +300,58 @@ body, button, input, select, textarea, .series-card-title, .filter-pill-btn {
   padding: 3rem 1.5rem;
   text-align: center;
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/my-series.jsp */
+[data-ui-style="my-series-jsp-001"]:not(#tourma-inline-specificity) {
+    font-size: 0.85rem;
+    margin-top: 0.2rem;
+}
+
+/* web/common/my-series.jsp */
+[data-ui-style="my-series-jsp-002"]:not(#tourma-inline-specificity) {
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* web/common/my-series.jsp */
+[data-ui-style="my-series-jsp-003"]:not(#tourma-inline-specificity) {
+    margin: 0;
+}
+
+/* web/common/my-series.jsp */
+[data-ui-style="my-series-jsp-004"]:not(#tourma-inline-specificity) {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* web/common/my-series.jsp */
+[data-ui-style="my-series-jsp-005"]:not(#tourma-inline-specificity) {
+    font-size: 2.5rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+/* web/common/my-series.jsp */
+[data-ui-style="my-series-jsp-006"]:not(#tourma-inline-specificity) {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+}
+
+/* web/common/my-series.jsp */
+[data-ui-style="my-series-jsp-007"]:not(#tourma-inline-specificity) {
+    font-size: 0.82rem;
+    margin-bottom: 1.25rem;
+}

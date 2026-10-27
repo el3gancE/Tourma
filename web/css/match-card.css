@@ -531,3 +531,12 @@
     flex-direction: column;
     gap: 0.5rem;
 }
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/js/match-card.js */
+[data-ui-style="match-card-js-001"]:not(#tourma-inline-specificity) {
+    background: #475569;
+    box-shadow: none;
+}

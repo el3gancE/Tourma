@@ -136,15 +136,15 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><%= tourneyName %> - Double Elimination - Tourma</title>
-        
+
         <!-- Google Font Lexend -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-        
+
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        
+
         <!-- Main Stylesheets -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=<%= System.currentTimeMillis() %>">
@@ -184,7 +184,7 @@
 
         <!-- Main Content Area Shifted Right by Sidebar -->
         <main class="container has-sidebar">
-            
+
             <!-- Top Tournament Navigation & Control Bar Component -->
             <jsp:include page="/common/component/tournament-navbar.jsp">
                 <jsp:param name="tourneyName" value="<%= tourneyName %>" />
@@ -206,11 +206,11 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
-            <div id="deEmptyAlertContainer" style="display: none; width: 100%;"></div>
+            <div id="deEmptyAlertContainer" data-ui-style="double-elimination-jsp-001" style="display: none;"></div>
 
             <!-- 1. DUAL VIEWPORTS WORKSPACE (Upper Bracket & Lower Bracket) -->
             <div id="deDualViewportWorkspace" class="de-dual-viewport-workspace">
-                
+
                 <!-- UPPER BRACKET SECTION (Includes Grand Finals) -->
                 <div class="de-viewport-section">
                     <!-- Standalone Viewport Navbar Header Card -->
@@ -243,8 +243,8 @@
                         </div>
 
                         <div id="upperViewportContainer" class="bracket-viewport-container de-viewport-container">
-                            <div id="upperViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas" data-group-color="#2dd4bf" style="--grp-color: #2dd4bf; --grp-rgb: 45, 212, 191;">
-                                <div id="upperBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper" data-group-color="#2dd4bf" style="--grp-color: #2dd4bf; --grp-rgb: 45, 212, 191;"></div>
+                            <div id="upperViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas" data-group-color="#2dd4bf" data-ui-style="double-elimination-jsp-002">
+                                <div id="upperBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper" data-group-color="#2dd4bf" data-ui-style="double-elimination-jsp-003"></div>
                             </div>
                         </div>
                     </div>
@@ -282,8 +282,8 @@
                         </div>
 
                         <div id="lowerViewportContainer" class="bracket-viewport-container de-viewport-container">
-                            <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas lower-canvas" data-group-color="#ff4655" style="--grp-color: #ff4655; --grp-rgb: 255, 70, 85; --card-theme-color: #ff4655; --card-theme-hover-bg: rgba(255, 70, 85, 0.22); --card-theme-glow: rgba(255, 70, 85, 0.45);">
-                                <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper lower-wrapper" data-bracket-type="LOWER" data-group-color="#ff4655" style="--grp-color: #ff4655; --grp-rgb: 255, 70, 85; --card-theme-color: #ff4655; --card-theme-hover-bg: rgba(255, 70, 85, 0.22); --card-theme-glow: rgba(255, 70, 85, 0.45);"></div>
+                            <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas lower-canvas" data-group-color="#ff4655" data-ui-style="double-elimination-jsp-004">
+                                <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper lower-wrapper" data-bracket-type="LOWER" data-group-color="#ff4655" data-ui-style="double-elimination-jsp-005"></div>
                             </div>
                         </div>
                     </div>

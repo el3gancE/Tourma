@@ -78,15 +78,15 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Quản Lý Danh Sách Đội - TOURMA</title>
-        
+
         <!-- Google Font Lexend -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-        
+
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        
+
         <!-- Main Design System CSS & Dedicated Team Configuration CSS & Modal CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
@@ -107,17 +107,17 @@
 
         <main class="container has-sidebar">
             <!-- CENTERED MAIN TITLE -->
-            <h1 class="page-main-title" style="margin-top: 0;">
+            <h1 class="page-main-title" data-ui-style="configure-tournament-teams-jsp-001">
                 Quản lý danh sách đội
             </h1>
 
             <!-- Active Copied Config Constraint Banner (if targetTeamCount > 0) -->
-            <div id="targetTeamConstraintBanner" style="<%= (targetTeamCountVal > 0) ? "display: flex;" : "display: none;" %> background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-                <div style="display: flex; align-items: center; gap: 0.6rem; color: #f8fafc; font-size: 0.88rem;">
+            <div id="targetTeamConstraintBanner" data-ui-style="configure-tournament-teams-jsp-002" style="<%= (targetTeamCountVal > 0) ? "display: flex;" : "display: none;" %>">
+                <div data-ui-style="configure-tournament-teams-jsp-003" style="display: flex;">
                     <i class="fa-solid fa-lock text-mint"></i>
-                    <span>Ràng buộc sao chép: Giải đấu này yêu cầu chính xác <strong style="color: #2dd4bf;" id="targetCountNumDisplay"><%= (targetTeamCountVal > 0) ? targetTeamCountVal : "" %> đội</strong> <%= (copiedSourceTourneyNameParam != null && !copiedSourceTourneyNameParam.trim().isEmpty()) ? "(Sao chép từ giải: <em>" + copiedSourceTourneyNameParam + "</em>)" : "" %></span>
+                    <span>Ràng buộc sao chép: Giải đấu này yêu cầu chính xác <strong data-ui-style="configure-tournament-teams-jsp-004" id="targetCountNumDisplay"><%= (targetTeamCountVal > 0) ? targetTeamCountVal : "" %> đội</strong> <%= (copiedSourceTourneyNameParam != null && !copiedSourceTourneyNameParam.trim().isEmpty()) ? "(Sao chép từ giải: <em>" + copiedSourceTourneyNameParam + "</em>)" : "" %></span>
                 </div>
-                <span id="targetCountMatchBadge" class="count-badge" style="font-size: 0.82rem; font-weight: 800; background: rgba(251, 191, 36, 0.15); color: #fbbf24; border-color: rgba(251, 191, 36, 0.3);">
+                <span id="targetCountMatchBadge" class="count-badge" data-ui-style="configure-tournament-teams-jsp-005">
                     0 / <%= targetTeamCountVal %> Đội
                 </span>
             </div>
@@ -148,7 +148,7 @@
                                 </div>
 
                                 <div class="input-actions-bar">
-                                    <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15);" onclick="window.clearTextarea()">
+                                    <button type="button" class="btn btn-secondary" data-ui-style="configure-tournament-teams-jsp-006" onclick="window.clearTextarea()">
                                         <i class="fa-solid fa-eraser"></i> Xóa Hết
                                     </button>
                                     <button type="button" class="btn btn-mint" onclick="window.addTeamsFromInput()">
@@ -167,27 +167,27 @@
                                 </div>
 
                                 <div class="manage-toolbar">
-                                    <div class="manage-toolbar-left" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                        <span style="color: #94a3b8; font-size: 0.85rem;">Giữ top:</span>
+                                    <div class="manage-toolbar-left" data-ui-style="configure-tournament-teams-jsp-007" style="display: flex;">
+                                        <span data-ui-style="configure-tournament-teams-jsp-008">Giữ top:</span>
                                         <input type="number" id="lockTopSeedsInput" min="0" max="999" placeholder="0"
-                                               style="width: 52px; height: 32px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; color: #f8fafc; font-size: 0.85rem; text-align: center;"
+                                               data-ui-style="configure-tournament-teams-jsp-009"
                                                onfocus="this.select()" onchange="window.saveHideSeedConfig()" oninput="window.saveHideSeedConfig()">
-                                        <button type="button" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem;" onclick="window.shuffleTeams()">
+                                        <button type="button" class="btn btn-secondary" data-ui-style="configure-tournament-teams-jsp-010" onclick="window.shuffleTeams()">
                                             Xáo trộn
                                         </button>
                                         <button type="button" id="btnToggleHideSeed" class="btn btn-secondary" onclick="window.toggleHideSeedMode()"
-                                                style="background: rgba(255, 255, 255, 0.06); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.15); height: 32px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
+                                                data-ui-style="configure-tournament-teams-jsp-011">
                                             Ẩn seed
                                         </button>
                                         <% if ("SINGLE_ELIMINATION".equalsIgnoreCase(initialDrawFormat) || "DOUBLE_ELIMINATION".equalsIgnoreCase(initialDrawFormat)) { %>
-                                        <label style="display:inline-flex;align-items:center;gap:0.4rem;color:#cbd5e1;font-size:0.85rem;cursor:pointer;" title="Giữ sơ đồ seed cố định; bỏ chọn để bốc thăm theo nhóm seed">
+                                        <label data-ui-style="configure-tournament-teams-jsp-012" style="display:inline-flex;" title="Giữ sơ đồ seed cố định; bỏ chọn để bốc thăm theo nhóm seed">
                                             <input type="checkbox" id="classicDrawInput" <%= new dao.TournamentDAO().isClassicDraw(tournamentId) ? "checked" : "" %> onchange="window.saveHideSeedConfig()">
                                             Classic draw
                                         </label>
                                         <% } %>
                                     </div>
                                     <div class="manage-toolbar-right">
-                                        <button type="button" class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); height: 32px;" onclick="window.deleteSelectedTeams()">
+                                        <button type="button" class="btn btn-secondary" data-ui-style="configure-tournament-teams-jsp-013" onclick="window.deleteSelectedTeams()">
                                             Xóa đã chọn
                                         </button>
                                     </div>
@@ -199,11 +199,11 @@
                                         <table class="table" id="teamsTable">
                                             <thead>
                                                 <tr>
-                                                    <th style="width: 48px; text-align: center;">No.</th>
+                                                    <th data-ui-style="configure-tournament-teams-jsp-014">No.</th>
                                                     <th>Tên Đội</th>
-                                                    <th style="width: 50px; text-align: center;">Kéo</th>
-                                                    <th style="width: 45px; text-align: center;">Xóa</th>
-                                                    <th style="width: 38px; text-align: center;">
+                                                    <th data-ui-style="configure-tournament-teams-jsp-015">Kéo</th>
+                                                    <th data-ui-style="configure-tournament-teams-jsp-016">Xóa</th>
+                                                    <th data-ui-style="configure-tournament-teams-jsp-017">
                                                         <input type="checkbox" id="selectAllCheckbox" onchange="window.toggleSelectAll(this)" title="Chọn tất cả">
                                                     </th>
                                                 </tr>
@@ -215,7 +215,7 @@
                                     </div>
                                 </div>
 
-                                <div style="font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 0.5rem;">
+                                <div data-ui-style="configure-tournament-teams-jsp-018">
                                     <i class="fa-solid fa-hand-pointer text-mint"></i> Kéo thả từng hàng để thay đổi thứ tự Hạt Giống
                                 </div>
                             </div>
@@ -223,9 +223,9 @@
                         </div>
 
                         <!-- BOTTOM CENTERED ACTION BUTTONS -->
-                        <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; margin-bottom: 2.5rem;">
+                        <div data-ui-style="configure-tournament-teams-jsp-019" style="display: flex;">
                             <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${param.id}" class="btn btn-secondary">Quay Lại</a>
-                            <button type="submit" class="btn btn-mint" style="padding-left: 2rem; padding-right: 2rem;">
+                            <button type="submit" class="btn btn-mint" data-ui-style="configure-tournament-teams-jsp-020">
                                 TIẾP THEO ➔
                             </button>
                         </div>
@@ -234,9 +234,9 @@
 
         <!-- RESET BRACKET MODAL UPON ANY TEAM MODIFICATION -->
         <div id="resetBracketModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) closeResetModal();">
-            <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
-                <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
-                    <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+            <div class="tourma-modal-card" data-ui-style="configure-tournament-teams-jsp-021" onclick="event.stopPropagation();">
+                <div class="modal-header-bar" data-ui-style="configure-tournament-teams-jsp-022">
+                    <div class="modal-header-title" data-ui-style="configure-tournament-teams-jsp-023" style="display: flex;">
                         <i class="fa-solid fa-triangle-exclamation"></i>
                         <span>Xác Nhận Thay Đổi & Reset Nhánh Đấu</span>
                     </div>
@@ -244,20 +244,20 @@
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-                
-                <div class="modal-body-content" style="padding: 1.25rem 1rem;">
-                    <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.88rem; line-height: 1.5;">
-                        <strong style="color: #f43f5e;">⚠️ Cảnh báo:</strong><br>
+
+                <div class="modal-body-content" data-ui-style="configure-tournament-teams-jsp-024">
+                    <div data-ui-style="configure-tournament-teams-jsp-025">
+                        <strong data-ui-style="configure-tournament-teams-jsp-026">⚠️ Cảnh báo:</strong><br>
                         Việc này sẽ reset toàn bộ nhánh thi đấu của bạn, bạn có muốn thay đổi không?
                     </div>
-                    <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
+                    <p data-ui-style="configure-tournament-teams-jsp-027">
                         Nếu bấm <strong>Hủy Bỏ</strong>, hệ thống sẽ hoàn tác và giữ nguyên danh sách đội & nhánh đấu trước đó.
                     </p>
                 </div>
 
-                <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem;">
-                    <button type="button" class="btn btn-secondary" onclick="closeResetModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
-                    <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="confirmResetAndSubmit()">
+                <div class="modal-footer-bar" data-ui-style="configure-tournament-teams-jsp-028" style="display: flex;">
+                    <button type="button" class="btn btn-secondary" onclick="closeResetModal()" data-ui-style="configure-tournament-teams-jsp-029">Hủy Bỏ</button>
+                    <button type="button" class="btn" data-ui-style="configure-tournament-teams-jsp-030" onclick="confirmResetAndSubmit()">
                         <i class="fa-solid fa-rotate-right"></i> Xác Nhận Đổi
                     </button>
                 </div>
@@ -266,9 +266,9 @@
 
         <!-- SHUFFLE TEAMS CONFIRMATION WARNING MODAL -->
         <div id="shuffleWarningModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) closeShuffleModal();">
-            <div class="tourma-modal-card" style="max-width: 480px; border-color: rgba(251, 191, 36, 0.4);" onclick="event.stopPropagation();">
-                <div class="modal-header-bar" style="border-bottom: 1px solid rgba(251, 191, 36, 0.2);">
-                    <div class="modal-header-title" style="color: #fbbf24; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+            <div class="tourma-modal-card" data-ui-style="configure-tournament-teams-jsp-031" onclick="event.stopPropagation();">
+                <div class="modal-header-bar" data-ui-style="configure-tournament-teams-jsp-032">
+                    <div class="modal-header-title" data-ui-style="configure-tournament-teams-jsp-033" style="display: flex;">
                         <i class="fa-solid fa-shuffle"></i>
                         <span>Xác Nhận Xáo Trộn Hạt Giống</span>
                     </div>
@@ -276,20 +276,20 @@
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-                
-                <div class="modal-body-content" style="padding: 1.25rem 1rem;">
-                    <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
-                        <strong style="color: #fbbf24;">⚠️ Cảnh báo trận đấu đã diễn ra:</strong><br>
-                        Giải đấu này đã có các trận đấu diễn ra. Việc xáo trộn danh sách hạt giống sẽ thay đổi toàn bộ các cặp đấu và <strong style="color: #ffffff;">XÓA TOÀN BỘ kết quả các trận cũ</strong> khi bạn bấm Sinh Lại Sơ Đồ.
+
+                <div class="modal-body-content" data-ui-style="configure-tournament-teams-jsp-034">
+                    <div data-ui-style="configure-tournament-teams-jsp-035">
+                        <strong data-ui-style="configure-tournament-teams-jsp-036">⚠️ Cảnh báo trận đấu đã diễn ra:</strong><br>
+                        Giải đấu này đã có các trận đấu diễn ra. Việc xáo trộn danh sách hạt giống sẽ thay đổi toàn bộ các cặp đấu và <strong data-ui-style="configure-tournament-teams-jsp-037">XÓA TOÀN BỘ kết quả các trận cũ</strong> khi bạn bấm Sinh Lại Sơ Đồ.
                     </div>
-                    <p style="color: #94a3b8; font-size: 0.8rem; margin: 0;">
+                    <p data-ui-style="configure-tournament-teams-jsp-038">
                         Bạn có chắc chắn muốn xáo trộn ngẫu nhiên thứ tự các đội không?
                     </p>
                 </div>
 
-                <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem;">
-                    <button type="button" class="btn btn-secondary" onclick="closeShuffleModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
-                    <button type="button" class="btn" style="background: #fbbf24; color: #0b0d12; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="confirmShuffleAndExecute()">
+                <div class="modal-footer-bar" data-ui-style="configure-tournament-teams-jsp-039" style="display: flex;">
+                    <button type="button" class="btn btn-secondary" onclick="closeShuffleModal()" data-ui-style="configure-tournament-teams-jsp-040">Hủy Bỏ</button>
+                    <button type="button" class="btn" data-ui-style="configure-tournament-teams-jsp-041" onclick="confirmShuffleAndExecute()">
                         <i class="fa-solid fa-shuffle"></i> Xác Nhận Xáo Trộn
                     </button>
                 </div>
@@ -402,15 +402,15 @@
 
             // Load initial teams from Database first, fallback to localStorage
             var dbTeams = [
-                <% 
+                <%
                 if (existingTeams != null && !existingTeams.isEmpty()) {
                     for (int i = 0; i < existingTeams.size(); i++) {
                         String cleanName = existingTeams.get(i).getRawName().replace("\"", "\\\"").replace("\n", "");
                 %>
                         "<%= cleanName %>"<%= (i < existingTeams.size() - 1) ? "," : "" %>
-                <% 
+                <%
                     }
-                } 
+                }
                 %>
             ];
 
@@ -488,7 +488,7 @@
             window.extractNamesFromTextarea = function() {
                 var textarea = document.getElementById('teamTextarea');
                 if (!textarea || !textarea.value) return [];
-                
+
                 var lines = textarea.value.split('\n');
                 var names = [];
                 for (var i = 0; i < lines.length; i++) {
@@ -649,24 +649,24 @@
                     tr.draggable = true;
                     tr.setAttribute('data-index', i);
 
-                    tr.innerHTML = 
-                        '<td style="text-align: center;">' +
+                    tr.innerHTML =
+                        '<td data-ui-style="configure-tournament-teams-jsp-042">' +
                             '<span class="seed-badge">' + seedNum + '</span>' +
                         '</td>' +
                         '<td>' +
                             '<input type="text" class="team-name-input" value="' + escapeHtml(teamName) + '" onchange="window.updateTeamName(' + i + ', this.value)">' +
                         '</td>' +
-                        '<td style="text-align: center;">' +
+                        '<td data-ui-style="configure-tournament-teams-jsp-043">' +
                             '<div class="drag-handle" title="Kéo để đổi hạt giống">' +
                                 '<i class="fa-solid fa-grip-vertical"></i>' +
                             '</div>' +
                         '</td>' +
-                        '<td style="text-align: center;">' +
+                        '<td data-ui-style="configure-tournament-teams-jsp-044">' +
                             '<button type="button" class="btn-delete-row" title="Xóa đội" onclick="window.deleteSingleTeam(' + i + ')">' +
                                 '<i class="fa-solid fa-xmark"></i>' +
                             '</button>' +
                         '</td>' +
-                        '<td style="text-align: center;">' +
+                        '<td data-ui-style="configure-tournament-teams-jsp-045">' +
                             '<input type="checkbox" class="team-select-cb" data-index="' + i + '">' +
                         '</td>';
 

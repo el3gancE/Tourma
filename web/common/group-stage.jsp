@@ -68,7 +68,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
 </head>
-<body style="background: #0b0d12; color: #f8fafc;">
+<body data-ui-style="group-stage-jsp-001">
 
     <!-- Stage Finish Alert Component (Locked Stage 2) -->
 
@@ -90,7 +90,7 @@
     <jsp:include page="/common/component/popup.jsp" />
 
     <main class="container has-sidebar round-robin-container">
-        
+
         <!-- TOP CONTROL BAR (Round Robin / Group Stage Design Style) -->
         <div class="rr-control-bar">
             <div class="rr-info-group">
@@ -100,8 +100,8 @@
                 </h1>
                 <span class="format-badge-rr" title="Group Stage">GS</span>
                 <span id="gsTeamCountBadge" class="team-count-badge">0 Đội</span>
-                <span id="gsAdvanceBadge" class="team-count-badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <i class="fa-solid fa-circle-check" style="font-size: 0.75rem;"></i>
+                <span id="gsAdvanceBadge" class="team-count-badge" data-ui-style="group-stage-jsp-002" style="display: inline-flex;">
+                    <i class="fa-solid fa-circle-check" data-ui-style="group-stage-jsp-003"></i>
                     <span id="gsAdvanceText">0 Đội đi tiếp</span>
                 </span>
             </div>
@@ -112,10 +112,10 @@
                 </button>
 
                 <div class="view-mode-toggle-group">
-                    <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle active" style="text-decoration: none;">
+                    <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle active" data-ui-style="group-stage-jsp-004">
                         <i class="fa-solid fa-calendar-days"></i> Lịch
                     </a>
-                    <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle" style="text-decoration: none;">
+                    <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle" data-ui-style="group-stage-jsp-005">
                         <i class="fa-solid fa-ranking-star"></i> BXH
                     </a>
                 </div>
@@ -124,11 +124,11 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
         <!-- CONTAINER FOR EMPTY TEAM ALERT -->
-        <div id="gsEmptyAlertContainer" style="display: none; width: 100%;"></div>
+        <div id="gsEmptyAlertContainer" data-ui-style="group-stage-jsp-006" style="display: none;"></div>
 
         <!-- MAIN WORKSPACE CONTENT -->
         <div id="gsMainContent">
-            
+
             <!-- GROUP SELECTOR FILTER PILLS BAR -->
             <div id="gsGroupSelectorBar" class="rr-round-selector-bar">
                 <!-- Dynamic Group Pills (Tất cả các bảng, Bảng A, Bảng B...) -->
@@ -141,7 +141,7 @@
 
             <!-- STANDINGS VIEW (Dynamically toggled) -->
             <div id="gsStandingsView" style="display: none;">
-                <div id="gsStandingsContainer" class="gst-container" style="padding: 0;"></div>
+                <div id="gsStandingsContainer" class="gst-container" data-ui-style="group-stage-jsp-007"></div>
             </div>
 
         </div>
@@ -168,7 +168,7 @@
         window.dbGroupMatches = <%= dbMatchesJson %>;
         window.DB_GROUP_ASSIGNMENTS = <%= (dbGroupAssignments != null && !dbGroupAssignments.trim().isEmpty() && !dbGroupAssignments.trim().equals("{}")) ? dbGroupAssignments : "null" %>;
         window.serverTeams = [
-            <% if (dbTeamsList != null && !dbTeamsList.isEmpty()) { 
+            <% if (dbTeamsList != null && !dbTeamsList.isEmpty()) {
                 for (int i = 0; i < dbTeamsList.size(); i++) {
                     Team tm = dbTeamsList.get(i);
                     String tName = tm.getRawName();
@@ -179,7 +179,7 @@
                     String nameEsc = tName.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
             %>
                 { id: "<%= tm.getId() %>", name: "<%= nameEsc %>", seed: <%= tm.getOriginalSeed() > 0 ? tm.getOriginalSeed() : (i + 1) %> }<%= (i < dbTeamsList.size() - 1) ? "," : "" %>
-            <%  } 
+            <%  }
             } %>
         ];
     </script>

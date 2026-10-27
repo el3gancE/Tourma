@@ -68,7 +68,7 @@
       var hHtml = (prof.highestRank > 0) ? ('#' + prof.highestRank) : '-';
       if (prof.highestRank > 0 && prof.highestRankTourneyName) {
         var hUrl = prof.highestRankTourneyUrl || '#';
-        hHtml += '<span class="rank-tourney-name">(<a href="' + hUrl + '" class="rank-tourney-link" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;" title="Xem giai đoạn cuối giải ' + prof.highestRankTourneyName + '">' + prof.highestRankTourneyName + '</a>)</span>';
+        hHtml += '<span class="rank-tourney-name">(<a href="' + hUrl + '" class="rank-tourney-link" data-ui-style="team-profile-js-001" title="Xem giai đoạn cuối giải ' + prof.highestRankTourneyName + '">' + prof.highestRankTourneyName + '</a>)</span>';
       }
       hEl.innerHTML = hHtml;
       if (prof.highestRank === 1 && prof.currentPoints > 0) {
@@ -112,21 +112,21 @@
     // 6. Tournaments Played
     var tpCountEl = document.getElementById('profTourneysPlayed');
     if (tpCountEl) {
-      tpCountEl.innerHTML = (prof.playedCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700;">Giải</span>';
+      tpCountEl.innerHTML = (prof.playedCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-002">Giải</span>';
     }
 
     // 7. Achievement Cards
     var ccEl = document.getElementById('profChampCount');
-    if (ccEl) ccEl.innerHTML = (prof.champCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">Lần</span>';
+    if (ccEl) ccEl.innerHTML = (prof.champCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-003">Lần</span>';
 
     var ruEl = document.getElementById('profRunnerUpCount');
-    if (ruEl) ruEl.innerHTML = (prof.runnerUpCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">Lần</span>';
+    if (ruEl) ruEl.innerHTML = (prof.runnerUpCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-004">Lần</span>';
 
     var scEl = document.getElementById('profSemiCount');
-    if (scEl) scEl.innerHTML = (prof.semiCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">Lần</span>';
+    if (scEl) scEl.innerHTML = (prof.semiCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-005">Lần</span>';
 
     var qcEl = document.getElementById('profQuarterCount');
-    if (qcEl) qcEl.innerHTML = (prof.quarterCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">Lần</span>';
+    if (qcEl) qcEl.innerHTML = (prof.quarterCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-006">Lần</span>';
 
     // 8. Champion Badges Section (Only if champCount > 0)
     var elChampSection = document.getElementById('profChampionSection');
@@ -139,7 +139,7 @@
           elChampBadges.innerHTML = reversedChampList.map(function (ct) {
             var bUrl = ct.finalStageUrl || '#';
             var tier = (ct.tier || ct.tierName || 'A').toUpperCase();
-            return '<a href="' + bUrl + '" class="champion-badge-pill" data-tournament-id="' + (ct.id || ct.tournamentId || '') + '" data-tier="' + tier + '" style="text-decoration: none; cursor: pointer;" title="Xem giai đoạn cuối giải ' + ct.name + '">' +
+            return '<a href="' + bUrl + '" class="champion-badge-pill" data-tournament-id="' + (ct.id || ct.tournamentId || '') + '" data-tier="' + tier + '" data-ui-style="team-profile-js-007" title="Xem giai đoạn cuối giải ' + ct.name + '">' +
               '<i class="fa-solid fa-crown"></i> ' + ct.name +
             '</a>';
           }).join('');
@@ -183,21 +183,21 @@
           var pTier = (perf.tier || perf.tierName || 'A').toUpperCase();
 
           rowsHtml += '<tr>' +
-            '<td style="font-weight: 700; color: var(--text-muted);">' + sttVal + '</td>' +
-            '<td style="font-weight: 700; color: #ffffff;">' +
-              '<a href="' + tourneyUrl + '" class="tourney-name-link" style="color: #ffffff; text-decoration: none; font-weight: 700; transition: color 0.18s ease;" onmouseover="this.style.color=\'#2dd4bf\'" onmouseout="this.style.color=\'#ffffff\'" title="Xem giai đoạn cuối giải ' + perf.name + '">' +
+            '<td data-ui-style="team-profile-js-008">' + sttVal + '</td>' +
+            '<td data-ui-style="team-profile-js-009">' +
+              '<a href="' + tourneyUrl + '" class="tourney-name-link" data-ui-style="team-profile-js-010" onmouseover="this.style.color=\'#2dd4bf\'" onmouseout="this.style.color=\'#ffffff\'" title="Xem giai đoạn cuối giải ' + perf.name + '">' +
                 perf.name +
               '</a>' +
-              '<span class="tier-tag tier-' + pTier.toLowerCase() + '" style="margin-left: 0.55rem;">[' + pTier + ']</span>' +
+              '<span class="tier-tag tier-' + pTier.toLowerCase() + '" data-ui-style="team-profile-js-011">[' + pTier + ']</span>' +
             '</td>' +
-            '<td style="color: var(--text-muted); font-size: 0.82rem; font-weight: 600;">' + perf.format + '</td>' +
+            '<td data-ui-style="team-profile-js-012">' + perf.format + '</td>' +
             '<td><span class="achievement-text ' + achClass + '">' + perf.achievement + '</span></td>' +
-            '<td style="text-align: right; font-weight: 800; color: #fbbf24;">+' + (perf.pointsEarned || 0) + ' pts</td>' +
+            '<td data-ui-style="team-profile-js-013">+' + (perf.pointsEarned || 0) + ' pts</td>' +
           '</tr>';
         });
         elTbody.innerHTML = rowsHtml;
       } else {
-        elTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">Chưa có dữ liệu thành tích thi đấu giải con nào trong Series này.</td></tr>';
+        elTbody.innerHTML = '<tr><td colspan="5" data-ui-style="team-profile-js-014">Chưa có dữ liệu thành tích thi đấu giải con nào trong Series này.</td></tr>';
       }
     }
     // 11. Render Rank Progression Chart
@@ -219,7 +219,7 @@
       if (card) {
         var wrapper = card.querySelector('.rank-chart-wrapper');
         if (wrapper) {
-          wrapper.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.9rem;">Chưa có dữ liệu biến động thứ hạng cho đội này.</div>';
+          wrapper.innerHTML = '<div data-ui-style="team-profile-js-015" style="display: flex;">Chưa có dữ liệu biến động thứ hạng cho đội này.</div>';
         }
       }
       return;

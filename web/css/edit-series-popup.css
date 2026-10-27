@@ -1,0 +1,214 @@
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-001"]:not(#tourma-inline-specificity) {
+    max-width: 520px;
+    border-color: rgba(251, 191, 36, 0.45);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 25px rgba(251, 191, 36, 0.15);
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-002"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1.25rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-003"]:not(#tourma-inline-specificity) {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 0.4rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-004"]:not(#tourma-inline-specificity) {
+    color: #ef4444;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-005"]:not(#tourma-inline-specificity) {
+    font-size: 0.9rem;
+    font-weight: 700;
+    border-radius: 8px;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-006"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1.25rem;
+    background: rgba(251, 191, 36, 0.06);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-007"]:not(#tourma-inline-specificity) {
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #fbbf24;
+    margin-bottom: 0.4rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-008"]:not(#tourma-inline-specificity) {
+    color: #ef4444;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-009"]:not(#tourma-inline-specificity) {
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-010"]:not(#tourma-inline-specificity) {
+    font-weight: 800;
+    font-size: 1.1rem;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.08);
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-011"]:not(#tourma-inline-specificity) {
+    font-size: 1.25rem;
+    font-weight: 800;
+    text-align: center;
+    border-radius: 8px;
+    color: #fbbf24;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-012"]:not(#tourma-inline-specificity) {
+    font-weight: 800;
+    font-size: 1.1rem;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.08);
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-013"]:not(#tourma-inline-specificity) {
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 0.65rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-014"]:not(#tourma-inline-specificity) {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    align-self: center;
+    margin-right: 0.25rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-015"]:not(#tourma-inline-specificity) {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-016"]:not(#tourma-inline-specificity) {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-017"]:not(#tourma-inline-specificity) {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-018"]:not(#tourma-inline-specificity) {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-019"]:not(#tourma-inline-specificity) {
+    font-size: 0.78rem;
+    color: #cbd5e1;
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    line-height: 1.45;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-020"]:not(#tourma-inline-specificity) {
+    margin-bottom: 1.5rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-021"]:not(#tourma-inline-specificity) {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 0.4rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-022"]:not(#tourma-inline-specificity) {
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: 8px;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-023"]:not(#tourma-inline-specificity) {
+    justify-content: flex-end;
+    gap: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1rem;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-024"]:not(#tourma-inline-specificity) {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    font-weight: 700;
+    border-radius: 8px;
+}
+
+/* web/common/component/edit-series-popup.jsp */
+[data-ui-style="edit-series-popup-jsp-025"]:not(#tourma-inline-specificity) {
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 0.65rem 1.4rem;
+}

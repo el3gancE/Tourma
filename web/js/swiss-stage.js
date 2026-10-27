@@ -698,7 +698,7 @@
         mainWrapper.style.display = 'none';
         var descEl = document.getElementById('swissInvalidTeamDesc');
         if (descEl) {
-          descEl.innerHTML = 'Thể thức Swiss System đòi hỏi bắt buộc phải có <strong>đúng 16 đội bóng</strong> tham gia. Hiện tại giải đấu đang có <strong style="color: #f43f5e; font-weight: 800;">' + teamsList.length + ' đội</strong>.<br>Vui lòng thêm hoặc điều chỉnh danh sách cho đủ 16 đội để xem lịch thi đấu Swiss.';
+          descEl.innerHTML = 'Thể thức Swiss System đòi hỏi bắt buộc phải có <strong>đúng 16 đội bóng</strong> tham gia. Hiện tại giải đấu đang có <strong data-ui-style="swiss-stage-js-001">' + teamsList.length + ' đội</strong>.<br>Vui lòng thêm hoặc điều chỉnh danh sách cho đủ 16 đội để xem lịch thi đấu Swiss.';
         }
       }
       return;

@@ -207,3 +207,27 @@
     padding-bottom: 0.35rem;
     border-bottom: 1px solid rgba(251, 191, 36, 0.2);
 }
+
+
+/* Extracted presentation styles. Runtime display/visibility and computed values stay in source.
+ * The specificity anchor preserves precedence over existing component selectors;
+ * runtime element.style assignments can still override these declarations. */
+/* web/common/single-elimination.jsp */
+[data-ui-style="single-elimination-jsp-001"]:not(#tourma-inline-specificity) {
+    width: 100%;
+}
+
+/* web/js/single-elimination.js */
+[data-ui-style="single-elimination-js-001"]:not(#tourma-inline-specificity) {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-muted, #94a3b8);
+    font-size: 15px;
+}
+
+/* web/js/single-elimination.js */
+[data-ui-style="single-elimination-js-002"]:not(#tourma-inline-specificity) {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-muted, #94a3b8);
+}

@@ -37,7 +37,8 @@
                     <!-- Main Design System CSS & Dedicated Create Tournament CSS -->
                     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
                     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
-                </head>
+                    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-create-tournament.css">
+</head>
 
                 <body>
                     <!-- Include Shared Navigation Header Component -->
@@ -51,10 +52,10 @@
                         <jsp:param name="activeStep" value="create-subtourney" />
                     </jsp:include>
 
-                    <main class="container has-sidebar" style="max-width: 580px; padding: 1.5rem 1rem;">
-                        <div style="margin-top: 0.5rem;">
+                    <main class="container has-sidebar" data-ui-style="rolling-create-tournament-jsp-001">
+                        <div data-ui-style="rolling-create-tournament-jsp-002">
                             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= selectedSeriesId %>"
-                                class="text-muted" style="font-size: 0.8rem; text-decoration: none;">
+                                class="text-muted" data-ui-style="rolling-create-tournament-jsp-003">
                                 <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard Series
                             </a>
                         </div>
@@ -64,7 +65,7 @@
                             <h1 class="form-header-title">
                                 <i class="fa-solid fa-trophy text-mint"></i> Khởi Tạo Giải Đấu Con - <%= seriesName %>
                             </h1>
-                            <p class="text-muted" style="margin-bottom: 1.5rem; font-size: 0.82rem;">
+                            <p class="text-muted" data-ui-style="rolling-create-tournament-jsp-004">
                                 Nhập tên và cấp độ giải đấu con thuộc Series <strong>
                                     <%= seriesName %>
                                 </strong>.
@@ -73,7 +74,7 @@
                             <!-- Error Alert Message -->
                             <% if (request.getAttribute("errorMessage") !=null) { %>
                                 <div
-                                    style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.82rem; margin-bottom: 1.25rem;">
+                                    data-ui-style="rolling-create-tournament-jsp-005">
                                     <i class="fa-solid fa-triangle-exclamation"></i>
                                     <%= request.getAttribute("errorMessage") %>
                                 </div>
@@ -95,22 +96,22 @@
                                         <!-- 2. CẤP ĐỘ GIẢI ĐẤU (TIER S, A, B, C, D) -->
                                         <div class="form-group">
                                             <label class="form-label" for="tierName">Cấp Độ Giải Đấu (Tier) (*)</label>
-                                            <select id="tierName" name="tierName" class="form-control" required style="font-weight: 700;">
-                                                <option value="" selected disabled style="color: #94a3b8; font-weight: normal; background: #12161f;">-- Chọn Cấp Độ Giải Đấu (Tier) --</option>
-                                                <option value="S" style="color: #fbbf24; font-weight: 800; background: #12161f;">Tier S</option>
-                                                <option value="A" style="color: #c084fc; font-weight: 800; background: #12161f;">Tier A</option>
-                                                <option value="B" style="color: #34d399; font-weight: 800; background: #12161f;">Tier B</option>
-                                                <option value="C" style="color: #60a5fa; font-weight: 800; background: #12161f;">Tier C</option>
-                                                <option value="D" style="color: #ffffff; font-weight: 800; background: #12161f;">Tier D</option>
+                                            <select id="tierName" name="tierName" class="form-control" required data-ui-style="rolling-create-tournament-jsp-006">
+                                                <option value="" selected disabled data-ui-style="rolling-create-tournament-jsp-007">-- Chọn Cấp Độ Giải Đấu (Tier) --</option>
+                                                <option value="S" data-ui-style="rolling-create-tournament-jsp-008">Tier S</option>
+                                                <option value="A" data-ui-style="rolling-create-tournament-jsp-009">Tier A</option>
+                                                <option value="B" data-ui-style="rolling-create-tournament-jsp-010">Tier B</option>
+                                                <option value="C" data-ui-style="rolling-create-tournament-jsp-011">Tier C</option>
+                                                <option value="D" data-ui-style="rolling-create-tournament-jsp-012">Tier D</option>
                                             </select>
-                                            <div id="tierErrorMsg" style="display: none; color: #f87171; font-size: 0.82rem; margin-top: 0.4rem; font-weight: 600;">
+                                            <div id="tierErrorMsg" data-ui-style="rolling-create-tournament-jsp-013" style="display: none;">
                                                 <i class="fa-solid fa-circle-exclamation"></i> Vui lòng chọn Tier cho giải đấu! Đây là thông tin bắt buộc.
                                             </div>
                                         </div>
 
                                         <!-- SUBMIT BUTTONS -->
                                         <div
-                                            style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.75rem;">
+                                            data-ui-style="rolling-create-tournament-jsp-014" style="display: flex;">
                                             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= selectedSeriesId %>"
                                                 class="btn btn-secondary">Hủy Bỏ</a>
                                             <button type="submit" class="btn btn-mint">

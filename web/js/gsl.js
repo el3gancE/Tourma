@@ -1007,11 +1007,11 @@
             if (groupKeys.length === 0) {
                 var cPath = this.getContextPath();
                 var manageUrl = (cPath ? cPath : '') + '/common/manage-group.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GSL';
-                workspace.innerHTML = '<div style="text-align: center; padding: 3rem 1.5rem; background: #121620; border: 1px dashed rgba(45,212,191,0.3); border-radius: 12px; margin: 2rem auto; max-width: 560px;">' +
-                    '<i class="fa-solid fa-layer-group" style="font-size: 2.8rem; color: #2dd4bf; margin-bottom: 1rem;"></i>' +
-                    '<h3 style="font-size: 1.15rem; font-weight: 800; color: #f8fafc; margin: 0 0 0.5rem 0;">Chưa thiết lập chia bảng GSL</h3>' +
-                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.5rem 0;">Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
-                    '<a href="' + manageUrl + '" class="btn btn-mint" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; padding: 0.55rem 1.35rem; text-decoration: none; border-radius: 8px;">' +
+                workspace.innerHTML = '<div data-ui-style="gsl-js-001">' +
+                    '<i class="fa-solid fa-layer-group" data-ui-style="gsl-js-002"></i>' +
+                    '<h3 data-ui-style="gsl-js-003">Chưa thiết lập chia bảng GSL</h3>' +
+                    '<p data-ui-style="gsl-js-004">Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
+                    '<a href="' + manageUrl + '" class="btn btn-mint" data-ui-style="gsl-js-005" style="display: inline-flex;">' +
                     '<i class="fa-solid fa-pen-to-square"></i> Quản Lý & Chia Bảng Đấu' +
                     '</a>' +
                     '</div>';
@@ -1352,11 +1352,11 @@
             if (groupKeys.length === 0) {
                 var cPath = this.getContextPath();
                 var manageUrl = (cPath ? cPath : '') + '/common/manage-group.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GSL';
-                container.innerHTML = '<div style="text-align: center; padding: 3rem 1.5rem; background: #121620; border: 1px dashed rgba(45,212,191,0.3); border-radius: 12px; margin: 2rem auto; max-width: 560px;">' +
-                    '<i class="fa-solid fa-layer-group" style="font-size: 2.8rem; color: #2dd4bf; margin-bottom: 1rem;"></i>' +
-                    '<h3 style="font-size: 1.15rem; font-weight: 800; color: #f8fafc; margin: 0 0 0.5rem 0;">Chưa thiết lập chia bảng GSL</h3>' +
-                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.5rem 0;">Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
-                    '<a href="' + manageUrl + '" class="btn btn-mint" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; padding: 0.55rem 1.35rem; text-decoration: none; border-radius: 8px;">' +
+                container.innerHTML = '<div data-ui-style="gsl-js-006">' +
+                    '<i class="fa-solid fa-layer-group" data-ui-style="gsl-js-007"></i>' +
+                    '<h3 data-ui-style="gsl-js-008">Chưa thiết lập chia bảng GSL</h3>' +
+                    '<p data-ui-style="gsl-js-009">Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
+                    '<a href="' + manageUrl + '" class="btn btn-mint" data-ui-style="gsl-js-010" style="display: inline-flex;">' +
                     '<i class="fa-solid fa-pen-to-square"></i> Quản Lý & Chia Bảng Đấu' +
                     '</a>' +
                     '</div>';
@@ -2499,7 +2499,7 @@
         createFallbackCard: function (m) {
             var div = document.createElement('div');
             div.className = 'bracket-node-card';
-            div.innerHTML = '<div style="padding:10px;font-size:0.8rem;">' + (m.team1 ? m.team1.name : 'T1') + ' vs ' + (m.team2 ? m.team2.name : 'T2') + '</div>';
+            div.innerHTML = '<div data-ui-style="gsl-js-011">' + (m.team1 ? m.team1.name : 'T1') + ' vs ' + (m.team2 ? m.team2.name : 'T2') + '</div>';
             return div;
         }
     };

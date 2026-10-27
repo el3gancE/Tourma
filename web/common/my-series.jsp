@@ -9,15 +9,15 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Chuỗi Giải Của Tôi - TOURMA</title>
-        
+
         <!-- Google Font Lexend -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-        
+
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        
+
         <!-- Main Design System CSS & Dedicated My Series CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-series.css">
@@ -30,14 +30,14 @@
         </jsp:include>
 
         <main class="container">
-            
+
             <!-- Page Header Row -->
             <div class="page-header-row">
                 <div>
                     <h1 class="page-title">
                         <i class="fa-solid fa-layer-group text-gold"></i> Chuỗi Giải Của Tôi
                     </h1>
-                    <p class="text-muted" style="font-size: 0.85rem; margin-top: 0.2rem;">
+                    <p class="text-muted" data-ui-style="my-series-jsp-001">
                         Danh sách các Series mùa giải tích lũy điểm Rolling Window hoặc biến thiên FIFA Elo Rating.
                     </p>
                 </div>
@@ -67,10 +67,10 @@
                 <c:when test="${not empty seriesList}">
                     <div class="series-cards-grid" id="seriesGrid">
                         <c:forEach var="s" items="${seriesList}">
-                            <div class="series-card" 
+                            <div class="series-card"
                                  data-model="${s.rankingModel}"
                                  data-name="${s.name}">
-                                
+
                                 <div class="series-card-main">
                                     <div class="series-card-top-row">
                                         <h3 class="series-card-title">${s.name}</h3>
@@ -99,15 +99,15 @@
                                 </div>
 
                                 <div class="series-card-footer">
-                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                        <form action="${pageContext.request.contextPath}/my-series" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa Series \'${s.name}\'?\nToàn bộ các giải con, lịch sử và bảng xếp hạng thuộc Series này sẽ bị xóa.');">
+                                    <div data-ui-style="my-series-jsp-002" style="display: flex;">
+                                        <form action="${pageContext.request.contextPath}/my-series" method="POST" data-ui-style="my-series-jsp-003" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa Series \'${s.name}\'?\nToàn bộ các giải con, lịch sử và bảng xếp hạng thuộc Series này sẽ bị xóa.');">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="seriesId" value="${s.id}">
                                             <button type="submit" class="btn-delete-series" title="Xóa Series">
                                                 <i class="fa-solid fa-trash-can"></i> Xóa
                                             </button>
                                         </form>
-                                        <button type="button" class="btn" onclick="openEditSeriesPopup({ id: '${s.id}', name: '${s.name.replace('\'', '\\\'')}', phaseSize: ${s.phaseSize > 0 ? s.phaseSize : 10}, status: '${s.status}', actionUrl: '${pageContext.request.contextPath}/my-series' })" title="Chỉnh sửa cấu hình & số giải tích lũy W" style="background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.25); padding: 0.45rem 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                        <button type="button" class="btn" onclick="openEditSeriesPopup({ id: '${s.id}', name: '${s.name.replace('\'', '\\\'')}', phaseSize: ${s.phaseSize > 0 ? s.phaseSize : 10}, status: '${s.status}', actionUrl: '${pageContext.request.contextPath}/my-series' })" title="Chỉnh sửa cấu hình & số giải tích lũy W" data-ui-style="my-series-jsp-004" style="display: inline-flex;">
                                             <i class="fa-solid fa-sliders"></i> Sửa (W = ${s.phaseSize})
                                         </button>
                                     </div>
@@ -132,11 +132,11 @@
                 <c:otherwise>
                     <!-- Empty State Box when no series data exists -->
                     <div class="empty-state-box">
-                        <div style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        <div data-ui-style="my-series-jsp-005">
                             <i class="fa-solid fa-folder-open"></i>
                         </div>
-                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem;">Chưa có chuỗi giải nào được tạo</h3>
-                        <p class="text-muted" style="font-size: 0.82rem; margin-bottom: 1.25rem;">
+                        <h3 data-ui-style="my-series-jsp-006">Chưa có chuỗi giải nào được tạo</h3>
+                        <p class="text-muted" data-ui-style="my-series-jsp-007">
                             Bạn chưa khởi tạo chuỗi giải Series nào. Hãy bắt đầu cấu hình Series đầu tiên.
                         </p>
                         <a href="${pageContext.request.contextPath}/common/create-series.jsp" class="btn btn-gold-outline">
@@ -161,7 +161,7 @@
                 const cards = document.querySelectorAll('.series-card');
                 cards.forEach(card => {
                     const model = card.getAttribute('data-model');
-                    
+
                     if (modelType === 'ALL') {
                         card.style.display = 'flex';
                     } else if (modelType === 'ROLLING_WINDOW' && model === 'ROLLING_WINDOW') {
