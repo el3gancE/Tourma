@@ -698,7 +698,7 @@
                     targetCard.style.position = 'absolute';
                     targetCard.style.top = Math.round(desiredTop) + 'px';
                     targetCard.style.left = '0';
-                    targetCard.style.width = '220px';
+                    targetCard.style.width = '100%';
 
                     var finalCenterY = boxPos.top + desiredTop + (cardHeight / 2);
                     if (tMid) cardCenterMap[String(tMid).trim()] = finalCenterY;
@@ -765,7 +765,6 @@
 
                 secHeader.innerHTML = '<div class="list-round-title-group">'
                     + '<h3 class="list-round-title">' + rTitle + '</h3>'
-                    + '<span class="list-round-badge">' + (roundObj.matches ? roundObj.matches.length : 0) + ' trận</span>'
                     + '</div>'
                     + listCtrlHtml;
                 roundSec.appendChild(secHeader);

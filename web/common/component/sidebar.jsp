@@ -95,7 +95,7 @@
     boolean hasTournament = (currentTournament != null);
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=10">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=3">
 
 <aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">

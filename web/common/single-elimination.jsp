@@ -126,6 +126,11 @@
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+        <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=10?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css">
         <!-- Main Stylesheets -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=<%= System.currentTimeMillis() %>">
@@ -138,7 +143,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css?v=<%= System.currentTimeMillis() %>">
     </head>
-    <body>
+    <body class="ui-page tournament-workspace se-page">
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp" />
 
@@ -153,8 +158,12 @@
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="tournaments" />
+            <jsp:param name="themeToggle" value="true" />
         </jsp:include>
 
+        <div class="tournament-shell se-workspace">
+        <details class="tournament-navigation" open>
+        <summary>Điều hướng giải đấu <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
         <!-- Sidebar Component (Step 4: Vòng Đấu / Sơ Đồ Nhánh) -->
         <jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="activeStep" value="bracket" />
@@ -162,8 +171,9 @@
             <jsp:param name="seriesId" value="<%= seriesIdVal %>" />
         </jsp:include>
 
-        <!-- Main Content Area Shifted Right by Sidebar -->
-        <main class="container has-sidebar">
+        </details>
+        <!-- Main Content Area -->
+        <main class="se-main" aria-label="Sơ đồ Single Elimination">
 
             <!-- Top Tournament Navigation & Control Bar Component -->
             <jsp:include page="/common/component/tournament-navbar.jsp">
@@ -229,6 +239,7 @@
             </div>
 
         </main>
+        </div>
 
         <!-- Score Edit Popup Component -->
         <jsp:include page="/common/component/popup.jsp" />

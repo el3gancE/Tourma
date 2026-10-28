@@ -87,6 +87,7 @@
     align-items: center;
     gap: 10px;
     min-height: 44px;
+    border-left: 3px solid transparent;
     padding: 12px 10px;
     border-radius: 7px;
     color: var(--ui-muted);
@@ -109,6 +110,7 @@
 .tournament-sidebar .sidebar-section .sidebar-menu-link.active {
     background: var(--ui-accent-soft);
     color: var(--ui-accent);
+    border-left-color: var(--ui-accent);
     font-weight: 500;
 }
 .tournament-sidebar .sidebar-menu-link:focus-visible {

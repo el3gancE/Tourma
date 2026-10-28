@@ -1,0 +1,56 @@
+/* List match card. Uses the same palette and state treatment as bracket nodes. */
+.match-card-item .match-score-single-box:empty::before { content:'–'; color:var(--ui-muted); }
+.match-card-item.bye-match-item .match-score-single-box:empty::before { content:none; }
+.match-card-item .match-card-meta {
+    align-self:stretch;
+    display:flex;
+    align-items:center;
+    border-right:1px solid var(--ui-line);
+    padding-right:10px;
+}
+.match-card-item .match-card-versus:has(.team-left.winner) .match-score-single-box:first-child,
+.match-card-item .match-card-versus:has(.team-right.winner) .match-score-single-box:last-child {
+    color:var(--ui-accent);
+    font-weight:700;
+}
+@import url('design-tokens.css?v=10');
+.match-card-item { box-sizing:border-box; display:grid; grid-template-columns:44px minmax(0,1fr); align-items:center; gap:12px; width:100%; min-width:0; min-height:48px; padding:4px 14px; border:1px solid var(--ui-line); border-radius:7px; background:var(--ui-surface); color:var(--ui-text); font:12px/1.5 var(--ui-font); cursor:pointer; transition:border-color .15s; }
+.match-card-item:hover:not(.disabled-unconfirmed) { border-color:var(--ui-accent); box-shadow:0 0 0 1px var(--ui-accent), var(--ui-card-shadow); }
+.match-card-item:focus-visible { outline:2px solid var(--ui-accent); outline-offset:3px; }
+.match-card-item .match-card-meta { grid-column:1; grid-row:1; color:var(--ui-muted); font-size:10px; font-variant-numeric:tabular-nums; }
+.match-card-item .match-card-accent-bar { display:none; }
+.match-card-item .match-card-actions { display:none; }
+.match-card-item .match-card-versus { grid-column:2; grid-row:1; display:grid; grid-template-columns:22px minmax(0,1fr) auto minmax(0,1fr) 22px; align-items:center; gap:10px; min-height:30px; }
+.match-card-item .match-team-side { min-width:0; padding-block:3px; }
+.match-card-item .team-right { text-align:right; }
+.match-card-item .match-list-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:500; }
+.match-card-item .match-list-seed { color:var(--ui-muted); text-align:center; font-size:10px; font-variant-numeric:tabular-nums; }
+.match-card-item .match-score-container { display:flex; align-items:center; gap:6px; }
+.match-card-item .match-score-single-box { min-width:24px; min-height:24px; display:grid; place-items:center; padding:0 4px; background:transparent; border:0; border-radius:0; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; }
+.match-card-item .match-score-dash { color:var(--ui-muted); }
+.match-card-item .winner .match-list-name { font-weight:700; color:var(--ui-accent); }
+.match-card-item .placeholder,.match-card-item .bye-team { color:var(--ui-muted); }
+.match-card-item .match-list-status.done::before { content:'✓ '; }
+.match-card-item .match-list-status.live { color:var(--ui-accent); }
+.match-card-item .match-list-status.live::before { content:'● '; }
+.match-card-item.disabled-unconfirmed { cursor:default; }
+@media (hover:hover) {
+    .match-card-item:not(.disabled-unconfirmed):hover { border-color:var(--ui-accent); }
+}
+@media (prefers-reduced-motion:reduce) {
+    .match-card-item { transition:none; }
+    .match-card-item:not(.disabled-unconfirmed):hover { transform:none; }
+}
+@media(max-width:600px) { .match-card-item { padding:4px 10px; grid-template-columns:30px minmax(0,1fr); gap:6px; } .match-card-item .match-card-versus { gap:5px; grid-template-columns:16px minmax(0,1fr) auto minmax(0,1fr) 16px; } .match-card-item .match-score-single-box { min-width:24px; } }
+
+.match-card-item .match-list-status.pending { display:inline-block; padding:2px 6px; border-radius:999px; background:var(--ui-match-score); color:var(--ui-muted); }
+
+/* Match state remains internal; cards show teams and scores only. */
+.match-card-item .match-list-status { display: none; }
+
+
+/* Thin neutral outline shared across match states. */
+.match-card-item.match-card-item { border-width: 0.5px; border-color: var(--ui-match-border); }
+
+.match-card-item .match-score-single-box:empty::before { content:'–'; color:var(--ui-muted); }
+.match-card-item.bye-match-item .match-score-single-box:empty::before { content:none; }

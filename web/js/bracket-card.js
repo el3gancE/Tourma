@@ -207,17 +207,38 @@
             card.dataset.matchId = matchId;
             card.setAttribute('data-match-id', String(matchId));
             card.id = 'bracket-match-' + matchId;
+            if (isPlayable) {
+                card.tabIndex = 0;
+                card.setAttribute('role', 'button');
+                card.setAttribute('aria-label', 'Trận ' + (matchNum || '') + ': ' + t1Name + ' – ' + t2Name);
+                card.addEventListener('keydown', function (event) {
+                    if (event.target === card && (event.key === 'Enter' || event.key === ' ')) {
+                        event.preventDefault();
+                        card.click();
+                    }
+                });
+            }
+
 
 
             var t1RowClass = 'bracket-team-row ' + (isT1Winner ? 'winner ' : '') + (isT1Loser ? 'loser ' : '') + (isT1Bye ? 'bye-row ' : '');
             var t2RowClass = 'bracket-team-row ' + (isT2Winner ? 'winner ' : '') + (isT2Loser ? 'loser ' : '') + (isT2Bye ? 'bye-row ' : '');
 
-            var t1SeedHtml = isT1Placeholder ? '' :
-                (isT1Bye ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' :
-                    ('<span class="bracket-seed-badge">' + (seed1 || '') + '</span>'));
-            var t2SeedHtml = isT2Placeholder ? '' :
-                (isT2Bye ? '<span class="bracket-seed-badge" style="visibility: hidden;"></span>' :
-                    ('<span class="bracket-seed-badge">' + (seed2 || '') + '</span>'));
+            var formatSeedBadge = function (seedVal, isPlaceholder, isBye) {
+                if (isBye) {
+                    return '<span class="bracket-seed-badge" style="visibility: hidden;"></span>';
+                }
+                if (isPlaceholder) {
+                    return '<span class="bracket-seed-badge unseeded"></span>';
+                }
+                if (seedVal !== undefined && seedVal !== null && String(seedVal).trim() !== '') {
+                    return '<span class="bracket-seed-badge">' + seedVal + '</span>';
+                }
+                return '<span class="bracket-seed-badge unseeded"></span>';
+            };
+
+            var t1SeedHtml = formatSeedBadge(seed1, isT1Placeholder, isT1Bye);
+            var t2SeedHtml = formatSeedBadge(seed2, isT2Placeholder, isT2Bye);
 
             var matchHeaderContent = matchHeaderLabel ?
                 ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') :

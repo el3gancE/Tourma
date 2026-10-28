@@ -87,3 +87,7 @@ component JSP tồn tại không có nghĩa hình thức của component đó đ
 
 Nút chuyển sáng/tối nằm trong header dùng chung, không lặp trong nội dung trang.
 Các màn đã nạp token và theme.js truyền `themeToggle=true` vào header.jsp để bật nút.
+
+## Light mode: nền dịu dùng chung
+
+Nền trang, header/sidebar và canvas dùng trắng ngà `#F7F6F3`; card dùng `#FDFCF9`, vùng phụ dùng `#EEECE6`. Dùng token chung, không đặt nền trắng tinh riêng cho từng màn. Chữ trên nút màu nhấn vẫn giữ trắng để đủ tương phản. Dark mode giữ nguyên.

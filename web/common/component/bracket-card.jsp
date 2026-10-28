@@ -53,7 +53,7 @@
         <div class="bracket-team-row ${param.winner == 'team1' ? 'winner' : ''} <%= isT1Bye ? "bye-row" : "" %>">
             <div class="bracket-team-info">
                 <% if (!isT1Bye) { %>
-                    <span class="bracket-seed-badge">${param.team1Seed}</span>
+                    <span class="bracket-seed-badge <%= (request.getParameter("team1Seed") == null || request.getParameter("team1Seed").trim().isEmpty()) ? "unseeded" : "" %>">${param.team1Seed != null && !param.team1Seed.trim().isEmpty() ? param.team1Seed : "-"}</span>
                 <% } else { %>
                     <span class="bracket-seed-badge" style="visibility: hidden;"></span>
                 <% } %>
@@ -67,7 +67,7 @@
         <div class="bracket-team-row ${param.winner == 'team2' ? 'winner' : ''} <%= isT2Bye ? "bye-row" : "" %>">
             <div class="bracket-team-info">
                 <% if (!isT2Bye) { %>
-                    <span class="bracket-seed-badge">${param.team2Seed}</span>
+                    <span class="bracket-seed-badge <%= (request.getParameter("team2Seed") == null || request.getParameter("team2Seed").trim().isEmpty()) ? "unseeded" : "" %>">${param.team2Seed != null && !param.team2Seed.trim().isEmpty() ? param.team2Seed : "-"}</span>
                 <% } else { %>
                     <span class="bracket-seed-badge" style="visibility: hidden;"></span>
                 <% } %>
