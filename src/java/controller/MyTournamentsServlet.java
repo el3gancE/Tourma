@@ -40,6 +40,13 @@ public class MyTournamentsServlet extends HttpServlet {
                 request.getParameter("filter"), request.getParameter("page"));
         List<Tournament> tournamentList = page.getTournaments();
         
+        java.util.Map<String, String> seriesNames = new java.util.HashMap<>();
+        if (tournamentList.stream().anyMatch(t -> t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty())) {
+            for (model.Series series : new dao.SeriesDAO().getAllSeries()) {
+                seriesNames.put(series.getId(), series.getName());
+            }
+        }
+        request.setAttribute("seriesNames", seriesNames);
         request.setAttribute("tournamentList", tournamentList);
         request.setAttribute("pageInfo", page);
         request.getRequestDispatcher("/common/my-tournaments.jsp").forward(request, response);

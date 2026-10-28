@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="dao.TournamentDAO, model.Tournament, java.util.List, java.util.ArrayList" %>
 <%
     String tournamentId = request.getParameter("id");
@@ -94,7 +95,7 @@
         : (request.getContextPath() + "/common/configure-tournament-teams.jsp");
 %>
                     <!DOCTYPE html>
-                    <html lang="vi">
+                    <html lang="vi" data-theme="light">
 
                     <head>
                         <!-- Favicon -->
@@ -117,21 +118,29 @@
                         <link rel="stylesheet"
                             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-                        <!-- Main Design System CSS & Dedicated Creation & Format Configuration CSS & Modal CSS -->
+                        <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+                        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261028-11">
+                        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=2">
+                        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=1">
+                        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=1">
+                        <!-- Format workspace -->
                         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-                        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
+
                         <link rel="stylesheet"
-                            href="${pageContext.request.contextPath}/css/configure-tournament-format.css">
+                            href="${pageContext.request.contextPath}/css/configure-tournament-format.css?v=4">
                         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
                         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
                     </head>
 
-                    <body>
+                    <body class="ui-page workspace-page tournament-workspace format-page">
                         <!-- Include Shared Navigation Header Component -->
                         <jsp:include page="/common/component/header.jsp">
                             <jsp:param name="active" value="create-tournament" />
+                            <jsp:param name="themeToggle" value="true" />
                         </jsp:include>
 
+                        <div class="tournament-shell">
+                        <details class="tournament-navigation" open><summary>Điều hướng giải đấu <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
                         <!-- Include Shared Tournament Sidebar Component -->
                         <jsp:include page="/common/component/sidebar.jsp">
                             <jsp:param name="activeStep" value="format" />
@@ -139,27 +148,29 @@
                             <jsp:param name="seriesId" value="${param.seriesId}" />
                         </jsp:include>
 
-                        <!-- Main Content Container Shifted Right by Sidebar -->
-                        <main class="container has-sidebar">
+                        </details>
+                        <!-- Main Content -->
+                        <main class="format-main">
+                            <header class="format-page-heading"><h1>Cấu hình thể thức</h1><% if (currentTournament != null) { request.setAttribute("formatTournamentName", currentTournament.getName()); %><p><c:out value="${formatTournamentName}" /></p><% } %></header>
 
                             <!-- Top Stage Model Toggle Bar (Single Stage ↔ Multi-Stage) & Copy Config Button -->
                             <div
-                                data-ui-style="configure-tournament-format-jsp-001" style="display: flex;">
+                                class="format-toolbar" data-ui-style="configure-tournament-format-jsp-001" style="display: flex;">
                                 <div class="stage-toggle-bar" data-ui-style="configure-tournament-format-jsp-002">
                                     <button type="button" id="btnToggleSingleStage" class="stage-toggle-btn active"
                                         onclick="selectStageType('SINGLE_STAGE', true)">
-                                        <i class="fa-solid fa-trophy text-mint"></i> Single Stage
+                                        <i class="fa-solid fa-trophy text-mint"></i> Một giai đoạn
                                     </button>
                                     <button type="button" id="btnToggleMultiStage" class="stage-toggle-btn"
                                         onclick="selectStageType('MULTI_STAGE', true)">
-                                        <i class="fa-solid fa-layer-group"></i> Multi-Stage
+                                        <i class="fa-solid fa-layer-group"></i> Hai giai đoạn
                                     </button>
                                 </div>
 
                                 <!-- Copy Configuration from Existing Tournament Button -->
                                 <button type="button" class="btn btn-secondary" onclick="openCopyConfigModal()"
                                     data-ui-style="configure-tournament-format-jsp-003" style="display: inline-flex;">
-                                    <i class="fa-solid fa-copy"></i> Sao Chép Cấu Hình Từ Giải Khác
+                                    <i class="fa-solid fa-copy"></i> Sao chép cấu hình
                                 </button>
                             </div>
 
@@ -185,7 +196,7 @@
 
                                 <!-- Top Controls Row: Stage Badge & Tier Switcher (Tier only for Rolling Series child tournaments) -->
                                 <div
-                                    data-ui-style="configure-tournament-format-jsp-010" style="display: flex;">
+                                    class="format-context" data-ui-style="configure-tournament-format-jsp-010" style="display: flex;">
                                     <span id="stageBadgeDisplay" class="stage-badge"
                                         data-ui-style="configure-tournament-format-jsp-011">SINGLE STAGE</span>
 
@@ -227,9 +238,7 @@
                                 </div>
 
                                 <!-- Main Card Title -->
-                                <h1 class="form-header-title" data-ui-style="configure-tournament-format-jsp-014">
-                                    Chọn thể thức thi đấu
-                                </h1>
+                                <h2 class="form-header-title" data-ui-style="configure-tournament-format-jsp-014">Thể thức thi đấu</h2>
 
                                 <form id="configureFormatForm" action="<%= formActionUrl %>" method="GET"
                                     onsubmit="return validateAndSubmitFormat(event)">
@@ -271,24 +280,18 @@
                                                 <div class="form-group">
                                                     <label class="form-label"
                                                         data-ui-style="configure-tournament-format-jsp-015">
-                                                        Thể thức giải đấu 1 giai đoạn:
+                                                        Thể thức
                                                     </label>
                                                     <div class="format-pill-grid">
                                                         <button type="button" class="format-pill-btn"
                                                             id="pillSingleElim"
-                                                            onclick="selectFormat('SINGLE_ELIMINATION', true)">
-                                                            Single Elimination
-                                                        </button>
+                                                            onclick="selectFormat('SINGLE_ELIMINATION', true)"><span class="format-option-name">Single Elimination</span><span class="format-option-hint">Thua một trận là loại</span></button>
                                                         <button type="button" class="format-pill-btn"
                                                             id="pillDoubleElim"
-                                                            onclick="selectFormat('DOUBLE_ELIMINATION', true)">
-                                                            Double Elimination
-                                                        </button>
+                                                            onclick="selectFormat('DOUBLE_ELIMINATION', true)"><span class="format-option-name">Double Elimination</span><span class="format-option-hint">Nhánh thắng và nhánh thua</span></button>
                                                         <button type="button" class="format-pill-btn"
                                                             id="pillRoundRobin"
-                                                            onclick="selectFormat('ROUND_ROBIN', true)">
-                                                            Round Robin
-                                                        </button>
+                                                            onclick="selectFormat('ROUND_ROBIN', true)"><span class="format-option-name">Round Robin</span><span class="format-option-hint">Các đội lần lượt gặp nhau</span></button>
                                                     </div>
                                                 </div>
 
@@ -301,7 +304,7 @@
                                                         GẶP NHAU
                                                     </div>
                                                     <div
-                                                        data-ui-style="configure-tournament-format-jsp-018" style="display: grid;">
+                                                        class="format-points-grid" data-ui-style="configure-tournament-format-jsp-018" style="display: grid;">
                                                         <div>
                                                             <label class="form-label"
                                                                 data-ui-style="configure-tournament-format-jsp-019">Điểm
@@ -342,10 +345,10 @@
 
                                                 <!-- STAGE 1 -->
                                                 <div
-                                                    data-ui-style="configure-tournament-format-jsp-023">
+                                                    class="format-stage-section" data-ui-style="configure-tournament-format-jsp-023">
                                                     <div
-                                                        data-ui-style="configure-tournament-format-jsp-024" style="display: flex;">
-                                                        <i class="fa-solid fa-layer-group"></i> STAGE 1
+                                                        class="format-stage-heading" data-ui-style="configure-tournament-format-jsp-024" style="display: flex;">
+                                                        <i class="fa-solid fa-layer-group"></i> Giai đoạn 1
                                                     </div>
 
                                                     <label class="form-label"
@@ -407,7 +410,7 @@
                                                                     NHAU
                                                                 </div>
                                                                 <div
-                                                                    data-ui-style="configure-tournament-format-jsp-034" style="display: grid;">
+                                                                    class="format-points-grid" data-ui-style="configure-tournament-format-jsp-034" style="display: grid;">
                                                                     <div>
                                                                         <label class="form-label"
                                                                             data-ui-style="configure-tournament-format-jsp-035">Điểm
@@ -474,7 +477,7 @@
                                                                     NHAU
                                                                 </div>
                                                                 <div
-                                                                    data-ui-style="configure-tournament-format-jsp-049" style="display: grid;">
+                                                                    class="format-points-grid" data-ui-style="configure-tournament-format-jsp-049" style="display: grid;">
                                                                     <div>
                                                                         <label class="form-label"
                                                                             data-ui-style="configure-tournament-format-jsp-050">Điểm
@@ -599,10 +602,10 @@
 
                                                 <!-- STAGE 2 -->
                                                 <div
-                                                    data-ui-style="configure-tournament-format-jsp-077">
+                                                    class="format-stage-section" data-ui-style="configure-tournament-format-jsp-077">
                                                     <div
-                                                        data-ui-style="configure-tournament-format-jsp-078" style="display: flex;">
-                                                        <i class="fa-solid fa-trophy"></i> STAGE 2
+                                                        class="format-stage-heading" data-ui-style="configure-tournament-format-jsp-078" style="display: flex;">
+                                                        <i class="fa-solid fa-trophy"></i> Giai đoạn 2
                                                     </div>
 
                                                     <label class="form-label"
@@ -639,7 +642,7 @@
                                                                     NHAU (STAGE 2)
                                                                 </div>
                                                                 <div
-                                                                    data-ui-style="configure-tournament-format-jsp-084" style="display: grid;">
+                                                                    class="format-points-grid" data-ui-style="configure-tournament-format-jsp-084" style="display: grid;">
                                                                     <div>
                                                                         <label class="form-label"
                                                                             data-ui-style="configure-tournament-format-jsp-085">Điểm
@@ -689,16 +692,17 @@
 
                                             <!-- SUBMIT BUTTONS -->
                                             <div
-                                                data-ui-style="configure-tournament-format-jsp-093" style="display: flex;">
-                                                <a href="${pageContext.request.contextPath}/common/my-tournaments.jsp"
+                                                class="format-submit-row" data-ui-style="configure-tournament-format-jsp-093" style="display: flex;">
+                                                <a href="<%= isRollingSubTournament ? request.getContextPath() + "/rolling/tournament-list?id=" + seriesIdParam : request.getContextPath() + "/my-tournaments" %>"
                                                     class="btn btn-secondary">Quay Lại</a>
                                                 <button type="submit" class="btn btn-mint">
-                                                    TIẾP TỤC ➔
+                                                    Tiếp tục <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                                                 </button>
                                             </div>
                                 </form>
                             </div>
                         </main>
+                        </div>
 
                         <!-- ONGOING TOURNAMENT CANNOT CHANGE FORMAT WARNING MODAL -->
                         <div id="formatLockedModalBackdrop" class="tourma-modal-backdrop"
@@ -838,15 +842,15 @@
                                             <div class="copy-tourney-item-card" data-tourney-id="<%= at.getId() %>"
                                                 data-tourney-name="<%= at.getName() != null ? at.getName().toLowerCase() : "" %>"
                                                 data-ui-style="configure-tournament-format-jsp-123" style="display: flex;">
-                                                <div data-ui-style="configure-tournament-format-jsp-124">
+                                                <div class="copy-tourney-info" data-ui-style="configure-tournament-format-jsp-124">
                                                     <div
-                                                        data-ui-style="configure-tournament-format-jsp-125">
+                                                        class="copy-tourney-name" data-ui-style="configure-tournament-format-jsp-125">
                                                         <%= at.getName() %>
                                                     </div>
                                                     <div
-                                                        data-ui-style="configure-tournament-format-jsp-126" style="display: flex;">
+                                                        class="copy-tourney-meta" data-ui-style="configure-tournament-format-jsp-126" style="display: flex;">
                                                         <span class="stage-badge"
-                                                            data-ui-style="configure-tournament-format-jsp-127" style="background: <%= isMulti ? "rgba(45, 212, 191, 0.15)" : "rgba(251, 191, 36, 0.15)" %>; color: <%= isMulti ? "#2dd4bf" : "#fbbf24" %>; border-color: <%= isMulti ? "rgba(45, 212, 191, 0.3)" : "rgba(251, 191, 36, 0.3)" %>;">
+                                                            data-ui-style="configure-tournament-format-jsp-127">
                                                             <%= isMulti ? "MULTI STAGE" : "SINGLE STAGE" %>
                                                         </span>
                                                         <span class="stage-badge"
@@ -1878,6 +1882,7 @@
                             }
                     });
                         </script>
+                        <script src="${pageContext.request.contextPath}/js/format-presentation.js?v=2"></script>
                     </body>
 
                     </html>

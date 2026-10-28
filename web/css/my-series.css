@@ -1,0 +1,36 @@
+/* Series uses the shared workspace, header, controls and theme tokens. */
+.series-cards-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; }
+.series-card { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:24px; min-height:120px; padding:18px 22px; border:1px solid var(--ui-line); border-radius:12px; background:var(--ui-surface); transition:border-color .18s; }
+.series-card[hidden],.series-page [hidden] { display:none; }
+.series-card:hover { border-color:var(--ui-line-strong); }
+.series-card:focus-within { border-color:var(--ui-accent); }
+.series-card-info { min-width:0; }
+.series-card-title { font-size:20px; font-weight:600; line-height:1.35; letter-spacing:-.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:7px!important; }
+.series-model-line,.series-detail-line { display:flex; flex-wrap:wrap; align-items:baseline; gap:7px; font-size:11px; line-height:1.8; color:var(--ui-muted); }
+.series-card-actions { display:flex; align-items:center; gap:10px; }
+.series-delete-form { margin:0; }
+.series-icon-button,.series-manage-button { display:inline-flex; align-items:center; justify-content:center; gap:9px; height:32px; border:1px solid var(--ui-line); border-radius:6px; color:var(--ui-muted); background:none; font:inherit; font-size:11px; cursor:pointer; }
+.series-icon-button { width:32px; padding:0; }
+.series-icon-button:hover { background:var(--ui-surface-alt); color:var(--ui-text); }
+.series-page .series-manage-button { padding:0 13px; color:var(--ui-accent); background:var(--ui-accent-soft); border-color:transparent; font-weight:500; white-space:nowrap; }
+.series-result-count { padding:22px 0; font-size:10px; color:var(--ui-muted); }
+/* Scope the existing shared edit popup to this screen while other screens are rebuilt. */
+.series-page .add-team-modal-overlay { position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center; padding:20px; background:rgb(0 0 0 / 65%); }
+.series-page .add-team-modal-card { width:min(550px,100%); max-height:90dvh; overflow:auto; border:1px solid var(--ui-line); border-radius:12px; background:var(--ui-surface); }
+.series-page .add-team-modal-header { display:flex; align-items:center; justify-content:space-between; gap:15px; padding:20px 22px; border-bottom:1px solid var(--ui-line); }
+.series-page .add-team-modal-title { font-size:15px; font-weight:500; }
+.series-page .add-team-modal-title i { color:var(--ui-accent); margin-right:8px; }
+.series-page .add-team-modal-close { width:30px; height:30px; border:0; border-radius:50%; background:var(--ui-surface-alt); color:var(--ui-muted); font-size:21px; cursor:pointer; }
+.series-page #editSeriesForm { padding:22px; font-size:12px; }
+.series-page #editSeriesForm>div { margin-bottom:20px; }
+.series-page #editSeriesForm label { margin-bottom:8px; font-size:11px; color:var(--ui-muted); }
+.series-page [data-ui-style="edit-series-popup-jsp-009"] { align-items:center; gap:10px; }
+.series-page #editSeriesPhaseSizeInput { width:90px; text-align:center; }
+.series-page [data-ui-style="edit-series-popup-jsp-013"] { flex-wrap:wrap; align-items:center; gap:7px; margin-top:10px; font-size:10px; color:var(--ui-muted); }
+.series-page [data-ui-style="edit-series-popup-jsp-019"] { margin-top:16px; background:var(--ui-surface-alt); color:var(--ui-muted); padding:12px; font-size:10px; line-height:1.9; border-radius:7px; }
+.series-page [data-ui-style="edit-series-popup-jsp-023"] { justify-content:flex-end; flex-wrap:wrap; gap:8px; padding-top:18px; border-top:1px solid var(--ui-line); margin-bottom:0!important; }
+@media(max-width:700px) { .series-card { gap:14px; padding:16px 18px; } .series-card-actions { gap:6px; } }
+@media(max-width:520px) { .series-card { grid-template-columns:minmax(0,1fr); gap:14px; } .series-card-actions { justify-content:flex-end; } .series-card-title { font-size:18px; } .series-detail-line { font-size:10px; } }
+@media(prefers-reduced-motion:reduce) { .series-card { transition:none; } }
+
+.series-window-value { font-size:14px; font-weight:600; color:var(--ui-text); }

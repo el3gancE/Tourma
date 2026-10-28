@@ -1,7 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
 <jsp:include page="/common/component/tournament-config-state.jsp" />
 <!-- Dedicated Header Component Stylesheet -->
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=2">
 
 <!-- Header / Navigation Bar Component -->
 <nav class="navbar">
@@ -61,6 +61,9 @@
             </a>
         </li>
     </ul>
+    <% if ("true".equals(request.getParameter("themeToggle"))) { %>
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Chuyển giao diện sáng tối"><i class="fa-solid fa-moon" aria-hidden="true"></i><span data-theme-label>Giao diện tối</span><span class="theme-switch" aria-hidden="true"></span></button>
+    <% } %>
 </nav>
 
 <script>

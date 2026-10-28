@@ -95,11 +95,14 @@
     boolean hasTournament = (currentTournament != null);
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=3">
 
-<aside class="app-left-sidebar">
+<aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">
+    <div class="sidebar-workspace-heading"><span class="sidebar-workspace-mark" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span><span>Không gian giải đấu</span></div>
 
     <% if (hasSeries) { %>
+    <nav class="sidebar-section" aria-label="Chuỗi giải">
     <!-- ========================================================= -->
     <!-- MỤC 1: QUẢN LÝ CHUỖI GIẢI (SERIES SECTION)                -->
     <!-- ========================================================= -->
@@ -153,9 +156,11 @@
             </a>
         </li>
     </ul>
+    </nav>
     <% } %>
 
     <% if (hasTournament) { %>
+    <nav class="sidebar-section" aria-label="Giải đấu">
     <!-- ========================================================= -->
     <!-- MỤC 2: QUẢN LÝ GIẢI ĐẤU (GIẢI ĐƠN HOẶC GIẢI CON)           -->
     <!-- ========================================================= -->
@@ -276,12 +281,16 @@
             </a>
         </li>
     </ul>
+    </nav>
     <% } %>
 
 </aside>
 
 <script>
 (function() {
+    document.querySelectorAll('.tournament-sidebar .sidebar-menu-link.active').forEach(function(link) {
+        link.setAttribute('aria-current', 'page');
+    });
     var tid = '<%= tournamentId %>';
     if (!tid) return;
     try {

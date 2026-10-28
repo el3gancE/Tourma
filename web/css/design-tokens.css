@@ -1,0 +1,32 @@
+/* Shared palette. Opt in by loading this sheet; blank pages remain unaffected. */
+:root {
+    color-scheme: light;
+    --ui-bg: #fafafa;
+    --ui-surface: #ffffff;
+    --ui-surface-alt: #f2f2f2;
+    --ui-text: #262626;
+    --ui-muted: #737373;
+    --ui-line: #e4e4e4;
+    --ui-accent: #800020;
+    --ui-accent-hover: #66001a;
+    --ui-accent-soft: #f4e9ed;
+    --ui-on-accent: #ffffff;
+    --ui-line-strong: #c3c3c3;
+    --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
+    --ui-font: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --ui-bg: #121212;
+    --ui-surface: #1c1c1c;
+    --ui-surface-alt: #252525;
+    --ui-text: #f2f2f2;
+    --ui-muted: #a3a3a3;
+    --ui-line: #333333;
+    --ui-accent: #38bdf8;
+    --ui-accent-hover: #7dd3fc;
+    --ui-accent-soft: #142d3b;
+    --ui-on-accent: #071e2a;
+    --ui-line-strong: #484848;
+    --ui-shadow: 0 16px 50px rgb(0 0 0 / 12%);
+}

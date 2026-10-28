@@ -1,0 +1,88 @@
+.teams-main { min-width:0; }
+.teams-page .page-main-title { font-size:31px; font-weight:500; letter-spacing:-1px; margin:0 0 26px; }
+.team-mgmt-grid { display:grid; grid-template-columns:minmax(230px,.8fr) minmax(0,1.5fr); gap:20px; align-items:start; }
+.team-panel-card { min-width:0; border:1px solid var(--ui-line); border-radius:11px; background:var(--ui-surface); overflow:hidden; }
+.team-panel-header { display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid var(--ui-line); padding:19px 20px; }
+.team-panel-title { font-size:14px; font-weight:500; display:flex; align-items:center; gap:8px; }
+.team-panel-title i { font-size:12px; color:var(--ui-accent); }
+.count-badge { color:var(--ui-muted); font-size:10px; background:var(--ui-surface-alt); padding:4px 8px; border-radius:5px; white-space:nowrap; }
+.bulk-input-container { padding:18px 20px 12px; }
+.team-input-label { display:block; font-size:10px; color:var(--ui-muted); margin-bottom:10px; }
+.team-textarea-input { display:block; width:100%; min-height:315px; resize:vertical; font:inherit; font-size:12px; line-height:1.9; background:var(--ui-bg); color:var(--ui-text); border:1px solid var(--ui-line); border-radius:7px; padding:13px; }
+.team-textarea-input::placeholder { color:var(--ui-muted); opacity:.6; }
+.input-actions-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:4px 20px 20px; }
+.teams-page .btn { min-height:34px; font-size:10px; padding:8px 10px; }
+.manage-toolbar { padding:14px 16px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid var(--ui-line); }
+.manage-toolbar-left { align-items:center; flex-wrap:wrap; gap:8px; }
+.manage-toolbar-left>label { color:var(--ui-muted); font-size:10px; }
+#lockTopSeedsInput { width:50px; min-height:32px; padding:5px 7px; background:var(--ui-bg); color:var(--ui-text); border:1px solid var(--ui-line); border-radius:5px; font:inherit; font-size:11px; text-align:center; }
+.teams-page [data-ui-style="configure-tournament-teams-jsp-012"] { align-items:center; gap:6px; }
+.manage-toolbar-right { margin-left:auto; }
+.teams-page input[type=checkbox] { accent-color:var(--ui-accent); cursor:pointer; width:14px; height:14px; }
+.table-scroll-wrapper { overflow:auto; max-height:480px; }
+.teams-page .table { width:100%; border-collapse:collapse; text-align:left; table-layout:fixed; }
+.teams-page .table thead { position:sticky; top:0; background:var(--ui-surface-alt); z-index:1; }
+.teams-page .table th { font-size:9px; color:var(--ui-muted); padding:11px 6px; font-weight:500; }
+.teams-page .table td { padding:6px; border-bottom:1px solid var(--ui-line); font-size:11px; }
+.teams-page .table th:first-child,.teams-page .table td:first-child { width:43px; text-align:center; }
+.teams-page .table th:nth-child(n+3),.teams-page .table td:nth-child(n+3) { width:34px; text-align:center; }
+.team-name-input { width:100%; border:1px solid transparent; border-radius:5px; padding:7px 8px; color:var(--ui-text); background:none; font:inherit; font-size:11px; }
+.team-name-input:hover { border-color:var(--ui-line); }
+.team-name-input:focus { outline:2px solid var(--ui-accent); outline-offset:1px; background:var(--ui-bg); }
+.seed-badge { font-size:10px; color:var(--ui-muted); font-variant-numeric:tabular-nums; }
+.drag-handle { padding:6px; color:var(--ui-muted); cursor:grab; }
+.btn-delete-row { width:25px; height:25px; border:0; border-radius:5px; background:none; color:var(--ui-muted); cursor:pointer; }
+.btn-delete-row:hover { background:var(--ui-surface-alt); color:var(--ui-text); }
+.team-table-row:hover { background:var(--ui-bg); }
+.team-table-row.dragging { opacity:.4; }
+.team-table-row.drag-over { outline:1px solid var(--ui-accent); outline-offset:-1px; }
+.teams-page [data-ui-style="configure-tournament-teams-jsp-018"] { padding:12px 16px; color:var(--ui-muted); font-size:9px; border-top:1px solid var(--ui-line); }
+.teams-empty { text-align:center; padding:28px 20px; color:var(--ui-muted); font-size:11px; line-height:1.9; }
+.teams-empty[hidden] { display:none; }
+#targetTeamConstraintBanner { align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:var(--ui-accent-soft); border:1px solid var(--ui-line); border-radius:8px; padding:14px 16px; font-size:11px; margin-bottom:20px; }
+#targetTeamConstraintBanner>div { align-items:center; gap:9px; }
+.teams-page .tourma-modal-backdrop { display:none; position:fixed; inset:0; z-index:1000; background:rgb(0 0 0 / 65%); align-items:center; justify-content:center; padding:20px; }
+.teams-page .tourma-modal-backdrop.show { display:flex; }
+.teams-page .tourma-modal-card { width:min(520px,100%); max-height:90dvh; overflow:auto; background:var(--ui-surface); border:1px solid var(--ui-line); border-radius:12px; }
+.teams-page .modal-header-bar { display:flex; align-items:center; justify-content:space-between; gap:15px; border-bottom:1px solid var(--ui-line); padding:20px; }
+.teams-page .modal-header-title { display:flex; align-items:center; gap:9px; font-size:14px; font-weight:500; }
+.teams-page .modal-header-title i { color:var(--ui-accent); }
+.teams-page .modal-close-btn { border:0; border-radius:50%; width:30px; height:30px; color:var(--ui-muted); background:var(--ui-surface-alt); cursor:pointer; }
+.teams-page .modal-body-content { padding:20px; font-size:12px; line-height:1.9; }
+.teams-page .modal-body-content>div { background:var(--ui-surface-alt); padding:12px; border-radius:7px; margin-bottom:12px; }
+.teams-page .modal-footer-bar { justify-content:flex-end; align-items:center; gap:10px; padding:16px 20px; border-top:1px solid var(--ui-line); }
+@media(max-width:1150px) and (min-width:1000px) { .team-mgmt-grid { grid-template-columns:minmax(0,1fr); } .team-textarea-input { min-height:180px; } }
+@media(max-width:750px) { .team-mgmt-grid { grid-template-columns:minmax(0,1fr); } .team-textarea-input { min-height:180px; } .teams-page .page-main-title { font-size:27px; } .team-panel-header { padding:17px 18px; } }
+@media(max-width:400px) { .manage-toolbar { padding-inline:12px; } .team-panel-title { font-size:13px; } }
+/* The primary action belongs to the page header, not below the table. */
+.teams-page-header { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; flex-shrink:0; }
+.teams-page-header .page-main-title { margin:0; font-size:28px; }
+.teams-page-actions { display:flex; align-items:center; gap:9px; flex-shrink:0; }
+.team-panel-header { padding:15px 18px; flex-shrink:0; }
+.manage-toolbar { padding:10px 14px; flex-shrink:0; }
+.team-panel-title { margin:0; }
+.teams-page .table td { padding:4px 6px; }
+.team-name-input { padding:5px 7px; min-height:29px; }
+.teams-page [data-ui-style="configure-tournament-teams-jsp-018"] { flex-shrink:0; padding:10px 14px; }
+@media(min-width:1000px) and (min-height:600px) {
+    .teams-page { height:100dvh; display:flex; flex-direction:column; overflow:hidden; }
+    .teams-page>.navbar { width:100%; flex-shrink:0; }
+    .teams-page>.tournament-shell { flex:1; min-height:0; width:100%; padding-top:20px; padding-bottom:20px; overflow:hidden; align-items:stretch; grid-template-rows:minmax(0,1fr); }
+    .teams-page .tournament-navigation { position:static; max-height:100%; overflow:auto; }
+    .teams-page .app-left-sidebar { max-height:none; }
+    .teams-main { display:flex; flex-direction:column; min-height:0; }
+    #targetTeamConstraintBanner { flex-shrink:0; }
+    #configureTeamsForm { display:flex; flex-direction:column; flex:1; min-height:0; }
+    .team-mgmt-grid { grid-template-columns:minmax(235px,.8fr) minmax(0,1.5fr); flex:1; min-height:0; align-items:stretch; }
+    .team-panel-card { display:flex; flex-direction:column; min-height:0; }
+    .bulk-input-container { display:flex; flex-direction:column; flex:1; min-height:0; padding-top:14px; }
+    .team-textarea-input { flex:1; min-height:0; resize:none; }
+    .input-actions-bar { flex-shrink:0; padding-bottom:16px; }
+    .table-container { display:flex; flex-direction:column; flex:1; min-height:0; }
+    .table-scroll-wrapper { flex:1; min-height:0; max-height:none; overscroll-behavior:contain; }
+    .teams-empty { flex-shrink:0; }
+}
+@media(max-width:700px) { .teams-page-header { align-items:start; flex-direction:column; gap:12px; } .teams-page-header .page-main-title { font-size:26px; } .teams-page-actions { width:100%; justify-content:flex-end; } }
+
+.table-scroll-wrapper[hidden] { display:none; }
+.teams-empty { margin:auto; max-width:340px; }

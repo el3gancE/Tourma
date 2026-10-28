@@ -1,7 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="light">
     <head>
         <!-- Favicon -->
         <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
@@ -18,17 +18,23 @@
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+        <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261028-11">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=2">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=1">
         <!-- Main Design System CSS & Dedicated My Tournaments CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css?v=20261028-9">
     </head>
-    <body>
+    <body class="ui-page workspace-page tournaments-page">
         <!-- Include Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="my-tournaments"/>
+            <jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
-        <main class="container">
+        <main class="container workspace-main">
+            <div class="workspace-utility"><span>KHÔNG GIAN QUẢN LÝ / GIẢI ĐẤU</span></div>
 
             <!-- Page Header Row -->
             <div class="page-header-row">
@@ -37,7 +43,7 @@
                         <i class="fa-solid fa-sitemap text-mint"></i> Giải Đấu Của Tôi
                     </h1>
                     <p class="text-muted" data-ui-style="my-tournaments-jsp-001">
-                        Danh sách các giải đấu đơn lẻ và giải đấu thuộc Series đang quản lý.
+                        Tất cả cuộc đấu của bạn, trong cùng một không gian.
                     </p>
                 </div>
                 <div>
@@ -54,14 +60,14 @@
                     <button type="button" class="filter-pill-btn ${pageInfo.filter == 'ALL' ? 'active' : ''}" onclick="filterTournaments('ALL', this)">Tất Cả</button>
                     <button type="button" class="filter-pill-btn ${pageInfo.filter == 'STANDALONE' ? 'active' : ''}" onclick="filterTournaments('STANDALONE', this)">Giải Đơn Lẻ</button>
                     <button type="button" class="filter-pill-btn ${pageInfo.filter == 'SERIES' ? 'active' : ''}" onclick="filterTournaments('SERIES', this)">Thuộc Series</button>
-                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'INCOMING' ? 'active' : ''}" onclick="filterTournaments('INCOMING', this)">Incoming</button>
-                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'IN_PROGRESS' ? 'active' : ''}" onclick="filterTournaments('IN_PROGRESS', this)">In Progress</button>
-                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'COMPLETED' ? 'active' : ''}" onclick="filterTournaments('COMPLETED', this)">Completed</button>
+                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'INCOMING' ? 'active' : ''}" onclick="filterTournaments('INCOMING', this)">Sắp diễn ra</button>
+                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'IN_PROGRESS' ? 'active' : ''}" onclick="filterTournaments('IN_PROGRESS', this)">Đang diễn ra</button>
+                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'COMPLETED' ? 'active' : ''}" onclick="filterTournaments('COMPLETED', this)">Đã hoàn thành</button>
                 </div>
 
                 <div class="search-input-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInput" class="form-control" name="q" value="<c:out value="${pageInfo.query}" />" placeholder="Tìm kiếm tên giải...">
+                    <input type="text" aria-label="Tìm kiếm giải đấu" id="searchInput" class="form-control" name="q" value="<c:out value="${pageInfo.query}" />" placeholder="Tìm theo tên giải đấu…">
                     <button type="submit" class="tourney-search-submit">Tìm</button>
                 </div>
             </form>
@@ -71,7 +77,7 @@
                 <c:when test="${not empty tournamentList}">
                     <div class="tourney-cards-grid" id="tourneyGrid">
                         <c:forEach var="t" items="${tournamentList}">
-                            <div class="tourney-card"
+                            <article class="tourney-card"
                                  data-id="${t.id}"
                                  data-db-status="${t.status}"
                                  data-db-champion="${t.championName}"
@@ -81,69 +87,32 @@
                                  data-status="${t.status == 'COMPLETED' ? 'COMPLETED' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'IN_PROGRESS' : 'INCOMING')}"
                                  data-name="${t.name}">
 
-                                <div class="tourney-card-main">
-                                    <div class="tourney-card-top-row">
-                                        <h3 class="tourney-card-title">${t.name}</h3>
-                                        <span class="tourney-badge-type">
-                                            ${t.tournamentType == 'MULTI_STAGE' ? 'MULTI STAGE' : 'SINGLE STAGE'}
-                                        </span>
-                                        <c:if test="${not empty t.tierName}">
-                                            <span class="tourney-badge-tier tier-${t.tierName.toLowerCase()}">TIER ${t.tierName}</span>
-                                        </c:if>
-                                        <span class="status-pill ${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'in-progress' : 'incoming')}" id="statusPill_${t.id}">
-                                            ${t.status == 'COMPLETED' ? 'Completed' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'In Progress' : 'Incoming')}
-                                        </span>
-                                    </div>
-
-                                    <div class="tourney-card-meta">
-                                        <!-- TOTAL TEAMS COUNT META -->
-                                        <span class="tourney-teams-meta" id="teamMeta_${t.id}">
-                                            <i class="fa-solid fa-users text-mint"></i>
-                                            <span class="team-count-val" data-ui-style="my-tournaments-jsp-002">${t.teamCount > 0 ? t.teamCount : 0} Đội</span>
-                                        </span>
-
-                                        <span class="meta-divider">•</span>
-
-                                        <c:if test="${not empty t.seriesId}">
-                                            <span><i class="fa-solid fa-layer-group text-gold"></i> Thuộc Series</span>
-                                            <span class="meta-divider">•</span>
-                                            <span><i class="fa-solid fa-flag"></i> Giải thứ ${t.tournamentIndexInSeries} (Phase ${t.phaseNumber})</span>
-                                            <span class="meta-divider">•</span>
-                                        </c:if>
-                                        <span class="tourney-format-span">
-                                            <i class="fa-solid fa-diagram-project text-mint"></i>
-                                            <c:out value="${t.formatSummary}" />
-                                        </span>
-                                        <!-- Champion occupies its own metadata row when completed. -->
-                                        <span id="championMeta_${t.id}" class="tourney-champion-meta" style="${(t.status == 'COMPLETED' && not empty t.championName) ? 'display: inline-flex;' : 'display: none;'}">
-                                            <i class="fa-solid fa-trophy text-gold"></i> Nhà vô địch: <span class="champion-name-val" data-ui-style="my-tournaments-jsp-003">${not empty t.championName ? t.championName : ''}</span>
-                                        </span>
-                                    </div>
-
+                                <div class="tourney-card-info">
+                                    <h3 class="tourney-card-title" title="<c:out value="${t.name}" />"><c:out value="${t.name}" /></h3>
+                                    <p class="tourney-info-line">
+                                        <span id="teamMeta_${t.id}" class="team-count-val">${t.teamCount > 0 ? t.teamCount : 0} đội</span>
+                                        <span aria-hidden="true">·</span>
+                                        <span class="tourney-format-span"><c:out value="${t.formatSummary}" /></span>
+                                    </p>
+                                    <p class="tourney-series-line"><c:if test="${not empty t.seriesId}"><c:out value="${seriesNames[t.seriesId]}" /></c:if></p>
+                                    <p id="championMeta_${t.id}" class="tourney-champion-meta"><c:if test="${not empty t.championName}"><span class="champion-name-val"><c:out value="${t.championName}" /></span></c:if></p>
                                 </div>
-
-                                <div class="tourney-card-footer">
-                                    <div class="tourney-card-actions">
-                                        <button type="button" class="btn-delete-tourney"
-                                                onclick="openDeleteTourneyModal('${t.id}', '${t.name}')"
-                                                title="Xóa giải đấu">
-                                            <i class="fa-solid fa-trash-can"></i> Xóa
-                                        </button>
-                                        <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${t.id}" class="btn-details-tourney" title="Cấu hình & Chi tiết giải đấu">
-                                            <i class="fa-solid fa-sliders"></i> Chi Tiết
-                                        </a>
-                                        <a href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=${t.id}" class="btn-view-bracket-card">
-                                            Trận Đấu ➔
-                                        </a>
-                                    </div>
-                                    <div class="tourney-progress" title="Số trận đã xong / tổng số trận cả giải, tính trước Stage 2 khi chưa tạo bracket. Không tính BYE; 100% khi xác nhận hoàn thành giải.">
-                                        <div class="tourney-progress-label"><span>Tiến độ · ${t.completedMatches}/${t.progressTotalMatches} trận</span><strong>${t.progressPercent}%</strong></div>
+                                <div class="tourney-card-tools">
+                                    <div class="tourney-progress" aria-label="Tiến độ giải đấu">
                                         <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${t.progressPercent}">
                                             <span class="tourney-progress-fill" style="width: ${t.progressPercent}%"></span>
                                         </div>
+                                        <span class="tourney-progress-percent">${t.progressPercent}%</span>
                                     </div>
+                                    <button type="button" class="btn-delete-tourney"
+                                            data-tourney-id="<c:out value="${t.id}" />" data-tourney-name="<c:out value="${t.name}" />"
+                                            onclick="openDeleteTourneyModal(this.dataset.tourneyId, this.dataset.tourneyName)"
+                                            title="Xóa giải đấu" aria-label="Xóa giải đấu">
+                                        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                                    </button>
+                                    <a href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=${t.id}" class="btn-view-bracket-card">Trận đấu <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
                                 </div>
-                            </div>
+                            </article>
                         </c:forEach>
                     </div>
                 </c:when>
