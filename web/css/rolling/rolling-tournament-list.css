@@ -1,0 +1,36 @@
+/* Sub-tournament list: horizontal cards and compact actions. */
+.rolling-tournament-list-page .tourney-search-form { display:flex; justify-content:flex-end; margin-bottom:20px; }
+.rolling-tournament-list-page .search-input-box { flex:0 1 360px; }
+.rolling-tournament-list-page .tourney-search-submit { border:0; border-radius:4px; background:var(--ui-accent); color:var(--ui-on-accent); padding:7px 10px; cursor:pointer; font:11px var(--ui-font); }
+.rolling-tournament-list-page .tourney-cards-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:14px; }
+.rolling-tournament-list-page .tourney-card { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 20px; border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); }
+.rolling-tournament-list-page .tourney-card-main { min-width:0; flex:1; }
+.rolling-tournament-list-page .tourney-card-top-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.rolling-tournament-list-page .tourney-card-title { font-size:18px; font-weight:600; align-items:center; gap:8px; }
+.rolling-tournament-list-page :is(.tourney-badge-type,.status-pill) { font-size:9px; color:var(--ui-muted); border:1px solid var(--ui-line); border-radius:4px; padding:3px 6px; }
+.rolling-tournament-list-page .tourney-card-meta { display:flex; align-items:center; flex-wrap:wrap; gap:7px; font-size:11px; color:var(--ui-muted); margin-top:9px; }
+.rolling-tournament-list-page .tourney-champion-meta { gap:6px; }
+.rolling-tournament-list-page .tourney-card-footer { display:flex; flex-direction:column; gap:12px; flex:0 0 auto; }
+.rolling-tournament-list-page .tourney-card-actions { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.rolling-tournament-list-page :is(.btn-delete-tourney,.btn-details-tourney,.btn-view-bracket-card) { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:7px 9px; border:1px solid var(--ui-line); border-radius:5px; background:var(--ui-bg); color:var(--ui-text); font:500 10px var(--ui-font); cursor:pointer; }
+.rolling-tournament-list-page .btn-delete-tourney { color:var(--ui-danger); }
+.rolling-tournament-list-page .btn-view-bracket-card { color:var(--ui-accent); background:var(--ui-accent-soft); }
+.rolling-tournament-list-page .tourney-progress { width:100%; max-width:250px; align-self:flex-end; }
+.rolling-tournament-list-page .tourney-progress-label { display:flex; justify-content:space-between; gap:10px; color:var(--ui-muted); font-size:9px; margin-bottom:5px; }
+.rolling-tournament-list-page .tourney-progress-track { height:4px; border-radius:4px; overflow:hidden; background:var(--ui-line); }
+.rolling-tournament-list-page .tourney-progress-fill { display:block; height:100%; background:var(--ui-accent); }
+.rolling-tournament-list-page .tourney-pagination { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:22px; font-size:11px; color:var(--ui-muted); }
+.rolling-tournament-list-page .tourney-page-buttons { display:flex; flex-wrap:wrap; gap:5px; }
+.rolling-tournament-list-page .tourney-page-btn { padding:6px 9px; border:1px solid var(--ui-line); border-radius:5px; }
+.rolling-tournament-list-page .is-current { color:var(--ui-accent); background:var(--ui-accent-soft); }
+.rolling-tournament-list-page .is-disabled { opacity:.5; }
+@media(max-width:1100px) { .rolling-tournament-list-page .tourney-card { flex-direction:column; align-items:stretch; } .rolling-tournament-list-page .tourney-card-footer { flex-direction:row; align-items:center; flex-wrap:wrap; } }
+/* Reset inherited tournament-list dimensions for the Series action row. */
+.rolling-tournament-list-page.series-page .tourney-card { min-height:0; }
+.rolling-tournament-list-page.series-page .tourney-card-actions > :is(button,a) { box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center; height:34px; min-height:34px; width:auto; padding:0 10px; border:1px solid var(--ui-line); border-radius:6px; font:500 11px var(--ui-font); white-space:nowrap; }
+.rolling-tournament-list-page.series-page .tourney-card-actions > .btn-delete-tourney { width:34px; padding:0; }
+.rolling-tournament-list-page.series-page .tourney-card-actions > .btn-view-bracket-card { background:var(--ui-accent-soft); color:var(--ui-accent); border-color:transparent; }
+.rolling-tournament-list-page.series-page .tourney-progress { display:block; width:180px; max-width:100%; margin:0; align-self:flex-end; }
+.rolling-tournament-list-page.series-page .tourney-progress-label { display:flex; margin-bottom:6px; }
+.rolling-tournament-list-page.series-page .tourney-progress-track { display:block; width:100%; height:4px; }
+.rolling-tournament-list-page .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }

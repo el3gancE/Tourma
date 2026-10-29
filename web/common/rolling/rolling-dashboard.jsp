@@ -24,6 +24,11 @@
     String top3Team = (totalRankedTeams > 2 && standingsList.get(2).getNormalizedTeamName() != null) ? standingsList.get(2).getNormalizedTeamName() : "Đang cập nhật";
     int top3Pts = (totalRankedTeams > 2) ? standingsList.get(2).getTotalRollingPoints() : 0;
 %>
+<%!
+    private String dashboardText(String value) {
+        return value == null ? "" : value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+    }
+%>
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -43,454 +48,86 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-dashboard.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css">
+            <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=24">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
     </head>
-    <body>
+    <body class="ui-page tournament-workspace series-dashboard-page">
         <!-- Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="my-series"/>
+            <jsp:param name="active" value="my-series"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
         <!-- Dynamic 3-Mode Sidebar Component -->
-        <jsp:include page="/common/component/sidebar.jsp">
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng chuỗi giải</summary><jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
             <jsp:param name="activeStep" value="dashboard"/>
-        </jsp:include>
+        </jsp:include></details>
 
-        <main class="container has-sidebar rolling-dashboard-wrapper">
+        <main class="rolling-dashboard-wrapper" aria-label="Dashboard chuỗi giải">
+<%
+    String seriesQuery = java.net.URLEncoder.encode(seriesIdVal, "UTF-8");
+    boolean eloModel = series != null && "FIFA_ELO".equalsIgnoreCase(series.getRankingModel());
+    int completedCount = 0;
+    int ongoingCount = 0;
+    java.util.Set<String> uniqueChampions = new java.util.HashSet<>();
+    java.util.List<Tournament> recentTournaments = new java.util.ArrayList<>();
+    if (tournamentsList != null) {
+        for (Tournament t : tournamentsList) {
+            if (t == null) continue;
+            recentTournaments.add(t);
+            if (t.getChampionName() != null && !t.getChampionName().trim().isEmpty()) uniqueChampions.add(t.getChampionName().trim().toLowerCase(java.util.Locale.ROOT));
+            if ("COMPLETED".equalsIgnoreCase(t.getStatus()) || "FINISHED".equalsIgnoreCase(t.getStatus())) completedCount++;
+            else if ("ONGOING".equalsIgnoreCase(t.getStatus()) || "IN_PROGRESS".equalsIgnoreCase(t.getStatus())) ongoingCount++;
+        }
+    }
+    recentTournaments.sort((a,b) -> Integer.compare(b.getTournamentIndexInSeries(), a.getTournamentIndexInSeries()));
+%>
+    <header class="series-dashboard-heading">
+        <div>
+            <a class="dashboard-back" href="${pageContext.request.contextPath}/my-series"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Chuỗi giải của tôi</a>
+            <h1><%= dashboardText(seriesName) %></h1>
+            <div class="dashboard-meta"><span><%= eloModel ? "FIFA Elo Rating" : "Rolling Window" %></span><span>Phase <%= series != null ? series.getCurrentPhase() : 1 %></span><span><%= "ACTIVE".equalsIgnoreCase(status) ? "Đang hoạt động" : dashboardText(status) %></span></div>
+        </div>
+        <a class="dashboard-button primary" href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesQuery %>"><i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo giải con</a>
+    </header>
 
-            <!-- Breadcrumb Navigation -->
-            <div class="dashboard-breadcrumb">
-                <a href="${pageContext.request.contextPath}/my-series">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại Chuỗi Giải Của Tôi
+    <section class="dashboard-metrics" aria-label="Tổng quan">
+        <a class="dashboard-metric" href="${pageContext.request.contextPath}/rolling/team-list?id=<%= seriesQuery %>"><span>Đội đối tác <i class="fa-solid fa-users" aria-hidden="true"></i></span><strong><%= partnerCount %></strong><small>Xem danh sách đội <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></small></a>
+        <a class="dashboard-metric" href="${pageContext.request.contextPath}/rolling/tournament-list?seriesId=<%= seriesQuery %>"><span>Giải đấu <i class="fa-solid fa-trophy" aria-hidden="true"></i></span><strong><%= tourneyCount %></strong><small><%= completedCount %> hoàn thành · <%= ongoingCount %> đang diễn ra</small></a>
+        <a class="dashboard-metric" href="${pageContext.request.contextPath}/rolling/standings?seriesId=<%= seriesQuery %>"><span>Đội trên BXH <i class="fa-solid fa-ranking-star" aria-hidden="true"></i></span><strong><%= totalRankedTeams %></strong><small><%= eloModel ? "FIFA Elo Rating" : "Window: " + phaseSize + " giải" %></small></a>
+        <a class="dashboard-metric" href="${pageContext.request.contextPath}/rolling-hof?id=<%= seriesQuery %>"><span>Nhà vô địch <i class="fa-solid fa-crown" aria-hidden="true"></i></span><strong><%= uniqueChampions.size() %></strong><small>Xem bảng vàng <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></small></a>
+    </section>
+
+    <div class="dashboard-columns">
+        <section class="dashboard-panel" aria-labelledby="recentTournamentsHeading">
+            <div class="dashboard-panel-heading"><h2 id="recentTournamentsHeading">Giải gần đây</h2><a href="${pageContext.request.contextPath}/rolling/tournament-list?seriesId=<%= seriesQuery %>">Tất cả <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
+            <div class="dashboard-tournaments">
+            <% if (recentTournaments.isEmpty()) { %>
+                <div class="dashboard-empty"><i class="fa-solid fa-trophy" aria-hidden="true"></i><p>Chưa có giải đấu</p><a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesQuery %>">Tạo giải con đầu tiên</a></div>
+            <% } else { for (int i=0; i<Math.min(5,recentTournaments.size()); i++) { Tournament t=recentTournaments.get(i); String ts=t.getStatus(); boolean done="COMPLETED".equalsIgnoreCase(ts)||"FINISHED".equalsIgnoreCase(ts); boolean live="ONGOING".equalsIgnoreCase(ts)||"IN_PROGRESS".equalsIgnoreCase(ts); %>
+                <a class="dashboard-tournament" href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=<%= java.net.URLEncoder.encode(t.getId(), "UTF-8") %>">
+                    <span class="dashboard-event-index">#<%= t.getTournamentIndexInSeries() %></span>
+                    <div class="dashboard-event-info"><h3><%= dashboardText(t.getName()) %></h3><p><span class="series-tier" data-tier="<%= dashboardText(t.getTierName()) %>"><%= dashboardText(t.getTierName()) %></span><% if(t.getChampionName()!=null&&!t.getChampionName().trim().isEmpty()){ %><span>·</span><i class="fa-solid fa-trophy" aria-hidden="true"></i> <%= dashboardText(t.getChampionName()) %><% } %></p></div>
+                    <span class="dashboard-state <%= live ? "is-live" : "" %>"><%= done ? "Hoàn thành" : live ? "Đang diễn ra" : "Chưa bắt đầu" %></span><i class="fa-solid fa-chevron-right dashboard-chevron" aria-hidden="true"></i>
                 </a>
+            <% }} %>
             </div>
+        </section>
 
-            <!-- Series Title & Create Sub-Tournament CTA Row -->
-            <div data-ui-style="rolling-dashboard-jsp-001" style="display: flex;">
-                <h1 class="series-main-title" data-ui-style="rolling-dashboard-jsp-002"><%= seriesName %></h1>
-                <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn-create-tourney-cta">
-                    <i class="fa-solid fa-plus"></i> Tạo Giải Con Mới
-                </a>
-            </div>
-
-            <!-- Dashboard Overview Section Subheader -->
-            <div class="dashboard-overview-header">
-                <h2>Dashboard Tổng Quan Chuỗi Giải</h2>
-                <p>Tổng hợp các chỉ số quan trọng và trạng thái điều hành của Chuỗi Giải Đấu.</p>
-            </div>
-
-            <!-- Top 4 KPI Metrics Grid -->
-            <div class="dashboard-kpi-grid">
-
-                <!-- KPI Card 1: Đội Đối Tác -->
-                <div class="dashboard-kpi-card">
-                    <div>
-                        <div class="kpi-label">ĐỘI ĐỐI TÁC (PARTNER TEAMS)</div>
-                        <div class="kpi-value-row">
-                            <div class="kpi-main-val">
-                                <span class="kpi-large-num"><%= (partnerCount > 0 ? partnerCount : totalRankedTeams) %></span>
-                                <span class="kpi-unit">Đội</span>
-                            </div>
-                            <div class="kpi-icon-box gold">
-                                <i class="fa-solid fa-users"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <a href="${pageContext.request.contextPath}/rolling/team-list?seriesId=<%= seriesIdVal %>" class="kpi-bottom-link">
-                            Xem danh sách đội <i class="fa-solid fa-arrow-right-long"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- KPI Card 2: Số Giải Đấu Đã Diễn Ra -->
-                <div class="dashboard-kpi-card">
-                    <div>
-                        <div class="kpi-label">SỐ GIẢI ĐẤU ĐÃ DIỄN RA</div>
-                        <div class="kpi-value-row">
-                            <div class="kpi-main-val">
-                                <span class="kpi-large-num"><%= tourneyCount %></span>
-                                <span class="kpi-sub-num"> / <%= tourneyCount %></span>
-                                <span class="kpi-unit">Giải</span>
-                            </div>
-                            <div class="kpi-icon-box gold">
-                                <i class="fa-solid fa-trophy"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <a href="${pageContext.request.contextPath}/rolling/tournament-list?seriesId=<%= seriesIdVal %>" class="kpi-bottom-link">
-                            Xem các giải con <i class="fa-solid fa-arrow-right-long"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- KPI Card 3: Đội Dẫn Đầu Hiện Tại -->
-                <div class="dashboard-kpi-card">
-                    <div>
-                        <div class="kpi-label">ĐỘI DẪN ĐẦU HIỆN TẠI</div>
-                        <div class="kpi-value-row">
-                            <div class="kpi-main-val">
-                                <div class="kpi-top-team-name" title="<%= top1Team %>"><%= top1Team %></div>
-                            </div>
-                            <div class="kpi-icon-box gold">
-                                <i class="fa-solid fa-crown"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <a href="${pageContext.request.contextPath}/rolling/standings?seriesId=<%= seriesIdVal %>" class="kpi-bottom-link gold-link">
-                            <%= top1Pts %> Points <i class="fa-solid fa-arrow-right-long"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- KPI Card 4: Số Giải Được Tính Điểm -->
-                <div class="dashboard-kpi-card">
-                    <div>
-                        <div class="kpi-label">SỐ GIẢI ĐƯỢC TÍNH ĐIỂM</div>
-                        <div class="kpi-value-row">
-                            <div class="kpi-main-val">
-                                <span class="kpi-large-num cyan"><%= phaseSize %></span>
-                                <span class="kpi-unit">Giải mới nhất</span>
-                            </div>
-                            <div class="kpi-icon-box cyan" onclick="openEditSeriesPopup()" data-ui-style="rolling-dashboard-jsp-003" title="Bấm để chỉnh sửa cửa sổ trượt W">
-                                <i class="fa-solid fa-clock-rotate-left"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="kpi-subtext">
-                        Từ giải thứ <%= (phaseSize + 1) %> trở về trước bắt đầu trừ điểm
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Bottom 2-Column Main Section -->
-            <div class="dashboard-main-columns">
-
-                <!-- Left Panel: Top Dẫn Đầu Chuỗi -->
-                <div class="dashboard-section-card">
-                    <div class="section-header-bar">
-                        <div class="section-title">
-                            <i class="fa-solid fa-crown text-gold"></i> Top Dẫn Đầu Chuỗi
-                        </div>
-                        <a href="${pageContext.request.contextPath}/rolling/standings?seriesId=<%= seriesIdVal %>" class="btn-view-full-table">
-                            Xem Bảng Đầy Đủ <i class="fa-solid fa-arrow-right-long"></i>
-                        </a>
-                    </div>
-
-                    <div class="top-rank-list">
-                        <% if (totalRankedTeams > 0) {
-                            for (int i = 0; i < Math.min(totalRankedTeams, 3); i++) {
-                                SeriesStanding st = standingsList.get(i);
-                                int rank = i + 1;
-                                String rankClass = "rank-" + rank;
-                                String tName = (st.getNormalizedTeamName() != null) ? st.getNormalizedTeamName() : "Đội #" + rank;
-                                int pts = st.getTotalRollingPoints();
-                        %>
-                            <div class="top-rank-item">
-                                <div class="rank-item-left">
-                                    <span class="rank-badge-pill <%= rankClass %>">#<%= rank %></span>
-                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&teamName=<%= java.net.URLEncoder.encode(tName, "UTF-8") %>" class="rank-team-name" title="<%= tName %>">
-                                        <%= tName %>
-                                    </a>
-                                </div>
-                                <span class="rank-team-pts"><%= pts %> pts</span>
-                            </div>
-                        <% }
-                        } else { %>
-                            <div data-ui-style="rolling-dashboard-jsp-004">
-                                <i class="fa-solid fa-trophy" data-ui-style="rolling-dashboard-jsp-005" style="display: block;"></i>
-                                <span data-ui-style="rolling-dashboard-jsp-006">Chưa có dữ liệu bảng xếp hạng</span>
-                                <p data-ui-style="rolling-dashboard-jsp-007">Hãy tạo giải con và bắt đầu thi đấu để ghi nhận điểm tích lũy.</p>
-                            </div>
-                        <% } %>
-                    </div>
-                </div>
-
-                <!-- Right Panel: Danh Sách Tag Danh Hiệu (Showcase Tất Cả Danh Hiệu Đã Xây Dựng) -->
-                <div class="dashboard-section-card">
-                    <div class="section-header-bar">
-                        <div class="section-title">
-                            <i class="fa-solid fa-tag text-gold"></i> Danh Sách Tag Danh Hiệu
-                        </div>
-                        <span class="panel-hint-text">
-                            <i class="fa-solid fa-circle-info"></i> Rê chuột xem mô tả
-                        </span>
-                    </div>
-
-                    <!-- Showcase of all 13 implemented badges in exact profile format -->
-                    <div class="tag-showcase-grid team-profile-badges-top" data-ui-style="rolling-dashboard-jsp-008">
-
-                        <!-- 1. Defending Champion -->
-                        <div class="tourma-badge-pill tourma-badge-defending" tabindex="0">
-                            <svg class="tourma-badge-svg-border" aria-hidden="true">
-                                <defs>
-                                    <linearGradient id="defendingBeamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stop-color="#facc15" stop-opacity="0.1" />
-                                        <stop offset="40%" stop-color="#fde047" stop-opacity="0.7" />
-                                        <stop offset="85%" stop-color="#ffffff" stop-opacity="1" />
-                                        <stop offset="100%" stop-color="#ffffff" stop-opacity="1" />
-                                    </linearGradient>
-                                </defs>
-                                <rect x="0.75" y="0.75" width="calc(100% - 1.5px)" height="calc(100% - 1.5px)" rx="13.25" ry="13.25" fill="none" stroke="url(#defendingBeamGrad)" stroke-width="1.5" stroke-linecap="round" pathLength="100" class="defending-beam-stroke" />
-                            </svg>
-                            <i class="fa-solid fa-shield-halved badge-icon"></i>
-                            <span class="tourma-badge-name">Defending Champion</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-shield-halved"></i> Defending Champion</span>
-                                    <span class="tourma-badge-tooltip-rarity">Đương Kim</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Nhà vô địch của giải đấu gần nhất trong chuỗi giải.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-shield-halved"></i> Vô địch giải gần nhất</div>
-                            </div>
-                        </div>
-
-                        <!-- 2. Inaugural Champion -->
-                        <div class="tourma-badge-pill tourma-badge-gold" tabindex="0">
-                            <i class="fa-solid fa-crown badge-icon"></i>
-                            <span class="tourma-badge-name">Inaugural Champion</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-crown"></i> Inaugural Champion</span>
-                                    <span class="tourma-badge-tooltip-rarity">Huyền Thoại</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Nhà vô địch giải đấu đầu tiên trong lịch sử chuỗi giải.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-trophy"></i> Vô địch giải mở màn</div>
-                            </div>
-                        </div>
-
-                        <!-- 3. Back-2-Back -->
-                        <div class="tourma-badge-pill tourma-badge-streak" tabindex="0">
-                            <i class="fa-solid fa-fire badge-icon"></i>
-                            <span class="tourma-badge-name">Back-2-Back</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-fire"></i> Back-2-Back</span>
-                                    <span class="tourma-badge-tooltip-rarity">Đặc Biệt</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Vô địch 2 giải đấu liên tiếp trong chuỗi giải.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-fire"></i> Vô địch 2 giải liên tiếp</div>
-                            </div>
-                        </div>
-
-                        <!-- 4. Winning Streak -->
-                        <div class="tourma-badge-pill tourma-badge-streak-fire" tabindex="0">
-                            <i class="fa-solid fa-fire-flame-curved badge-icon"></i>
-                            <span class="tourma-badge-name">Winning Streak</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-fire-flame-curved"></i> Winning Streak</span>
-                                    <span class="tourma-badge-tooltip-rarity">Huyền Thoại</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Vô địch từ 3 giải đấu liên tiếp trở lên trong chuỗi giải.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-fire-flame-curved"></i> Vô địch 3+ giải liên tiếp</div>
-                            </div>
-                        </div>
-
-                        <!-- 5. S-Tier Winner -->
-                        <div class="tourma-badge-pill tourma-badge-tier-s" tabindex="0">
-                            <i class="fa-solid fa-trophy badge-icon"></i>
-                            <span class="tourma-badge-name">S-Tier Winner</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-trophy"></i> S-Tier Winner</span>
-                                    <span class="tourma-badge-tooltip-rarity">Tier S</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội đã đạt tối thiểu 1 lần vô địch các giải đấu Cấp độ S (Tier S).</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Danh hiệu vô địch Tier S</div>
-                            </div>
-                        </div>
-
-                        <!-- 6. A-Tier Winner -->
-                        <div class="tourma-badge-pill tourma-badge-tier-a" tabindex="0">
-                            <i class="fa-solid fa-trophy badge-icon"></i>
-                            <span class="tourma-badge-name">A-Tier Winner</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-trophy"></i> A-Tier Winner</span>
-                                    <span class="tourma-badge-tooltip-rarity">Tier A</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội đã đạt từ 2 lần vô địch các giải đấu Cấp độ A (Tier A) trở lên.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Danh hiệu vô địch Tier A</div>
-                            </div>
-                        </div>
-
-                        <!-- 7. B-Tier Winner -->
-                        <div class="tourma-badge-pill tourma-badge-tier-b" tabindex="0">
-                            <i class="fa-solid fa-trophy badge-icon"></i>
-                            <span class="tourma-badge-name">B-Tier Winner</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-trophy"></i> B-Tier Winner</span>
-                                    <span class="tourma-badge-tooltip-rarity">Tier B</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội đã đạt từ 3 lần vô địch các giải đấu Cấp độ B (Tier B) trở lên.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Danh hiệu vô địch Tier B</div>
-                            </div>
-                        </div>
-
-                        <!-- 8. C-Tier Winner -->
-                        <div class="tourma-badge-pill tourma-badge-tier-c" tabindex="0">
-                            <i class="fa-solid fa-trophy badge-icon"></i>
-                            <span class="tourma-badge-name">C-Tier Winner</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-trophy"></i> C-Tier Winner</span>
-                                    <span class="tourma-badge-tooltip-rarity">Tier C</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội đã đạt từ 4 lần vô địch các giải đấu Cấp độ C (Tier C) trở lên.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Danh hiệu vô địch Tier C</div>
-                            </div>
-                        </div>
-
-                        <!-- 9. D-Tier Winner -->
-                        <div class="tourma-badge-pill tourma-badge-tier-d" tabindex="0">
-                            <i class="fa-solid fa-trophy badge-icon"></i>
-                            <span class="tourma-badge-name">D-Tier Winner</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-trophy"></i> D-Tier Winner</span>
-                                    <span class="tourma-badge-tooltip-rarity">Tier D</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội đã đạt từ 5 lần vô địch các giải đấu Cấp độ D (Tier D) trở lên.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Danh hiệu vô địch Tier D</div>
-                            </div>
-                        </div>
-
-                        <!-- 10. Phase 1 #1 (Đứng đầu BXH kết thúc Phase 1) -->
-                        <div class="tourma-badge-pill tourma-badge-phase-1" tabindex="0">
-                            <span class="phase1-shine-fx" aria-hidden="true"></span>
-                            <i class="fa-solid fa-gem badge-icon"></i>
-                            <span class="tourma-badge-name">Phase 1 #1</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-gem"></i> Phase 1 #1</span>
-                                    <span class="tourma-badge-tooltip-rarity">Phase 1 #1</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 1.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-gem"></i> Hạng 1 BXH kết thúc Phase 1</div>
-                            </div>
-                        </div>
-
-                        <!-- 10B. Phase 2 #1 (Đứng đầu BXH kết thúc Phase 2) -->
-                        <div class="tourma-badge-pill tourma-badge-phase-2" tabindex="0">
-                            <span class="phase2-shine-fx" aria-hidden="true"></span>
-                            <i class="fa-solid fa-meteor badge-icon"></i>
-                            <span class="tourma-badge-name">Phase 2 #1</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-meteor"></i> Phase 2 #1</span>
-                                    <span class="tourma-badge-tooltip-rarity">Phase 2 #1</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 2.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-meteor"></i> Hạng 1 BXH kết thúc Phase 2</div>
-                            </div>
-                        </div>
-
-                        <!-- 10C. Phase 3 #1 (Đứng đầu BXH kết thúc Phase 3) -->
-                        <div class="tourma-badge-pill tourma-badge-phase-3" tabindex="0">
-                            <span class="phase3-shine-fx" aria-hidden="true"></span>
-                            <i class="fa-solid fa-bolt-lightning badge-icon"></i>
-                            <span class="tourma-badge-name">Phase 3 #1</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-bolt-lightning"></i> Phase 3 #1</span>
-                                    <span class="tourma-badge-tooltip-rarity">Phase 3 #1</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 3.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-bolt-lightning"></i> Hạng 1 BXH kết thúc Phase 3</div>
-                            </div>
-                        </div>
-
-                        <!-- 10D. Phase 4 #1 (Đứng đầu BXH kết thúc Phase 4) -->
-                        <div class="tourma-badge-pill tourma-badge-phase-4" tabindex="0">
-                            <span class="phase4-shine-fx" aria-hidden="true"></span>
-                            <i class="fa-solid fa-atom badge-icon"></i>
-                            <span class="tourma-badge-name">Phase 4 #1</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-atom"></i> Phase 4 #1</span>
-                                    <span class="tourma-badge-tooltip-rarity">Phase 4 #1</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 4.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-atom"></i> Hạng 1 BXH kết thúc Phase 4</div>
-                            </div>
-                        </div>
-
-                        <!-- 10E. Phase 5 #1 (Đứng đầu BXH kết thúc Phase 5) -->
-                        <div class="tourma-badge-pill tourma-badge-phase-5" tabindex="0">
-                            <span class="phase5-shine-fx" aria-hidden="true"></span>
-                            <i class="fa-solid fa-sun badge-icon"></i>
-                            <span class="tourma-badge-name">Phase 5 #1</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-sun"></i> Phase 5 #1</span>
-                                    <span class="tourma-badge-tooltip-rarity">Phase 5 #1</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 5.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-sun"></i> Hạng 1 BXH kết thúc Phase 5</div>
-                            </div>
-                        </div>
-
-                        <!-- 11. Runner-Up (Tối thiểu 5 trận chung kết, về nhì nhiều hơn vô địch) -->
-                        <div class="tourma-badge-pill tourma-badge-runner-up" tabindex="0">
-                            <i class="fa-solid fa-medal badge-icon"></i>
-                            <span class="tourma-badge-name">Runner-Up</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-medal"></i> Runner-Up</span>
-                                    <span class="tourma-badge-tooltip-rarity">Chuyên Gia</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Góp mặt trong tối thiểu 5 trận chung kết với số lần đạt Á Quân nhiều hơn Vô Địch.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-medal"></i> Tối thiểu 5 trận Chung Kết (Nhì > Nhất)</div>
-                            </div>
-                        </div>
-
-                        <!-- 12. Veteran (Tối thiểu 7 trận chung kết) -->
-                        <div class="tourma-badge-pill tourma-badge-veteran" tabindex="0">
-                            <i class="fa-solid fa-award badge-icon"></i>
-                            <span class="tourma-badge-name">Veteran</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-award"></i> Veteran</span>
-                                    <span class="tourma-badge-tooltip-rarity">Kỳ Cựu</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Bản lĩnh kỳ cựu dày dặn với tối thiểu 7 lần tiến vào trận chung kết đỉnh cao.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Tối thiểu 7 trận Chung Kết</div>
-                            </div>
-                        </div>
-
-                        <!-- 13. Podium (Tối thiểu 10 lần vào bán kết) -->
-                        <div class="tourma-badge-pill tourma-badge-podium" tabindex="0">
-                            <i class="fa-solid fa-ranking-star badge-icon"></i>
-                            <span class="tourma-badge-name">Podium</span>
-                            <div class="tourma-badge-tooltip">
-                                <div class="tourma-badge-tooltip-header">
-                                    <span class="tourma-badge-tooltip-title"><i class="fa-solid fa-ranking-star"></i> Podium</span>
-                                    <span class="tourma-badge-tooltip-rarity">Ưu Tú</span>
-                                </div>
-                                <div class="tourma-badge-tooltip-desc">Tên tuổi quen thuộc trên bục vinh quang với tối thiểu 10 lần lọt vào vòng Bán Kết.</div>
-                                <div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-ranking-star"></i> Tối thiểu 10 lần vào Bán Kết</div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-            </div>
-
-        </main>
-
-        <!-- Reusable Edit Series Popup Component -->
-        <jsp:include page="/common/component/edit-series-popup.jsp">
-            <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
-            <jsp:param name="formActionUrl" value="${pageContext.request.contextPath}/rolling/dashboard"/>
-        </jsp:include>
+        <section class="dashboard-panel" aria-labelledby="seriesLeadersHeading">
+            <div class="dashboard-panel-heading"><h2 id="seriesLeadersHeading">Dẫn đầu BXH</h2><a href="${pageContext.request.contextPath}/rolling/standings?seriesId=<%= seriesQuery %>">Xem BXH <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
+            <% if(standingsList==null||standingsList.isEmpty()){ %><div class="dashboard-empty"><i class="fa-solid fa-ranking-star" aria-hidden="true"></i><p>Chưa có dữ liệu xếp hạng</p></div><% } else { %>
+            <ol class="dashboard-leaders">
+                <% for(int i=0;i<Math.min(5,standingsList.size());i++){SeriesStanding row=standingsList.get(i); %>
+                <li><span class="dashboard-rank"><%= i+1 %></span><span class="dashboard-leader-name"><%= dashboardText(row.getNormalizedTeamName()) %></span><strong><%= eloModel ? String.format(java.util.Locale.ROOT,"%.0f",row.getCurrentElo()) : String.valueOf(row.getTotalRollingPoints()) %><small><%= eloModel ? "Elo" : "điểm" %></small></strong></li>
+                <% } %>
+            </ol><% } %>
+        </section>
+    </div>
+</main></div>
 
         <!-- Rolling Dashboard Interactive Script -->
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-dashboard.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>

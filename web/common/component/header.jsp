@@ -52,14 +52,6 @@
                 <i class="fa-solid fa-layer-group"></i> Chuỗi Giải Của Tôi
             </a>
         </li>
-
-        <!-- 6. Template UI Showcase -->
-        <li>
-            <a href="${pageContext.request.contextPath}/common/template.jsp"
-                class="nav-link ${param.active == 'template' ? 'active' : ''}">
-                <i class="fa-solid fa-palette"></i> Template UI
-            </a>
-        </li>
     </ul>
     <% if ("true".equals(request.getParameter("themeToggle"))) { %>
     <button class="theme-toggle" type="button" data-theme-toggle aria-label="Chuyển giao diện sáng tối"><i class="fa-solid fa-moon" aria-hidden="true"></i><span data-theme-label>Giao diện tối</span><span class="theme-switch" aria-hidden="true"></span></button>

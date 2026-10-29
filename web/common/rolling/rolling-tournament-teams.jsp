@@ -140,21 +140,29 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-teams.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-teams.css?v=20261024-partner-columns">
-    </head>
-    <body>
+    <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=27">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-teams.css?v=22">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-teams.css?v=2">
+</head>
+    <body class="ui-page workspace-page tournament-workspace series-page series-form-page subteams-page teams-page">
         <!-- Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="my-series"/>
-        </jsp:include>
+        <jsp:param name="themeToggle" value="true"/></jsp:include>
 
         <!-- Dynamic 3-Mode Sidebar Component -->
-        <jsp:include page="/common/component/sidebar.jsp">
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng chuỗi giải</summary><jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="id" value="<%= tourneyId %>"/>
             <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
             <jsp:param name="activeStep" value="teams"/>
-        </jsp:include>
+        </jsp:include></details>
 
-        <main class="container has-sidebar">
+        <main class="series-main">
 
             <!-- CENTERED MAIN TITLE (MATCHING STANDALONE TOURNAMENT 100%) -->
             <h1 class="page-main-title" data-ui-style="rolling-tournament-teams-jsp-001">
@@ -354,7 +362,7 @@
                 <input type="hidden" name="orderedTeamNames" id="orderedTeamNamesInput" value="">
             </form>
 
-        </main>
+        </main></div>
 
         <!-- MODAL: SELECT QUICKLY FROM PARTNER TEAMS ORDERED BY STANDINGS -->
         <div id="partnerSelectModal" class="team-modal-overlay" style="display: none;">
@@ -440,8 +448,8 @@
                                 <div data-ui-style="rolling-tournament-teams-jsp-063" style="display: flex;">
                                     <input type="checkbox" name="selectedTeamNames" value="<%= p.getName() %>" class="partner-cb-input" data-index="<%= pIdx %>" <%= isAlreadyIn ? "checked disabled" : "" %>>
                                     <span class="rank-badge rank-<%= pRank %>" data-ui-style="rolling-tournament-teams-jsp-064" style="display: inline-flex; color: <%= (pRank == 1) ? "#fbbf24" : (pRank == 2 ? "#e2e8f0" : (pRank == 3 ? "#f97316" : "#cbd5e1")) %>; border: 1px solid <%= (pRank == 1) ? "rgba(251,191,36,0.3)" : (pRank == 2 ? "rgba(226,232,240,0.2)" : (pRank == 3 ? "rgba(249,115,22,0.3)" : "rgba(255,255,255,0.1)")) %>;">#<%= pRank %></span>
-                                    <span data-ui-style="rolling-tournament-teams-jsp-065" style="color: <%= isAlreadyIn ? "#94a3b8" : "#ffffff" %>;">
-                                        <%= p.getName() %> <%= isAlreadyIn ? "<span style='font-size: 0.75rem; font-weight: 500; color: #64748b; margin-left: 0.35rem;'>(Đã thêm)</span>" : "" %>
+                                    <span data-ui-style="rolling-tournament-teams-jsp-065" style="color: <%= isAlreadyIn ? "var(--ui-muted)" : "var(--ui-text)" %>;">
+                                        <%= p.getName() %> <%= isAlreadyIn ? "<span style='font-size: 0.75rem; font-weight: 500; color: var(--ui-muted); margin-left: 0.35rem;'>(Đã thêm)</span>" : "" %>
                                     </span>
                                     <small class="partner-excluded-label" hidden>Đã tham gia giải loại trừ</small>
                                 </div>

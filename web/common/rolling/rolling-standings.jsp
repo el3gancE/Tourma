@@ -81,64 +81,40 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css?v=<%= System.currentTimeMillis() %>">
-    </head>
-    <body>
+    <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=25">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+</head>
+    <body class="ui-page tournament-workspace series-standings-page">
         <!-- Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="my-series"/>
+            <jsp:param name="active" value="my-series"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
         <!-- Dynamic 3-Mode Sidebar Component -->
-        <jsp:include page="/common/component/sidebar.jsp">
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng chuỗi giải</summary><jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
             <jsp:param name="activeStep" value="standings"/>
-        </jsp:include>
+        </jsp:include></details>
 
-        <main class="container has-sidebar" data-ui-style="rolling-standings-jsp-001">
-
-            <!-- Breadcrumb Navigation -->
-            <div data-ui-style="rolling-standings-jsp-002">
-                <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= seriesIdVal %>" class="text-muted" data-ui-style="rolling-standings-jsp-003">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard Series
-                </a>
-            </div>
-
-            <!-- Series Header Banner Card (Top Bar Màn BXH) -->
-            <div class="team-list-header-card" data-phase-size="<%= phaseSize %>" data-ui-style="rolling-standings-jsp-004">
-                <div data-ui-style="rolling-standings-jsp-005" style="display: flex;">
-                    <div>
-                        <h1 class="rolling-series-name" data-ui-style="rolling-standings-jsp-006">
-                            <%= seriesName %> - Bảng Xếp Hạng
-                        </h1>
-                        <p class="text-muted" data-ui-style="rolling-standings-jsp-007">
-                            Tích lũy điểm trượt trong <strong><%= phaseSize %> giải đấu gần nhất (W = <%= phaseSize %>)</strong>. Tự động khấu trừ điểm hết hạn khi vượt cửa sổ trượt.
-                        </p>
-                    </div>
-                    <div data-ui-style="rolling-standings-jsp-008" style="display: flex;">
-                        <button type="button" onclick="openEditSeriesPopup()" class="btn btn-gold-outline" title="Chỉnh sửa số giải tích lũy điểm (Cửa sổ trượt W) của Series này" data-ui-style="rolling-standings-jsp-009" style="display: inline-flex;">
-                            <i class="fa-solid fa-sliders"></i> Đổi Cửa Sổ Trượt W (<%= phaseSize %>)
-                        </button>
-                        <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" title="Tạo giải đấu con mới cho chuỗi giải này" data-ui-style="rolling-standings-jsp-010" style="display: inline-flex;">
-                            <i class="fa-solid fa-plus-circle"></i> Tạo giải con
-                        </a>
-                    </div>
-                </div>
-            </div>
+        <main class="series-standings-main" data-ui-style="rolling-standings-jsp-001">
 
             <!-- Full Standings Table Card -->
-            <div class="team-list-card">
-                <div data-ui-style="rolling-standings-jsp-011" style="display: flex;">
+            <div class="team-list-card" data-phase-size="<%= phaseSize %>">
+                <div class="series-standings-toolbar" data-ui-style="rolling-standings-jsp-011">
                     <div>
                         <h3 data-ui-style="rolling-standings-jsp-012" id="standingsTableTitle">
-                            Bảng Xếp Hạng Chi Tiết (Cửa Sổ Trượt W = <%= phaseSize %> Giải)
+                            Bảng xếp hạng
                         </h3>
+                        <p class="series-standings-description">Điểm tích lũy trong <strong><%= phaseSize %> giải gần nhất</strong>.</p>
                     </div>
 
-                    <div data-ui-style="rolling-standings-jsp-013" style="display: flex;">
+                    <div class="series-standings-filters" data-ui-style="rolling-standings-jsp-013">
                         <!-- Dropdown Chọn Mốc Giải Đấu (Mới nhất hiện trước) -->
                         <div data-ui-style="rolling-standings-jsp-014" style="display: flex;">
                             <label for="milestoneSelect" data-ui-style="rolling-standings-jsp-015">
-                                <i class="fa-solid fa-clock-rotate-left"></i> Tính đến:
+                                Mốc xếp hạng
                             </label>
                             <select id="milestoneSelect" class="form-control" onchange="onMilestoneChange(this.value)" data-ui-style="rolling-standings-jsp-016">
                                 <% if (tournamentsList != null && !tournamentsList.isEmpty()) {
@@ -159,7 +135,7 @@
 
                         <!-- Ô Tìm Kiếm Tên Đội -->
                         <div data-ui-style="rolling-standings-jsp-017" style="display: flex;">
-                            <input type="text" class="form-control" placeholder="Tìm kiếm tên đội..." onkeyup="filterRollingStandings(this.value)" data-ui-style="rolling-standings-jsp-018">
+                            <input type="text" class="form-control" aria-label="Tìm tên đội" placeholder="Tìm tên đội..." onkeyup="filterRollingStandings(this.value)" data-ui-style="rolling-standings-jsp-018">
                         </div>
                     </div>
                 </div>
@@ -188,21 +164,21 @@
 
                                 int netChange = lastPts - expiredPts;
                                 String lastPtsText = (lastPts > 0) ? ("+" + lastPts + " pts") : "0 pts";
-                                String lastPtsColor = (lastPts > 0) ? "#2dd4bf" : "#94a3b8";
+                                String lastPtsColor = (lastPts > 0) ? "var(--ui-accent)" : "var(--ui-muted)";
 
                                 String changeText = "0 pts";
-                                String changeColor = "#94a3b8";
+                                String changeColor = "var(--ui-muted)";
                                 if (netChange > 0) {
                                     changeText = "+" + netChange + " pts";
-                                    changeColor = "#2dd4bf";
+                                    changeColor = "var(--ui-accent)";
                                 } else if (netChange < 0) {
                                     changeText = netChange + " pts";
-                                    changeColor = "#ef4444";
+                                    changeColor = "var(--ui-danger)";
                                 }
                                 boolean isTop10 = (rank <= 10);
-                                String rankColor = isTop10 ? "#2dd4bf" : "#ffffff";
-                                String nameColor = isTop10 ? "#2dd4bf" : "#ffffff";
-                                String nameHover = isTop10 ? "#5eead4" : "#2dd4bf";
+                                String rankColor = isTop10 ? "var(--ui-accent)" : "var(--ui-text)";
+                                String nameColor = isTop10 ? "var(--ui-accent)" : "var(--ui-text)";
+                                String nameHover = isTop10 ? "var(--ui-accent-hover)" : "var(--ui-accent)";
                         %>
                             <tr class="<%= isTop10 ? "top-10" : "" %>">
                                 <td data-ui-style="rolling-standings-jsp-024" style="color: <%= rankColor %>;">
@@ -245,9 +221,9 @@
                                 SeriesStanding st = standingsList.get(i);
                                 int rank = i + 1;
                                 boolean isTop10 = (rank <= 10);
-                                String rankColor = isTop10 ? "#2dd4bf" : "#ffffff";
-                                String nameColor = isTop10 ? "#2dd4bf" : "#ffffff";
-                                String nameHover = isTop10 ? "#5eead4" : "#2dd4bf";
+                                String rankColor = isTop10 ? "var(--ui-accent)" : "var(--ui-text)";
+                                String nameColor = isTop10 ? "var(--ui-accent)" : "var(--ui-text)";
+                                String nameHover = isTop10 ? "var(--ui-accent-hover)" : "var(--ui-accent)";
                         %>
                             <tr class="<%= isTop10 ? "top-10" : "" %>">
                                 <td data-ui-style="rolling-standings-jsp-031" style="color: <%= rankColor %>;">
@@ -285,7 +261,7 @@
                         <% } %>
                     </tbody>
                 </table>
-            </div></main>
+            </div></main></div>
 
         <!-- Reusable Edit Series Popup Component -->
         <jsp:include page="/common/component/edit-series-popup.jsp">

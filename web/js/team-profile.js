@@ -185,7 +185,7 @@
           rowsHtml += '<tr>' +
             '<td data-ui-style="team-profile-js-008">' + sttVal + '</td>' +
             '<td data-ui-style="team-profile-js-009">' +
-              '<a href="' + tourneyUrl + '" class="tourney-name-link" data-ui-style="team-profile-js-010" onmouseover="this.style.color=\'#2dd4bf\'" onmouseout="this.style.color=\'#ffffff\'" title="Xem giai đoạn cuối giải ' + perf.name + '">' +
+              '<a href="' + tourneyUrl + '" class="tourney-name-link" data-ui-style="team-profile-js-010" onmouseover="this.style.color=\'var(--ui-accent)\'" onmouseout="this.style.color=\'var(--ui-text)\'" title="Xem giai đoạn cuối giải ' + perf.name + '">' +
                 perf.name +
               '</a>' +
               '<span class="tier-tag tier-' + pTier.toLowerCase() + '" data-ui-style="team-profile-js-011">[' + pTier + ']</span>' +
@@ -207,6 +207,7 @@
     renderRankProgressionChart();
   }
 
+  function profileColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
   var currentChartInstance = null;
 
   function renderRankProgressionChart() {
@@ -255,18 +256,18 @@
 
       var isTop1 = (item.rank === 1);
       if (isTop1) {
-        pointBgColors.push('#fbbf24');
-        pointBorderColors.push('#ffffff');
+        pointBgColors.push(profileColor('--ui-tier-s'));
+        pointBorderColors.push(profileColor('--ui-text'));
         pointRadii.push(top1R);
         pointHoverRadii.push(top1HoverR);
       } else if (item.participated) {
-        pointBgColors.push('#2dd4bf');
-        pointBorderColors.push('#0f172a');
+        pointBgColors.push(profileColor('--ui-accent'));
+        pointBorderColors.push(profileColor('--ui-surface'));
         pointRadii.push(partR);
         pointHoverRadii.push(partHoverR);
       } else {
-        pointBgColors.push('#64748b');
-        pointBorderColors.push('#0f172a');
+        pointBgColors.push(profileColor('--ui-muted'));
+        pointBorderColors.push(profileColor('--ui-surface'));
         pointRadii.push(notPartR);
         pointHoverRadii.push(notPartHoverR);
       }
@@ -287,7 +288,7 @@
           datasets: [{
             label: 'Thứ hạng BXH',
             data: ranks,
-            borderColor: '#2dd4bf',
+            borderColor: profileColor('--ui-accent'),
             borderWidth: 2.2,
             backgroundColor: 'transparent',
             fill: false,
@@ -321,12 +322,12 @@
               display: false
             },
             tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              titleColor: '#ffffff',
-              titleFont: { family: 'Lexend, sans-serif', weight: '700', size: 13 },
-              bodyColor: '#cbd5e1',
-              bodyFont: { family: 'Lexend, sans-serif', size: 12 },
-              borderColor: 'rgba(45, 212, 191, 0.4)',
+              backgroundColor: profileColor('--ui-surface'),
+              titleColor: profileColor('--ui-text'),
+              titleFont: { family: profileColor('--ui-font'), weight: '700', size: 13 },
+              bodyColor: profileColor('--ui-text'),
+              bodyFont: { family: profileColor('--ui-font'), size: 12 },
+              borderColor: profileColor('--ui-accent'),
               borderWidth: 1,
               padding: 12,
               cornerRadius: 10,
@@ -363,13 +364,13 @@
                   if (context.tick && (context.tick.value < 0.9 || context.tick.value > yAxisMax + 0.1)) {
                     return 'transparent';
                   }
-                  return 'rgba(255, 255, 255, 0.06)';
+                  return profileColor('--ui-line');
                 }
               },
               ticks: {
                 precision: 0,
-                color: '#94a3b8',
-                font: { family: 'Lexend, sans-serif', weight: '600', size: 11 },
+                color: profileColor('--ui-muted'),
+                font: { family: profileColor('--ui-font'), weight: '600', size: 11 },
                 stepSize: (yAxisMax <= 8) ? 1 : Math.max(1, Math.round(yAxisMax / 6)),
                 callback: function (val) {
                   if (val >= 1 && val <= yAxisMax && Number.isInteger(val)) {
@@ -381,11 +382,11 @@
             },
             x: {
               grid: {
-                color: 'rgba(255, 255, 255, 0.03)'
+                color: profileColor('--ui-line')
               },
               ticks: {
-                color: '#94a3b8',
-                font: { family: 'Lexend, sans-serif', size: 11 },
+                color: profileColor('--ui-muted'),
+                font: { family: profileColor('--ui-font'), size: 11 },
                 maxRotation: 40,
                 minRotation: 0
               }
@@ -414,9 +415,9 @@
 
     ctx.clearRect(0, 0, w, h);
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '11px Lexend, sans-serif';
+    ctx.strokeStyle = profileColor('--ui-line');
+    ctx.fillStyle = profileColor('--ui-muted');
+    ctx.font = '11px ' + profileColor('--ui-font');
     ctx.textAlign = 'right';
 
     var ySteps = 5;
@@ -441,7 +442,7 @@
     }
 
     ctx.beginPath();
-    ctx.strokeStyle = '#2dd4bf';
+    ctx.strokeStyle = profileColor('--ui-accent');
     ctx.lineWidth = 3;
     for (var i = 0; i < pts.length; i++) {
       if (i === 0) ctx.moveTo(pts[i].x, pts[i].y);
@@ -459,9 +460,9 @@
       var isTop1 = (p.item.rank === 1);
       ctx.beginPath();
       ctx.arc(p.x, p.y, isTop1 ? fbTop1R : (p.item.participated ? fbPartR : fbNotPartR), 0, Math.PI * 2);
-      ctx.fillStyle = isTop1 ? '#fbbf24' : (p.item.participated ? '#2dd4bf' : '#64748b');
+      ctx.fillStyle = isTop1 ? profileColor('--ui-tier-s') : (p.item.participated ? profileColor('--ui-accent') : profileColor('--ui-muted'));
       ctx.fill();
-      ctx.strokeStyle = isTop1 ? '#ffffff' : '#0f172a';
+      ctx.strokeStyle = isTop1 ? profileColor('--ui-text') : profileColor('--ui-surface');
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
@@ -488,4 +489,5 @@
     window.addEventListener('resize', debouncedSync);
   }
 
+  new MutationObserver(function () { renderRankProgressionChart(); }).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
 })();

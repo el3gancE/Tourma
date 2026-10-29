@@ -1,4 +1,4 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -21,14 +21,20 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-series.css">
+<script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=27">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
 </head>
-    <body>
+    <body class="ui-page workspace-page tournament-workspace series-page series-form-page create-series-page">
         <!-- Include Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="create-series"/>
-        </jsp:include>
+        <jsp:param name="themeToggle" value="true"/></jsp:include>
 
-        <main class="container" data-ui-style="create-series-jsp-001">
+        <main class="series-create-main" data-ui-style="create-series-jsp-001">
             <div data-ui-style="create-series-jsp-002">
                 <a href="${pageContext.request.contextPath}/index.jsp" class="text-muted" data-ui-style="create-series-jsp-003">
                     <i class="fa-solid fa-arrow-left"></i> Quay lại Trang chủ
@@ -38,10 +44,10 @@
             <!-- Form Container Box -->
             <div class="form-container-box">
                 <h1 class="form-header-title">
-                    <i class="fa-solid fa-folder-plus text-gold"></i> Khởi Tạo Chuỗi Giải Mới
+                    <i class="fa-solid fa-folder-plus text-gold"></i> Tạo chuỗi giải
                 </h1>
                 <p class="text-muted" data-ui-style="create-series-jsp-004">
-                    Tạo Series mùa giải để gom nhóm các giải đấu con, tích lũy điểm Rolling theo Phase hoặc điểm Elo.
+                    Đặt tên chuỗi giải và chọn cách tính điểm xếp hạng.
                 </p>
 
                 <!-- Error Alert Message -->
@@ -116,7 +122,7 @@
                     <div data-ui-style="create-series-jsp-015" style="display: flex;">
                         <a href="${pageContext.request.contextPath}/index.jsp" class="btn btn-secondary">Hủy Bỏ</a>
                         <button type="submit" class="btn btn-mint">
-                            TẠO CHUỖI GIẢI & TIẾP TỤC ➔
+                            Tạo chuỗi giải →
                         </button>
                     </div>
                 </form>

@@ -1,0 +1,20 @@
+/* Partner roster and text-list dialog. */
+.rolling-team-list-page :is([data-ui-style="rolling-team-list-jsp-007"],[data-ui-style="rolling-team-list-jsp-012"]) { align-items:center; flex-wrap:wrap; gap:8px; }
+.rolling-team-list-page [data-ui-style="rolling-team-list-jsp-010"] { justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:18px; }
+.rolling-team-list-page [data-ui-style="rolling-team-list-jsp-011"] { font-size:15px; font-weight:600; }
+.rolling-team-list-page [data-ui-style="rolling-team-list-jsp-012"] input { width:230px; }
+.rolling-team-list-page .sortable-th { cursor:pointer; }
+.rolling-team-list-page [data-ui-style="rolling-team-list-jsp-029"] { color:var(--ui-danger); font-size:10px; padding:6px 9px; }
+.rolling-team-list-page .team-modal-overlay { position:fixed; inset:0; z-index:2000; align-items:center; justify-content:center; padding:20px; background:rgb(0 0 0 / 55%); }
+.rolling-team-list-page .team-modal-card { width:min(100%,640px); max-height:90dvh; overflow:auto; background:var(--ui-surface); border:1px solid var(--ui-line); border-radius:10px; box-shadow:var(--ui-shadow); }
+.rolling-team-list-page :is([data-ui-style="rolling-team-list-jsp-033"],[data-ui-style="rolling-team-list-jsp-044"]) { justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:18px; }
+.rolling-team-list-page [data-ui-style="rolling-team-list-jsp-034"] { align-items:center; gap:10px; }
+.rolling-team-list-page [data-ui-style="rolling-team-list-jsp-036"] { font-size:17px; }
+.rolling-team-list-page :is([data-ui-style="rolling-team-list-jsp-037"],[data-ui-style="rolling-team-list-jsp-039"]) { font-size:11px; color:var(--ui-muted); }
+.rolling-team-list-page [data-ui-style="rolling-team-list-jsp-039"] { padding:0 18px 12px; justify-content:space-between; gap:12px; }
+.rolling-team-list-page textarea { display:block; width:calc(100% - 36px); min-height:260px; margin:0 18px; resize:vertical; padding:12px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-bg); color:var(--ui-text); font:12px/1.8 var(--ui-font); }
+.rolling-team-list-page #bulkCopyToast { opacity:0; color:var(--ui-accent); }
+.rolling-team-list-page [data-ui-style="rolling-team-list-jsp-046"] { gap:8px; }
+.rolling-team-list-page #bulkPartnerTextarea { width:calc(100% - 36px); max-width:calc(100% - 36px); min-height:260px; }
+.rolling-team-list-page.series-page [data-ui-style="rolling-team-list-jsp-029"] { color:var(--ui-danger); }
+.rolling-team-list-page [data-ui-style="rolling-team-list-jsp-038"] { border:1px solid var(--ui-line); border-radius:5px; padding:6px 9px; background:var(--ui-bg); color:var(--ui-muted); cursor:pointer; }

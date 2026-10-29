@@ -154,3 +154,14 @@
         margin-top: 12px;
     }
 }
+/* Series navigation needs room for the longer menu labels. */
+@media(min-width:1000px) {
+    .tournament-workspace .tournament-shell { grid-template-columns:260px minmax(0,1fr); }
+    .tournament-workspace .tournament-sidebar .sidebar-section .sidebar-menu-link { font-size:12px; min-height:38px; padding:8px 10px; }
+    .tournament-workspace .sidebar-workspace-heading { font-size:12px; }
+}
+
+@media(min-width:1000px) {
+    .tournament-workspace .tournament-sidebar .sidebar-menu-list { gap:3px; }
+    .tournament-workspace .sidebar-workspace-heading { padding-bottom:16px; margin-bottom:18px; }
+}

@@ -1,0 +1,55 @@
+/* Team profile: shared Series shell, compact statistics and readable history. */
+.team-profile-page .series-main { display:flex; flex-direction:column; gap:24px; }
+.team-profile-page .team-profile-back-link { color:var(--ui-muted); font-size:11px; }
+.team-profile-page .team-profile-title-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:18px; padding-bottom:22px; border-bottom:1px solid var(--ui-line); margin-bottom:22px; }
+.team-profile-page .team-profile-name { font-size:30px; font-weight:700; line-height:1.4; overflow-wrap:anywhere; }
+.team-profile-page .team-profile-join-date { font-size:11px; color:var(--ui-muted); margin-top:8px; }
+.team-profile-page .team-profile-badges-top { display:flex; flex-wrap:wrap; gap:7px; }
+.team-profile-page .team-stat-grid-row1 { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; }
+.team-profile-page .team-stat-grid-row2 { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-top:14px; }
+.team-profile-page .team-stat-box { display:flex; flex-direction:column; gap:12px; min-width:0; padding:18px; border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); }
+.team-profile-page .team-stat-label { display:flex; align-items:center; gap:7px; font-size:10px; color:var(--ui-muted); font-weight:500; }
+.team-profile-page .team-stat-val { display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; font-size:25px; font-weight:700; font-variant-numeric:tabular-nums; }
+.team-profile-page .pts-unit,.team-profile-page .rank-tourney-name { font-size:10px; color:var(--ui-muted); font-weight:500; }
+.team-profile-page .color-gold { color:var(--ui-tier-s); }
+.team-profile-page .color-mint { color:var(--ui-accent); }
+.team-profile-page .color-green { color:var(--ui-tier-b); }
+.team-profile-page .team-champion-section { padding-top:22px; }
+.team-profile-page .team-champion-title { font-size:11px; color:var(--ui-muted); margin-bottom:12px; }
+.team-profile-page .team-champion-badges-flex { display:flex; flex-wrap:wrap; gap:8px; }
+.team-profile-page .champion-badge-pill { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); color:var(--ui-tier-s); font-size:11px; }
+.team-profile-page .team-performance-card { min-width:0; border:1px solid var(--ui-line); border-radius:8px; overflow:hidden; background:var(--ui-surface); }
+.team-profile-page .team-performance-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; padding:18px; border-bottom:1px solid var(--ui-line); }
+.team-profile-page .team-performance-title { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; }
+.team-profile-page [data-ui-style="team-profile-jsp-015"] { font-size:11px; color:var(--ui-muted); margin-top:7px; }
+.team-profile-page .rank-chart-wrapper { position:relative; height:320px; padding:12px; }
+.team-profile-page .rank-chart-wrapper canvas { max-width:100%; }
+.team-profile-page .rank-chart-legend { display:flex; flex-wrap:wrap; gap:12px; }
+.team-profile-page .rank-chart-legend-item { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--ui-muted); }
+.team-profile-page :is(.rank-chart-dot-gold,.rank-chart-dot-mint,.rank-chart-dot-muted) { width:6px; height:6px; border-radius:50%; background:var(--ui-muted); }
+.team-profile-page .rank-chart-dot-gold { background:var(--ui-tier-s); }
+.team-profile-page .rank-chart-dot-mint { background:var(--ui-accent); }
+.team-profile-page .team-performance-card:has(.team-performance-table) { overflow-x:auto; }
+.team-profile-page .team-performance-table { width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; }
+.team-profile-page .team-performance-table :is(th,td) { padding:13px 16px; border-bottom:1px solid var(--ui-line); text-align:left; }
+.team-profile-page .team-performance-table th { font-size:10px; font-weight:600; background:var(--ui-surface-alt); color:var(--ui-muted); white-space:nowrap; }
+.team-profile-page .team-performance-table tr:last-child td { border-bottom:0; }
+.team-profile-page .team-performance-table :is(th,td):last-child { text-align:right; }
+.team-profile-page .tourney-name-link { font-weight:600; }
+.team-profile-page .achievement-text.champ { color:var(--ui-tier-s); }
+.team-profile-page .achievement-text.advance { color:var(--ui-tier-b); }
+.team-profile-page .achievement-text.eliminated { color:var(--ui-danger); }
+.team-profile-page .achievement-text.muted { color:var(--ui-muted); }
+@media(max-width:1100px) { .team-profile-page .team-stat-grid-row2 { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { .team-profile-page .team-stat-grid-row1 { grid-template-columns:repeat(2,minmax(0,1fr)); } .team-profile-page .team-stat-box { padding:14px; } .team-profile-page .team-stat-val { font-size:22px; } .team-profile-page .team-profile-name { font-size:26px; } }
+.team-profile-page .tourma-badge-pill { position:relative; display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); color:var(--ui-accent); font-size:11px; cursor:help; }
+.team-profile-page .tourma-badge-pill > svg,.team-profile-page .tourma-badge-pill > .phase-shine { display:none; }
+.team-profile-page .tourma-badge-tooltip { display:none; position:absolute; z-index:50; top:calc(100% + 8px); right:0; width:290px; max-width:calc(100vw - 40px); padding:14px; border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); color:var(--ui-text); box-shadow:var(--ui-shadow); font-size:11px; line-height:1.7; }
+.team-profile-page .tourma-badge-pill:is(:hover,:focus-visible) .tourma-badge-tooltip { display:block; }
+.team-profile-page .tourma-badge-tooltip-header { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:8px; font-weight:600; }
+.team-profile-page .tourma-badge-tooltip-rarity { color:var(--ui-muted); font-size:10px; }
+.team-profile-page .tourma-badge-tooltip-desc { color:var(--ui-muted); }
+.team-profile-page .tourma-badge-tooltip-footer { padding-top:10px; margin-top:10px; border-top:1px solid var(--ui-line); }
+
+@media(min-width:1000px) { .team-profile-page .team-stat-grid-row1 .team-stat-box { padding:16px 12px; } .team-profile-page .team-stat-grid-row1 .team-stat-val { font-size:23px; } }
+@media(min-width:601px) and (max-width:999px) { .team-profile-page .team-stat-grid-row1 { grid-template-columns:repeat(3,minmax(0,1fr)); } }

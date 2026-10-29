@@ -1,0 +1,31 @@
+/* Hall of Fame layout; shared theme, tier colors and controls. */
+.rolling-hof-page .hof-title-wrap { display:flex; align-items:center; gap:14px; }
+.rolling-hof-page .hof-crown-icon-box { color:var(--ui-tier-s); font-size:25px; }
+.rolling-hof-page .hof-split-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:20px; align-items:start; }
+.rolling-hof-page .hof-card-panel { min-width:0; border:1px solid var(--ui-line); border-radius:8px; overflow:hidden; background:var(--ui-surface); }
+.rolling-hof-page .hof-panel-header { display:grid; gap:14px; padding:18px; border-bottom:1px solid var(--ui-line); }
+.rolling-hof-page .hof-panel-title-wrap { display:flex; align-items:center; gap:8px; }
+.rolling-hof-page .hof-panel-title { font-size:15px; font-weight:600; }
+.rolling-hof-page .hof-panel-badge { padding:3px 7px; border-radius:5px; background:var(--ui-surface-alt); color:var(--ui-muted); font-size:10px; }
+.rolling-hof-page .hof-panel-controls { display:flex; flex-direction:column; gap:12px; min-width:0; }
+.rolling-hof-page .hof-tier-filter-pills { display:flex; flex-wrap:nowrap; gap:5px; overflow:auto; }
+.rolling-hof-page .hof-tier-btn { flex-shrink:0; padding:5px 9px; border:1px solid var(--ui-line); border-radius:5px; background:transparent; font:500 11px var(--ui-font); color:var(--ui-muted); cursor:pointer; }
+.rolling-hof-page .hof-tier-btn.active { background:var(--ui-surface-alt); border-color:currentColor; }
+.rolling-hof-page .hof-search-box { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--ui-muted); }
+.rolling-hof-page .hof-search-box input { padding:8px 10px; }
+.rolling-hof-page .hof-table-wrapper { overflow-x:auto; }
+.rolling-hof-page .hof-table { width:100%; border-collapse:collapse; font-size:12px; }
+.rolling-hof-page .hof-table :is(th,td) { padding:13px 16px; border-bottom:1px solid var(--ui-line); }
+.rolling-hof-page .hof-table th { color:var(--ui-muted); background:var(--ui-surface-alt); font-size:10px; font-weight:600; white-space:nowrap; }
+.rolling-hof-page .text-left { text-align:left; }
+.rolling-hof-page .text-right { text-align:right; }
+.rolling-hof-page .hof-tourney-name-wrap { display:flex; align-items:center; gap:7px; }
+.rolling-hof-page :is(.hof-tourney-link,.hof-team-link,.hof-champ-name-link) { font-weight:600; }
+.rolling-hof-page a:hover { color:var(--ui-accent); }
+.rolling-hof-page .hof-tier-text { font-size:10px; font-weight:700; }
+.rolling-hof-page .hof-win-count-text { font-weight:700; color:var(--ui-tier-s); }
+.rolling-hof-page .hof-pagination { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:14px; font-size:10px; color:var(--ui-muted); }
+.rolling-hof-page .hof-pagination-btns { display:flex; flex-wrap:wrap; gap:5px; }
+.rolling-hof-page .hof-pagination-btns button { padding:5px 8px; border:1px solid var(--ui-line); background:var(--ui-bg); color:var(--ui-text); border-radius:4px; cursor:pointer; font:inherit; }
+.rolling-hof-page .hof-pagination-btns button.active { color:var(--ui-accent); background:var(--ui-accent-soft); }
+@media(max-width:1150px) { .rolling-hof-page .hof-split-grid { grid-template-columns:minmax(0,1fr); } }

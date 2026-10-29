@@ -54,9 +54,9 @@
 
     if (tableTitle) {
       if (milestoneVal === 'LATEST' || milestoneVal === undefined || milestoneVal === null) {
-        tableTitle.textContent = 'Bảng Xếp Hạng Chi Tiết (Cửa Sổ Trượt W = ' + phaseSize + ' Giải)';
+        tableTitle.textContent = 'Bảng xếp hạng';
       } else if (targetTourney) {
-        tableTitle.textContent = 'Bảng Xếp Hạng Tính Đến: ' + targetTourney.name + ' (Giải #' + (targetIdx + 1) + ')';
+        tableTitle.textContent = 'BXH sau giải #' + (targetIdx + 1) + ' · ' + targetTourney.name;
       }
     }
 
@@ -103,18 +103,18 @@
 
       var netChange = data.lastPts - (data.droppedPts || 0);
       var changeText = '0 pts';
-      var changeColor = '#94a3b8';
+      var changeColor = 'var(--ui-muted)';
       if (netChange > 0) {
         changeText = '+' + netChange + ' pts';
-        changeColor = '#2dd4bf';
+        changeColor = 'var(--ui-accent)';
       } else if (netChange < 0) {
         changeText = netChange + ' pts';
-        changeColor = '#ef4444';
+        changeColor = 'var(--ui-danger)';
       }
 
-      var rankColor = isTop10 ? '#2dd4bf' : '#ffffff';
-      var nameColor = isTop10 ? '#2dd4bf' : '#ffffff';
-      var nameHover = isTop10 ? '#5eead4' : '#2dd4bf';
+      var rankColor = isTop10 ? 'var(--ui-accent)' : 'var(--ui-text)';
+      var nameColor = isTop10 ? 'var(--ui-accent)' : 'var(--ui-text)';
+      var nameHover = isTop10 ? 'var(--ui-accent-hover)' : 'var(--ui-accent)';
       var badgeClass = 'rank-badge' + (isTop10 ? ' top-10' : '') + ' rank-' + rank;
 
       row.innerHTML = 
@@ -193,3 +193,14 @@
   });
 
 })();
+
+// Filter the rendered table without changing ranking data.
+window.filterRollingStandings = function (query) {
+    var table = document.getElementById('rollingStandingsTable');
+    if (!table) return;
+    var term = String(query || '').trim().toLocaleLowerCase('vi');
+    table.querySelectorAll('tbody tr').forEach(function (row) {
+        var nameCell = row.cells[1];
+        row.hidden = !!(nameCell && term && nameCell.textContent.toLocaleLowerCase('vi').indexOf(term) === -1);
+    });
+};

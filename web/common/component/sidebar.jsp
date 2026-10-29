@@ -90,7 +90,7 @@
     else if ("GSL".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "gsl.jsp";
     else if ("SWISS_LITE".equalsIgnoreCase(stage2Format) || "SWISS".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "swiss-stage.jsp";
 
-    boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType) || (stageFormats != null && stageFormats.size() >= 2);
+    boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType);
     boolean hasSeries = (currentSeries != null);
     boolean hasTournament = (currentTournament != null);
 %>
@@ -300,7 +300,8 @@
 
         var tType = localStorage.getItem('tourma_type_' + tid);
         var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tid);
-        var isMulti = (dbIsMulti || tType === 'MULTI_STAGE' || !!multiCfgRaw);
+        var hasSavedTournament = <%= hasTournament ? "true" : "false" %>;
+        var isMulti = hasSavedTournament ? dbIsMulti : (tType === 'MULTI_STAGE');
         var m1 = document.getElementById('sidebarMenuStage1');
         var m2 = document.getElementById('sidebarMenuStage2');
         var sSingle = document.getElementById('sidebarMenuSingleStage');
@@ -321,7 +322,7 @@
             var s1Format = dbS1Format || 'SINGLE_ELIMINATION';
             var s2Format = dbS2Format || 'SINGLE_ELIMINATION';
 
-            if (multiCfgRaw) {
+            if (!hasSavedTournament && multiCfgRaw) {
                 try {
                     var mCfg = JSON.parse(multiCfgRaw);
                     if (mCfg.stage1Format) s1Format = mCfg.stage1Format;
@@ -366,7 +367,7 @@
             }
 
         var localFmt = localStorage.getItem('tourma_format_' + tid);
-        if (!isMulti && localFmt && sSingle) {
+        if (!hasSavedTournament && !isMulti && localFmt && sSingle) {
             localFmt = localFmt.toUpperCase();
             var page = 'single-elimination.jsp';
             if (localFmt === 'DOUBLE_ELIMINATION') page = 'double-elimination.jsp';

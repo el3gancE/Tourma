@@ -1,0 +1,54 @@
+/* Series dashboard layout. All colors and typography come from shared tokens. */
+.series-dashboard-page > .navbar { width:100%; max-width:none; background:var(--ui-bg); }
+.series-dashboard-page .tournament-shell { padding-right:28px; }
+.series-dashboard-page .rolling-dashboard-wrapper { display:flex; flex-direction:column; gap:24px; min-width:0; padding-block:28px; }
+.series-dashboard-page .series-dashboard-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:18px; padding-bottom:24px; border-bottom:1px solid var(--ui-line); }
+.series-dashboard-page .dashboard-back { display:inline-flex; align-items:center; gap:8px; font-size:11px; color:var(--ui-muted); margin-bottom:10px; }
+.series-dashboard-page h1 { font-size:30px; line-height:1.3; font-weight:700; overflow-wrap:anywhere; }
+.series-dashboard-page .dashboard-meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.series-dashboard-page .dashboard-meta span { padding:4px 8px; border:1px solid var(--ui-line); border-radius:5px; color:var(--ui-muted); font-size:11px; }
+.series-dashboard-page .dashboard-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); font-size:12px; }
+.series-dashboard-page .dashboard-button.primary { background:var(--ui-accent); border-color:var(--ui-accent); color:var(--ui-on-accent); }
+.series-dashboard-page .dashboard-button.primary:hover { background:var(--ui-accent-hover); }
+.series-dashboard-page .dashboard-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.series-dashboard-page .dashboard-metric { display:flex; flex-direction:column; gap:12px; padding:20px; border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); }
+.series-dashboard-page .dashboard-metric:hover { border-color:var(--ui-accent); }
+.series-dashboard-page .dashboard-metric > span { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12px; color:var(--ui-muted); }
+.series-dashboard-page .dashboard-metric > span i { color:var(--ui-accent); }
+.series-dashboard-page .dashboard-metric > strong { font-size:32px; line-height:1.2; font-weight:700; }
+.series-dashboard-page .dashboard-metric > small { display:flex; align-items:center; gap:8px; font-size:10px; color:var(--ui-muted); }
+.series-dashboard-page .dashboard-columns { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr); gap:20px; align-items:start; }
+.series-dashboard-page .dashboard-panel { min-width:0; border:1px solid var(--ui-line); border-radius:8px; overflow:hidden; background:var(--ui-surface); }
+.series-dashboard-page .dashboard-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px; border-bottom:1px solid var(--ui-line); }
+.series-dashboard-page h2 { font-size:15px; font-weight:600; }
+.series-dashboard-page .dashboard-panel-heading a { display:flex; align-items:center; gap:7px; font-size:10px; color:var(--ui-accent); }
+.series-dashboard-page .dashboard-tournament { display:flex; align-items:center; gap:12px; padding:16px 18px; border-bottom:1px solid var(--ui-line); }
+.series-dashboard-page .dashboard-tournament:last-child { border-bottom:0; }
+.series-dashboard-page .dashboard-tournament:hover { background:var(--ui-surface-alt); }
+.series-dashboard-page .dashboard-event-index { flex:0 0 32px; font-size:11px; color:var(--ui-muted); font-variant-numeric:tabular-nums; }
+.series-dashboard-page .dashboard-event-info { flex:1; min-width:0; }
+.series-dashboard-page h3 { font-size:13px; font-weight:600; overflow-wrap:anywhere; }
+.series-dashboard-page .dashboard-event-info p { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:5px; color:var(--ui-muted); font-size:10px; }
+.series-dashboard-page .dashboard-state { flex-shrink:0; font-size:9px; border:1px solid var(--ui-line); border-radius:20px; padding:3px 7px; color:var(--ui-muted); }
+.series-dashboard-page .dashboard-state.is-live { background:var(--ui-accent-soft); color:var(--ui-accent); border-color:transparent; }
+.series-dashboard-page .dashboard-chevron { color:var(--ui-muted); font-size:9px; }
+.series-dashboard-page .dashboard-leaders { list-style:none; padding:0; margin:0; }
+.series-dashboard-page .dashboard-leaders li { display:flex; align-items:center; gap:12px; padding:17px 18px; border-bottom:1px solid var(--ui-line); }
+.series-dashboard-page .dashboard-leaders li:last-child { border:0; }
+.series-dashboard-page .dashboard-rank { width:22px; flex-shrink:0; font-size:11px; color:var(--ui-muted); }
+.series-dashboard-page .dashboard-leader-name { flex:1; min-width:0; overflow-wrap:anywhere; font-size:12px; font-weight:600; }
+.series-dashboard-page .dashboard-leaders strong { display:flex; flex-direction:column; text-align:right; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
+.series-dashboard-page .dashboard-leaders strong small { font-size:9px; font-weight:500; color:var(--ui-muted); }
+.series-dashboard-page .dashboard-leaders li:first-child .dashboard-rank,.series-dashboard-page .dashboard-leaders li:first-child strong { color:var(--ui-accent); }
+.series-dashboard-page .dashboard-empty { display:flex; flex-direction:column; align-items:center; gap:12px; padding:45px 20px; color:var(--ui-muted); font-size:12px; text-align:center; }
+.series-dashboard-page .dashboard-empty > i { color:var(--ui-accent); font-size:22px; }
+.series-dashboard-page .dashboard-empty a { color:var(--ui-accent); }
+@media(max-width:1200px) { .series-dashboard-page .dashboard-columns { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) { .series-dashboard-page .tournament-shell { padding-right:20px; } .series-dashboard-page .dashboard-metrics { grid-template-columns:minmax(0,1fr); } .series-dashboard-page .dashboard-metric { gap:8px; padding:16px; } .series-dashboard-page .dashboard-state { display:none; } .series-dashboard-page h1 { font-size:26px; } }
+.series-dashboard-page .series-tier { font-weight:700; }
+.series-dashboard-page .series-tier[data-tier="S"] { color:var(--ui-tier-s); }
+.series-dashboard-page .series-tier[data-tier="A"] { color:var(--ui-tier-a); }
+.series-dashboard-page .series-tier[data-tier="B"] { color:var(--ui-tier-b); }
+.series-dashboard-page .series-tier[data-tier="C"] { color:var(--ui-tier-c); }
+.series-dashboard-page .series-tier[data-tier="D"] { color:var(--ui-tier-d); }
+@media(min-width:601px) and (max-width:1100px) { .series-dashboard-page .dashboard-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }

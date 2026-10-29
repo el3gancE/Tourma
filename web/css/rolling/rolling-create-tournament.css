@@ -1,0 +1,4 @@
+.subtournament-create-page [data-ui-style="rolling-create-tournament-jsp-002"] { margin-bottom:22px; color:var(--ui-muted); font-size:11px; }
+.subtournament-create-page form { margin-top:22px; padding:24px; border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); }
+.subtournament-create-page form > div:last-child { gap:12px; flex-wrap:wrap; justify-content:space-between; }
+.subtournament-create-page [data-ui-style="rolling-create-tournament-jsp-007"] { color:var(--ui-danger); font-size:11px; margin-top:8px; }

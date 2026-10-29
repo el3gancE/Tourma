@@ -95,27 +95,28 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-list.css">
-    </head>
-    <body>
+    <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=26">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
+</head>
+    <body class="ui-page workspace-page tournament-workspace series-page rolling-tournament-list-page">
         <!-- Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="my-series"/>
+            <jsp:param name="active" value="my-series"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
         <!-- Dynamic 3-Mode Sidebar Component -->
-        <jsp:include page="/common/component/sidebar.jsp">
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng chuỗi giải</summary><jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
             <jsp:param name="activeStep" value="tournament-list"/>
-        </jsp:include>
+        </jsp:include></details>
 
-        <main class="container has-sidebar" data-ui-style="rolling-tournament-list-jsp-001">
+        <main class="series-main" data-ui-style="rolling-tournament-list-jsp-001">
 
-            <!-- Breadcrumb Navigation -->
-            <div data-ui-style="rolling-tournament-list-jsp-002">
-                <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= seriesIdVal %>" class="text-muted" data-ui-style="rolling-tournament-list-jsp-003">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard Series
-                </a>
-            </div>
+
 
             <!-- Series Header Banner Card -->
             <div class="team-list-header-card" data-ui-style="rolling-tournament-list-jsp-004">
@@ -125,12 +126,12 @@
                             <i class="fa-solid fa-trophy text-gold"></i> Danh Sách Giải Con
                         </h1>
                         <p class="text-muted" data-ui-style="rolling-tournament-list-jsp-007">
-                            Quản lý tất cả các giải đấu con thuộc Series <strong><%= seriesName %></strong> (<%= tourneyCount %> Giải Con)
+                            Các giải đấu thuộc <strong><%= seriesName %></strong>, từ mới nhất đến cũ nhất.
                         </p>
                     </div>
                     <div>
                         <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" data-ui-style="rolling-tournament-list-jsp-008">
-                            <i class="fa-solid fa-plus-circle"></i> + Thêm Giải Con Mới
+                            <i class="fa-solid fa-plus-circle"></i> Tạo giải con
                         </a>
                     </div>
                 </div>
@@ -205,7 +206,7 @@
                         <div class="tourney-card-footer">
                             <div class="tourney-card-actions">
                                 <button type="button" class="btn-delete-tourney" title="Xóa" onclick="openDeleteTourneyModal('<%= t.getId() %>', '<%= (t.getName() != null) ? t.getName().replace("'", "\\'").replace("\"", "&quot;") : "" %>')">
-                                    <i class="fa-solid fa-trash-can"></i> Xóa
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i><span class="sr-only">Xóa</span>
                                 </button>
                                 <a href="${pageContext.request.contextPath}/rolling/tournament-teams?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Quản lý đội">
                                     <i class="fa-solid fa-users-gear"></i> QL Đội
@@ -350,7 +351,7 @@
                 </div>
             </div>
 
-        </main>
+        </main></div>
 
         <script>
             let pendingDeleteId = null;

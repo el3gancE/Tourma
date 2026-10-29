@@ -25,7 +25,7 @@ có thể có bố cục khác nhau theo công việc, nhưng phải dùng chung
 | `web/css/workspace.css` | Khung màn danh sách: tiêu đề, bộ lọc, tìm kiếm, nút và trạng thái trống dùng chung |
 | `web/js/theme.js` | Áp dụng theme, ghi nhớ lựa chọn và cập nhật nút chuyển |
 | `web/common/component/` | JSP thành phần dùng lại: header, card trận, popup và các component khác |
-| `web/common/template.jsp` | Trang trưng bày component; không phải nơi duy nhất lưu thiết kế |
+| Component JSP và stylesheet dùng chung | Nguồn thiết kế trực tiếp; trang Template UI đã ngừng sử dụng |
 | CSS của từng màn | Bố cục riêng; tham chiếu token và thành phần chung |
 
 Hiện nhiều file CSS đã được chủ động làm trắng để xây lại frontend. Việc một
@@ -81,8 +81,7 @@ component JSP tồn tại không có nghĩa hình thức của component đó đ
 2. Dùng component chung; chỉ viết CSS riêng cho phần bố cục thực sự riêng.
 3. Kiểm tra cả hai theme, màn hình hẹp và các hành động chính của màn vừa sửa.
 4. Khi người dùng chốt một quy ước mới, cập nhật nguồn dùng chung và tài liệu này.
-5. Trang Template UI phải trưng bày chính component/style dùng trong màn thật,
-   không duy trì một bộ CSS mẫu độc lập lệch với ứng dụng.
+5. Duy trì component/style ngay trong nguồn dùng chung; không cần trang Template UI riêng.
 
 ## Vị trí chuyển theme
 
@@ -91,7 +90,7 @@ Các màn đã nạp token và theme.js truyền `themeToggle=true` vào header.
 
 ## Light mode: nền dịu dùng chung
 
-Nền trang, header/sidebar và canvas dùng trắng ngà `#F7F6F3`; card dùng `#FDFCF9`, vùng phụ dùng `#EEECE6`. Dùng token chung, không đặt nền trắng tinh riêng cho từng màn. Chữ trên nút màu nhấn vẫn giữ trắng để đủ tương phản. Dark mode giữ nguyên.
+Nền trang, header/sidebar và canvas dùng trắng `#FFFFFF`; card dùng `#F8FAFC`, vùng phụ dùng `#E5E9EE`. Dùng token chung cho các màn. Chữ trên nút màu nhấn vẫn giữ trắng để đủ tương phản. Dark mode giữ nguyên.
 
 Font Readex Pro dùng weight 500 cho nội dung, 600 cho tên đội/menu và 700 cho tiêu đề/đội thắng.
 

@@ -26,46 +26,47 @@
         <!-- Design System CSS & Dedicated Rolling Team List CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css">
-    </head>
-    <body>
+    <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=26">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
+</head>
+    <body class="ui-page workspace-page tournament-workspace series-page rolling-team-list-page">
         <!-- Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="my-series"/>
+            <jsp:param name="active" value="my-series"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
         <!-- Dynamic 3-Mode Sidebar Component -->
-        <jsp:include page="/common/component/sidebar.jsp">
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng chuỗi giải</summary><jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
             <jsp:param name="activeStep" value="team-list"/>
-        </jsp:include>
+        </jsp:include></details>
 
-        <main class="container has-sidebar" data-ui-style="rolling-team-list-jsp-001">
+        <main class="series-main" data-ui-style="rolling-team-list-jsp-001">
 
-            <!-- Breadcrumb Navigation -->
-            <div data-ui-style="rolling-team-list-jsp-002">
-                <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= seriesIdVal %>" class="text-muted" data-ui-style="rolling-team-list-jsp-003">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard Series
-                </a>
-            </div>
+
 
             <!-- Series Header Banner Card -->
             <div class="team-list-header-card">
                 <div data-ui-style="rolling-team-list-jsp-004" style="display: flex;">
                     <div>
                         <h1 class="rolling-series-name" data-ui-style="rolling-team-list-jsp-005">
-                            <%= seriesName %> - Danh Sách Đội
+                            Danh sách đội tuyển
                         </h1>
                         <p class="text-muted" data-ui-style="rolling-team-list-jsp-006">
-                            Tổng cộng <%= partnerCount %> đội đã đăng ký cơ chế Partner chính thức để tích điểm trượt qua các giải đấu con.
+                            <strong><%= partnerCount %> đội</strong> đăng ký tham gia chuỗi giải <%= seriesName %>.
                         </p>
                     </div>
 
                     <div data-ui-style="rolling-team-list-jsp-007" style="display: flex;">
                         <button type="button" onclick="openBulkViewModal()" class="btn" data-ui-style="rolling-team-list-jsp-008" style="display: inline-flex;">
-                            <i class="fa-solid fa-align-left text-mint"></i> View as Bulk
+                            <i class="fa-solid fa-align-left text-mint"></i> Xem dạng văn bản
                         </button>
                         <button type="button" onclick="openAddTeamPopup()" class="btn btn-mint" data-ui-style="rolling-team-list-jsp-009" style="display: inline-flex;">
-                            <i class="fa-solid fa-user-plus"></i> + Đăng Ký Đội Mới
+                            <i class="fa-solid fa-user-plus"></i> Đăng ký đội
                         </button>
                     </div>
                 </div>
@@ -80,7 +81,7 @@
                     <div data-ui-style="rolling-team-list-jsp-012" style="display: flex;">
                         <input type="text" class="form-control" placeholder="Tìm kiếm tên đội..." onkeyup="filterPartnerTeams(this.value)" data-ui-style="rolling-team-list-jsp-013">
                         <button type="button" onclick="openBulkViewModal()" class="btn" title="Xem danh sách dạng văn bản / Bulk" data-ui-style="rolling-team-list-jsp-014" style="display: inline-flex;">
-                            <i class="fa-solid fa-align-left text-mint"></i> Bulk View
+                            <i class="fa-solid fa-align-left text-mint"></i> Dạng văn bản
                         </button>
                     </div>
                 </div>
@@ -111,7 +112,7 @@
                             <tr data-partner-id="<%= p.getId() %>" data-team-name="<%= p.getName() != null ? p.getName().replace("\"", "&quot;") : "" %>" data-tourney-count="<%= tCount %>" data-created-at="<%= createdMillis %>">
                                 <td class="row-stt" data-ui-style="rolling-team-list-jsp-023"><%= idx + 1 %></td>
                                 <td data-ui-style="rolling-team-list-jsp-024">
-                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&partnerId=<%= p.getId() %>&teamName=<%= java.net.URLEncoder.encode(p.getName(), "UTF-8") %>" data-ui-style="rolling-team-list-jsp-025" onmouseover="this.style.color='#2dd4bf'" onmouseout="this.style.color='#ffffff'">
+                                    <a href="${pageContext.request.contextPath}/team-profile?seriesId=<%= seriesIdVal %>&partnerId=<%= p.getId() %>&teamName=<%= java.net.URLEncoder.encode(p.getName(), "UTF-8") %>" data-ui-style="rolling-team-list-jsp-025" onmouseover="this.style.color='var(--ui-accent)'" onmouseout="this.style.color='var(--ui-text)'">
                                         <%= p.getName() %>
                                     </a>
                                 </td>
@@ -145,7 +146,7 @@
                 </table>
             </div>
 
-        </main>
+        </main></div>
 
         <!-- MODAL: BULK VIEW PARTNER TEAMS (VIEW AS BULK) -->
         <div id="modalBulkView" class="team-modal-overlay" style="display: none;">
@@ -158,14 +159,14 @@
                         </div>
                         <div>
                             <h3 data-ui-style="rolling-team-list-jsp-036">
-                                Danh Sách Đội Đối Tác (Bulk View)
+                                Danh Sách Đội Đối Tác (Dạng văn bản)
                             </h3>
                             <span data-ui-style="rolling-team-list-jsp-037">
                                 Dạng văn bản thô (mỗi đội một dòng)
                             </span>
                         </div>
                     </div>
-                    <button type="button" onclick="closeBulkViewModal()" data-ui-style="rolling-team-list-jsp-038" onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='#94a3b8'">
+                    <button type="button" onclick="closeBulkViewModal()" data-ui-style="rolling-team-list-jsp-038" onmouseover="this.style.color='var(--ui-text)'" onmouseout="this.style.color='var(--ui-muted)'">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>

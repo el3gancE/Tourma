@@ -60,20 +60,25 @@
 
         <!-- Chart.js for Rank Progression Chart -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    </head>
-    <body>
+    <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=26">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+</head>
+    <body class="ui-page workspace-page tournament-workspace series-page team-profile-page">
         <!-- Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="my-series"/>
-        </jsp:include>
+        <jsp:param name="themeToggle" value="true"/></jsp:include>
 
         <!-- Dynamic 3-Mode Sidebar Component -->
-        <jsp:include page="/common/component/sidebar.jsp">
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng chuỗi giải</summary><jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
             <jsp:param name="activeStep" value="standings"/>
-        </jsp:include>
+        </jsp:include></details>
 
-        <main class="container has-sidebar" data-ui-style="team-profile-jsp-001">
+        <main class="series-main" data-ui-style="team-profile-jsp-001">
 
             <!-- Breadcrumb Back Navigation -->
             <a href="${pageContext.request.contextPath}/rolling/standings?id=<%= seriesIdVal %>" class="team-profile-back-link">
@@ -228,10 +233,10 @@
                 <div class="team-performance-header" data-ui-style="team-profile-jsp-013" style="display: flex;">
                     <div>
                         <h3 class="team-performance-title" data-ui-style="team-profile-jsp-014" style="display: flex;">
-                            <i class="fa-solid fa-chart-line text-mint"></i> Biến Động Thứ Hạng Qua Các Mốc Giải Đấu
+                            <i class="fa-solid fa-chart-line text-mint"></i> Biến động thứ hạng
                         </h3>
                         <p data-ui-style="team-profile-jsp-015">
-                            Thứ hạng trên BXH Series sau từng giải đấu (Điểm tích lũy trong cửa sổ trượt W = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>)
+                            Thứ hạng sau từng giải · Window <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %> giải.
                         </p>
                     </div>
                     <div class="rank-chart-legend">
@@ -256,7 +261,7 @@
             <div class="team-performance-card">
                 <div class="team-performance-header">
                     <h3 class="team-performance-title">
-                        <i class="fa-solid fa-list-ol text-mint"></i> Thành Tích Qua Các Giải
+                        <i class="fa-solid fa-list-ol text-mint"></i> Lịch sử thi đấu
                     </h3>
                 </div>
 
@@ -286,7 +291,7 @@
                             <tr>
                                 <td data-ui-style="team-profile-jsp-018"><%= (perf.getStt() > 0) ? perf.getStt() : (performanceList.size() - idx) %></td>
                                 <td data-ui-style="team-profile-jsp-019">
-                                    <a href="<%= (perf.getFinalStageUrl() != null && !perf.getFinalStageUrl().isEmpty()) ? perf.getFinalStageUrl() : "#" %>" class="tourney-name-link" data-ui-style="team-profile-jsp-020" onmouseover="this.style.color='#2dd4bf'" onmouseout="this.style.color='#ffffff'" title="Xem giai đoạn cuối giải <%= perf.getTournamentName() %>">
+                                    <a href="<%= (perf.getFinalStageUrl() != null && !perf.getFinalStageUrl().isEmpty()) ? perf.getFinalStageUrl() : "#" %>" class="tourney-name-link" data-ui-style="team-profile-jsp-020" onmouseover="this.style.color='var(--ui-accent)'" onmouseout="this.style.color='var(--ui-text)'" title="Xem giai đoạn cuối giải <%= perf.getTournamentName() %>">
                                         <%= perf.getTournamentName() %>
                                     </a>
                                     <span class="tier-tag tier-<%= pTier.toLowerCase() %>" data-ui-style="team-profile-jsp-021">[<%= pTier %>]</span>
@@ -315,7 +320,7 @@
                 </table>
             </div>
 
-        </main>
+        </main></div>
 
         <script>
             window.appContextPath = "${pageContext.request.contextPath}";

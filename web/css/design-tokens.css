@@ -22,7 +22,7 @@
     --ui-muted: #71717a;
     --ui-line: #d4dae1;
     --ui-accent: #800020;
-    --ui-swiss-upper-accent: #b34b2d;
+    --ui-swiss-upper-accent: #287e49;
     --ui-bracket-lower-accent: #526f91;
     --ui-bracket-lower-soft: #e8edf3;
     --ui-accent-hover: #66001a;
@@ -139,3 +139,21 @@
     --ui-gsl-30: #f59e0b;
     --ui-gsl-31: #db2777;
 }
+
+/* Tournament tier identity, shared by Series screens. */
+:root {
+    --ui-tier-s:#9a7015;
+    --ui-tier-a:#8050ad;
+    --ui-tier-b:#287e49;
+    --ui-tier-c:#087d91;
+    --ui-tier-d:#202124;
+}
+:root[data-theme="dark"] {
+    --ui-tier-s:#facc15;
+    --ui-tier-a:#c084fc;
+    --ui-tier-b:#4ade80;
+    --ui-tier-c:#22d3ee;
+    --ui-tier-d:#f4f4f5;
+}
+:root { --ui-danger:#b84f54; }
+:root[data-theme="dark"] { --ui-danger:#f87171; }

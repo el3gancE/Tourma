@@ -21,7 +21,7 @@
                         href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Khởi Tạo Giải Đấu Con - TOURMA</title>
+                    <title>Tạo giải con · TOURMA</title>
 
                     <!-- Google Font Readex Pro -->
                     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,21 +38,27 @@
                     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
                     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
                     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-create-tournament.css">
+<script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=27">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
 </head>
 
-                <body>
+                <body class="ui-page workspace-page tournament-workspace series-page series-form-page subtournament-create-page">
                     <!-- Include Shared Navigation Header Component -->
                     <jsp:include page="/common/component/header.jsp">
                         <jsp:param name="active" value="my-series" />
-                    </jsp:include>
+                    <jsp:param name="themeToggle" value="true"/></jsp:include>
 
                     <!-- Include Dynamic 3-Mode Sidebar Component -->
-                    <jsp:include page="/common/component/sidebar.jsp">
+                    <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng chuỗi giải</summary><jsp:include page="/common/component/sidebar.jsp">
                         <jsp:param name="seriesId" value="<%= selectedSeriesId %>" />
                         <jsp:param name="activeStep" value="create-subtourney" />
-                    </jsp:include>
+                    </jsp:include></details>
 
-                    <main class="container has-sidebar" data-ui-style="rolling-create-tournament-jsp-001">
+                    <main class="series-main" data-ui-style="rolling-create-tournament-jsp-001">
                         <div data-ui-style="rolling-create-tournament-jsp-002">
                             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= selectedSeriesId %>"
                                 class="text-muted" data-ui-style="rolling-create-tournament-jsp-003">
@@ -63,7 +69,7 @@
                         <!-- Standard Template Form Container Box -->
                         <div class="form-container-box">
                             <h1 class="form-header-title">
-                                <i class="fa-solid fa-trophy text-mint"></i> Khởi Tạo Giải Đấu Con - <%= seriesName %>
+                                <i class="fa-solid fa-trophy text-mint"></i> Tạo giải con · <%= seriesName %>
                             </h1>
                             <p class="text-muted" data-ui-style="rolling-create-tournament-jsp-004">
                                 Nhập tên và cấp độ giải đấu con thuộc Series <strong>
@@ -121,7 +127,7 @@
 
                                     </form>
                         </div>
-                    </main>
+                    </main></div>
 
                     <script>
                         document.addEventListener('DOMContentLoaded', function() {
@@ -134,7 +140,7 @@
                                 'A': '#c084fc',
                                 'B': '#34d399',
                                 'C': '#60a5fa',
-                                'D': '#ffffff'
+                                'D': 'var(--ui-text)'
                             };
 
                             function updateSelectColor() {
@@ -144,7 +150,7 @@
                                     tierSelect.style.color = tierColors[val];
                                     tierSelect.style.fontWeight = '800';
                                 } else {
-                                    tierSelect.style.color = '#94a3b8';
+                                    tierSelect.style.color = 'var(--ui-muted)';
                                     tierSelect.style.fontWeight = 'normal';
                                 }
                             }
