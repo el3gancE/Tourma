@@ -51,7 +51,7 @@ component JSP tồn tại không có nghĩa hình thức của component đó đ
 
 ## Thành phần và bố cục
 
-- Font nền tảng hiện tại là Lexend qua `--ui-font`.
+- Font nền tảng hiện tại là Readex Pro qua `--ui-font`.
 - Tiết chế mô tả: không thêm slogan, câu dẫn hoặc lời giải thích lặp lại nhãn. Chỉ giải thích lựa chọn khó hiểu, ràng buộc và lỗi; không thêm nội dung phụ để lấp khoảng trống.
 - Cùng một loại button, input, card, bảng và popup phải có cùng hình thức giữa các màn.
   Khi bắt đầu tái sử dụng, tách style đó vào stylesheet component dùng chung thay vì
@@ -91,3 +91,9 @@ Các màn đã nạp token và theme.js truyền `themeToggle=true` vào header.
 ## Light mode: nền dịu dùng chung
 
 Nền trang, header/sidebar và canvas dùng trắng ngà `#F7F6F3`; card dùng `#FDFCF9`, vùng phụ dùng `#EEECE6`. Dùng token chung, không đặt nền trắng tinh riêng cho từng màn. Chữ trên nút màu nhấn vẫn giữ trắng để đủ tương phản. Dark mode giữ nguyên.
+
+Font Readex Pro dùng weight 500 cho nội dung, 600 cho tên đội/menu và 700 cho tiêu đề/đội thắng.
+
+## Popup dùng chung
+
+`web/css/popup.css` cung cấp lớp nền, khung, header/footer và control cho popup tỉ số, xác nhận, thêm đội, sửa Series và stage. CSS từng popup nhập stylesheet này; không đặt style popup riêng trong CSS của màn SE.

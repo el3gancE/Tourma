@@ -74,18 +74,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bảng Xếp Hạng Round Robin - TOURMA</title>
 
-        <!-- Google Font Lexend -->
+        <!-- Google Font Readex Pro -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Main Stylesheets -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin-standings.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">

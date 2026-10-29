@@ -3,7 +3,7 @@
 .workspace-utility { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:25px 0; }
 .workspace-utility>span { font-size:9px; letter-spacing:1.5px; color:var(--ui-muted); }
 .workspace-page .page-header-row { display:flex; justify-content:space-between; align-items:center; gap:24px; padding:24px 0 35px; }
-.workspace-page .page-title { font-size:34px; font-weight:500; letter-spacing:-1.3px; display:flex; align-items:center; gap:13px; }
+.workspace-page .page-title { font-size:34px; font-weight:700; letter-spacing:-1.3px; display:flex; align-items:center; gap:13px; }
 .workspace-page .page-title>i { color:var(--ui-accent); font-size:24px; }
 .workspace-page .page-header-row p { color:var(--ui-muted); font-size:12px; margin-top:9px; }
 .workspace-page .btn { display:inline-flex; align-items:center; justify-content:center; gap:9px; border:1px solid var(--ui-line); border-radius:7px; padding:11px 15px; background:var(--ui-surface); color:var(--ui-text); cursor:pointer; font-size:11px; white-space:nowrap; }

@@ -13,7 +13,7 @@
     color:var(--ui-accent);
     font-weight:700;
 }
-@import url('design-tokens.css?v=10');
+@import url('design-tokens.css?v=19');
 .match-card-item { box-sizing:border-box; display:grid; grid-template-columns:44px minmax(0,1fr); align-items:center; gap:12px; width:100%; min-width:0; min-height:48px; padding:4px 14px; border:1px solid var(--ui-line); border-radius:7px; background:var(--ui-surface); color:var(--ui-text); font:12px/1.5 var(--ui-font); cursor:pointer; transition:border-color .15s; }
 .match-card-item:hover:not(.disabled-unconfirmed) { border-color:var(--ui-accent); box-shadow:0 0 0 1px var(--ui-accent), var(--ui-card-shadow); }
 .match-card-item:focus-visible { outline:2px solid var(--ui-accent); outline-offset:3px; }
@@ -23,10 +23,10 @@
 .match-card-item .match-card-versus { grid-column:2; grid-row:1; display:grid; grid-template-columns:22px minmax(0,1fr) auto minmax(0,1fr) 22px; align-items:center; gap:10px; min-height:30px; }
 .match-card-item .match-team-side { min-width:0; padding-block:3px; }
 .match-card-item .team-right { text-align:right; }
-.match-card-item .match-list-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:500; }
+.match-card-item .match-list-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:15px; font-weight:600; }
 .match-card-item .match-list-seed { color:var(--ui-muted); text-align:center; font-size:10px; font-variant-numeric:tabular-nums; }
 .match-card-item .match-score-container { display:flex; align-items:center; gap:6px; }
-.match-card-item .match-score-single-box { min-width:24px; min-height:24px; display:grid; place-items:center; padding:0 4px; background:transparent; border:0; border-radius:0; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; }
+.match-card-item .match-score-single-box { min-width:24px; min-height:24px; display:grid; place-items:center; padding:0 4px; background:transparent; border:0; border-radius:0; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
 .match-card-item .match-score-dash { color:var(--ui-muted); }
 .match-card-item .winner .match-list-name { font-weight:700; color:var(--ui-accent); }
 .match-card-item .placeholder,.match-card-item .bye-team { color:var(--ui-muted); }

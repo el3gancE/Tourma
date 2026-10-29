@@ -4,10 +4,10 @@
     Description: Reusable modal dialog for editing match scores and declaring winners.
 --%>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
 
 <div id="tourmaScoreModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) window.TourmaScoreModal.close();">
-    <div class="tourma-modal-card" onclick="event.stopPropagation();">
+    <div class="tourma-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalMatchTitle" onclick="event.stopPropagation();">
 
         <!-- Modal Header -->
         <div class="modal-header-bar">
@@ -31,7 +31,7 @@
                     <div class="modal-team-left-info">
                         <span id="modalTeam1Name" class="modal-team-name">Đội 1</span>
                     </div>
-                    <input type="number" id="modalTeam1Score" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">
+                    <input type="number" id="modalTeam1Score" aria-labelledby="modalTeam1Name" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">
                 </div>
 
                 <!-- Team 2 Row -->
@@ -39,7 +39,7 @@
                     <div class="modal-team-left-info">
                         <span id="modalTeam2Name" class="modal-team-name">Đội 2</span>
                     </div>
-                    <input type="number" id="modalTeam2Score" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">
+                    <input type="number" id="modalTeam2Score" aria-labelledby="modalTeam2Name" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">
                 </div>
             </div>
 

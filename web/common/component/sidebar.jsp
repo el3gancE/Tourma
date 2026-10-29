@@ -95,8 +95,8 @@
     boolean hasTournament = (currentTournament != null);
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=10">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=3">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=19">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
 
 <aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">
     <div class="sidebar-workspace-heading"><span class="sidebar-workspace-mark" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span><span>Không gian giải đấu</span></div>

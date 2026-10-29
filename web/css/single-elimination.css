@@ -18,10 +18,10 @@
 .se-page .single-bracket-columns-wrapper { display:flex; align-items:stretch; gap:56px; }
 .se-page .single-round-column { display:flex; flex-direction:column; flex:0 0 var(--ui-bracket-width, 240px); width:var(--ui-bracket-width, 240px); gap:28px; }
 .se-page .single-round-header { box-sizing:border-box; display:grid; gap:4px; padding:6px; border:1px solid var(--ui-match-border); border-radius:6px; background:var(--ui-match-surface); }
-.se-page .round-header-title { color:var(--ui-accent); font:600 10px/14px var(--ui-font); text-align:center; }
+.se-page .round-header-title { color:var(--ui-accent); font:600 12px/16px var(--ui-font); text-align:center; }
 .se-page .single-round-header .round-header-random-controls { display:flex; align-items:center; justify-content:center; gap:4px; }
 .se-page .se-main .single-round-header button,
-.se-page .single-round-header .round-random-input { box-sizing:border-box; height:22px; padding:2px 5px; border:1px solid var(--ui-match-border); border-radius:3px; background:var(--ui-match-score); color:var(--ui-text); font:10px/16px var(--ui-font); }
+.se-page .single-round-header .round-random-input { box-sizing:border-box; height:22px; padding:2px 5px; border:1px solid var(--ui-match-border); border-radius:3px; background:var(--ui-match-score); color:var(--ui-text); font:11px/16px var(--ui-font); }
 .se-page .single-round-header .round-random-input {
     width:40px;
     min-width:40px;
@@ -40,7 +40,7 @@
 .se-page .se-main { min-width:0; display:flex; flex-direction:column; gap:20px; }
 .se-page .tournament-navbar-control-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding-bottom:20px; border-bottom:1px solid var(--ui-line); }
 .se-page .tournament-info-badge-group { display:flex; align-items:center; flex-wrap:wrap; gap:10px; min-width:0; }
-.se-page .tournament-name-title { display:flex; align-items:center; gap:10px; font-size:26px; line-height:1.3; overflow-wrap:anywhere; }
+.se-page .tournament-name-title { display:flex; align-items:center; gap:10px; font-size:26px; font-weight:700; line-height:1.3; overflow-wrap:anywhere; }
 .se-page .tournament-name-title>i { display:none; }
 .se-page .tournament-info-badge-group>span,.se-page .live-status-count { padding:5px 8px; border:1px solid var(--ui-line); border-radius:5px; font-size:11px; color:var(--ui-muted); }
 .se-page .tournament-live-status,.se-page .control-actions-right-group,.se-page .view-mode-toggle-group { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
@@ -63,9 +63,16 @@
 .se-page .btn-empty-team-add,.se-page .btn-stage-finish-return { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; background:var(--ui-accent); color:var(--ui-on-accent); border-radius:6px; font-size:12px; }
 .se-page .list-round-section { margin-bottom:28px; }
 .se-page .list-round-header { display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+.se-page .list-round-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.se-page .list-round-actions .round-random-input {
+    box-sizing:border-box; width:48px; height:34px; padding:5px;
+    border:1px solid var(--ui-line); border-radius:6px;
+    background:var(--ui-surface); color:var(--ui-text);
+    font:inherit; font-size:12px; text-align:center; appearance:textfield;
+}
+.se-page .list-round-actions .round-random-input::-webkit-inner-spin-button,
+.se-page .list-round-actions .round-random-input::-webkit-outer-spin-button { appearance:none; margin:0; }
+.se-page .se-main .list-round-actions button { height:34px; padding:6px 11px; font-size:12px; }
 .se-page .list-matches-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
-.se-page .tourma-modal-backdrop { display:none; }
-.se-page .tourma-modal-backdrop.show { display:flex; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center; background:rgb(0 0 0 / 60%); padding:20px; }
-.se-page .tourma-modal-card { max-width:540px; width:100%; max-height:90dvh; overflow:auto; padding:24px; border:1px solid var(--ui-line); border-radius:12px; background:var(--ui-surface); }
 @media(max-width:999px) { .se-page .tournament-name-title { font-size:23px; } .se-page .se-main { gap:16px; } }
 @media(max-width:600px) { .se-page .tournament-info-badge-group { width:100%; } .se-page .tournament-name-title { width:100%; } }

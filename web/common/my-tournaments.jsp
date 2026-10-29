@@ -10,18 +10,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Giải Đấu Của Tôi - TOURMA</title>
 
-        <!-- Google Font Lexend -->
+        <!-- Google Font Readex Pro -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <script src="${pageContext.request.contextPath}/js/theme.js"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=10-11">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=2">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=19-11">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
         <!-- Main Design System CSS & Dedicated My Tournaments CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css?v=20261028-9">
