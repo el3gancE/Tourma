@@ -326,8 +326,8 @@
                         row.style.display = 'flex';
                         row.style.alignItems = 'center';
                         row.style.justifyContent = 'space-between';
-                        row.style.background = '#181d29';
-                        row.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+                        row.style.background = 'var(--ui-surface)';
+                        row.style.border = '1px solid var(--ui-line)';
                         row.style.borderRadius = '8px';
                         row.style.padding = '0.65rem 0.85rem';
                         row.style.marginBottom = '0.4rem';
@@ -335,12 +335,12 @@
                         row.style.transition = 'all 0.2s ease';
 
                         row.onmouseover = function() {
-                            this.style.borderColor = 'rgba(45, 212, 191, 0.4)';
-                            this.style.background = 'rgba(45, 212, 191, 0.04)';
+                            this.style.borderColor = 'var(--ui-accent)';
+                            this.style.background = 'var(--ui-accent-soft)';
                         };
                         row.onmouseout = function() {
-                            this.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                            this.style.background = '#181d29';
+                            this.style.borderColor = 'var(--ui-line)';
+                            this.style.background = 'var(--ui-surface)';
                         };
 
                         row.innerHTML = '<div data-ui-style="manage-group-js-003" style="display:flex;">' +
@@ -355,7 +355,7 @@
             }
 
             if (countElem) countElem.innerText = '0';
-            if (modal) modal.style.display = 'flex';
+            if (modal) { modal.style.display = 'flex'; modal.classList.add('show'); }
         },
 
         filterModalTeams: function (query) {
@@ -385,7 +385,7 @@
 
         closeAddTeamModal: function () {
             var modal = document.getElementById('addTeamToGroupModalBackdrop');
-            if (modal) modal.style.display = 'none';
+            if (modal) { modal.classList.remove('show'); modal.style.display = 'none'; }
             this.activeModalGroup = null;
         },
 
@@ -509,10 +509,12 @@
             var summaryBar = document.createElement('div');
             summaryBar.style.gridColumn = '1 / -1';
             summaryBar.style.display = 'flex';
+            summaryBar.style.flexWrap = 'wrap';
+            summaryBar.style.gap = '12px';
             summaryBar.style.justifyContent = 'space-between';
             summaryBar.style.alignItems = 'center';
-            summaryBar.style.background = 'rgba(18, 22, 32, 0.8)';
-            summaryBar.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+            summaryBar.style.background = 'var(--ui-surface)';
+            summaryBar.style.border = '1px solid var(--ui-line)';
             summaryBar.style.borderRadius = '10px';
             summaryBar.style.padding = '0.75rem 1.25rem';
             summaryBar.style.marginBottom = '0.5rem';
@@ -522,7 +524,7 @@
 
             summaryBar.innerHTML = '<div>' +
                 '<span data-ui-style="manage-group-js-005">Tổng Số Đội: ' + totalCount + ' Đội</span>' +
-                '<span data-ui-style="manage-group-js-006">| Đội chưa xếp bảng: <strong style="color: ' + (unassignedCount > 0 ? '#fbbf24' : '#2dd4bf') + ';">' + unassignedCount + ' Đội</strong></span>' +
+                '<span data-ui-style="manage-group-js-006">| Đội chưa xếp bảng: <strong style="color: ' + (unassignedCount > 0 ? '#fbbf24' : 'var(--ui-accent)') + ';">' + unassignedCount + ' Đội</strong></span>' +
                 '</div>' +
                 '<div data-ui-style="manage-group-js-007">' +
                 '<i class="fa-solid fa-hand-pointer text-mint"></i> Bấm vào từng bảng để chọn đội bóng vào bảng thi đấu.' +
@@ -541,9 +543,9 @@
                 emptyNotice.style.justifyContent = 'center';
                 emptyNotice.style.padding = '3rem 1.5rem';
                 emptyNotice.style.textAlign = 'center';
-                emptyNotice.style.background = '#121620';
+                emptyNotice.style.background = 'var(--ui-surface)';
                 emptyNotice.style.borderRadius = '12px';
-                emptyNotice.style.border = '1px dashed rgba(255, 255, 255, 0.15)';
+                emptyNotice.style.border = '1px dashed var(--ui-line-strong)';
 
                 emptyNotice.innerHTML = '<i class="fa-solid fa-layer-group" data-ui-style="manage-group-js-008"></i>' +
                     '<h3 data-ui-style="manage-group-js-009">Chưa có bảng đấu nào</h3>' +
@@ -617,22 +619,22 @@
                         var emptyBox = document.createElement('div');
                         emptyBox.onclick = function() { self.openAddTeamModal(gKey); };
                         emptyBox.style.fontSize = '0.8rem';
-                        emptyBox.style.color = '#94a3b8';
+                        emptyBox.style.color = 'var(--ui-muted)';
                         emptyBox.style.textAlign = 'center';
                         emptyBox.style.padding = '1.25rem 0.75rem';
-                        emptyBox.style.border = '1px dashed rgba(45, 212, 191, 0.35)';
+                        emptyBox.style.border = '1px dashed var(--ui-line-strong)';
                         emptyBox.style.borderRadius = '8px';
                         emptyBox.style.cursor = 'pointer';
-                        emptyBox.style.background = 'rgba(45, 212, 191, 0.03)';
+                        emptyBox.style.background = 'var(--ui-surface)';
                         emptyBox.style.transition = 'all 0.2s ease';
 
                         emptyBox.onmouseover = function() {
-                            this.style.borderColor = '#2dd4bf';
-                            this.style.background = 'rgba(45, 212, 191, 0.08)';
+                            this.style.borderColor = 'var(--ui-accent)';
+                            this.style.background = 'var(--ui-accent-soft)';
                         };
                         emptyBox.onmouseout = function() {
-                            this.style.borderColor = 'rgba(45, 212, 191, 0.35)';
-                            this.style.background = 'rgba(45, 212, 191, 0.03)';
+                            this.style.borderColor = 'var(--ui-line-strong)';
+                            this.style.background = 'var(--ui-surface)';
                         };
 
                         emptyBox.innerHTML = '<div data-ui-style="manage-group-js-016" style="display: inline-flex;"><i class="fa-solid fa-plus"></i></div><br>' +
@@ -679,15 +681,15 @@
                         var addMoreRow = document.createElement('div');
                         addMoreRow.onclick = function() { self.openAddTeamModal(gKey); };
                         addMoreRow.style.fontSize = '0.78rem';
-                        addMoreRow.style.color = '#2dd4bf';
+                        addMoreRow.style.color = 'var(--ui-accent)';
                         addMoreRow.style.textAlign = 'center';
                         addMoreRow.style.padding = '0.45rem';
-                        addMoreRow.style.border = '1px dashed rgba(45, 212, 191, 0.3)';
+                        addMoreRow.style.border = '1px dashed var(--ui-line-strong)';
                         addMoreRow.style.borderRadius = '6px';
                         addMoreRow.style.marginTop = '0.5rem';
                         addMoreRow.style.cursor = 'pointer';
                         addMoreRow.style.fontWeight = '600';
-                        addMoreRow.style.background = 'rgba(45, 212, 191, 0.03)';
+                        addMoreRow.style.background = 'var(--ui-surface)';
                         addMoreRow.innerHTML = '<i class="fa-solid fa-plus"></i> Thêm Đội Vào ' + dispTitle;
 
                         listWrapper.appendChild(addMoreRow);

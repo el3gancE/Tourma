@@ -81,8 +81,13 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/swiss-stage.css">
+        <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=22">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=2">
     </head>
-    <body>
+    <body class="ui-page tournament-workspace swiss-page">
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp"/>
 
@@ -96,9 +101,12 @@
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="tournaments"/>
+            <jsp:param name="active" value="tournaments"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
+        <div class="tournament-shell">
+        <details class="tournament-navigation" open>
+        <summary>Điều hướng giải đấu</summary>
         <!-- Sidebar Component -->
         <jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
@@ -106,7 +114,8 @@
         </jsp:include>
 
         <!-- Main Content Area Shifted Right by Sidebar -->
-        <main class="container has-sidebar">
+        </details>
+        <main class="se-main swiss-main">
 
             <!-- Top Tournament Navigation & Control Bar Component -->
             <jsp:include page="/common/component/tournament-navbar.jsp">
@@ -196,6 +205,7 @@
             </div>
 
         </main>
+        </div>
 
         <!-- Shared Score Edit Popup Component -->
         <jsp:include page="/common/component/popup.jsp"/>

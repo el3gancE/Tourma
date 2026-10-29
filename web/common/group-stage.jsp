@@ -67,8 +67,13 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
+<script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=24">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=4">
 </head>
-<body data-ui-style="group-stage-jsp-001">
+<body class="ui-page tournament-workspace league-page" data-ui-style="group-stage-jsp-001">
 
     <!-- Stage Finish Alert Component (Locked Stage 2) -->
 
@@ -77,19 +82,19 @@
 
     <!-- TOP NAVBAR & SIDEBAR -->
     <jsp:include page="/common/component/header.jsp">
-        <jsp:param name="active" value="tournaments"/>
+        <jsp:param name="active" value="tournaments"/><jsp:param name="themeToggle" value="true"/>
     </jsp:include>
-    <jsp:include page="/common/component/sidebar.jsp">
+    <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng giải đấu</summary><jsp:include page="/common/component/sidebar.jsp">
         <jsp:param name="activeStep" value="bracket" />
         <jsp:param name="id" value="<%= tournamentId %>" />
         <jsp:param name="format" value="GROUP_STAGE" />
-    </jsp:include>
+    </jsp:include></details>
 
     <!-- REUSABLE EMPTY ALERT & POPUP MODAL COMPONENTS -->
     <jsp:include page="/common/component/empty-team-alert.jsp" />
     <jsp:include page="/common/component/popup.jsp" />
 
-    <main class="container has-sidebar round-robin-container">
+    <main class="se-main round-robin-container">
 
         <!-- TOP CONTROL BAR (Round Robin / Group Stage Design Style) -->
         <div class="rr-control-bar">
@@ -145,7 +150,7 @@
             </div>
 
         </div>
-    </main>
+    </main></div>
 
     <jsp:include page="/common/component/tournament-config-state.jsp"/>
     <!-- JS SCRIPTS -->

@@ -1,0 +1,33 @@
+/* Swiss record pools use the shared theme and match cards. */
+.swiss-page :is(.swiss-pool-green,.swiss-card-green) { --ui-accent:var(--ui-swiss-upper-accent); }
+.swiss-page :is(.swiss-pool-red,.swiss-card-red) { --ui-accent:var(--ui-bracket-lower-accent); }
+.swiss-page :is(.swiss-pool-gold,.swiss-card-gold) { --ui-accent:var(--ui-bracket-final-accent); }
+.swiss-page :is(.swiss-pool-green,.swiss-card-green,.swiss-pool-red,.swiss-card-red,.swiss-pool-gold,.swiss-card-gold) { --ui-accent-soft:color-mix(in srgb,var(--ui-accent) 10%,var(--ui-surface)); }
+.swiss-page #swissViewportCanvas { display:flex; align-items:flex-start; gap:36px; }
+.swiss-page .swiss-bracket-column { display:flex; flex-direction:column; gap:28px; width:var(--ui-bracket-width); flex-shrink:0; }
+.swiss-page .swiss-bracket-col-header { border:1px solid var(--ui-line); border-radius:6px; padding:8px; background:var(--ui-surface); display:grid; gap:6px; }
+.swiss-page .swiss-bracket-col-title { color:var(--ui-accent); font-size:13px; text-align:center; font-weight:600; }
+.swiss-page .swiss-pool-card { display:flex; flex-direction:column; gap:26px; }
+.swiss-page :is(.swiss-pool-card-header,.swiss-list-pool-header) { display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--ui-accent); font-size:14px; font-weight:600; padding:8px 0 12px; border-bottom:1px solid var(--ui-line); }
+.swiss-page :is(.pool-header-random-controls,.round-header-random-controls) { display:flex; align-items:center; justify-content:center; gap:5px; }
+.swiss-page .se-main :is(.round-header-random-controls,.pool-header-random-controls) button { padding:4px 7px; font-size:11px; min-height:26px; }
+.swiss-page :is(.round-random-input,.pool-random-input) { width:42px; height:26px; padding:3px; border:1px solid var(--ui-line); border-radius:4px; background:var(--ui-surface); color:var(--ui-text); font:inherit; font-size:12px; text-align:center; appearance:textfield; }
+.swiss-page input::-webkit-inner-spin-button,.swiss-page input::-webkit-outer-spin-button { appearance:none; margin:0; }
+.swiss-page .swiss-round-pills-bar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+.swiss-page #swissListFixturesContainer { display:grid; gap:24px; }
+.swiss-page .swiss-list-round-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-bottom:12px; }
+.swiss-page .swiss-list-round-title { font-size:17px; font-weight:600; }
+.swiss-page .swiss-list-pool-box { margin-bottom:20px; }
+.swiss-page .swiss-list-matches-grid { display:grid; gap:10px; padding-top:14px; }
+.swiss-page #swissInvalidTeamAlert { padding:36px; border:1px solid var(--ui-line); border-radius:8px; text-align:center; }
+.swiss-page #swissInvalidTeamAlert h2 { font-size:21px; margin:16px 0; }
+.swiss-page #swissInvalidTeamAlert p { color:var(--ui-muted); margin-bottom:20px; }
+.swiss-page #btnGoToConfigureTeams { padding:10px 16px; border-radius:6px; gap:8px; background:var(--ui-accent); color:var(--ui-on-accent); }
+
+/* Swiss cards do not display seed columns. */
+.swiss-page :is(.bracket-seed-badge,.match-list-seed) { display:none; }
+/* Swiss lists omit both seed columns too. */
+.swiss-page .match-card-item .match-card-versus { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); }
+/* Unresolved slots never react as a real participant. */
+.swiss-page .bracket-team-row:has(.bracket-team-name.placeholder) { cursor:default; }
+.swiss-page .bracket-team-row:has(.bracket-team-name.placeholder).path-focused { background:transparent; }

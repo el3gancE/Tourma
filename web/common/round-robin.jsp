@@ -117,8 +117,13 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
-    </head>
-    <body>
+    <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=24">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=4">
+</head>
+    <body class="ui-page tournament-workspace league-page">
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp"/>
 
@@ -132,18 +137,18 @@
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="tournaments"/>
+            <jsp:param name="active" value="tournaments"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
         <!-- Sidebar Component -->
-        <jsp:include page="/common/component/sidebar.jsp">
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng giải đấu</summary><jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
             <jsp:param name="format" value="ROUND_ROBIN"/>
             <jsp:param name="id" value="<%= safeTourneyId %>"/>
-        </jsp:include>
+        </jsp:include></details>
 
         <!-- Main Content Area -->
-        <main class="container has-sidebar round-robin-container">
+        <main class="se-main round-robin-container">
 
             <!-- Top Control Bar -->
             <div class="rr-control-bar">
@@ -226,7 +231,7 @@
                 </div>
             </div>
 
-        </main>
+        </main></div>
 
         <!-- Score Edit Popup Component -->
         <jsp:include page="/common/component/popup.jsp"/>

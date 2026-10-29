@@ -7,7 +7,7 @@ có thể có bố cục khác nhau theo công việc, nhưng phải dùng chung
 
 - Trang chủ hiện tại là bản thử; người dùng dự định làm lại. Không sao chép bố cục
   hoặc các chi tiết minh họa ở đó như một thiết kế đã được duyệt.
-- Hướng màu hiện tại: light trắng + wine; dark đen + sky blue. Emerald là hướng cũ.
+- Hướng màu hiện tại: light nền trắng + wine; dark đen + sky blue. Emerald là hướng cũ.
 - Sắc độ nền/card vẫn đang thử nghiệm, chưa được người dùng chốt về mặt thẩm mỹ.
   Dùng bộ token hiện tại để giữ đồng bộ; không tự pha một bảng màu mới cho mỗi màn.
 - Nội dung header (nhãn, thứ tự và URL) được giữ nguyên. Có thể đổi hình thức khi
@@ -20,6 +20,7 @@ có thể có bố cục khác nhau theo công việc, nhưng phải dùng chung
 | `web/css/design-tokens.css` | Nguồn duy nhất cho màu của hai theme; nơi bổ sung các token dùng chung |
 | `web/css/ui-base.css` | Reset và style nền tảng dùng chung; áp dụng qua class `ui-page` |
 | `web/css/header.css` | Header và nút chuyển theme dùng chung |
+| `web/css/tournament-screen.css` | Khung màn thi đấu chung cho SE, DE, Swiss, GSL, GS và RR: toolbar, viewport, vòng và danh sách |
 | `web/css/tournament-workspace.css` | Khung điều hướng giải và sidebar dùng chung cho màn cấu hình/thêm đội |
 | `web/css/workspace.css` | Khung màn danh sách: tiêu đề, bộ lọc, tìm kiếm, nút và trạng thái trống dùng chung |
 | `web/js/theme.js` | Áp dụng theme, ghi nhớ lựa chọn và cập nhật nút chuyển |

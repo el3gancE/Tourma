@@ -100,7 +100,7 @@
 
             // SCROLL EVENT: Smoothly fade out zoom toolbar when scrolling down vertically
             var toolbar = instance.toolbarElem;
-            if (toolbar) {
+            if (toolbar && !toolbar.classList.contains('de-fixed-zoom-toolbar')) {
                 container.addEventListener('scroll', function () {
                     var sTop = container.scrollTop;
                     var threshold = 75;
@@ -478,6 +478,7 @@
                     var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.setAttribute('d', d);
                     path.setAttribute('fill', 'none');
+                    if (isTargetGf) path.classList.add('grand-final-connector');
                     path.setAttribute('stroke', strokeColor);
                     path.setAttribute('stroke-width', strokeWidth);
                     path.setAttribute('stroke-linecap', 'round');
@@ -507,6 +508,7 @@
                     var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.setAttribute('d', d);
                     path.setAttribute('fill', 'none');
+                    if (isTargetGf) path.classList.add('grand-final-connector');
                     path.setAttribute('stroke', strokeColor);
                     path.setAttribute('stroke-width', strokeWidth);
                     path.setAttribute('stroke-linecap', 'round');
@@ -525,7 +527,7 @@
         activeTeam: null,
 
         highlightTeam: function (teamName) {
-            if (!teamName || teamName === 'BYE' ||
+            if (!teamName || /^(TBD|BYE|\?|Chưa xác định)$/i.test(String(teamName).trim()) ||
                 teamName.startsWith('W #') || teamName.startsWith('L #') ||
                 teamName === 'Winner UB' || teamName === 'Winner LB') {
                 this.clearHighlight();

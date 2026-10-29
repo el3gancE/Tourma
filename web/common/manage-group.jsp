@@ -55,20 +55,25 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manage-group.css?v=<%= System.currentTimeMillis() %>">
+<script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=24">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
 </head>
-<body data-ui-style="manage-group-jsp-001">
+<body class="ui-page tournament-workspace manage-group-page" data-ui-style="manage-group-jsp-001">
 
     <jsp:include page="/common/component/header.jsp">
-        <jsp:param name="active" value="tournaments"/>
+        <jsp:param name="active" value="tournaments"/><jsp:param name="themeToggle" value="true"/>
     </jsp:include>
-    <jsp:include page="/common/component/sidebar.jsp">
+    <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng giải đấu</summary><jsp:include page="/common/component/sidebar.jsp">
         <jsp:param name="activeStep" value="manage-group" />
         <jsp:param name="id" value="<%= tournamentId %>" />
         <jsp:param name="seriesId" value="<%= seriesId %>" />
         <jsp:param name="format" value="<%= (request.getParameter(\"format\") != null && !request.getParameter(\"format\").trim().isEmpty()) ? request.getParameter(\"format\") : ((tourney != null && tourney.getFormat() != null) ? tourney.getFormat() : \"GROUP_STAGE\") %>" />
-    </jsp:include>
+    </jsp:include></details>
 
-    <div class="mg-container has-sidebar">
+    <main class="mg-container">
 
         <!-- HEADER BAR -->
         <div class="mg-header">
@@ -141,8 +146,9 @@
 
         <!-- WORKSPACE GRID -->
         <div id="mgWorkspace" class="mg-workspace"></div>
-    </div>
+    </main>
 
+    </div>
     <!-- MODAL POPUP: CHỌN ĐỘI VÀO BẢNG -->
     <div id="addTeamToGroupModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) TourmaManageGroup.closeAddTeamModal();" data-ui-style="manage-group-jsp-007" style="display:none;">
         <div class="tourma-modal-card" data-ui-style="manage-group-jsp-008" onclick="event.stopPropagation();">

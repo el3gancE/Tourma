@@ -127,12 +127,22 @@
     }
     .tournament-shell:has(.tournament-sidebar) > main { padding-block: 20px; }
     .tournament-shell:has(.tournament-sidebar) > .tournament-navigation {
-        height: 100%;
+        position: sticky;
+        align-self: start;
+        height: 100dvh;
+        max-height: 100dvh;
         min-height: 0;
         top: 0;
+        border-right: 1px solid var(--ui-line);
+        background: var(--ui-bg);
     }
     .tournament-workspace .app-left-sidebar.tournament-sidebar {
-        min-height: calc(100dvh - 92px);
+        height: 100dvh;
+        min-height: 0;
+        max-height: 100dvh;
+        border-right: 0;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
         padding: 28px 16px;
     }
 }

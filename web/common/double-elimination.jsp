@@ -145,6 +145,11 @@
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+        <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=19">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css">
         <!-- Main Stylesheets -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=<%= System.currentTimeMillis() %>">
@@ -158,7 +163,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css?v=<%= System.currentTimeMillis() %>">
     </head>
-    <body>
+    <body class="ui-page tournament-workspace de-page">
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp"/>
 
@@ -173,8 +178,11 @@
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="tournaments"/>
+            <jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
+        <div class="tournament-shell">
+        <details class="tournament-navigation" open><summary>Điều hướng giải đấu <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
         <!-- Sidebar Component -->
         <jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
@@ -182,8 +190,9 @@
             <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
         </jsp:include>
 
-        <!-- Main Content Area Shifted Right by Sidebar -->
-        <main class="container has-sidebar">
+        </details>
+        <!-- Main Content Area -->
+        <main class="se-main de-main" aria-label="Sơ đồ Double Elimination">
 
             <!-- Top Tournament Navigation & Control Bar Component -->
             <jsp:include page="/common/component/tournament-navbar.jsp">
@@ -214,7 +223,9 @@
                 <!-- UPPER BRACKET SECTION (Includes Grand Finals) -->
                 <div class="de-viewport-section">
                     <!-- Standalone Viewport Navbar Header Card -->
-                    <div class="de-section-header de-section-header-card">
+                    <div id="upperViewportFrame" class="bracket-viewport-frame de-viewport-frame">
+
+                        <div class="de-section-header de-section-header-card">
                         <div class="de-section-title-wrap">
                             <h2 class="de-viewport-title upper">
                                 <i class="fa-solid fa-trophy text-mint"></i> Upper Bracket
@@ -225,11 +236,8 @@
                             <span class="live-status-count format-badge-single">US: <strong data-category="unseed">—/—</strong></span>
                             <span class="live-status-count format-badge-double">G: <strong data-category="guest">—/—</strong></span>
                         </div>
-                    </div>
 
-                    <!-- Separate Upper Viewport Frame with Floating Zoom Toolbar -->
-                    <div id="upperViewportFrame" class="bracket-viewport-frame de-viewport-frame">
-                        <div id="upperZoomToolbar" class="bracket-zoom-toolbar">
+<div id="upperZoomToolbar" class="bracket-zoom-toolbar de-fixed-zoom-toolbar">
                             <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomOut('upperViewportContainer')" title="Thu nhỏ (-)">
                                 <i class="fa-solid fa-minus"></i>
                             </button>
@@ -242,6 +250,7 @@
                             </button>
                         </div>
 
+                        </div>
                         <div id="upperViewportContainer" class="bracket-viewport-container de-viewport-container">
                             <div id="upperViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas" data-group-color="#2dd4bf" data-ui-style="double-elimination-jsp-002">
                                 <div id="upperBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper" data-group-color="#2dd4bf" data-ui-style="double-elimination-jsp-003"></div>
@@ -253,7 +262,8 @@
                 <!-- LOWER BRACKET SECTION -->
                 <div class="de-viewport-section">
                     <!-- Standalone Viewport Navbar Header Card -->
-                    <div class="de-section-header de-section-header-card">
+                    <div id="lowerViewportFrame" class="bracket-viewport-frame de-viewport-frame">
+                        <div class="de-section-header de-section-header-card">
                         <div class="de-section-title-wrap">
                             <h2 class="de-viewport-title lower">
                                 <i class="fa-solid fa-shield-halved text-rose"></i> Lower Bracket
@@ -264,11 +274,8 @@
                             <span class="live-status-count format-badge-single">US: <strong data-category="unseed">—/—</strong></span>
                             <span class="live-status-count format-badge-double">G: <strong data-category="guest">—/—</strong></span>
                         </div>
-                    </div>
 
-                    <!-- Separate Lower Viewport Frame with Floating Zoom Toolbar -->
-                    <div id="lowerViewportFrame" class="bracket-viewport-frame de-viewport-frame">
-                        <div id="lowerZoomToolbar" class="bracket-zoom-toolbar">
+<div id="lowerZoomToolbar" class="bracket-zoom-toolbar de-fixed-zoom-toolbar">
                             <button type="button" class="btn-zoom" onclick="window.TourmaViewport && window.TourmaViewport.zoomOut('lowerViewportContainer')" title="Thu nhỏ (-)">
                                 <i class="fa-solid fa-minus"></i>
                             </button>
@@ -281,6 +288,7 @@
                             </button>
                         </div>
 
+                        </div>
                         <div id="lowerViewportContainer" class="bracket-viewport-container de-viewport-container">
                             <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas lower-canvas" data-group-color="#ff4655" data-ui-style="double-elimination-jsp-004">
                                 <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper lower-wrapper" data-bracket-type="LOWER" data-group-color="#ff4655" data-ui-style="double-elimination-jsp-005"></div>
@@ -295,6 +303,7 @@
             <div id="deListViewContainer" class="de-list-view-container"></div>
 
         </main>
+        </div>
 
         <!-- Dedicated Modal Popup for Score Entry & Winner Selection -->
         <jsp:include page="/common/component/popup.jsp"/>

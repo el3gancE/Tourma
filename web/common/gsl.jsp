@@ -144,8 +144,12 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/gsl.css?v=<%= System.currentTimeMillis() %>">
+        <script src="${pageContext.request.contextPath}/js/theme.js"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=23">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
     </head>
-    <body class="gsl-page-container">
+    <body class="ui-page tournament-workspace gsl-page gsl-page-container">
 
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp"/>
@@ -160,9 +164,10 @@
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="tournaments"/>
+            <jsp:param name="active" value="tournaments"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng giải đấu</summary>
         <!-- Sidebar Component -->
         <jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
@@ -172,7 +177,7 @@
         </jsp:include>
 
         <!-- Main Content Area -->
-        <main class="container has-sidebar">
+        </details><main class="se-main gsl-main">
 
             <!-- Tournament Navbar Component -->
             <jsp:include page="/common/component/tournament-navbar.jsp">
@@ -203,7 +208,7 @@
             <!-- 2. MATCHES LIST VIEW CONTAINER -->
             <div id="gslListViewContainer" class="gsl-list-view-container"></div>
 
-        </main>
+        </main></div>
 
         <!-- Dedicated Modal Popup for Score Entry -->
         <jsp:include page="/common/component/popup.jsp"/>

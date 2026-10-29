@@ -48,8 +48,13 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
+<script src="${pageContext.request.contextPath}/js/theme.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=24">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=4">
 </head>
-<body data-ui-style="group-standing-jsp-001">
+<body class="ui-page tournament-workspace league-page" data-ui-style="group-standing-jsp-001">
 
     <!-- EMPTY TEAM ALERT COMPONENT -->
     <jsp:include page="/common/component/empty-team-alert.jsp" />
@@ -58,15 +63,15 @@
     <jsp:include page="/common/component/stage-end-popup.jsp"/>
     <!-- TOP NAVBAR & SIDEBAR -->
     <jsp:include page="/common/component/header.jsp">
-        <jsp:param name="active" value="tournaments"/>
+        <jsp:param name="active" value="tournaments"/><jsp:param name="themeToggle" value="true"/>
     </jsp:include>
-    <jsp:include page="/common/component/sidebar.jsp">
+    <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng giải đấu</summary><jsp:include page="/common/component/sidebar.jsp">
         <jsp:param name="activeStep" value="group-standing" />
         <jsp:param name="id" value="<%= tournamentId %>" />
         <jsp:param name="format" value="GROUP_STAGE" />
-    </jsp:include>
+    </jsp:include></details>
 
-    <main class="container has-sidebar round-robin-container">
+    <main class="se-main round-robin-container">
 
         <!-- TOP CONTROL BAR (Round Robin / Group Stage Design Style) -->
         <div class="rr-control-bar">
@@ -106,7 +111,7 @@
 
         <!-- STANDINGS CONTAINER -->
         <div id="gsStandingsContainer" class="gst-container" data-ui-style="group-standing-jsp-006"></div>
-    </main>
+    </main></div>
 
     <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
     <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>

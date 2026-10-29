@@ -2,31 +2,35 @@
 /* Shared palette. Opt in by loading this sheet; blank pages remain unaffected. */
 :root {
     color-scheme: light;
-    --ui-bg: #f7f6f3;
-    --ui-navigation-bg: #f7f6f3;
-    --ui-workspace-bg: #efeee9;
-    --ui-workspace-canvas: #f7f6f3;
-    --ui-workspace-card: #fdfcf9;
-    --ui-canvas: #f7f6f3;
-    --ui-match-surface: #fdfcf9;
-    --ui-match-row: #fdfcf9;
-    --ui-match-border: #d5d2ca;
-    --ui-match-score: #eeece6;
+    --ui-bg: #ffffff;
+    --ui-navigation-bg: #ffffff;
+    --ui-workspace-bg: #ffffff;
+    --ui-workspace-canvas: #ffffff;
+    --ui-workspace-card: #f8fafc;
+    --ui-canvas: #ffffff;
+    --ui-match-surface: #f8fafc;
+    --ui-match-row: #f8fafc;
+    --ui-match-border: #d4dae1;
+    --ui-match-score: #e5e9ee;
     --ui-connector: #8a8a8a;
-    --ui-pending-bg: #eeece6;
+    --ui-pending-bg: #e5e9ee;
     --ui-pending-text: #475569;
     --ui-card-shadow: 0 2px 6px rgb(15 23 42 / 8%), 0 1px 2px rgb(15 23 42 / 4%);
-    --ui-surface: #fdfcf9;
-    --ui-surface-alt: #eeece6;
-    --ui-text: #18181b;
+    --ui-surface: #f8fafc;
+    --ui-surface-alt: #e5e9ee;
+    --ui-text: #202124;
     --ui-muted: #71717a;
-    --ui-line: #e1ded6;
+    --ui-line: #d4dae1;
     --ui-accent: #800020;
+    --ui-swiss-upper-accent: #b34b2d;
+    --ui-bracket-lower-accent: #526f91;
+    --ui-bracket-lower-soft: #e8edf3;
     --ui-accent-hover: #66001a;
     --ui-accent-soft: #fbf1f4;
     --ui-on-accent: #ffffff;
-    --ui-line-strong: #c8c3b9;
+    --ui-line-strong: #b8c1cc;
     --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
+    --ui-bracket-final-accent: #ad852b;
     --ui-bracket-width: 240px;
     --ui-bracket-radius: 6px;
     --ui-bracket-cell: 20px;
@@ -35,6 +39,7 @@
 }
 :root[data-theme="dark"] {
     color-scheme: dark;
+    --ui-bracket-final-accent: #facc15;
     --ui-bg: #121212;
     --ui-navigation-bg: #141414;
     --ui-workspace-bg: #1f1f22;
@@ -55,9 +60,82 @@
     --ui-muted: #a1a1aa;
     --ui-line: #333338;
     --ui-accent: #38bdf8;
+    --ui-swiss-upper-accent: #34d399;
+    --ui-bracket-lower-accent: #f87171;
+    --ui-bracket-lower-soft: #351e23;
     --ui-accent-hover: #7dd3fc;
     --ui-accent-soft: #12283a;
     --ui-on-accent: #071e2a;
     --ui-line-strong: #52525b;
     --ui-shadow: 0 16px 50px rgb(0 0 0 / 12%);
+}
+
+:root {
+    --ui-gsl-0: #800020;
+    --ui-gsl-1: var(--ui-bracket-lower-accent);
+    --ui-gsl-2: #237aa7;
+    --ui-gsl-3: #946a12;
+    --ui-gsl-4: #8150ac;
+    --ui-gsl-5: #597b1b;
+    --ui-gsl-6: #b44380;
+    --ui-gsl-7: #147b91;
+    --ui-gsl-8: #aa551e;
+    --ui-gsl-9: #5862b3;
+    --ui-gsl-10: #287e49;
+    --ui-gsl-11: #9e459f;
+    --ui-gsl-12: #8b7410;
+    --ui-gsl-13: #326cad;
+    --ui-gsl-14: #b9475c;
+    --ui-gsl-15: #26733e;
+    --ui-gsl-16: #7359ab;
+    --ui-gsl-17: #b94d4d;
+    --ui-gsl-18: #287ba2;
+    --ui-gsl-19: #927115;
+    --ui-gsl-20: #a84c85;
+    --ui-gsl-21: #46649b;
+    --ui-gsl-22: #94723c;
+    --ui-gsl-23: #7561a5;
+    --ui-gsl-24: #2c7d68;
+    --ui-gsl-25: #647d20;
+    --ui-gsl-26: #287e79;
+    --ui-gsl-27: #b33b38;
+    --ui-gsl-28: #7451b5;
+    --ui-gsl-29: #3469b1;
+    --ui-gsl-30: #a66a16;
+    --ui-gsl-31: #a5346d;
+}
+
+:root[data-theme="dark"] {
+    --ui-gsl-0: #38bdf8;
+    --ui-gsl-1: var(--ui-bracket-lower-accent);
+    --ui-gsl-2: #38bdf8;
+    --ui-gsl-3: #fbbf24;
+    --ui-gsl-4: #c084fc;
+    --ui-gsl-5: #a3e635;
+    --ui-gsl-6: #f472b6;
+    --ui-gsl-7: #06b6d4;
+    --ui-gsl-8: #f97316;
+    --ui-gsl-9: #818cf8;
+    --ui-gsl-10: #4ade80;
+    --ui-gsl-11: #e879f9;
+    --ui-gsl-12: #facc15;
+    --ui-gsl-13: #60a5fa;
+    --ui-gsl-14: #fb7185;
+    --ui-gsl-15: #22c55e;
+    --ui-gsl-16: #a78bfa;
+    --ui-gsl-17: #ff6b6b;
+    --ui-gsl-18: #0ea5e9;
+    --ui-gsl-19: #eab308;
+    --ui-gsl-20: #d946ef;
+    --ui-gsl-21: #10b981;
+    --ui-gsl-22: #ea580c;
+    --ui-gsl-23: #6366f1;
+    --ui-gsl-24: #ec4899;
+    --ui-gsl-25: #84cc16;
+    --ui-gsl-26: #14b8a6;
+    --ui-gsl-27: #ef4444;
+    --ui-gsl-28: #8b5cf6;
+    --ui-gsl-29: #3b82f6;
+    --ui-gsl-30: #f59e0b;
+    --ui-gsl-31: #db2777;
 }

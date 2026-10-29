@@ -1,0 +1,34 @@
+/* DE-specific branch layout; shared controls and cards use tournament-screen.css. */
+.de-page .de-dual-viewport-workspace { display:flex; flex-direction:column; gap:28px; min-width:0; }
+.de-page .de-viewport-section { min-width:0; }
+.de-page .de-section-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:10px 14px; border-bottom:1px solid var(--ui-line); background:var(--ui-canvas); flex-shrink:0; }
+.de-page .de-viewport-title { margin:0; display:flex; align-items:center; gap:9px; font-size:17px; font-weight:600; color:var(--ui-text); }
+.de-page .de-viewport-title i { color:var(--ui-accent); font-size:14px; }
+.de-page .de-viewport-frame { height:clamp(340px,55dvh,580px); display:flex; flex-direction:column; }
+.de-page .de-list-view-container { display:none; flex-direction:column; gap:20px; min-width:0; }
+.de-page .de-list-section-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-bottom:12px; }
+.de-page .de-list-section-header .round-header-title { font-size:15px; text-align:left; }
+.de-page .list-round-title-group { display:flex; align-items:center; gap:10px; }
+.de-page .list-round-badge { color:var(--ui-muted); font-size:11px; }
+.de-page #deEmptyAlertContainer .empty-team-alert-card { min-height:300px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:28px; border:1px solid var(--ui-line); border-radius:8px; }
+.de-page .de-bracket-columns-wrapper { min-height:200px; }
+@media(max-width:600px) { .de-page .de-viewport-title { font-size:15px; } .de-page .de-dual-viewport-workspace { gap:22px; } }
+
+.de-page .de-section-title-wrap { margin-right:auto; }
+.de-page .de-section-header .de-fixed-zoom-toolbar { height:auto; padding:0; border:0; flex-shrink:0; }
+.de-page .de-viewport-container { flex:1; height:auto; min-height:0; }
+
+/* Branch identity follows the shared palette in both themes. */
+.de-page #lowerViewportFrame {
+    --ui-accent:var(--ui-bracket-lower-accent);
+    --ui-accent-hover:var(--ui-bracket-lower-accent);
+    --ui-accent-soft:var(--ui-bracket-lower-soft);
+}
+.de-page .de-viewport-title { color:var(--ui-accent); }
+
+.de-page .grand-finals {
+    --ui-accent:var(--ui-bracket-final-accent);
+    --ui-accent-hover:var(--ui-bracket-final-accent);
+    --ui-accent-soft:color-mix(in srgb,var(--ui-bracket-final-accent) 12%,var(--ui-surface));
+}
+.de-page .bracket-svg-connectors path.grand-final-connector { stroke:var(--ui-bracket-final-accent); }
