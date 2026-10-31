@@ -115,3 +115,5 @@ Hai bộ light dùng cùng màu trung tính cho surface, hàng trận, viền, c
 Light-blue: accent cobalt #1E40AF, hover #1E3A8A, nền nhấn #EFF4FF.
 
 Dark-wine thử màu #BC7185 cho accent và nền nút, chữ trên nút #000000; light-wine giữ nguyên.
+
+Header desktop cao 64px, chạy hết chiều rộng trang. Mục active phủ cả chiều cao ô điều hướng và có gạch dưới 3px theo accent; không dùng pill nổi. Mobile tách hàng menu cuộn ngang.

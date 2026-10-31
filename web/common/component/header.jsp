@@ -1,7 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
 <jsp:include page="/common/component/tournament-config-state.jsp" />
 <!-- Dedicated Header Component Stylesheet -->
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=20261031-classic">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=20261031-center">
 
 <!-- Header / Navigation Bar Component -->
 <nav class="navbar">

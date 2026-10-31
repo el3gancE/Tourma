@@ -96,7 +96,7 @@
 %>
 
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=21">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=20261031-tabs">
 
 <aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">
     <div class="sidebar-workspace-heading"><span class="sidebar-workspace-mark" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span><span>Không gian giải đấu</span></div>

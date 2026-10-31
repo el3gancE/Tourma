@@ -1004,93 +1004,782 @@
 .tourma-badge-pill .streak-tourney-item i { color:var(--ui-accent); }
 @media(prefers-reduced-motion:reduce) { .tourma-badge-pill .tourma-badge-tooltip { transition:none; } }
 
-/* All Phase leaders share the capsule and motion treatment. */
-.tourma-badge-phase-1 { --badge-tone:var(--ui-tier-b); }
-.tourma-badge-phase-2 { --badge-tone:var(--ui-tier-c); }
-.tourma-badge-phase-3 { --badge-tone:var(--ui-tier-a); }
-.tourma-badge-phase-4 { --badge-tone:var(--ui-danger); }
-.tourma-badge-phase-5 { --badge-tone:var(--ui-tier-s); }
-.tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) {
-  color:var(--badge-tone); background:color-mix(in srgb,var(--badge-tone) 14%,transparent);
-  border:1.25px solid var(--badge-tone); animation:badgePhasePulse 2.8s ease-in-out infinite;
+
+/* Phase 2–5 artwork restored from remake. */
+.tourma-badge-phase-2 {
+  position: relative;
+  background: rgba(244, 63, 94, 0.18);
+  border: 1.25px solid #f43f5e;
+  color: #fb7185;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.4), inset 0 0 6px rgba(244, 63, 94, 0.15);
+  animation: phase2CosmicPulse 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
-.tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) :is(.badge-icon,.tourma-badge-name) { color:var(--badge-tone); position:relative; z-index:2; font-size:.82rem; font-weight:800; }
-.tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) > .badge-icon { animation:phase1Gem3DSpin 3.4s ease-in-out infinite; color:var(--badge-tone)!important; filter:drop-shadow(0 0 3px var(--badge-tone))!important; }
-:is(.phase2-shine-fx,.phase3-shine-fx,.phase4-shine-fx,.phase5-shine-fx) { position:absolute; inset:0; border-radius:9999px; overflow:hidden; pointer-events:none; }
-:is(.phase2-shine-fx,.phase3-shine-fx,.phase4-shine-fx,.phase5-shine-fx)::before { content:''; position:absolute; top:-60%; left:-130%; width:70%; height:220%; background:linear-gradient(105deg,transparent 15%,color-mix(in srgb,var(--badge-tone) 30%,transparent) 35%,var(--ui-surface) 50%,transparent 80%); transform:rotate(22deg); animation:phase1GleamSweep 3.2s ease-in-out infinite; }
-@keyframes badgePhasePulse { 0%,100% { box-shadow:0 0 3px color-mix(in srgb,var(--badge-tone) 25%,transparent); } 55% { box-shadow:0 0 10px color-mix(in srgb,var(--badge-tone) 45%,transparent); } }
+
+.tourma-badge-phase-2:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #fda4af;
+  background: rgba(244, 63, 94, 0.32);
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.8), 0 0 32px rgba(236, 72, 153, 0.45), inset 0 0 10px rgba(253, 164, 175, 0.3);
+}
+
+/* Lớp Phủ Vệt Sao Băng / Vệt Sáng Plasma Chảy Tràn Qua Bề Mặt */
+.phase2-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase2-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -140%;
+  width: 80%;
+  height: 200%;
+  background: linear-gradient(
+    115deg,
+    transparent 10%,
+    rgba(255, 255, 255, 0.2) 28%,
+    rgba(255, 255, 255, 0.85) 45%,
+    rgba(251, 113, 133, 0.6) 58%,
+    rgba(192, 132, 252, 0.4) 72%,
+    transparent 88%
+  );
+  transform: rotate(-18deg) skewX(-15deg);
+  animation: phase2MeteorTrailSweep 3.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.phase2-shine-fx::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -40px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.9), 0 0 16px 6px rgba(244, 63, 94, 0.8);
+  transform: translateY(-50%);
+  opacity: 0;
+  animation: phase2CosmicSpark 3.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Thiên Thạch Rực Cháy (Meteor) Phase 2 - Góc nghiêng động lực học, rung chấn gia tốc & bùng nổ vệt lửa */
+.tourma-badge-phase-2 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.84rem;
+  color: #fb7185;
+  flex-shrink: 0;
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #f43f5e) drop-shadow(0 0 8px rgba(244, 63, 94, 0.7));
+  transform-origin: center center;
+  animation: phase2MeteorThrust 3.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tên Badge "Phase 2 #1" - Hồng ngọc phát quang đồng bộ */
+.tourma-badge-phase-2 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.25px;
+  color: #fb7185;
+  text-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+}
+
+/* Tooltip Hover Cho Phase 2 */
+.tourma-badge-phase-2 .tourma-badge-tooltip {
+  border-color: rgba(244, 63, 94, 0.75) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 24px rgba(244, 63, 94, 0.45) !important;
+}
+.tourma-badge-phase-2 .tourma-badge-tooltip-title {
+  color: #fb7185;
+}
+.tourma-badge-phase-2 .tourma-badge-tooltip-rarity {
+  background: rgba(244, 63, 94, 0.22);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.55);
+}
+
+/* ============================================================================
+   KEYFRAME ANIMATIONS CHO PHASE 2 (Hoàn toàn mới: Supernova Pulse, Meteor Trail & Thrust)
+   ============================================================================ */
+
+/* 1. Nhịp đập Tinh Thần / Supernova Heartbeat Kép: 2 nhịp nảy nhẹ rồi thở dài lan tỏa đa sắc */
+@keyframes phase2CosmicPulse {
+  0% {
+    box-shadow: 0 0 6px rgba(244, 63, 94, 0.4), 0 0 0 0 rgba(244, 63, 94, 0.55);
+    border-color: #f43f5e;
+  }
+  14% {
+    box-shadow: 0 0 14px rgba(244, 63, 94, 0.8), 0 0 0 4px rgba(244, 63, 94, 0.25);
+    border-color: #fda4af;
+  }
+  26% {
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.45), 0 0 0 1px rgba(244, 63, 94, 0.1);
+    border-color: #f43f5e;
+  }
+  38% {
+    box-shadow: 0 0 16px rgba(236, 72, 153, 0.75), 0 0 0 7px rgba(236, 72, 153, 0.18);
+    border-color: #ec4899;
+  }
+  60% {
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.4), 0 0 0 11px rgba(244, 63, 94, 0);
+    border-color: #fb7185;
+  }
+  100% {
+    box-shadow: 0 0 6px rgba(244, 63, 94, 0.4), 0 0 0 0 rgba(244, 63, 94, 0);
+    border-color: #f43f5e;
+  }
+}
+
+/* 2. Vệt quét sao băng lướt qua mặt badge theo góc chéo năng lượng cao */
+@keyframes phase2MeteorTrailSweep {
+  0%, 20% {
+    left: -140%;
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  58% {
+    left: 140%;
+    opacity: 1;
+  }
+  65%, 100% {
+    left: 140%;
+    opacity: 0;
+  }
+}
+
+/* 2B. Hạt ánh sao băng rực lửa bay ngang giữa badge */
+@keyframes phase2CosmicSpark {
+  0%, 22% {
+    left: -20px;
+    opacity: 0;
+  }
+  26% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.3);
+  }
+  56% {
+    left: calc(100% + 20px);
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+  62%, 100% {
+    left: calc(100% + 20px);
+    opacity: 0;
+  }
+}
+
+/* 3. Hiệu ứng Thiên Thạch Rực Cháy: Rung chấn, gia tốc phóng điện và bùng nổ tia lửa trắng nóng */
+@keyframes phase2MeteorThrust {
+  0%, 50% {
+    transform: rotate(-18deg) scale(1) translate(0, 0);
+    color: #fb7185;
+    filter: drop-shadow(0 0 4px #f43f5e) drop-shadow(0 0 8px rgba(244, 63, 94, 0.7));
+  }
+  55% {
+    transform: rotate(-15deg) scale(1.08) translate(-1px, 1px);
+    color: #fda4af;
+    filter: drop-shadow(0 0 8px #f43f5e) drop-shadow(0 0 12px #ec4899);
+  }
+  62% {
+    transform: rotate(-22deg) scale(1.15) translate(1px, -1px);
+    color: #ffffff;
+    filter: drop-shadow(0 0 10px #ffffff) drop-shadow(0 0 18px #f43f5e) drop-shadow(0 0 24px #ec4899);
+  }
+  70% {
+    transform: rotate(-14deg) scale(1.28) translate(3px, -2px);
+    color: #ffffff;
+    filter: drop-shadow(0 0 14px #ffffff) drop-shadow(0 0 22px #fda4af) drop-shadow(0 0 30px #f43f5e);
+  }
+  78% {
+    transform: rotate(-20deg) scale(1.1) translate(1px, -1px);
+    color: #fda4af;
+    filter: drop-shadow(0 0 8px #f43f5e) drop-shadow(0 0 14px rgba(244, 63, 94, 0.8));
+  }
+  86%, 100% {
+    transform: rotate(-18deg) scale(1) translate(0, 0);
+    color: #fb7185;
+    filter: drop-shadow(0 0 4px #f43f5e) drop-shadow(0 0 8px rgba(244, 63, 94, 0.7));
+  }
+}
+
+
+
+/* ============================================================================
+   10C. PHASE 3 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 3)
+   Nền Xanh Lôi Thần Electric Cyan, phóng tia hồ quang điện cao thế, vệt chớp quét
+   và tia sét lôi đình đánh sập chấn động (khác biệt hoàn toàn Phase 1 & 2)
+   ============================================================================ */
+
+/* --- PHASE 3: Nền Xanh Lôi Thần (Electric Cyan / Lightning Surge) --- */
+.tourma-badge-phase-3 {
+  position: relative;
+  background: rgba(6, 182, 212, 0.18);
+  border: 1.25px solid #06b6d4;
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.42), inset 0 0 6px rgba(6, 182, 212, 0.15);
+  animation: phase3VoltageFlicker 2.8s infinite ease-in-out;
+}
+
+.tourma-badge-phase-3:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #7dd3fc;
+  background: rgba(6, 182, 212, 0.32);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.85), 0 0 32px rgba(56, 189, 248, 0.5), inset 0 0 10px rgba(125, 211, 252, 0.3);
+}
+
+/* Lớp Phủ Vệt Hồ Quang Điện Phóng Ngang Bề Mặt Badge */
+.phase3-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase3-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  left: -130%;
+  width: 65%;
+  height: 180%;
+  background: linear-gradient(
+    100deg,
+    transparent 10%,
+    rgba(255, 255, 255, 0.25) 30%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(56, 189, 248, 0.8) 65%,
+    rgba(6, 182, 212, 0.4) 78%,
+    transparent 90%
+  );
+  transform: rotate(15deg);
+  animation: phase3ElectricArcSweep 2.9s infinite ease-in-out;
+}
+
+.phase3-shine-fx::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow: inset 0 0 6px rgba(56, 189, 248, 0.6);
+  opacity: 0;
+  animation: phase3ArcDischargePulse 2.8s infinite ease-in-out;
+}
+
+/* Tia Sét Lôi Thần (Lightning Bolt) Phase 3 - Góc nghiêng sấm sét, rung chấn điện thế cao & đánh giáng sấm sét chói lòa */
+.tourma-badge-phase-3 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.84rem;
+  color: #38bdf8;
+  flex-shrink: 0;
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #06b6d4) drop-shadow(0 0 8px rgba(56, 189, 248, 0.75));
+  animation: phase3LightningStrike 2.8s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Tên Badge "Phase 3 #1" - Màu xanh điện phát quang */
+.tourma-badge-phase-3 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.25px;
+  color: #38bdf8;
+  text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+}
+
+/* Tooltip Hover Cho Phase 3 */
+.tourma-badge-phase-3 .tourma-badge-tooltip {
+  border-color: rgba(6, 182, 212, 0.75) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 24px rgba(6, 182, 212, 0.45) !important;
+}
+.tourma-badge-phase-3 .tourma-badge-tooltip-title {
+  color: #38bdf8;
+}
+.tourma-badge-phase-3 .tourma-badge-tooltip-rarity {
+  background: rgba(6, 182, 212, 0.22);
+  color: #38bdf8;
+  border: 1px solid rgba(6, 182, 212, 0.55);
+}
+
+/* KEYFRAMES PHASE 3 */
+@keyframes phase3VoltageFlicker {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.4), inset 0 0 4px rgba(6, 182, 212, 0.2);
+    border-color: #06b6d4;
+  }
+  48% {
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.45), inset 0 0 6px rgba(6, 182, 212, 0.25);
+    border-color: #0891b2;
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.9), 0 0 30px rgba(255, 255, 255, 0.5), inset 0 0 12px rgba(56, 189, 248, 0.4);
+    border-color: #ffffff;
+  }
+  52% {
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.45), inset 0 0 6px rgba(6, 182, 212, 0.25);
+    border-color: #06b6d4;
+  }
+  54% {
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.85), inset 0 0 10px rgba(125, 211, 252, 0.35);
+    border-color: #7dd3fc;
+  }
+  58% {
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.4), inset 0 0 4px rgba(6, 182, 212, 0.2);
+    border-color: #06b6d4;
+  }
+}
+
+@keyframes phase3ElectricArcSweep {
+  0%, 25% {
+    left: -130%;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  60% {
+    left: 140%;
+    opacity: 1;
+  }
+  65%, 100% {
+    left: 140%;
+    opacity: 0;
+  }
+}
+
+@keyframes phase3ArcDischargePulse {
+  0%, 48%, 60%, 100% {
+    opacity: 0;
+  }
+  50%, 54% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes phase3LightningStrike {
+  0%, 45% {
+    transform: rotate(8deg) scale(1) translateY(0);
+    color: #38bdf8;
+    filter: drop-shadow(0 0 4px #06b6d4);
+  }
+  48% {
+    transform: rotate(14deg) scale(1.1) translate(-1px, 1px);
+    color: #7dd3fc;
+    filter: drop-shadow(0 0 8px #38bdf8);
+  }
+  50% {
+    transform: rotate(5deg) scale(1.36) translateY(2px);
+    color: #ffffff;
+    filter: drop-shadow(0 0 12px #ffffff) drop-shadow(0 0 20px #38bdf8) drop-shadow(0 0 28px #06b6d4);
+  }
+  54% {
+    transform: rotate(12deg) scale(1.18) translateY(1px);
+    color: #7dd3fc;
+    filter: drop-shadow(0 0 10px #38bdf8);
+  }
+  60% {
+    transform: rotate(7deg) scale(1.05) translateY(0);
+    color: #38bdf8;
+    filter: drop-shadow(0 0 6px #06b6d4);
+  }
+  70%, 100% {
+    transform: rotate(8deg) scale(1) translateY(0);
+    color: #38bdf8;
+    filter: drop-shadow(0 0 4px #06b6d4);
+  }
+}
+
+/* ============================================================================
+   10D. PHASE 4 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 4)
+   Nền Thạch Anh Tím Hoàng Gia Royal Amethyst, sóng hấp dẫn hố đen vũ trụ,
+   vòng chân trời sự kiện và nguyên tử xoay tròn đa chiều
+   ============================================================================ */
+
+/* --- PHASE 4: Nền Thạch Anh Tím (Royal Amethyst / Quantum Void) --- */
+.tourma-badge-phase-4 {
+  position: relative;
+  background: rgba(139, 92, 246, 0.18);
+  border: 1.25px solid #8b5cf6;
+  color: #c084fc;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.42), inset 0 0 8px rgba(139, 92, 246, 0.2);
+  animation: phase4GravitationalPulse 3.4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tourma-badge-phase-4:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #d8b4fe;
+  background: rgba(139, 92, 246, 0.32);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.85), 0 0 35px rgba(168, 85, 247, 0.5), inset 0 0 12px rgba(216, 180, 254, 0.3);
+}
+
+/* Lớp Phủ Sóng Uốn Cong Không Thời Gian (Event Horizon Warp Wave) */
+.phase4-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase4-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 90%;
+  height: 200%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(192, 132, 252, 0.7) 35%,
+    rgba(139, 92, 246, 0.4) 60%,
+    transparent 80%
+  );
+  transform: rotate(-10deg) scaleX(1.4);
+  animation: phase4EventHorizonSweep 3.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.phase4-shine-fx::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;
+  height: 120%;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(circle, transparent 65%, rgba(168, 85, 247, 0.35) 90%, transparent 100%);
+  animation: phase4SingularityBreath 3.4s infinite ease-in-out;
+}
+
+/* Nguyên Tử Lượng Tử (Quantum Atom) Phase 4 - Xoay 360 độ liên tục, nhấp nháy quỹ đạo electron và hạt nhân phát sáng */
+.tourma-badge-phase-4 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.86rem;
+  color: #c084fc;
+  flex-shrink: 0;
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #8b5cf6) drop-shadow(0 0 8px rgba(168, 85, 247, 0.7));
+  animation: phase4QuantumSpin 4.5s infinite linear;
+}
+
+/* Tên Badge "Phase 4 #1" - Thạch anh tím phát quang huyền ảo */
+.tourma-badge-phase-4 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.25px;
+  color: #c084fc;
+  text-shadow: 0 0 8px rgba(139, 92, 246, 0.55);
+}
+
+/* Tooltip Hover Cho Phase 4 */
+.tourma-badge-phase-4 .tourma-badge-tooltip {
+  border-color: rgba(139, 92, 246, 0.75) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 24px rgba(139, 92, 246, 0.45) !important;
+}
+.tourma-badge-phase-4 .tourma-badge-tooltip-title {
+  color: #c084fc;
+}
+.tourma-badge-phase-4 .tourma-badge-tooltip-rarity {
+  background: rgba(139, 92, 246, 0.22);
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.55);
+}
+
+/* KEYFRAMES PHASE 4 */
+@keyframes phase4GravitationalPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.4), inset 0 0 8px rgba(139, 92, 246, 0.2);
+    border-color: #8b5cf6;
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.75), 0 0 32px rgba(139, 92, 246, 0.35), inset 0 0 14px rgba(192, 132, 252, 0.35);
+    border-color: #c084fc;
+  }
+}
+
+@keyframes phase4EventHorizonSweep {
+  0%, 20% {
+    left: -150%;
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.85;
+  }
+  60% {
+    left: 140%;
+    opacity: 1;
+  }
+  68%, 100% {
+    left: 140%;
+    opacity: 0;
+  }
+}
+
+@keyframes phase4SingularityBreath {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+@keyframes phase4QuantumSpin {
+  0% {
+    transform: rotate(0deg) scale(1);
+    color: #c084fc;
+    filter: drop-shadow(0 0 4px #8b5cf6);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.18);
+    color: #ffffff;
+    filter: drop-shadow(0 0 8px #ffffff) drop-shadow(0 0 16px #c084fc) drop-shadow(0 0 22px #8b5cf6);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    color: #c084fc;
+    filter: drop-shadow(0 0 4px #8b5cf6);
+  }
+}
+
+/* ============================================================================
+   10E. PHASE 5 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 5)
+   Nền Thái Dương Hoàng Kim Solar Gold, vòng hào quang vành nhật hoa bốc tỏa,
+   gió mặt trời quét qua và Mặt Trời Tối Thượng xoay vầng hào quang rực rỡ
+   ============================================================================ */
+
+/* --- PHASE 5: Nền Thái Dương Hoàng Kim (Solar Gold / Celestial Sun) --- */
+.tourma-badge-phase-5 {
+  position: relative;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1.25px solid #f59e0b;
+  color: #fbbf24;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.45), inset 0 0 8px rgba(245, 158, 11, 0.2);
+  animation: phase5SolarCoronaPulse 3.2s infinite ease-in-out;
+}
+
+.tourma-badge-phase-5:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #fde047;
+  background: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.9), 0 0 42px rgba(251, 191, 36, 0.6), inset 0 0 12px rgba(254, 240, 138, 0.35);
+}
+
+/* Lớp Phủ Vệt Gió Mặt Trời Rực Cháy (Solar Wind Flare Sweep) */
+.phase5-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase5-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -140%;
+  width: 80%;
+  height: 220%;
+  background: linear-gradient(
+    110deg,
+    transparent 15%,
+    rgba(255, 255, 255, 0.2) 32%,
+    rgba(255, 255, 255, 0.95) 48%,
+    rgba(254, 240, 138, 0.8) 60%,
+    rgba(245, 158, 11, 0.5) 75%,
+    transparent 90%
+  );
+  transform: rotate(-22deg);
+  animation: phase5SolarWindSweep 3.4s infinite cubic-bezier(0.35, 0, 0.25, 1);
+}
+
+.phase5-shine-fx::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow: inset 0 0 8px rgba(251, 191, 36, 0.5);
+  opacity: 0.5;
+  animation: phase5SolarRayBreathing 2.4s infinite alternate ease-in-out;
+}
+
+/* Mặt Trời Thái Dương (Sun) Phase 5 - Xoay chậm tự quay, tỏa tia nhật hoa vương giả và bừng sáng cực điểm */
+.tourma-badge-phase-5 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.88rem;
+  color: #fbbf24;
+  flex-shrink: 0;
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #f59e0b) drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+  animation: phase5SunRayExpansion 3.6s infinite ease-in-out;
+}
+
+/* Tên Badge "Phase 5 #1" - Vàng hoàng kim thái dương */
+.tourma-badge-phase-5 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.25px;
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+/* Tooltip Hover Cho Phase 5 */
+.tourma-badge-phase-5 .tourma-badge-tooltip {
+  border-color: rgba(245, 158, 11, 0.8) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 26px rgba(245, 158, 11, 0.5) !important;
+}
+.tourma-badge-phase-5 .tourma-badge-tooltip-title {
+  color: #fbbf24;
+}
+.tourma-badge-phase-5 .tourma-badge-tooltip-rarity {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.6);
+}
+
+/* KEYFRAMES PHASE 5 */
+@keyframes phase5SolarCoronaPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), 0 0 0 0 rgba(245, 158, 11, 0.45);
+    border-color: #f59e0b;
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.8), 0 0 35px rgba(245, 158, 11, 0.35), 0 0 0 7px rgba(251, 191, 36, 0);
+    border-color: #fde047;
+  }
+}
+
+@keyframes phase5SolarWindSweep {
+  0%, 20% {
+    left: -140%;
+    opacity: 0;
+  }
+  26% {
+    opacity: 0.95;
+  }
+  58% {
+    left: 140%;
+    opacity: 1;
+  }
+  65%, 100% {
+    left: 140%;
+    opacity: 0;
+  }
+}
+
+@keyframes phase5SolarRayBreathing {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes phase5SunRayExpansion {
+  0% {
+    transform: rotate(0deg) scale(1);
+    color: #fbbf24;
+    filter: drop-shadow(0 0 4px #f59e0b) drop-shadow(0 0 8px rgba(251, 191, 36, 0.7));
+  }
+  35% {
+    transform: rotate(90deg) scale(1.12);
+    color: #fde047;
+    filter: drop-shadow(0 0 8px #fde047) drop-shadow(0 0 14px #f59e0b);
+  }
+  55% {
+    transform: rotate(180deg) scale(1.28);
+    color: #ffffff;
+    filter: drop-shadow(0 0 14px #ffffff) drop-shadow(0 0 24px #fbbf24) drop-shadow(0 0 32px #f59e0b);
+  }
+  75% {
+    transform: rotate(270deg) scale(1.14);
+    color: #fde047;
+    filter: drop-shadow(0 0 8px #fde047) drop-shadow(0 0 14px #f59e0b);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    color: #fbbf24;
+    filter: drop-shadow(0 0 4px #f59e0b) drop-shadow(0 0 8px rgba(251, 191, 36, 0.7));
+  }
+}
+
+
+
+
 /* Light mode preserves motion while giving lettering enough contrast. */
 :root:not([data-theme="dark"]) .tourma-badge-pill { --badge-tone:var(--ui-tier-d); }
 :root:not([data-theme="dark"]) :is(.tourma-badge-gold,.tourma-badge-defending,.tourma-badge-bright-gold,.tourma-badge-tier-s,.tourma-badge-podium,.tourma-badge-phase-5) { --badge-tone:var(--ui-tier-s); }
-:root:not([data-theme="dark"]) :is(.tourma-badge-tier-a,.tourma-badge-veteran,.tourma-badge-phase-3) { --badge-tone:var(--ui-tier-a); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-tier-a,.tourma-badge-veteran,.tourma-badge-phase-4) { --badge-tone:var(--ui-tier-a); }
 :root:not([data-theme="dark"]) :is(.tourma-badge-tier-b,.tourma-badge-phase-1) { --badge-tone:var(--ui-tier-b); }
-:root:not([data-theme="dark"]) :is(.tourma-badge-tier-c,.tourma-badge-phase-2) { --badge-tone:var(--ui-tier-c); }
-:root:not([data-theme="dark"]) :is(.tourma-badge-streak,.tourma-badge-streak-fire,.tourma-badge-phase-4) { --badge-tone:var(--ui-danger); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-tier-c,.tourma-badge-phase-3) { --badge-tone:var(--ui-tier-c); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-streak,.tourma-badge-streak-fire,.tourma-badge-phase-2) { --badge-tone:var(--ui-danger); }
 :root:not([data-theme="dark"]) .tourma-badge-pill { color:var(--badge-tone); background:color-mix(in srgb,var(--badge-tone) 9%,var(--ui-bg)); border-color:color-mix(in srgb,var(--badge-tone) 55%,var(--ui-line)); }
 :root:not([data-theme="dark"]) .tourma-badge-pill > :is(.badge-icon,.tourma-badge-name) { color:var(--badge-tone)!important; -webkit-text-fill-color:var(--badge-tone); text-shadow:none!important; }
 :root:not([data-theme="dark"]) .tourma-badge-pill > .tourma-badge-name { background:none; }
 
-/* Phase 2–5 each have their own motion identity. */
-.tourma-badge-pill.tourma-badge-phase-2 { --badge-tone:var(--ui-tier-c); animation:none; }
-.tourma-badge-pill.tourma-badge-phase-3 { --badge-tone:var(--ui-tier-a); animation:none; }
-.tourma-badge-pill.tourma-badge-phase-4 { --badge-tone:var(--ui-danger); animation:phase4Ripple 3s ease-out infinite; }
-.tourma-badge-pill.tourma-badge-phase-5 { --badge-tone:var(--ui-tier-s); animation:none; }
-:root:not([data-theme="dark"]) .tourma-badge-pill.tourma-badge-phase-2 { --badge-tone:var(--ui-tier-c); }
-:root:not([data-theme="dark"]) .tourma-badge-pill.tourma-badge-phase-3 { --badge-tone:var(--ui-tier-a); }
-:root:not([data-theme="dark"]) .tourma-badge-pill.tourma-badge-phase-4 { --badge-tone:var(--ui-danger); }
-:root:not([data-theme="dark"]) .tourma-badge-pill.tourma-badge-phase-5 { --badge-tone:var(--ui-tier-s); }
-.tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) > .badge-icon { animation:none; }
-/* Phase 2: horizontal light scanner. */
-.tourma-badge-phase-2 .phase2-shine-fx::before { inset:0 auto 0 -40%; width:35%; height:100%; transform:skewX(-18deg); background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--badge-tone) 45%,transparent),transparent); animation:phase2Scan 3s ease-in-out infinite; }
-@keyframes phase2Scan { 0%,15% { left:-40%; opacity:0; } 25% { opacity:1; } 75% { left:110%; opacity:1; } 85%,100% { left:110%; opacity:0; } }
-/* Phase 3: violet trace travels around the capsule. */
-.tourma-badge-phase-3 .phase3-shine-fx::before { inset:0; width:auto; height:auto; border-radius:inherit; background:none; transform:none; border:2px solid var(--badge-tone); clip-path:inset(0 50% 50% 0); animation:phase3Trace 3.2s linear infinite; }
-@keyframes phase3Trace { 0%,100% { clip-path:inset(0 50% 50% 0); } 25% { clip-path:inset(0 0 50% 50%); } 50% { clip-path:inset(50% 0 0 50%); } 75% { clip-path:inset(50% 50% 0 0); } }
-/* Phase 4: coral ripple expands outwards; icon beats with it. */
-.tourma-badge-phase-4 .phase4-shine-fx::before { display:none; }
-.tourma-badge-pill.tourma-badge-phase-4 > .badge-icon { animation:phase4Beat 3s ease-in-out infinite; }
-@keyframes phase4Ripple { 0% { box-shadow:0 0 0 0 color-mix(in srgb,var(--badge-tone) 40%,transparent); } 70%,100% { box-shadow:0 0 0 8px transparent; } }
-@keyframes phase4Beat { 0%,30%,100% { transform:scale(1); } 10% { transform:scale(1.2); } 20% { transform:scale(1.05); } }
-/* Phase 5: gold rays rotate behind the label. */
-.tourma-badge-phase-5 .phase5-shine-fx::before { top:50%; left:50%; width:220%; height:700%; background:conic-gradient(from 0deg,transparent 0deg 65deg,color-mix(in srgb,var(--badge-tone) 25%,transparent) 85deg,transparent 105deg 245deg,color-mix(in srgb,var(--badge-tone) 25%,transparent) 265deg,transparent 285deg); transform:translate(-50%,-50%) rotate(0deg); animation:phase5Rays 6s linear infinite; }
-@keyframes phase5Rays { to { transform:translate(-50%,-50%) rotate(360deg); } }
-/* Independent icon choreography, synchronized with each Phase surface. */
-.tourma-badge-pill.tourma-badge-phase-2 > .badge-icon { animation:phase2IconDash 3s cubic-bezier(.4,0,.2,1) infinite; transform-origin:center; }
-.tourma-badge-pill.tourma-badge-phase-3 > .badge-icon { animation:phase3IconLevitate 3.2s ease-in-out infinite; transform-origin:50% 70%; }
-.tourma-badge-pill.tourma-badge-phase-4 > .badge-icon { animation:phase4IconIgnite 3s ease-in-out infinite; transform-origin:50% 100%; }
-.tourma-badge-pill.tourma-badge-phase-5 > .badge-icon { animation:phase5IconSunburst 6s ease-in-out infinite; transform-origin:center; }
-/* Cyan: pull back, launch forward, then settle as the scanner passes. */
-@keyframes phase2IconDash {
-  0%,12%,78%,100% { transform:translateX(0) rotate(0deg); }
-  22% { transform:translateX(-3px) rotate(-16deg) scaleX(.9); }
-  36% { transform:translateX(5px) rotate(18deg) scaleX(1.15); }
-  50% { transform:translateX(-1px) rotate(-5deg); }
-  62% { transform:translateX(0) rotate(0deg); }
+
+/* Badge artwork stays unchanged; tooltip follows the shared application theme. */
+.tourma-badge-pill .tourma-badge-tooltip {
+  width:320px; max-width:calc(100vw - 32px); padding:16px;
+  background:var(--ui-surface)!important; color:var(--ui-text);
+  border:1px solid var(--ui-line)!important; border-radius:10px;
+  box-shadow:var(--ui-shadow)!important; font-family:var(--ui-font);
+  font-size:12px; font-weight:400; line-height:1.65; text-shadow:none;
 }
-/* Violet: floating figure-eight, with a gentle sideways roll. */
-@keyframes phase3IconLevitate {
-  0%,100% { transform:translate(0,0) rotate(0deg); }
-  25% { transform:translate(2px,-3px) rotate(12deg); }
-  50% { transform:translate(0,0) rotate(0deg); }
-  75% { transform:translate(-2px,-3px) rotate(-12deg); }
-}
-/* Coral: compress, spring upwards, flicker sideways, land. */
-@keyframes phase4IconIgnite {
-  0%,68%,100% { transform:translateY(0) scale(1) skewX(0deg); }
-  12% { transform:scale(1.12,.78); }
-  26% { transform:translateY(-4px) scale(.9,1.2) skewX(-9deg); }
-  34% { transform:translateY(-4px) scale(.95,1.12) skewX(9deg); }
-  44% { transform:translateY(-2px) skewX(-5deg); }
-  56% { transform:scale(1.08,.9); }
-}
-/* Gold: stepped full revolution followed by a brief expansion. */
-@keyframes phase5IconSunburst {
-  0%,10% { transform:rotate(0deg) scale(1); }
-  25% { transform:rotate(90deg) scale(1.08); }
-  40% { transform:rotate(180deg) scale(1); }
-  55% { transform:rotate(270deg) scale(1.08); }
-  70% { transform:rotate(360deg) scale(1); }
-  80% { transform:rotate(360deg) scale(1.2); }
-  90%,100% { transform:rotate(360deg) scale(1); }
-}
-@media(prefers-reduced-motion:reduce) { .tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5), .tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) > .badge-icon, :is(.phase2-shine-fx,.phase3-shine-fx,.phase4-shine-fx,.phase5-shine-fx)::before { animation:none; } }
+.tourma-badge-pill .tourma-badge-tooltip::after { border-bottom-color:var(--ui-surface); }
+.tourma-badge-pill .tourma-badge-tooltip-header { align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--ui-line); }
+.tourma-badge-pill .tourma-badge-tooltip-title { color:var(--ui-text); font-size:14px; font-weight:600; line-height:1.4; }
+.tourma-badge-pill .tourma-badge-tooltip-title i { color:var(--ui-accent); }
+.tourma-badge-pill .tourma-badge-tooltip-rarity { color:var(--ui-accent); background:var(--ui-accent-soft); border:0; padding:3px 7px; border-radius:4px; font-size:10px; font-weight:500; text-transform:none; }
+.tourma-badge-pill .tourma-badge-tooltip-desc { color:var(--ui-text); font-size:12px; font-weight:400; }
+.tourma-badge-pill .tourma-badge-tooltip-footer { border-top:1px solid var(--ui-line); margin-top:12px; padding-top:10px; color:var(--ui-muted); font-size:11px; line-height:1.6; }
+.tourma-badge-pill .streak-footer-title { color:var(--ui-muted); font-size:11px; font-weight:500; }
+.tourma-badge-pill .streak-tourney-list { gap:5px; margin-top:6px; }
+.tourma-badge-pill .streak-tourney-item { background:var(--ui-surface-alt); color:var(--ui-text); border:1px solid var(--ui-line); padding:3px 7px; font-size:11px; font-weight:400; }
+.tourma-badge-pill .streak-tourney-item i { color:var(--ui-accent); }
+@media(prefers-reduced-motion:reduce) { .tourma-badge-pill .tourma-badge-tooltip { transition:none; } }
