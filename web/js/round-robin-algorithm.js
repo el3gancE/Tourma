@@ -267,6 +267,8 @@
 
                     var st1 = stats[t1];
                     var st2 = stats[t2];
+                    st1.h2hPoints[t2] = (st1.h2hPoints[t2] || 0) + (s1 > s2 ? cfg.winPoints : s1 === s2 ? cfg.drawPoints : cfg.lossPoints);
+                    st2.h2hPoints[t1] = (st2.h2hPoints[t1] || 0) + (s2 > s1 ? cfg.winPoints : s1 === s2 ? cfg.drawPoints : cfg.lossPoints);
 
                     st1.played++;
                     st2.played++;
@@ -284,8 +286,6 @@
                         st2.lost++;
                         st2.points += cfg.lossPoints;
                         st2.form.push('L');
-
-                        st1.h2hPoints[t2] = (st1.h2hPoints[t2] || 0) + cfg.winPoints;
                     } else if (s1 < s2) {
                         st2.won++;
                         st2.points += cfg.winPoints;
@@ -294,8 +294,6 @@
                         st1.lost++;
                         st1.points += cfg.lossPoints;
                         st1.form.push('L');
-
-                        st2.h2hPoints[t1] = (st2.h2hPoints[t1] || 0) + cfg.winPoints;
                     } else {
                         // Draw
                         st1.drawn++;
@@ -305,9 +303,6 @@
                         st2.drawn++;
                         st2.points += cfg.drawPoints;
                         st2.form.push('D');
-
-                        st1.h2hPoints[t2] = (st1.h2hPoints[t2] || 0) + cfg.drawPoints;
-                        st2.h2hPoints[t1] = (st2.h2hPoints[t1] || 0) + cfg.drawPoints;
                     }
                 }
             }
@@ -324,14 +319,21 @@
                 standingsList.push(item);
             }
 
-            // Same order as persisted league qualification: points, GD, GF, original seed.
+            // Head-to-head points among teams tied on points and goal difference.
+            standingsList.forEach(function (row) {
+                row.tiedHeadToHead = standingsList.reduce(function (total, opponent) {
+                    return total + (row.points === opponent.points && row.goalDifference === opponent.goalDifference
+                        ? (row.h2hPoints[opponent.team] || 0) : 0);
+                }, 0);
+            });
             standingsList.sort(function (a, b) {
                 if (b.points !== a.points) return b.points - a.points;
                 if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+                if (b.tiedHeadToHead !== a.tiedHeadToHead) return b.tiedHeadToHead - a.tiedHeadToHead;
                 if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-                return a.seed - b.seed;
+                var an = a.team.trim().toLowerCase(), bn = b.team.trim().toLowerCase();
+                return an < bn ? -1 : an > bn ? 1 : 0;
             });
-
             // Assign Position (Rank)
             for (var p = 0; p < standingsList.length; p++) {
                 standingsList[p].rank = p + 1;

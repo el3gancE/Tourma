@@ -206,7 +206,8 @@
                         gf: 0,
                         ga: 0,
                         gd: 0,
-                        pts: 0
+                        pts: 0,
+                        h2h: {}
                     };
 
                     standingsMap[mainKey] = record;
@@ -247,6 +248,8 @@
                             var st2 = findTeamRecord(match.team2);
 
                             if (st1 && st2) {
+                                st1.h2h[st2.teamId] = (st1.h2h[st2.teamId] || 0) + (s1>s2 ? winPts : s1===s2 ? drawPts : lossPts);
+                                st2.h2h[st1.teamId] = (st2.h2h[st1.teamId] || 0) + (s2>s1 ? winPts : s1===s2 ? drawPts : lossPts);
                                 st1.mp++;
                                 st2.mp++;
                                 st1.gf += s1;
@@ -283,11 +286,18 @@
                     standingsArray.push(standingsMap[key]);
                 }
 
+                standingsArray.forEach(function(row) {
+                    row.tiedHeadToHead = standingsArray.reduce(function(total, opponent) {
+                        return total + (row.pts===opponent.pts && row.gd===opponent.gd ? (row.h2h[opponent.teamId] || 0) : 0);
+                    }, 0);
+                });
                 standingsArray.sort(function (a, b) {
                     if (b.pts !== a.pts) return b.pts - a.pts;
                     if (b.gd !== a.gd) return b.gd - a.gd;
+                    if (b.tiedHeadToHead !== a.tiedHeadToHead) return b.tiedHeadToHead - a.tiedHeadToHead;
                     if (b.gf !== a.gf) return b.gf - a.gf;
-                    return a.seed - b.seed || String(a.teamId).localeCompare(String(b.teamId));
+                    var an=a.name.trim().toLowerCase(), bn=b.name.trim().toLowerCase();
+                    return an<bn ? -1 : an>bn ? 1 : String(a.teamId).localeCompare(String(b.teamId));
                 });
 
                 results[gKey] = standingsArray;
@@ -314,14 +324,6 @@
             var cfg = this.getAdvanceConfig();
             var groupStandingsData = this.calculateAllGroupStandings();
 
-            var wildcardWinners = new Set();
-            if (cfg.remainder > 0) {
-                var candidates = groupKeys.map(function(key){return (groupStandingsData[key] || [])[cfg.wildcardRankIndex];}).filter(Boolean);
-                candidates.sort(function(a,b){
-                    return b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.seed-b.seed || String(a.teamId).localeCompare(String(b.teamId));
-                });
-                candidates.slice(0,cfg.remainder).forEach(function(team){wildcardWinners.add(String(team.teamId));});
-            }
             // IF WILDCARD FILTER IS SELECTED AND REMAINDER > 0
             if (this.selectedGroupFilter === 'WILDCARD' && cfg.remainder > 0) {
                 this.renderWildcardTable(container, groupStandingsData, cfg);
@@ -367,7 +369,7 @@
                     var row = standingsArray[rank];
 
                     var isDirect = (rank < cfg.directPerGroup);
-                    var isWildcard = (cfg.remainder > 0 && rank === cfg.wildcardRankIndex && wildcardWinners.has(String(row.teamId)));
+                    var isWildcard = (cfg.remainder > 0 && rank === cfg.wildcardRankIndex);
 
                     var qClass = '';
                     if (isDirect) {
@@ -407,13 +409,13 @@
                 }
             }
 
-            // Same wildcard order as DB: points, GD, GF, original seed, team ID.
+            // Across groups there is no head-to-head: points, GD, GF, alphabet.
             wildcardCandidates.sort(function (a, b) {
                 if (b.pts !== a.pts) return b.pts - a.pts;
                 if (b.gd !== a.gd) return b.gd - a.gd;
                 if (b.gf !== a.gf) return b.gf - a.gf;
-                return (a.seed || Number.MAX_SAFE_INTEGER) - (b.seed || Number.MAX_SAFE_INTEGER)
-                    || String(a.teamId || a.id).localeCompare(String(b.teamId || b.id));
+                var an=a.name.trim().toLowerCase(), bn=b.name.trim().toLowerCase();
+                return an<bn ? -1 : an>bn ? 1 : String(a.teamId || a.id).localeCompare(String(b.teamId || b.id));
             });
 
             var block = document.createElement('div');
@@ -536,8 +538,8 @@
                     if (b.points !== a.points) return b.points - a.points;
                     if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
                     if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-                    return (a.seed || Number.MAX_SAFE_INTEGER) - (b.seed || Number.MAX_SAFE_INTEGER)
-                        || String(a.id).localeCompare(String(b.id));
+                    var an=a.name.trim().toLowerCase(), bn=b.name.trim().toLowerCase();
+                    return an<bn ? -1 : an>bn ? 1 : String(a.id).localeCompare(String(b.id));
                 });
 
                 var takeCount = Math.min(remainder, wildcardCandidates.length);

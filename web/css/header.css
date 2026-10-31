@@ -52,3 +52,27 @@
  .ui-page .navbar > .nav-links { justify-self:center; }
  .ui-page .navbar > .appearance-switches { justify-self:end; margin-left:0; }
 }
+
+/* Saved preferences set the knob position before JS binds the controls. */
+:root[data-accent="wine"] .appearance-switch[data-accent-switch] .theme-switch::after,
+:root[data-theme="light"] .appearance-switch[data-mode-switch] .theme-switch::after { transform:none; }
+:root[data-accent="blue"] .appearance-switch[data-accent-switch] .theme-switch::after,
+:root[data-theme="dark"] .appearance-switch[data-mode-switch] .theme-switch::after { transform:translateX(11px); }
+:root:not([data-theme-interactive="true"]) .theme-switch::after { transition:none; }
+
+/* Both icons are static; the preloaded root theme picks the visible one. */
+[data-mode-switch] .mode-icon-dark { display:none; }
+:root[data-theme="dark"] [data-mode-switch] .mode-icon-light { display:none; }
+:root[data-theme="dark"] [data-mode-switch] .mode-icon-dark { display:inline-block; }
+
+.display-settings { position:relative; z-index:100; }
+.display-settings>summary { list-style:none; min-height:30px; justify-content:center; }
+.display-settings>summary::-webkit-details-marker { display:none; }
+.display-settings-panel { position:absolute; top:calc(100% + 10px); right:0; width:290px; max-width:calc(100vw - 32px); padding:16px; border:1px solid var(--ui-line); border-radius:9px; background:var(--ui-surface); color:var(--ui-text); box-shadow:var(--ui-shadow); font:12px/1.6 var(--ui-font); }
+.display-settings-panel>strong { display:block; margin-bottom:12px; font-weight:600; }
+.special-colors-toggle { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:10px 0; border:0; background:transparent; color:var(--ui-text); font:500 11px var(--ui-font); cursor:pointer; text-align:left; }
+.special-colors-toggle .theme-switch { display:inline-block; flex-shrink:0; }
+:root .special-colors-toggle .theme-switch::after { transform:none; }
+:root[data-special-colors="on"] .special-colors-toggle .theme-switch::after { transform:translateX(11px); }
+.display-settings-panel p { margin:8px 0 0; color:var(--ui-muted); font-size:10px; }
+.display-settings :is(summary,button):focus-visible { outline:2px solid var(--ui-accent); outline-offset:3px; }

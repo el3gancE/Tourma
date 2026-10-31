@@ -2,11 +2,22 @@
 <%@page import="dao.TournamentDAO, dao.SeriesDAO"%>
 <%@page import="model.Tournament, model.Series, java.util.List"%>
 <%
-    String activeStep = request.getParameter("activeStep");
-    if (activeStep == null || activeStep.trim().isEmpty()) {
-        activeStep = "format";
-    }
-
+    String sidebarRoute = (String) request.getAttribute("jakarta.servlet.forward.request_uri");
+    if (sidebarRoute == null) sidebarRoute = request.getRequestURI();
+    sidebarRoute = sidebarRoute.substring(request.getContextPath().length());
+    String activeStep = "";
+    if ("/rolling/dashboard".equals(sidebarRoute) || "/common/rolling/rolling-dashboard.jsp".equals(sidebarRoute)) activeStep = "dashboard";
+    else if ("/rolling/standings".equals(sidebarRoute) || "/common/rolling/rolling-standings.jsp".equals(sidebarRoute)) activeStep = "standings";
+    else if ("/rolling-hof".equals(sidebarRoute) || "/common/rolling/rolling-hof.jsp".equals(sidebarRoute)) activeStep = "hof";
+    else if ("/rolling/team-list".equals(sidebarRoute) || "/common/rolling/rolling-team-list.jsp".equals(sidebarRoute)) activeStep = "team-list";
+    else if ("/rolling/tournament-list".equals(sidebarRoute) || "/common/rolling/rolling-tournament-list.jsp".equals(sidebarRoute)) activeStep = "tournament-list";
+    else if ("/common/configure-tournament-format.jsp".equals(sidebarRoute)) activeStep = "format";
+    else if ("/rolling/tournament-teams".equals(sidebarRoute) || "/common/rolling/rolling-tournament-teams.jsp".equals(sidebarRoute) || "/common/configure-tournament-teams.jsp".equals(sidebarRoute)) activeStep = "teams";
+    else if ("/common/manage-group.jsp".equals(sidebarRoute)) activeStep = "manage-group";
+    else if ("/rolling/point-config".equals(sidebarRoute) || "/common/rolling/rolling-point-config.jsp".equals(sidebarRoute)) activeStep = "point-config";
+    else if ("/common/round-robin-standings.jsp".equals(sidebarRoute)) activeStep = "2".equals(request.getParameter("stage")) ? "standings2" : "standings1";
+    else if ("/common/group-standing.jsp".equals(sidebarRoute)) activeStep = "group-standing";
+    else if (java.util.Arrays.asList("/common/single-elimination.jsp", "/common/double-elimination.jsp", "/common/swiss-stage.jsp", "/common/gsl.jsp", "/common/group-stage.jsp", "/common/round-robin.jsp").contains(sidebarRoute)) activeStep = "bracket";
     String tournamentId = request.getParameter("id");
     if (tournamentId == null) tournamentId = "";
 
@@ -95,7 +106,7 @@
     boolean hasTournament = (currentTournament != null);
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=20261031-tabs">
 
 <aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">

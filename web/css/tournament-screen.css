@@ -117,7 +117,16 @@
 .league-page .rr-table :is(th,td):nth-child(2) { text-align:left; min-width:180px; font-weight:600; }
 .league-page .rr-table tr:last-child td { border-bottom:0; }
 .league-page .rr-table tbody tr:hover { background:var(--ui-surface-alt); }
-.league-page .rr-table :is(.qualified-direct,.qualified-wildcard) { background:var(--ui-accent-soft); }
+.league-page .rr-table .qualified-direct { background:var(--ui-accent-soft); }
+.league-page .rr-table .qualified-wildcard {
+    background:color-mix(in srgb,var(--ui-accent-soft) 45%,var(--ui-surface));
+}
+:root:not([data-theme="dark"]) .league-page .rr-table .qualified-direct {
+    background:color-mix(in srgb,var(--ui-accent) 17%,var(--ui-surface));
+}
+:root:not([data-theme="dark"]) .league-page .rr-table .qualified-wildcard {
+    background:color-mix(in srgb,var(--ui-accent) 8%,var(--ui-surface));
+}
 .league-page .rr-table :is(.th-pts,.rr-pts-cell) { color:var(--ui-accent); font-weight:700; }
 .league-page .rr-form-badge { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; border-radius:4px; background:var(--ui-surface-alt); margin:2px; font-size:10px; }
 .league-page #gsEmptyAlertContainer,.league-page .empty-team-alert-card { text-align:center; padding:30px; }

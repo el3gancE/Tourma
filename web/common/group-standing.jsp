@@ -48,11 +48,11 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
-<script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-classic"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+<script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=4">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=20261101-gs-light-contrast">
 </head>
 <body class="ui-page tournament-workspace league-page" data-ui-style="group-standing-jsp-001">
 
@@ -115,7 +115,7 @@
 
     <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
     <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
-    <script src="${pageContext.request.contextPath}/js/group-standing.js"></script>
+    <script src="${pageContext.request.contextPath}/js/group-standing.js?v=20261101-gs-qualifiers"></script>
     <script>
         window.TourmaContextPath = '${pageContext.request.contextPath}';
         window.TourmaCutTarget = <%= cutTarget %>;

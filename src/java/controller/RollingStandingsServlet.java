@@ -67,12 +67,7 @@ public class RollingStandingsServlet extends HttpServlet {
         if (series != null) {
             seriesId = series.getId();
             service.RollingWindowPointService serviceEngine = service.RollingWindowPointService.getInstance();
-            if ("ROLLING_WINDOW".equalsIgnoreCase(series.getRankingModel())
-                    && !serviceEngine.recalculateAndPersistStandings(seriesId)) {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Không thể lưu bảng xếp hạng vào DB.");
-                return;
-            }
-            serviceEngine.preloadSeriesData(seriesId);
+            // Viewing standings is read-only. Persistence belongs to mutation workflows.
             standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(seriesId);
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);

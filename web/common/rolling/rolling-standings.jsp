@@ -53,7 +53,6 @@
 
     if (standingsDTOList == null && series != null) {
         RollingWindowPointService serviceEngine = RollingWindowPointService.getInstance();
-        serviceEngine.recalculateAndPersistStandings(series.getId());
         standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(series.getId());
         standingsList = seriesDAO.getStandingsBySeriesId(series.getId());
     }
@@ -81,8 +80,8 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css?v=<%= System.currentTimeMillis() %>">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-classic"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 </head>
@@ -159,10 +158,9 @@
                                 int rankChange = dto.getRankChange();
                                 int totalPts = dto.getTotalActivePoints();
                                 int lastPts = dto.getLastTourneyPoints();
-                                int expiredPts = dto.getExpiredPoints();
                                 int activeTourneys = dto.getActiveTourneysCount();
 
-                                int netChange = lastPts - expiredPts;
+                                int netChange = dto.getNetFluctuation();
                                 String lastPtsText = (lastPts > 0) ? ("+" + lastPts + " pts") : "0 pts";
                                 String lastPtsColor = (lastPts > 0) ? "var(--ui-accent)" : "var(--ui-muted)";
 

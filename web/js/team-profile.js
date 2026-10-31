@@ -485,9 +485,43 @@
   }
 
   if (typeof window !== 'undefined' && window.addEventListener) {
-    window.addEventListener('storage', debouncedSync);
-    window.addEventListener('resize', debouncedSync);
+    window.addEventListener('storage', function (event) {
+      if (event.key === 'tourma-ui-theme' || event.key === 'tourma-ui-accent') return;
+      debouncedSync();
+    });
+    window.addEventListener('resize', function () {
+      if (currentChartInstance) currentChartInstance.resize();
+      else renderRankProgressionChart();
+    });
   }
 
-  new MutationObserver(function () { renderRankProgressionChart(); }).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+  function refreshChartPalette() {
+    if (!currentChartInstance) {
+      // The canvas fallback has no animation and can be repainted directly.
+      renderRankProgressionChart();
+      return;
+    }
+    var chart = currentChartInstance;
+    var data = window.teamRankProgression || [];
+    var dataset = chart.data.datasets[0];
+    dataset.borderColor = profileColor('--ui-accent');
+    dataset.pointBackgroundColor = data.map(function (item) {
+      return profileColor(item.rank === 1 ? '--ui-tier-s' : (item.participated ? '--ui-accent' : '--ui-muted'));
+    });
+    dataset.pointBorderColor = data.map(function (item) {
+      return profileColor(item.rank === 1 ? '--ui-text' : '--ui-surface');
+    });
+    var tooltip = chart.options.plugins.tooltip;
+    tooltip.backgroundColor = profileColor('--ui-surface');
+    tooltip.titleColor = tooltip.bodyColor = profileColor('--ui-text');
+    tooltip.borderColor = profileColor('--ui-accent');
+    chart.options.scales.x.grid.color = profileColor('--ui-line');
+    chart.options.scales.x.ticks.color = chart.options.scales.y.ticks.color = profileColor('--ui-muted');
+    chart.update('none');
+  }
+  new MutationObserver(function (changes) {
+    if (changes.some(function (change) {
+      return change.oldValue !== document.documentElement.getAttribute(change.attributeName);
+    })) refreshChartPalette();
+  }).observe(document.documentElement, { attributes:true, attributeOldValue:true, attributeFilter:['data-theme','data-accent'] });
 })();

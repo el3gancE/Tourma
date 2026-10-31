@@ -642,9 +642,9 @@ public class GroupStageDAO extends DBContext {
         if (groupId == null || groupId.trim().isEmpty()) return;
 
         String selectMatchesSql = "SELECT team1_id, team2_id, score1, score2, winner_id, status FROM matches "
-                + "WHERE group_id = ? AND status = 'FINISHED' AND score1 IS NOT NULL AND score2 IS NOT NULL";
+                + "WHERE group_id = ? AND status IN ('FINISHED','COMPLETED') AND ISNULL(is_bye,0)=0 AND score1 IS NOT NULL AND score2 IS NOT NULL";
 
-        String selectTeamsSql = "SELECT gt.team_id, t.original_seed AS seed_in_group FROM group_teams gt JOIN teams t ON t.id=gt.team_id WHERE gt.group_id = ?";
+        String selectTeamsSql = "SELECT gt.team_id, t.raw_name AS team_name, t.original_seed AS seed_in_group FROM group_teams gt JOIN teams t ON t.id=gt.team_id WHERE gt.group_id = ?";
         String updateGroupTeamSql = "UPDATE group_teams SET matches_played = ?, wins = ?, draws = ?, losses = ?, "
                 + "goals_scored = ?, goals_conceded = ?, goal_difference = ?, points = ?, rank_in_group = ? WHERE group_id = ? AND team_id = ?";
 
@@ -653,6 +653,7 @@ public class GroupStageDAO extends DBContext {
             ps.setString(1,groupId);try(ResultSet rs=ps.executeQuery()){if(!rs.next())return;rules=TournamentDAO.getLeagueRules(conn,rs.getString(1),rs.getInt(2));}
         } catch(Exception e){throw new IllegalStateException("Không đọc được luật tính điểm.",e);}
         Map<String, GroupTeamDTO> teamStats = new HashMap<>();
+        Map<String,Map<String,Integer>> headToHead = new HashMap<>();
 
         try (PreparedStatement psT = conn.prepareStatement(selectTeamsSql)) {
             psT.setString(1, groupId);
@@ -660,6 +661,7 @@ public class GroupStageDAO extends DBContext {
                 while (rsT.next()) {
                     GroupTeamDTO gt = new GroupTeamDTO();
                     gt.teamId = rsT.getString("team_id");
+                    gt.teamName = rsT.getString("team_name");
                     gt.seedInGroup = rsT.getInt("seed_in_group");
                     teamStats.put(gt.teamId, gt);
                 }
@@ -682,6 +684,8 @@ public class GroupStageDAO extends DBContext {
                     GroupTeamDTO st2 = teamStats.get(t2);
 
                     if (st1 != null && st2 != null) {
+                        service.LeagueRanking.addHeadToHead(headToHead,t1,t2,s1>s2?rules[0]:s1==s2?rules[1]:rules[2]);
+                        service.LeagueRanking.addHeadToHead(headToHead,t2,t1,s2>s1?rules[0]:s1==s2?rules[1]:rules[2]);
                         st1.matchesPlayed++;
                         st2.matchesPlayed++;
                         st1.goalsScored += s1;
@@ -713,19 +717,14 @@ public class GroupStageDAO extends DBContext {
             return;
         }
 
-        // Sort teams by points DESC -> GD DESC -> GF DESC -> seed ASC
+        // Use the same ranking as Stage 2 qualification.
         List<GroupTeamDTO> sortedList = new ArrayList<>(teamStats.values());
         for (GroupTeamDTO gt : sortedList) {
             gt.goalDifference = gt.goalsScored - gt.goalsConceded;
         }
 
-        sortedList.sort((a, b) -> {
-            if (b.points != a.points) return b.points - a.points;
-            if (b.goalDifference != a.goalDifference) return b.goalDifference - a.goalDifference;
-            if (b.goalsScored != a.goalsScored) return b.goalsScored - a.goalsScored;
-            int seedOrder=Integer.compare(a.seedInGroup>0?a.seedInGroup:Integer.MAX_VALUE,b.seedInGroup>0?b.seedInGroup:Integer.MAX_VALUE);
-            return seedOrder!=0?seedOrder:a.teamId.compareTo(b.teamId);
-        });
+        service.LeagueRanking.sort(sortedList,r->r.teamId,r->r.teamName,
+                r->r.points,r->r.goalDifference,r->r.goalsScored,headToHead);
 
         int rank = 1;
         try (PreparedStatement psU = conn.prepareStatement(updateGroupTeamSql)) {

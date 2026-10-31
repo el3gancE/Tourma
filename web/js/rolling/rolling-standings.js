@@ -178,13 +178,11 @@
     }, 100);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', triggerAutoUpdate);
-  } else {
-    triggerAutoUpdate();
-  }
-
-  window.addEventListener('pageshow', triggerAutoUpdate);
+  // The initial table is already server-rendered. Refresh only when returning
+  // from the browser back/forward cache or another page/tab.
+  window.addEventListener('pageshow', function (event) {
+    if (event.persisted) triggerAutoUpdate();
+  });
   window.addEventListener('focus', triggerAutoUpdate);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') {

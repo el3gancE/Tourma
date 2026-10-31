@@ -32,3 +32,7 @@
     --ui-accent-soft:color-mix(in srgb,var(--ui-bracket-final-accent) 12%,var(--ui-surface));
 }
 .de-page .bracket-svg-connectors path.grand-final-connector { stroke:var(--ui-bracket-final-accent); }
+
+/* List sections inherit the same accents as their bracket counterparts. */
+.de-page .list-round-section[data-bracket-type="LOWER"] { --ui-accent:var(--ui-bracket-lower-accent); --ui-accent-hover:var(--ui-bracket-lower-accent); --ui-accent-soft:var(--ui-bracket-lower-soft); }
+.de-page .list-round-section[data-bracket-type="GRAND_FINAL"] { --ui-accent:var(--ui-bracket-final-accent); --ui-accent-hover:var(--ui-bracket-final-accent); --ui-accent-soft:color-mix(in srgb,var(--ui-bracket-final-accent) 12%,var(--ui-surface)); }

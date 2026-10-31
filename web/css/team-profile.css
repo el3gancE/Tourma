@@ -45,3 +45,5 @@
 
 @media(min-width:1000px) { .team-profile-page .team-stat-grid-row1 .team-stat-box { padding:16px 12px; } .team-profile-page .team-stat-grid-row1 .team-stat-val { font-size:23px; } }
 @media(min-width:601px) and (max-width:999px) { .team-profile-page .team-stat-grid-row1 { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+
+.team-profile-page .achievement-text:is(.champ,.runner-up) { font-weight:700; }

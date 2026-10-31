@@ -117,3 +117,5 @@ Light-blue: accent cobalt #1E40AF, hover #1E3A8A, nền nhấn #EFF4FF.
 Dark-wine thử màu #BC7185 cho accent và nền nút, chữ trên nút #000000; light-wine giữ nguyên.
 
 Header desktop cao 64px, chạy hết chiều rộng trang. Mục active phủ cả chiều cao ô điều hướng và có gạch dưới 3px theo accent; không dùng pill nổi. Mobile tách hàng menu cuộn ngang.
+
+Cài đặt hiển thị trên header có công tắc Màu phân biệt nhánh/nhóm. Lưu tourma-ui-special-colors (on/off), áp dụng data-special-colors ngay trong theme.js. Tắt sẽ cho LB/final/Swiss/GSL dùng accent chung; không đổi tier và badge.

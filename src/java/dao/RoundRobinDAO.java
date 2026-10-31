@@ -285,6 +285,7 @@ public class RoundRobinDAO extends DBContext {
 
     public List<RRStandingRow> getRoundRobinStandings(String tournamentId, int stageOrder) {
         List<RRStandingRow> standings = new ArrayList<>();
+        Map<String,Map<String,Integer>> headToHead = new HashMap<>();
         if (tournamentId == null || tournamentId.trim().isEmpty()) return standings;
 
         int[] scoring;
@@ -360,9 +361,28 @@ public class RoundRobinDAO extends DBContext {
                     standings.add(row);
                 }
             }
+            String directSql = "SELECT m.team1_id,m.team2_id,m.score1,m.score2 FROM matches m "
+                    + "LEFT JOIN tournament_stages s ON s.id=m.stage_id "
+                    + "WHERE m.tournament_id=? AND m.status IN ('FINISHED','COMPLETED') "
+                    + "AND m.score1 IS NOT NULL AND m.score2 IS NOT NULL AND ISNULL(m.is_bye,0)=0 "
+                    + "AND ((s.stage_order=? AND s.tournament_id=m.tournament_id) OR (m.stage_id IS NULL AND ?=1))";
+            try (PreparedStatement direct = conn.prepareStatement(directSql)) {
+                direct.setString(1,tournamentId); direct.setInt(2,stageOrder); direct.setInt(3,stageOrder);
+                try (ResultSet games = direct.executeQuery()) {
+                    while (games.next()) {
+                        String x=games.getString(1), y=games.getString(2);
+                        int xs=games.getInt(3), ys=games.getInt(4);
+                        service.LeagueRanking.addHeadToHead(headToHead,x,y,xs>ys?scoring[0]:xs==ys?scoring[1]:scoring[2]);
+                        service.LeagueRanking.addHeadToHead(headToHead,y,x,ys>xs?scoring[0]:xs==ys?scoring[1]:scoring[2]);
+                    }
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        service.LeagueRanking.sort(standings,r->r.teamId,r->r.teamName,
+                r->r.points,r->r.goalDifference,r->r.goalsScored,headToHead);
+        for (int i=0;i<standings.size();i++) standings.get(i).rank=i+1;
         return standings;
     }
 

@@ -14,3 +14,10 @@
 :is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .view-mode-toggle-group { display:inline-flex; flex-wrap:nowrap; gap:0; }
 :is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .view-mode-toggle-group>.btn-view-toggle { border:0; border-radius:4px; background:transparent; color:var(--ui-muted); }
 :is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .view-mode-toggle-group>.btn-view-toggle.active { background:var(--ui-accent-fill,var(--ui-accent)); color:var(--ui-on-accent); }
+
+/* Tournament metadata is plain text, rather than a row of outlined boxes. */
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-navbar-control-bar .tournament-info-badge-group>span,
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-navbar-control-bar .live-status-count {
+ padding:0; border:0; border-radius:0; background:transparent; box-shadow:none;
+}
+.tournament-navbar-control-bar .advancing-count-badge>i { display:none; }

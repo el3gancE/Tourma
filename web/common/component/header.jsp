@@ -1,7 +1,20 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
+<%
+    // Match the page being viewed, not its parent section or include parameters.
+    String headerRoute = (String) request.getAttribute("jakarta.servlet.forward.request_uri");
+    if (headerRoute == null) headerRoute = request.getRequestURI();
+    headerRoute = headerRoute.substring(request.getContextPath().length());
+    String headerActive = "";
+    if ("/".equals(headerRoute) || "/index.jsp".equals(headerRoute)) headerActive = "home";
+    else if ("/common/create-tournament.jsp".equals(headerRoute)) headerActive = "create-tournament";
+    else if ("/common/create-series.jsp".equals(headerRoute)) headerActive = "create-series";
+    else if ("/my-tournaments".equals(headerRoute) && !"matches".equals(request.getParameter("action"))) headerActive = "my-tournaments";
+    else if ("/my-series".equals(headerRoute)) headerActive = "my-series";
+    pageContext.setAttribute("headerActive", headerActive);
+%>
 <jsp:include page="/common/component/tournament-config-state.jsp" />
 <!-- Dedicated Header Component Stylesheet -->
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=20261031-center">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=20261101-settings">
 
 <!-- Header / Navigation Bar Component -->
 <nav class="navbar">
@@ -16,7 +29,7 @@
         <!-- 1. Trang Chủ -->
         <li>
             <a href="${pageContext.request.contextPath}/index.jsp"
-                class="nav-link ${param.active == 'home' || empty param.active ? 'active' : ''}">
+                class="nav-link ${headerActive == 'home' ? 'active' : ''}">
                 <i class="fa-solid fa-house"></i> Trang Chủ
             </a>
         </li>
@@ -24,7 +37,7 @@
         <!-- 2. Tạo Giải Đấu -->
         <li>
             <a href="${pageContext.request.contextPath}/common/create-tournament.jsp"
-                class="nav-link ${param.active == 'create-tournament' ? 'active' : ''}">
+                class="nav-link ${headerActive == 'create-tournament' ? 'active' : ''}">
                 <i class="fa-solid fa-circle-plus"></i> Tạo Giải Đấu
             </a>
         </li>
@@ -32,7 +45,7 @@
         <!-- 3. Tạo Chuỗi Giải -->
         <li>
             <a href="${pageContext.request.contextPath}/common/create-series.jsp"
-                class="nav-link ${param.active == 'create-series' ? 'active' : ''}">
+                class="nav-link ${headerActive == 'create-series' ? 'active' : ''}">
                 <i class="fa-solid fa-folder-plus"></i> Tạo Chuỗi Giải
             </a>
         </li>
@@ -40,7 +53,7 @@
         <!-- 4. Giải Đấu Của Tôi (Calls Servlet /my-tournaments to query DB) -->
         <li>
             <a href="${pageContext.request.contextPath}/my-tournaments"
-                class="nav-link ${param.active == 'my-tournaments' ? 'active' : ''}">
+                class="nav-link ${headerActive == 'my-tournaments' ? 'active' : ''}">
                 <i class="fa-solid fa-sitemap"></i> Giải Đấu Của Tôi
             </a>
         </li>
@@ -48,7 +61,7 @@
         <!-- 5. Chuỗi Giải Của Tôi (Calls Servlet /my-series to query DB) -->
         <li>
             <a href="${pageContext.request.contextPath}/my-series"
-                class="nav-link ${param.active == 'my-series' ? 'active' : ''}">
+                class="nav-link ${headerActive == 'my-series' ? 'active' : ''}">
                 <i class="fa-solid fa-layer-group"></i> Chuỗi Giải Của Tôi
             </a>
         </li>
@@ -59,8 +72,18 @@
             <i class="fa-solid fa-palette" aria-hidden="true"></i><span class="theme-switch" aria-hidden="true"></span>
         </button>
         <button type="button" class="theme-toggle appearance-switch" role="switch" title="Đổi chế độ Sáng / Tối" aria-label="Chế độ tối" aria-checked="false" data-mode-switch>
-            <i class="fa-solid fa-sun" aria-hidden="true" data-mode-icon></i><span class="theme-switch" aria-hidden="true"></span>
+            <i class="fa-solid fa-sun mode-icon-light" aria-hidden="true"></i><i class="fa-solid fa-moon mode-icon-dark" aria-hidden="true"></i><span class="theme-switch" aria-hidden="true"></span>
         </button>
+        <details class="display-settings">
+            <summary class="theme-toggle" aria-label="Cài đặt hiển thị" title="Cài đặt hiển thị"><i class="fa-solid fa-gear" aria-hidden="true"></i></summary>
+            <div class="display-settings-panel" role="group" aria-label="Cài đặt hiển thị">
+                <strong>Cài đặt hiển thị</strong>
+                <button type="button" class="special-colors-toggle" role="switch" aria-checked="true" data-special-colors-toggle>
+                    <span>Màu phân biệt nhánh/nhóm</span><span class="theme-switch" aria-hidden="true"></span>
+                </button>
+                <p>Áp dụng cho nhánh đấu, final, các nhóm Swiss và bảng GSL.</p>
+            </div>
+        </details>
     </div>
     <% } %>
 </nav>
