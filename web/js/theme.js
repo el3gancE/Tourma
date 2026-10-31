@@ -14,7 +14,6 @@
         var dark = root.dataset.theme === 'dark';
         document.querySelectorAll('[data-accent-label]').forEach(function (label) { label.textContent = root.dataset.accent === 'blue' ? 'Xanh' : 'Đỏ'; });
         document.querySelectorAll('[data-mode-label]').forEach(function (label) { label.textContent = dark ? 'Tối' : 'Sáng'; });
-        document.querySelectorAll('[data-mode-icon]').forEach(function (icon) { icon.className = 'fa-solid ' + (dark ? 'fa-moon' : 'fa-sun'); });
         document.querySelectorAll('[data-mode-switch]').forEach(function (button) { button.setAttribute('aria-checked', String(dark)); });
         document.querySelectorAll('[data-accent-switch]').forEach(function (button) { button.setAttribute('aria-checked', String(root.dataset.accent === 'blue')); });
         document.querySelectorAll('[data-theme-choice]').forEach(function (button) {
@@ -28,6 +27,7 @@
         });
     }
     function select(theme, color) {
+        root.dataset.themeInteractive = "true";
         root.dataset.theme = theme;
         root.dataset.accent = color;
         hasPreference = true;

@@ -48,7 +48,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-dashboard.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css">
-            <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-classic"></script>
+            <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-initial"></script>
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">

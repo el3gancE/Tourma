@@ -52,3 +52,15 @@
  .ui-page .navbar > .nav-links { justify-self:center; }
  .ui-page .navbar > .appearance-switches { justify-self:end; margin-left:0; }
 }
+
+/* Saved preferences set the knob position before JS binds the controls. */
+:root[data-accent="wine"] .appearance-switch[data-accent-switch] .theme-switch::after,
+:root[data-theme="light"] .appearance-switch[data-mode-switch] .theme-switch::after { transform:none; }
+:root[data-accent="blue"] .appearance-switch[data-accent-switch] .theme-switch::after,
+:root[data-theme="dark"] .appearance-switch[data-mode-switch] .theme-switch::after { transform:translateX(11px); }
+:root:not([data-theme-interactive="true"]) .theme-switch::after { transition:none; }
+
+/* Both icons are static; the preloaded root theme picks the visible one. */
+[data-mode-switch] .mode-icon-dark { display:none; }
+:root[data-theme="dark"] [data-mode-switch] .mode-icon-light { display:none; }
+:root[data-theme="dark"] [data-mode-switch] .mode-icon-dark { display:inline-block; }

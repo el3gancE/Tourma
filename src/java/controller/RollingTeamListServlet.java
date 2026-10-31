@@ -58,15 +58,8 @@ public class RollingTeamListServlet extends HttpServlet {
             seriesId = series.getId();
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
 
-            service.RollingWindowPointService serviceEngine = service.RollingWindowPointService.getInstance();
-            List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(seriesId);
-            if (standingsDTOList != null) {
-                for (service.RollingWindowPointService.RollingStandingDTO dto : standingsDTOList) {
-                    if (dto.getPartnerParticipantId() != null) {
-                        tourneysCountMap.put(dto.getPartnerParticipantId(), dto.getActiveTourneysCount());
-                    }
-                }
-            }
+            tourneysCountMap = countAllParticipations(partnerList,
+                    new ParticipantDAO().getTeamsBySeriesId(seriesId));
         }
 
         request.setAttribute("series", series);
@@ -76,6 +69,34 @@ public class RollingTeamListServlet extends HttpServlet {
         request.getRequestDispatcher("/common/rolling/rolling-team-list.jsp").forward(request, response);
     }
 
+    /** Counts each child tournament once, across the entire Series history. */
+    static Map<String, Integer> countAllParticipations(List<PartnerParticipant> partners,
+            Map<String, List<Team>> teamsByTournament) {
+        Map<String, Integer> counts = new HashMap<>();
+        Map<String, String> partnerByName = new HashMap<>();
+        if (partners == null) return counts;
+        for (PartnerParticipant partner : partners) {
+            counts.put(partner.getId(), 0);
+            if (partner.getName() != null) partnerByName.put(
+                    partner.getName().trim().toLowerCase(java.util.Locale.ROOT), partner.getId());
+        }
+        if (teamsByTournament == null) return counts;
+        for (List<Team> teams : teamsByTournament.values()) {
+            Set<String> participatingPartners = new HashSet<>();
+            if (teams == null) continue;
+            for (Team team : teams) {
+                String partnerId = team.getPartnerParticipantId();
+                if (!counts.containsKey(partnerId)) {
+                    String name = team.getName();
+                    partnerId = name == null ? null : partnerByName.get(
+                            name.trim().toLowerCase(java.util.Locale.ROOT));
+                }
+                if (partnerId != null && counts.containsKey(partnerId)) participatingPartners.add(partnerId);
+            }
+            for (String partnerId : participatingPartners) counts.put(partnerId, counts.get(partnerId) + 1);
+        }
+        return counts;
+    }
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
