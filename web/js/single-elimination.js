@@ -421,7 +421,7 @@
 
             var totalRounds = this.roundsList.length;
             if (totalRounds === 0) {
-                container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted, #94a3b8); font-size: 15px;">Chưa có dữ liệu nhánh đấu.</div>';
+                container.innerHTML = '<div data-ui-style="single-elimination-js-001">Chưa có dữ liệu nhánh đấu.</div>';
                 return;
             }
 
@@ -698,7 +698,7 @@
                     targetCard.style.position = 'absolute';
                     targetCard.style.top = Math.round(desiredTop) + 'px';
                     targetCard.style.left = '0';
-                    targetCard.style.width = '220px';
+                    targetCard.style.width = '100%';
 
                     var finalCenterY = boxPos.top + desiredTop + (cardHeight / 2);
                     if (tMid) cardCenterMap[String(tMid).trim()] = finalCenterY;
@@ -745,7 +745,7 @@
             container.innerHTML = '';
 
             if (this.roundsList.length === 0) {
-                container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted, #94a3b8);">Chưa có trận đấu nào.</div>';
+                container.innerHTML = '<div data-ui-style="single-elimination-js-002">Chưa có trận đấu nào.</div>';
                 return;
             }
 
@@ -761,11 +761,10 @@
                 var rTitle = roundObj.roundName || ('Vòng ' + roundObj.roundNumber);
                 var listCtrlHtml = (window.TourmaRoundControls && typeof window.TourmaRoundControls.renderListHeaderControlsHtml === 'function')
                     ? window.TourmaRoundControls.renderListHeaderControlsHtml(roundObj.roundNumber, rTitle)
-                    : ('<div class="list-round-actions" data-round="' + roundObj.roundNumber + '"><input type="number" id="round_random_score_list_' + roundObj.roundNumber + '" name="round_random_score_list_' + roundObj.roundNumber + '" class="round-random-input" data-round="' + roundObj.roundNumber + '" min="1" max="99" value="" autocomplete="off" title="Nhập điểm thắng tùy chỉnh" /><button type="button" class="btn-random-round" data-round="' + roundObj.roundNumber + '" title="Tạo tỉ số ngẫu nhiên cho ' + rTitle + '"><i class="fa-solid fa-dice"></i> Random ' + rTitle + '</button><button type="button" class="btn-reset-round" data-round="' + roundObj.roundNumber + '" title="Reset kết quả ' + rTitle + '"><i class="fa-solid fa-rotate-right"></i> Reset ' + rTitle + '</button></div>');
+                    : ('<div class="list-round-actions" data-round="' + roundObj.roundNumber + '"><input type="number" id="round_random_score_list_' + roundObj.roundNumber + '" name="round_random_score_list_' + roundObj.roundNumber + '" class="round-random-input" data-round="' + roundObj.roundNumber + '" min="1" max="99" value="" autocomplete="off" title="Nhập điểm thắng tùy chỉnh" /><button type="button" class="btn-random-round" data-round="' + roundObj.roundNumber + '" title="Tạo tỉ số ngẫu nhiên cho ' + rTitle + '"><i class="fa-solid fa-dice"></i> Random' + '</button><button type="button" class="btn-reset-round" data-round="' + roundObj.roundNumber + '" title="Reset kết quả ' + rTitle + '"><i class="fa-solid fa-rotate-right"></i> Reset' + '</button></div>');
 
                 secHeader.innerHTML = '<div class="list-round-title-group">'
                     + '<h3 class="list-round-title">' + rTitle + '</h3>'
-                    + '<span class="list-round-badge">' + (roundObj.matches ? roundObj.matches.length : 0) + ' trận</span>'
                     + '</div>'
                     + listCtrlHtml;
                 roundSec.appendChild(secHeader);

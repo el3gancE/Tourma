@@ -1,369 +1,44 @@
-/* ============================================================================
-   TOURMA - BRACKET CARD COMPONENT DESIGN SYSTEM (bracket-card.css)
-   Font: Lexend | Compact Dark Theme (#181d29 & #0b0d12)
-   Native CSS Variable Theme Colors for SE, DE, and Swiss Record Pools
-   ============================================================================ */
-
-/* Bracket Node Card Container */
-.bracket-node-card {
-    --card-theme-color: #2dd4bf;
-    --card-theme-hover-bg: rgba(45, 212, 191, 0.22);
-    --card-theme-glow: rgba(45, 212, 191, 0.4);
-
-    width: 220px;
-    background: #181d29;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 0.35rem 0.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-    position: relative;
-    z-index: 2;
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.18s ease-in-out;
-    font-family: 'Lexend', sans-serif !important;
+/* Compact neutral card with a quiet winner highlight. */
+@import url('design-tokens.css?v=19');
+.bracket-node-card { box-sizing:border-box; position:relative; display:flex; flex-direction:column; width:var(--ui-bracket-width,240px); max-width:100%; height:62px; flex-shrink:0; overflow:visible; border:.5px solid var(--ui-match-border); border-radius:6px; background:var(--ui-match-surface); color:var(--ui-text); font:13px/1.3 var(--ui-font); }
+.bracket-node-card:not(.disabled-unconfirmed) { cursor:pointer; }
+.bracket-node-card:not(.disabled-unconfirmed):hover { border-color:var(--ui-accent); }
+.bracket-node-card:focus-visible { outline:2px solid var(--ui-accent); outline-offset:2px; }
+.bracket-node-card .bracket-node-header { position:absolute; left:2px; top:-18px; display:flex; align-items:center; justify-content:flex-start; width:auto; height:16px; padding:0; border:0; background:transparent; color:var(--ui-muted); font-size:10px; white-space:nowrap; pointer-events:none; }
+.bracket-node-card .bracket-status-badge { display:none; }
+.bracket-node-card .bracket-teams-box { display:flex; flex-direction:column; flex:1; justify-content:center; gap:2px; padding:3px 4px; min-height:0; }
+.bracket-node-card .bracket-team-row { box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; gap:6px; height:26px; padding:0 6px; border:0; border-radius:4px; background:transparent; }
+.bracket-node-card .bracket-team-info { display:flex; align-items:center; flex:1; gap:6px; min-width:0; }
+.bracket-node-card .bracket-seed-badge { display:inline-flex; align-items:center; justify-content:center; flex:0 0 18px; width:18px; color:var(--ui-muted); font-size:10px; font-variant-numeric:tabular-nums; background:none; border:0; }
+.bracket-node-card .bracket-team-name { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-weight:600; }
+.bracket-node-card .bracket-score-box { display:inline-flex; justify-content:center; align-items:center; flex:0 0 22px; height:20px; color:var(--ui-muted); background:none; border:0; font-weight:600; font-variant-numeric:tabular-nums; }
+.bracket-node-card .bracket-team-row.winner { background:var(--ui-surface-alt); }
+.bracket-node-card .winner .bracket-team-name,.bracket-node-card .winner .bracket-score-box { color:var(--ui-accent); font-weight:700; }
+.bracket-node-card .loser .bracket-team-name,.bracket-node-card .placeholder,.bracket-node-card .bye-row { color:var(--ui-muted); }
+.bracket-node-card.bye-empty-slot { visibility:hidden; }
+.bracket-node-card .bracket-score-box:empty::before { content:'–'; color:var(--ui-muted); }
+.bracket-node-card.bye-node-card .bracket-score-box:empty::before,
+.bracket-node-card.play-in-bye-card .bracket-score-box:empty::before { content:none; }
+.bracket-node-card .bracket-team-row + .bracket-team-row { position:relative; }
+.bracket-node-card .bracket-team-row + .bracket-team-row::before {
+    content:'';
+    position:absolute;
+    top:-1px;
+    left:6px;
+    right:6px;
+    height:1px;
+    background:var(--ui-line);
+    pointer-events:none;
 }
-
-/* Theme Color Variants for Bracket Cards (Supported natively in bracket-card) */
-.bracket-node-card.swiss-card-green {
-    --card-theme-color: #22c55e;
-    --card-theme-hover-bg: rgba(34, 197, 94, 0.22);
-    --card-theme-glow: rgba(34, 197, 94, 0.45);
+/* The same participant receives the same hover treatment in every round. */
+.bracket-node-card .bracket-team-row.path-focused {
+    background:color-mix(in srgb,var(--ui-accent) 12%,var(--ui-accent-soft));
+    box-shadow:none;
+    opacity:1;
 }
-
-.bracket-node-card.swiss-card-red,
-.bracket-node-card.lower-bracket-card,
-.bracket-node-card.card-theme-red {
-    --card-theme-color: #ff4655;
-    --card-theme-hover-bg: rgba(255, 70, 85, 0.22);
-    --card-theme-glow: rgba(255, 70, 85, 0.45);
-}
-
-/* Auto-inherit Lower Bracket theme for all cards inside Double Elimination Lower Bracket containers */
-.de-round-column[data-bracket-type="LOWER"]:not(.gsl-round-column) .bracket-node-card,
-#lowerBracketColumnsWrapper .bracket-node-card,
-#lowerViewportCanvas .bracket-node-card,
-.lower-canvas:not(.gsl-viewport-canvas) .bracket-node-card,
-.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-node-card,
-body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card {
-    --card-theme-color: #ff4655 !important;
-    --card-theme-hover-bg: rgba(255, 70, 85, 0.22) !important;
-    --card-theme-glow: rgba(255, 70, 85, 0.45) !important;
-}
-
-#lowerBracketColumnsWrapper .bracket-team-row.winner,
-#lowerViewportCanvas .bracket-team-row.winner,
-.lower-canvas:not(.gsl-viewport-canvas) .bracket-team-row.winner,
-.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-team-row.winner,
-body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card .bracket-team-row.winner {
-    background: rgba(255, 70, 85, 0.22) !important;
-    border-left: 2.5px solid #ff4655 !important;
-}
-
-#lowerBracketColumnsWrapper .bracket-team-row.winner .bracket-team-name,
-#lowerViewportCanvas .bracket-team-row.winner .bracket-team-name,
-.lower-canvas:not(.gsl-viewport-canvas) .bracket-team-row.winner .bracket-team-name,
-.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-team-row.winner .bracket-team-name,
-body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card .bracket-team-row.winner .bracket-team-name {
-    color: #ff4655 !important;
-}
-
-#lowerBracketColumnsWrapper .bracket-team-row.winner .bracket-score-box,
-#lowerViewportCanvas .bracket-team-row.winner .bracket-score-box,
-.lower-canvas:not(.gsl-viewport-canvas) .bracket-team-row.winner .bracket-score-box,
-.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-team-row.winner .bracket-score-box,
-body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card .bracket-team-row.winner .bracket-score-box {
-    background: #ff4655 !important;
-    color: #0b0d12 !important;
-    border-color: #ff4655 !important;
-}
-
-#lowerBracketColumnsWrapper .bracket-status-badge.done,
-#lowerViewportCanvas .bracket-status-badge.done,
-.lower-canvas:not(.gsl-viewport-canvas) .bracket-status-badge.done,
-.lower-wrapper:not(.gsl-single-viewport-wrapper) .bracket-status-badge.done,
-body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card .bracket-status-badge.done {
-    background: rgba(255, 70, 85, 0.22) !important;
-    color: #ff4655 !important;
-    border: 1px solid #ff4655 !important;
-}
-
-#lowerBracketColumnsWrapper .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-#lowerBracketColumnsWrapper .bracket-node-card:hover,
-#lowerViewportCanvas .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-#lowerViewportCanvas .bracket-node-card:hover,
-.lower-canvas:not(.gsl-viewport-canvas) .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-.lower-canvas:not(.gsl-viewport-canvas) .bracket-node-card:hover,
-body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-body:not(.gsl-page-container) .bracket-node-card.lower-bracket-card:hover {
-    border-color: #ff4655 !important;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 70, 85, 0.45) !important;
-}
-
-/* GSL Dynamic Group Theme for cards (Both Upper & Lower Branches) */
-.gsl-round-column .bracket-node-card,
-.gsl-group-section .bracket-node-card,
-.gsl-single-viewport-wrapper .bracket-node-card,
-.gsl-viewport-canvas .bracket-node-card,
-.gsl-branch-columns .bracket-node-card,
-body.gsl-page-container .bracket-node-card,
-#upperViewportCanvas .bracket-node-card,
-#upperBracketColumnsWrapper .bracket-node-card {
-    --card-theme-color: var(--grp-color, #2dd4bf) !important;
-    --card-theme-hover-bg: var(--grp-hover, rgba(45, 212, 191, 0.22)) !important;
-    --card-theme-glow: var(--grp-glow, rgba(45, 212, 191, 0.45)) !important;
-}
-
-.gsl-round-column .bracket-node-card .bracket-team-row.winner,
-.gsl-single-viewport-wrapper .bracket-node-card .bracket-team-row.winner,
-.gsl-viewport-canvas .bracket-node-card .bracket-team-row.winner,
-.gsl-branch-columns .bracket-node-card .bracket-team-row.winner,
-body.gsl-page-container .bracket-node-card .bracket-team-row.winner {
-    background: var(--card-theme-hover-bg, var(--grp-hover, rgba(45, 212, 191, 0.22))) !important;
-    border-left: 2.5px solid var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
-}
-
-.gsl-round-column .bracket-node-card .bracket-team-row.winner .bracket-team-name,
-.gsl-single-viewport-wrapper .bracket-node-card .bracket-team-row.winner .bracket-team-name,
-.gsl-viewport-canvas .bracket-node-card .bracket-team-row.winner .bracket-team-name,
-.gsl-branch-columns .bracket-node-card .bracket-team-row.winner .bracket-team-name,
-body.gsl-page-container .bracket-node-card .bracket-team-row.winner .bracket-team-name {
-    color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
-}
-
-.gsl-round-column .bracket-node-card .bracket-team-row.winner .bracket-score-box,
-.gsl-single-viewport-wrapper .bracket-node-card .bracket-team-row.winner .bracket-score-box,
-.gsl-viewport-canvas .bracket-node-card .bracket-team-row.winner .bracket-score-box,
-.gsl-branch-columns .bracket-node-card .bracket-team-row.winner .bracket-score-box,
-body.gsl-page-container .bracket-node-card .bracket-team-row.winner .bracket-score-box {
-    background: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
-    color: #0b0d12 !important;
-    border-color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
-}
-
-.gsl-round-column .bracket-node-card .bracket-status-badge.done,
-.gsl-single-viewport-wrapper .bracket-node-card .bracket-status-badge.done,
-.gsl-viewport-canvas .bracket-node-card .bracket-status-badge.done,
-.gsl-branch-columns .bracket-node-card .bracket-status-badge.done,
-body.gsl-page-container .bracket-node-card .bracket-status-badge.done {
-    background: var(--card-theme-hover-bg, var(--grp-hover, rgba(45, 212, 191, 0.22))) !important;
-    color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
-    border: 1px solid var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
-}
-
-.gsl-round-column .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-.gsl-round-column .bracket-node-card:hover,
-.gsl-single-viewport-wrapper .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-.gsl-single-viewport-wrapper .bracket-node-card:hover,
-.gsl-viewport-canvas .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-.gsl-viewport-canvas .bracket-node-card:hover,
-.gsl-branch-columns .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-.gsl-branch-columns .bracket-node-card:hover,
-body.gsl-page-container .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-body.gsl-page-container .bracket-node-card:hover {
-    border-color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px var(--card-theme-glow, var(--grp-glow, rgba(45, 212, 191, 0.45))) !important;
-}
-
-.bracket-node-card.swiss-card-gold {
-    --card-theme-color: #fbbf24;
-    --card-theme-hover-bg: rgba(251, 191, 36, 0.22);
-    --card-theme-glow: rgba(251, 191, 36, 0.45);
-}
-
-.bracket-node-card.swiss-card-mint {
-    --card-theme-color: #2dd4bf;
-    --card-theme-hover-bg: rgba(45, 212, 191, 0.22);
-    --card-theme-glow: rgba(45, 212, 191, 0.45);
-}
-
-/* Bright, Crystal-Clear Hover Glow for ALL Bracket Cards (SE, DE UB, DE LB, Swiss) */
-.bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card):hover,
-.bracket-node-card:hover {
-    border-color: var(--card-theme-color) !important;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px var(--card-theme-glow) !important;
-}
-
-/* Card Header: Match ID (#1, #2...) & Status Badge (DONE / PENDING) */
-.bracket-node-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 18px;
-    margin-bottom: 0.28rem;
-    padding-bottom: 0.2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.bracket-match-id {
-    font-size: 0.68rem;
-    font-weight: 800;
-    color: #94a3b8;
-}
-
-.bracket-status-badge {
-    font-size: 0.55rem;
-    font-weight: 700;
-    padding: 0.08rem 0.35rem;
-    border-radius: 50px;
-    text-transform: uppercase;
-}
-
-.bracket-status-badge.done {
-    background: var(--card-theme-hover-bg);
-    color: var(--card-theme-color);
-    border: 1px solid var(--card-theme-color);
-}
-
-.bracket-status-badge.pending {
-    background: rgba(100, 116, 139, 0.15);
-    color: #64748b;
-    border: 1px solid rgba(100, 116, 139, 0.25);
-}
-
-/* Inner Teams Container Box (Obsidian Black) */
-.bracket-teams-box {
-    background: #0b0d12;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 6px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Team Row (2 Rows per Card) */
-.bracket-team-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.22rem 0.35rem;
-    min-height: 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    transition: background 0.15s ease;
-}
-
-.bracket-team-row:last-child {
-    border-bottom: none;
-}
-
-.bracket-team-info {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    min-width: 0;
-    flex: 1;
-    padding-left: 0.15rem;
-}
-
-/* Far Left Seed Badge */
-.bracket-seed-badge {
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
-    background: #1f2533;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fbbf24;
-    font-size: 0.62rem;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.bracket-team-name {
-    font-size: 0.76rem !important;
-    font-weight: 700;
-    color: #cbd5e1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 0.05rem 0.2rem;
-    line-height: 1.25;
-    letter-spacing: 0;
-}
-
-/* Unconfirmed / Placeholder Team Name Styling (e.g. W #1 or L #2 or TBD) */
-.bracket-team-name.placeholder {
-    color: #64748b;
-    font-style: italic;
-    padding: 0.05rem 0.3rem 0.05rem 0.15rem;
-}
-
-/* BYE Team Row Styling (No seed badge, dimmed/muted) */
-.bracket-team-row.bye-row {
-    opacity: 0.35;
-    background: transparent !important;
-}
-
-.bracket-team-row.bye-row .bracket-team-name {
-    color: #64748b;
-    font-style: italic;
-    letter-spacing: 0.05em;
-}
-
-.bracket-team-row.bye-row .bracket-seed-badge {
-    visibility: hidden;
-}
-
-.bracket-score-box {
-    width: 18px;
-    height: 18px;
-    border-radius: 3px;
-    background: #141a26;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #94a3b8;
-    font-size: 0.68rem;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-/* Winner Team Row Highlight: Uses --card-theme-color */
-.bracket-team-row.winner {
-    background: var(--card-theme-hover-bg);
-    border-left: 2.5px solid var(--card-theme-color);
-}
-
-.bracket-team-row.winner .bracket-team-name {
-    color: var(--card-theme-color) !important;
-    font-size: 0.76rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0;
-}
-
-.bracket-team-row.loser .bracket-team-name {
-    color: #cbd5e1;
-    font-size: 0.76rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0;
-}
-
-.bracket-team-row.winner .bracket-score-box {
-    background: var(--card-theme-color);
-    color: #0b0d12;
-    border-color: var(--card-theme-color);
-}
-
-/* Tree Connectors: Replaced by Dynamic SVG Lines */
-.bracket-connector-in,
-.bracket-connector-out {
-    display: none;
-}
-
-/* Quick Mode 1-Click Interactive Hover Feedback (Dynamically matches card theme / group color without double borders) */
-body.quick-mode-active .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:not(.bye-row):hover,
-body.quick-mode-active .match-card:not(.disabled-unconfirmed):not(.bye-match-card) .match-team-side:not(.bye-team):hover,
-body.quick-mode-active .match-card-item:not(.disabled-unconfirmed):not(.bye-match-item) .match-team-side:not(.bye-team):hover {
-    background: var(--card-theme-hover-bg, var(--grp-hover, rgba(45, 212, 191, 0.22))) !important;
-    cursor: pointer !important;
-    border-left: 2.5px solid var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
-}
-
-body.quick-mode-active .bracket-node-card:not(.disabled-unconfirmed):not(.bye-node-card) .bracket-team-row:not(.bye-row):hover .bracket-team-name,
-body.quick-mode-active .match-card:not(.disabled-unconfirmed):not(.bye-match-card) .match-team-side:not(.bye-team):hover .match-list-name,
-body.quick-mode-active .match-card-item:not(.disabled-unconfirmed):not(.bye-match-item) .match-team-side:not(.bye-team):hover .match-list-name {
-    color: var(--card-theme-color, var(--grp-color, #2dd4bf)) !important;
+.bracket-node-card .bracket-team-row.path-focused .bracket-team-name,
+.bracket-node-card .bracket-team-row.path-focused .bracket-score-box,
+.bracket-node-card .bracket-team-row.path-focused .bracket-seed-badge {
+    color:var(--ui-accent);
+    font-weight:700;
 }

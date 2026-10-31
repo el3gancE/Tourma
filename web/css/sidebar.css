@@ -1,147 +1,182 @@
-/* ============================================================================
-   TOURMA - FIXED LEFT NAVIGATION SIDEBAR (MATCHING USER REFERENCE UI)
-   ============================================================================ */
-
-/* Full Height Fixed Left Sidebar */
-.app-left-sidebar {
-    position: fixed;
-    top: 56px; /* Below navigation header */
-    left: 0;
-    bottom: 0;
-    width: 240px;
-    background-color: #0b0e14;
-    border-right: 1px solid rgba(255, 255, 255, 0.07);
-    padding: 1.1rem 0.85rem;
-    overflow-y: auto;
-    z-index: 99;
-    font-family: 'Lexend', sans-serif !important;
+/* Shared navigation component; colors follow the global theme. */
+.app-left-sidebar.tournament-sidebar {
+    box-sizing: border-box;
+    min-width: 0;
+    color: var(--ui-text);
+    background: var(--ui-bg);
+    font-family: var(--ui-font);
+    padding: 24px 16px;
+    border: 0;
+    border-radius: 0;
+    height: 100%;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    scrollbar-color: var(--ui-line-strong) transparent;
 }
-
-/* Page Layout Shift when Sidebar is Active */
-.has-sidebar {
-    margin-left: 240px !important;
-    width: calc(100% - 240px) !important;
-    max-width: none !important;
-    padding: 1.5rem 2.5rem !important;
-    transition: all 0.2s ease-in-out;
-}
-
-/* Sidebar Top Header / Brand Badge */
-.sidebar-brand-box {
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.85rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.sidebar-brand-title {
+.sidebar-workspace-heading {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: #ffffff;
-    margin-bottom: 0.4rem;
+    gap: 10px;
+    padding: 0 4px 22px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--ui-line);
+    font-size: 12px;
+    font-weight: 600;
 }
-
-.sidebar-series-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.6rem;
-    background-color: rgba(0, 255, 136, 0.08);
-    border: 1px solid rgba(0, 255, 136, 0.3);
-    border-radius: 50px;
-    color: #2dd4bf;
-    font-size: 0.68rem;
-    font-weight: 700;
-}
-
-/* Sidebar Section Headers */
-.sidebar-section-header {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.68rem;
-    font-weight: 800;
-    color: #2dd4bf; /* Mint green header */
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
-    padding-left: 0.4rem;
-}
-
-/* Sub-tournament pill badge inside sidebar */
-.sidebar-subtourney-badge {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.65rem;
-    background-color: #141a26;
-    border: 1px solid rgba(0, 255, 136, 0.2);
-    border-radius: 6px;
-    color: #2dd4bf;
-    font-size: 0.75rem;
-    font-weight: 700;
-    margin-bottom: 0.6rem;
-}
-
-/* Navigation List & Links */
-.sidebar-menu-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.sidebar-menu-item {
-    width: 100%;
-}
-
-.sidebar-menu-link {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.55rem 0.75rem;
+.sidebar-workspace-mark {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
     border-radius: 8px;
-    color: #a0aec0;
+    background: var(--ui-accent-soft);
+    color: var(--ui-accent);
+}
+.tournament-workspace .app-left-sidebar.tournament-sidebar {
+    padding: 24px 14px;
+    height: 100%;
+    max-height: 100%;
+    background: var(--ui-bg);
+    border: 0;
+    border-right: 1px solid var(--ui-line);
+}
+.tournament-sidebar .sidebar-section + .sidebar-section {
+    border-top: 1px solid var(--ui-line);
+    margin-top: 20px;
+    padding-top: 20px;
+}
+.tournament-sidebar .sidebar-section .sidebar-section-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 10px 8px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .7px;
+    color: var(--ui-muted);
+}
+.tournament-sidebar .sidebar-section .sidebar-subtourney-badge {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 10px 18px;
+    color: var(--ui-text);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.tournament-sidebar .sidebar-subtourney-badge > i { display: none; }
+.tournament-sidebar .tier-tag {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ui-muted);
+}
+.tournament-sidebar .sidebar-section .sidebar-menu-list {
+    list-style: none;
+    display: grid;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+}
+.tournament-sidebar .sidebar-menu-item { margin: 0; padding: 0; min-width: 0; }
+.tournament-sidebar .sidebar-section .sidebar-menu-link {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    border-left: 3px solid transparent;
+    padding: 12px 10px;
+    border-radius: 7px;
+    color: var(--ui-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
     text-decoration: none;
-    font-size: 0.8rem;
-    font-weight: 500;
-    transition: all 0.15s ease-in-out;
-    border: 1px solid transparent;
+    overflow-wrap: anywhere;
 }
-
-.sidebar-menu-link:hover {
-    background-color: #161c28;
-    color: #ffffff;
-}
-
-.sidebar-menu-link .menu-icon {
-    width: 18px;
+.tournament-sidebar .sidebar-section .sidebar-menu-link i {
+    flex: 0 0 16px;
+    width: 16px;
     text-align: center;
-    font-size: 0.85rem;
-    opacity: 0.85;
+    color: inherit;
+}
+.tournament-sidebar .sidebar-section .sidebar-menu-link:hover {
+    background: var(--ui-surface-alt);
+    color: var(--ui-text);
+}
+.tournament-sidebar .sidebar-section .sidebar-menu-link.active {
+    background: var(--ui-accent-soft);
+    color: var(--ui-accent);
+    border-left-color: var(--ui-accent);
+    font-weight: 600;
+}
+.tournament-sidebar .sidebar-menu-link:focus-visible {
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 2px;
+}
+@media (min-width: 1000px) {
+    .tournament-workspace .tournament-shell:has(.tournament-sidebar) {
+        max-width: none;
+        padding-left: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        align-items: stretch;
+    }
+    .tournament-shell:has(.tournament-sidebar) > main { padding-block: 20px; }
+    .tournament-shell:has(.tournament-sidebar) > .tournament-navigation {
+        position: sticky;
+        align-self: start;
+        height: 100dvh;
+        max-height: 100dvh;
+        min-height: 0;
+        top: 0;
+        border-right: 1px solid var(--ui-line);
+        background: var(--ui-bg);
+    }
+    .tournament-workspace .app-left-sidebar.tournament-sidebar {
+        height: 100dvh;
+        min-height: 0;
+        max-height: 100dvh;
+        border-right: 0;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        padding: 28px 16px;
+    }
+}
+@media (max-width: 999px) {
+    .app-left-sidebar.tournament-sidebar,
+    .tournament-workspace .app-left-sidebar.tournament-sidebar {
+        padding: 18px 12px;
+        height: auto;
+        margin-top: 12px;
+    }
+}
+/* Series navigation needs room for the longer menu labels. */
+@media(min-width:1000px) {
+    .tournament-workspace .tournament-shell { grid-template-columns:260px minmax(0,1fr); }
+    .tournament-workspace .tournament-sidebar .sidebar-section .sidebar-menu-link { font-size:12px; min-height:38px; padding:8px 10px; }
+    .tournament-workspace .sidebar-workspace-heading { font-size:12px; }
 }
 
-/* Active Highlighted State (Matching Screenshot 1) */
-.sidebar-menu-link.active {
-    background-color: #0a1f1f; /* Dark teal container */
-    border: 1px solid #2dd4bf;  /* Mint border */
-    color: #ffffff;
-    font-weight: 700;
-    box-shadow: 0 0 12px rgba(45, 212, 191, 0.2);
+@media(min-width:1000px) {
+    .tournament-workspace .tournament-sidebar .sidebar-menu-list { gap:3px; }
+    .tournament-workspace .sidebar-workspace-heading { padding-bottom:16px; margin-bottom:18px; }
 }
 
-.sidebar-menu-link.active .menu-icon {
-    color: #2dd4bf;
-    opacity: 1;
-}
-
-.sidebar-menu-link.active .active-thunder-icon {
-    color: #2dd4bf;
-}
+/* Full-width navigation rows, matching the header tabs. */
+.app-left-sidebar.tournament-sidebar,
+.tournament-workspace .app-left-sidebar.tournament-sidebar { padding-inline:0; }
+.tournament-sidebar .sidebar-workspace-heading { margin-inline:18px; }
+.tournament-sidebar .sidebar-section .sidebar-section-header { padding-inline:22px; }
+.tournament-sidebar .sidebar-section .sidebar-subtourney-badge { padding-inline:22px; }
+.tournament-sidebar .sidebar-section .sidebar-menu-list,
+.tournament-workspace .tournament-sidebar .sidebar-menu-list { gap:0; }
+.tournament-sidebar .sidebar-section .sidebar-menu-link,
+.tournament-workspace .tournament-sidebar .sidebar-section .sidebar-menu-link { min-height:38px; padding:9px 22px; border-radius:0; border-left:3px solid transparent; transition:background .18s,color .18s; }
+.tournament-sidebar .sidebar-section .sidebar-menu-link.active { border-left-color:var(--ui-accent); background:var(--ui-accent-soft); color:var(--ui-accent); }
+.tournament-sidebar .sidebar-menu-link:focus-visible { outline-offset:-3px; }
+@media(prefers-reduced-motion:reduce) { .tournament-sidebar .sidebar-section .sidebar-menu-link { transition:none; } }
+.tournament-workspace .tournament-sidebar .sidebar-section .sidebar-menu-link.active { border-left-color:var(--ui-accent); background:var(--ui-accent-soft); color:var(--ui-accent); }

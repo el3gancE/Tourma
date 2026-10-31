@@ -1,0 +1,119 @@
+# Tourma — Quy chuẩn giao diện
+
+Tài liệu này là điểm tham chiếu khi thiết kế hoặc sửa bất kỳ màn nào. Các màn
+có thể có bố cục khác nhau theo công việc, nhưng phải dùng chung ngôn ngữ thiết kế.
+
+## Trạng thái thiết kế
+
+- Trang chủ hiện tại là bản thử; người dùng dự định làm lại. Không sao chép bố cục
+  hoặc các chi tiết minh họa ở đó như một thiết kế đã được duyệt.
+- Có bốn lựa chọn dùng chung token: light-wine (trắng), light-blue (trắng tinh), dark-blue và dark-wine. Chọn bằng hai switch Đỏ/Xanh và Sáng/Tối trên header.
+- Sắc độ nền/card vẫn đang thử nghiệm, chưa được người dùng chốt về mặt thẩm mỹ.
+  Dùng bộ token hiện tại để giữ đồng bộ; không tự pha một bảng màu mới cho mỗi màn.
+- Nội dung header (nhãn, thứ tự và URL) được giữ nguyên. Có thể đổi hình thức khi
+  thiết kế giao diện, trừ khi người dùng có chỉ dẫn khác.
+
+## Nguồn thiết kế dùng chung
+
+| Nguồn | Vai trò |
+| --- | --- |
+| `web/css/design-tokens.css` | Nguồn duy nhất cho màu của hai theme; nơi bổ sung các token dùng chung |
+| `web/css/ui-base.css` | Reset và style nền tảng dùng chung; áp dụng qua class `ui-page` |
+| `web/css/header.css` | Header và nút chuyển theme dùng chung |
+| `web/css/tournament-screen.css` | Khung màn thi đấu chung cho SE, DE, Swiss, GSL, GS và RR: toolbar, viewport, vòng và danh sách |
+| `web/css/tournament-workspace.css` | Khung điều hướng giải và sidebar dùng chung cho màn cấu hình/thêm đội |
+| `web/css/workspace.css` | Khung màn danh sách: tiêu đề, bộ lọc, tìm kiếm, nút và trạng thái trống dùng chung |
+| `web/js/theme.js` | Áp dụng theme, ghi nhớ lựa chọn và cập nhật nút chuyển |
+| `web/common/component/` | JSP thành phần dùng lại: header, card trận, popup và các component khác |
+| Component JSP và stylesheet dùng chung | Nguồn thiết kế trực tiếp; trang Template UI đã ngừng sử dụng |
+| CSS của từng màn | Bố cục riêng; tham chiếu token và thành phần chung |
+
+Hiện nhiều file CSS đã được chủ động làm trắng để xây lại frontend. Việc một
+component JSP tồn tại không có nghĩa hình thức của component đó đã được chốt.
+`index.css` là stylesheet riêng của bản thử trang chủ, không phải bộ component chung.
+
+## Quy tắc màu và theme
+
+- Mỗi màn phải hỗ trợ cả light và dark qua cùng một cấu trúc HTML/JSP.
+- Dùng `var(--ui-bg)`, `var(--ui-surface)`, `var(--ui-text)`, `var(--ui-muted)`,
+  `var(--ui-line)` và `var(--ui-accent)`; xem đầy đủ trong file token.
+- Không hardcode các màu nền/chữ/viền riêng cho từng màn. Nếu cần vai trò màu mới,
+  thêm token có nghĩa ở cả hai theme rồi dùng lại.
+- Theo hướng thử hiện tại, nền trang và nền khung lớn dùng chung `--ui-bg`.
+  Card bên trong dùng `--ui-surface`; vùng nhấn nhẹ dùng `--ui-surface-alt`.
+- Nền trung tính; không tự thêm sắc xanh lá, đỏ hoặc lớp phủ màu vào nền dark.
+- Màu nhấn dành cho hành động chính, focus, mục đang chọn và chi tiết quan trọng.
+  Tránh phủ màu nhấn lên toàn bộ khung hoặc mọi tên đội.
+- Màu thắng/thua/lỗi là màu ngữ nghĩa riêng, không đổi ý nghĩa theo theme và không
+  dùng màu làm dấu hiệu duy nhất. Chốt token trạng thái khi xây component liên quan.
+- Dùng key `tourma-ui-theme`, thuộc tính `data-theme` trên thẻ `html` và các hook
+  `data-theme-toggle` / `data-theme-label` hiện có; không tạo cơ chế lưu theme thứ hai.
+- Nạp script theme trong head trước stylesheet để hạn chế nháy sai màu khi mở trang.
+
+## Thành phần và bố cục
+
+- Font nền tảng hiện tại là Readex Pro qua `--ui-font`.
+- Tiết chế mô tả: không thêm slogan, câu dẫn hoặc lời giải thích lặp lại nhãn. Chỉ giải thích lựa chọn khó hiểu, ràng buộc và lỗi; không thêm nội dung phụ để lấp khoảng trống.
+- Cùng một loại button, input, card, bảng và popup phải có cùng hình thức giữa các màn.
+  Khi bắt đầu tái sử dụng, tách style đó vào stylesheet component dùng chung thay vì
+  sao chép từ CSS trang chủ.
+- Khi chốt spacing, font size, radius hoặc kích thước control cho bộ component,
+  bổ sung token dùng chung và cập nhật tài liệu này. Chưa coi các số đo trong
+  `index.css` là quy chuẩn đã được duyệt.
+- Bố cục từng màn phục vụ đúng công việc; không ép mọi màn theo layout trang chủ.
+- Phải có focus bàn phím rõ, nhãn control và cách dùng được ở màn hình hẹp.
+- CSS riêng được scope theo trang/component để không vô tình đổi các màn khác.
+- CSS trang trí đặt trong stylesheet. Inline chỉ dùng cho giá trị thực sự động
+  và hành vi đang được JavaScript điều khiển như ẩn/hiện, zoom, vị trí hoặc tiến độ.
+
+## Giữ nguyên chức năng
+
+- Phạm vi mặc định là frontend. Không sửa servlet, DAO, database hoặc thuật toán
+  ghép cặp để phục vụ thay đổi hình thức.
+- Khi viết lại HTML trong JSP, giữ dữ liệu server, URL, tên input và hợp đồng gửi form.
+  Nếu đổi DOM, cập nhật các hook JavaScript tương ứng và kiểm tra hành vi liên quan.
+- Giữ thứ tự thiết lập phù hợp với thể thức: thêm đội, chia bảng nếu có, set điểm,
+  rồi thi đấu. Không thay logic chuyển stage bằng trạng thái đoán ở trình duyệt.
+
+## Cách duy trì
+
+1. Đọc tài liệu và token trước khi sửa màn.
+2. Dùng component chung; chỉ viết CSS riêng cho phần bố cục thực sự riêng.
+3. Kiểm tra cả hai theme, màn hình hẹp và các hành động chính của màn vừa sửa.
+4. Khi người dùng chốt một quy ước mới, cập nhật nguồn dùng chung và tài liệu này.
+5. Duy trì component/style ngay trong nguồn dùng chung; không cần trang Template UI riêng.
+
+## Vị trí chuyển theme
+
+Nút chuyển sáng/tối nằm trong header dùng chung, không lặp trong nội dung trang.
+Các màn đã nạp token và theme.js truyền `themeToggle=true` vào header.jsp để bật nút.
+
+## Light mode: nền dịu dùng chung
+
+Nền trang, header/sidebar và canvas dùng trắng `#FFFFFF`; card dùng `#F8FAFC`, vùng phụ dùng `#E5E9EE`. Dùng token chung cho các màn. Chữ trên nút màu nhấn vẫn giữ trắng để đủ tương phản. Dark mode giữ nguyên.
+
+Font Readex Pro dùng weight 500 cho nội dung, 600 cho tên đội/menu và 700 cho tiêu đề/đội thắng.
+
+## Popup dùng chung
+
+`web/css/popup.css` cung cấp lớp nền, khung, header/footer và control cho popup tỉ số, xác nhận, thêm đội, sửa Series và stage. CSS từng popup nhập stylesheet này; không đặt style popup riêng trong CSS của màn SE.
+
+## Bộ màu mở rộng
+
+Theme lưu bằng tourma-ui-theme (light/dark), màu nhấn lưu bằng tourma-ui-accent (wine/blue). theme.js áp dụng data-theme và data-accent trước khi render. Không tạo stylesheet theme riêng theo màn. Light-blue dùng nền trang, navigation và canvas trắng tinh #FFFFFF; blue chỉ là màu nhấn. Light-wine giữ nền trắng hiện tại. Người dùng chưa chọn bộ màu được giữ giao diện cũ.
+
+Light-blue dùng cùng họ màu với dark-blue: LB coral, Swiss nhóm 2 thắng green, nhóm 2 thua coral, 2–2 vàng. GSL A theo UB, B theo LB; C–AF dùng bảng màu riêng có độ đậm phù hợp nền sáng, các họ màu tương tự được đặt xen kẽ.
+
+Dark-wine: UB wine sáng, LB dusty blue để tách khỏi UB; Swiss nhóm 2 thắng green, 2 thua theo LB, 2–2 vàng; GSL A/B theo UB/LB, C–AF giữ các họ màu sáng dành cho nền tối.
+
+Dark-wine dùng ruby #DC5268 cho chữ/icon, wine #861B36 cho nền nhấn đặc qua --ui-accent-fill, chữ trên nền đặc màu trắng. Các bộ khác dùng --ui-accent làm nền nhấn như cũ.
+
+Nền trang, header/sidebar, workspace và canvas dùng chung --ui-bg ở cả bốn bộ màu: sáng #FFFFFF, tối #121212. Card vẫn dùng token surface riêng để giữ phân lớp.
+
+Hai bộ light dùng cùng màu trung tính cho surface, hàng trận, viền, chữ và shadow. Không pha xanh vào nền card/viền ở light-blue; khác biệt nằm ở accent và các màu ngữ nghĩa của nhánh/nhóm.
+
+Light-blue: accent cobalt #1E40AF, hover #1E3A8A, nền nhấn #EFF4FF.
+
+Dark-wine thử màu #BC7185 cho accent và nền nút, chữ trên nút #000000; light-wine giữ nguyên.
+
+Header desktop cao 64px, chạy hết chiều rộng trang. Mục active phủ cả chiều cao ô điều hướng và có gạch dưới 3px theo accent; không dùng pill nổi. Mobile tách hàng menu cuộn ngang.

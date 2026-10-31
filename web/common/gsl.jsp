@@ -121,10 +121,10 @@
         <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <link rel="alternate icon" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
 
-        <!-- Google Fonts: Lexend -->
+        <!-- Google Fonts: Readex Pro -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -144,8 +144,12 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/gsl.css?v=<%= System.currentTimeMillis() %>">
+        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-classic"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
     </head>
-    <body class="gsl-page-container">
+    <body class="ui-page tournament-workspace gsl-page gsl-page-container">
 
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp"/>
@@ -160,9 +164,10 @@
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="tournaments"/>
+            <jsp:param name="active" value="tournaments"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng giải đấu</summary>
         <!-- Sidebar Component -->
         <jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
@@ -172,8 +177,8 @@
         </jsp:include>
 
         <!-- Main Content Area -->
-        <main class="container has-sidebar">
-            
+        </details><main class="se-main gsl-main">
+
             <!-- Tournament Navbar Component -->
             <jsp:include page="/common/component/tournament-navbar.jsp">
                 <jsp:param name="tourneyName" value="<%= tourneyName %>" />
@@ -195,7 +200,7 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
-            <div id="gslEmptyAlertContainer" style="display: none; width: 100%;"></div>
+            <div id="gslEmptyAlertContainer" data-ui-style="gsl-jsp-001" style="display: none;"></div>
 
             <!-- 1. MULTI-GROUP VIEWPORTS WORKSPACE -->
             <div id="gslGroupsWorkspace" class="gsl-groups-workspace"></div>
@@ -203,7 +208,7 @@
             <!-- 2. MATCHES LIST VIEW CONTAINER -->
             <div id="gslListViewContainer" class="gsl-list-view-container"></div>
 
-        </main>
+        </main></div>
 
         <!-- Dedicated Modal Popup for Score Entry -->
         <jsp:include page="/common/component/popup.jsp"/>

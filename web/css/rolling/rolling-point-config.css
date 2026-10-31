@@ -1,0 +1,23 @@
+/* Tournament points form, using shared Series surfaces and controls. */
+.series-points-page [data-ui-style="rolling-point-config-jsp-002"] { margin-bottom:20px; font-size:11px; color:var(--ui-muted); }
+.series-points-page .form-container-box { max-width:1000px; margin:0 auto; }
+.series-points-page .form-header-title { font-size:26px; line-height:1.4; font-weight:700; }
+.series-points-page .form-header-title i { color:var(--ui-accent); font-size:20px; }
+.series-points-page [data-ui-style="rolling-point-config-jsp-005"] { font-size:12px; line-height:1.8; margin:10px 0 20px; color:var(--ui-muted); overflow-wrap:anywhere; }
+.series-points-page [data-ui-style="rolling-point-config-jsp-006"] { padding:14px 16px; margin-bottom:24px; border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); font-size:12px; line-height:1.9; color:var(--ui-muted); }
+.series-points-page [data-ui-style="rolling-point-config-jsp-007"] { align-items:center; gap:7px; margin-bottom:5px; color:var(--ui-text); font-weight:600; }
+.series-points-page [data-ui-style="rolling-point-config-jsp-008"] { border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); overflow:hidden; }
+.series-points-page [data-ui-style="rolling-point-config-jsp-009"] { align-items:center; justify-content:space-between; gap:12px; padding:16px 20px; border-bottom:1px solid var(--ui-line); margin:0; font-size:14px; font-weight:600; }
+.series-points-page [data-ui-style="rolling-point-config-jsp-010"] { font-size:11px; color:var(--ui-accent); }
+.series-points-page [data-ui-style="rolling-point-config-jsp-011"] { flex-direction:column; padding:0 20px; }
+.series-points-page [data-ui-style="rolling-point-config-jsp-012"] { padding:12px 0; }
+.series-points-page [data-ui-style="rolling-point-config-jsp-013"] { align-items:center; gap:7px; padding:5px 9px; border-radius:5px; font-size:11px; font-weight:600; }
+.series-points-page :is([data-ui-style="rolling-point-config-jsp-014"],[data-ui-style="rolling-point-config-jsp-020"]) { align-items:center; justify-content:space-between; gap:16px; padding:13px 0; border-bottom:1px solid var(--ui-line); font-size:13px; }
+.series-points-page [data-ui-style="rolling-point-config-jsp-014"] { font-weight:600; }
+.series-points-page [data-ui-style="rolling-point-config-jsp-016"] { color:var(--ui-tier-s); margin-right:6px; }
+.series-points-page :is([data-ui-style="rolling-point-config-jsp-017"],[data-ui-style="rolling-point-config-jsp-022"]) { align-items:center; flex:0 0 auto; gap:8px; }
+.series-points-page.series-page #pointConfigForm input[type="number"] { width:110px; height:38px; padding:8px 10px; background:var(--ui-bg); border:1px solid var(--ui-line); border-radius:6px; color:var(--ui-text); font:600 14px var(--ui-font); text-align:right; appearance:textfield; }
+.series-points-page input::-webkit-inner-spin-button,.series-points-page input::-webkit-outer-spin-button { appearance:none; margin:0; }
+.series-points-page :is([data-ui-style="rolling-point-config-jsp-019"],[data-ui-style="rolling-point-config-jsp-024"]) { font-size:11px; color:var(--ui-muted); }
+.series-points-page [data-ui-style="rolling-point-config-jsp-025"] { justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:22px; }
+@media(max-width:600px) { .series-points-page .form-header-title { font-size:22px; } .series-points-page [data-ui-style="rolling-point-config-jsp-011"] { padding-inline:14px; } .series-points-page.series-page #pointConfigForm input[type="number"] { width:80px; } }

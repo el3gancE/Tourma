@@ -60,29 +60,34 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><%= tourneyName %> - Swiss - Tourma</title>
 
-        <!-- Google Font Lexend -->
+        <!-- Google Font Readex Pro -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Shared System Stylesheets -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/swiss-stage.css">
+        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-classic"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=2">
     </head>
-    <body>
+    <body class="ui-page tournament-workspace swiss-page">
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp"/>
 
@@ -96,9 +101,12 @@
 
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="tournaments"/>
+            <jsp:param name="active" value="tournaments"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
+        <div class="tournament-shell">
+        <details class="tournament-navigation" open>
+        <summary>Điều hướng giải đấu</summary>
         <!-- Sidebar Component -->
         <jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="activeStep" value="<%= activeStepVal %>"/>
@@ -106,7 +114,8 @@
         </jsp:include>
 
         <!-- Main Content Area Shifted Right by Sidebar -->
-        <main class="container has-sidebar">
+        </details>
+        <main class="se-main swiss-main">
 
             <!-- Top Tournament Navigation & Control Bar Component -->
             <jsp:include page="/common/component/tournament-navbar.jsp">
@@ -129,17 +138,17 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- SWISS TEAM COUNT ALERT BANNER (When team count != 16) -->
-            <div id="swissInvalidTeamAlert" style="display: none; background: rgba(18, 22, 32, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(244, 63, 94, 0.35); border-radius: 14px; padding: 3.5rem 2rem; text-align: center; margin-top: 1.5rem; margin-bottom: 2.5rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);">
-                <div style="width: 76px; height: 76px; border-radius: 50%; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
-                    <i class="fa-solid fa-users-slash" style="font-size: 2.3rem; color: #f43f5e;"></i>
+            <div id="swissInvalidTeamAlert" data-ui-style="swiss-stage-jsp-001" style="display: none;">
+                <div data-ui-style="swiss-stage-jsp-002" style="display: flex;">
+                    <i class="fa-solid fa-users-slash" data-ui-style="swiss-stage-jsp-003"></i>
                 </div>
-                <h2 style="font-size: 1.4rem; font-weight: 800; color: #ffffff; margin-bottom: 0.6rem;">
+                <h2 data-ui-style="swiss-stage-jsp-004">
                     Yêu Cầu CHÍNH XÁC 16 Đội Cho Thể Thức Swiss System
                 </h2>
-                <p id="swissInvalidTeamDesc" style="font-size: 0.88rem; color: #94a3b8; max-width: 600px; margin: 0 auto 1.75rem; line-height: 1.6;">
+                <p id="swissInvalidTeamDesc" data-ui-style="swiss-stage-jsp-005">
                     Thể thức Swiss System đòi hỏi bắt buộc phải có đủ <strong>đúng 16 đội bóng</strong> tham gia để ghép cặp theo từng nhóm tỷ số (Record Pool) qua 5 vòng thi đấu.
                 </p>
-                <a id="btnGoToConfigureTeams" href="${pageContext.request.contextPath}/common/configure-tournament-teams.jsp?id=${not empty tournament.id ? tournament.id : param.id}" class="btn btn-mint" style="font-weight: 700; padding: 0.65rem 1.75rem; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; border-radius: 8px;">
+                <a id="btnGoToConfigureTeams" href="${pageContext.request.contextPath}/common/configure-tournament-teams.jsp?id=${not empty tournament.id ? tournament.id : param.id}" class="btn btn-mint" data-ui-style="swiss-stage-jsp-006" style="display: inline-flex;">
                     <i class="fa-solid fa-user-plus"></i> Thêm / Điều Chỉnh Cho Đủ 16 Đội Ngay
                 </a>
             </div>
@@ -167,7 +176,7 @@
                 <!-- ════════════════════════════════════════════════════════════════ -->
                 <div id="swissBracketView" style="display: block;">
                     <div class="bracket-viewport-frame">
-                        
+
                         <!-- Floating Viewport Zoom Toolbar (Exact SE & DE Styling) -->
                         <div class="bracket-zoom-toolbar">
                             <button type="button" class="btn-zoom" onclick="TourmaViewport.zoomOut('swissViewportContainer')" title="Thu Nhỏ (Zoom Out)">
@@ -185,7 +194,7 @@
                         <!-- Drag/Pan Viewport Container Box -->
                         <div id="swissViewportContainer" class="bracket-viewport-container">
                             <!-- Viewport Canvas (No SVG connector lines) -->
-                            <div id="swissViewportCanvas" class="bracket-viewport-canvas" style="padding-top: 3.5rem;">
+                            <div id="swissViewportCanvas" class="bracket-viewport-canvas" data-ui-style="swiss-stage-jsp-007">
                                 <!-- Injected Round Columns with Record Pool Cards -->
                             </div>
                         </div>
@@ -196,6 +205,7 @@
             </div>
 
         </main>
+        </div>
 
         <!-- Shared Score Edit Popup Component -->
         <jsp:include page="/common/component/popup.jsp"/>
@@ -228,7 +238,7 @@
             })();
             window.dbSwissMatches = <%= dbMatchesJson %>;
             window.serverTeams = [
-                <% if (dbTeamsList != null && !dbTeamsList.isEmpty()) { 
+                <% if (dbTeamsList != null && !dbTeamsList.isEmpty()) {
                     for (int i = 0; i < dbTeamsList.size(); i++) {
                         Team tm = dbTeamsList.get(i);
                         String tName = tm.getRawName();
@@ -239,7 +249,7 @@
                         String nameEsc = tName.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
                 %>
                     { id: "<%= tm.getId() %>", name: "<%= nameEsc %>" }<%= (i < dbTeamsList.size() - 1) ? "," : "" %>
-                <%  } 
+                <%  }
                 } %>
             ];
         </script>

@@ -65,10 +65,10 @@
       if (icon) {
         if (key === col) {
           icon.className = (dir === 'asc') ? 'fa-solid fa-sort-up sort-icon sort-icon-' + key : 'fa-solid fa-sort-down sort-icon sort-icon-' + key;
-          icon.style.color = '#2dd4bf';
+          icon.style.color = 'var(--ui-accent)';
         } else {
           icon.className = 'fa-solid fa-sort sort-icon sort-icon-' + key;
-          icon.style.color = '#64748b';
+          icon.style.color = 'var(--ui-muted)';
         }
       }
     }

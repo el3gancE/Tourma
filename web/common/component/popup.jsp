@@ -1,14 +1,14 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%-- 
+<%--
     Document   : popup.jsp (Score Edit Popup Modal Component - Wireframe Layout)
     Description: Reusable modal dialog for editing match scores and declaring winners.
 --%>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
 
 <div id="tourmaScoreModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) window.TourmaScoreModal.close();">
-    <div class="tourma-modal-card" onclick="event.stopPropagation();">
-        
+    <div class="tourma-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalMatchTitle" onclick="event.stopPropagation();">
+
         <!-- Modal Header -->
         <div class="modal-header-bar">
             <div class="modal-header-title">
@@ -31,7 +31,7 @@
                     <div class="modal-team-left-info">
                         <span id="modalTeam1Name" class="modal-team-name">Đội 1</span>
                     </div>
-                    <input type="number" id="modalTeam1Score" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">
+                    <input type="number" id="modalTeam1Score" aria-labelledby="modalTeam1Name" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">
                 </div>
 
                 <!-- Team 2 Row -->
@@ -39,7 +39,7 @@
                     <div class="modal-team-left-info">
                         <span id="modalTeam2Name" class="modal-team-name">Đội 2</span>
                     </div>
-                    <input type="number" id="modalTeam2Score" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">
+                    <input type="number" id="modalTeam2Score" aria-labelledby="modalTeam2Name" class="modal-score-input-box" value="" placeholder="-" min="0" max="999" oninput="window.TourmaScoreModal.autoDetermineWinner()">
                 </div>
             </div>
 
@@ -58,7 +58,7 @@
                     </button>
                 </div>
                 <!-- Error message banner when winner is not determined -->
-                <div id="modalScoreError" style="display: none; align-items: center; justify-content: center; gap: 0.4rem; color: #f43f5e; font-size: 0.78rem; font-weight: 700; margin-top: 0.6rem; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 6px; padding: 0.4rem 0.6rem;">
+                <div id="modalScoreError" data-ui-style="popup-jsp-001" style="display: none;">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     <span>Phải xác định 1 đội thắng</span>
                 </div>

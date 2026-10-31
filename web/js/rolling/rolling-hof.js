@@ -403,19 +403,19 @@
         var html = '';
         pageSlice.forEach(function (c) {
           html += '<tr>' +
-            '<td class="text-left" style="text-align: left !important;">' +
+            '<td class="text-left" data-ui-style="rolling-hof-js-001">' +
               '<a href="' + ctx + '/team-profile?seriesId=' + encodeURIComponent(seriesId) + '&teamName=' + encodeURIComponent(c.teamName) + '" class="hof-team-link" title="Xem hồ sơ đội ' + c.teamName + '">' +
                 c.teamName +
               '</a>' +
             '</td>' +
-            '<td class="text-right" style="text-align: right !important;">' +
+            '<td class="text-right" data-ui-style="rolling-hof-js-002">' +
               '<span class="hof-win-count-text">' + c.filteredChamps + '</span>' +
             '</td>' +
             '</tr>';
         });
         champTbody.innerHTML = html;
       } else {
-        champTbody.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 2rem; color: #64748b;">Chưa có đội bóng nào vô địch cho phân hạng đã chọn.</td></tr>';
+        champTbody.innerHTML = '<tr><td colspan="2" data-ui-style="rolling-hof-js-003">Chưa có đội bóng nào vô địch cho phân hạng đã chọn.</td></tr>';
       }
     }
 

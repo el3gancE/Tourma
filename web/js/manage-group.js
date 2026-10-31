@@ -310,8 +310,8 @@
             if (container) {
                 container.innerHTML = '';
                 if (availableTeams.length === 0) {
-                    container.innerHTML = '<div style="text-align:center; padding: 2rem 0; color: #94a3b8; font-size: 0.85rem;">' +
-                        '<i class="fa-solid fa-circle-info" style="color: #2dd4bf;"></i> Không còn đội nào chưa xếp bảng!' +
+                    container.innerHTML = '<div data-ui-style="manage-group-js-001">' +
+                        '<i class="fa-solid fa-circle-info" data-ui-style="manage-group-js-002"></i> Không còn đội nào chưa xếp bảng!' +
                         '</div>';
                 } else {
                     for (var i = 0; i < availableTeams.length; i++) {
@@ -326,8 +326,8 @@
                         row.style.display = 'flex';
                         row.style.alignItems = 'center';
                         row.style.justifyContent = 'space-between';
-                        row.style.background = '#181d29';
-                        row.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+                        row.style.background = 'var(--ui-surface)';
+                        row.style.border = '1px solid var(--ui-line)';
                         row.style.borderRadius = '8px';
                         row.style.padding = '0.65rem 0.85rem';
                         row.style.marginBottom = '0.4rem';
@@ -335,19 +335,19 @@
                         row.style.transition = 'all 0.2s ease';
 
                         row.onmouseover = function() {
-                            this.style.borderColor = 'rgba(45, 212, 191, 0.4)';
-                            this.style.background = 'rgba(45, 212, 191, 0.04)';
+                            this.style.borderColor = 'var(--ui-accent)';
+                            this.style.background = 'var(--ui-accent-soft)';
                         };
                         row.onmouseout = function() {
-                            this.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                            this.style.background = '#181d29';
+                            this.style.borderColor = 'var(--ui-line)';
+                            this.style.background = 'var(--ui-surface)';
                         };
 
-                        row.innerHTML = '<div style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; font-weight:600; color:#f8fafc;">' +
+                        row.innerHTML = '<div data-ui-style="manage-group-js-003" style="display:flex;">' +
                             '<span class="mg-seed-badge">' + seedNum + '</span>' +
                             '<span>' + tName + '</span>' +
                             '</div>' +
-                            '<input type="checkbox" class="modal-team-checkbox" value="' + tId + '" onchange="TourmaManageGroup.updateModalSelectedCount()" style="width:17px; height:17px; accent-color:#2dd4bf; cursor:pointer;">';
+                            '<input type="checkbox" class="modal-team-checkbox" value="' + tId + '" onchange="TourmaManageGroup.updateModalSelectedCount()" data-ui-style="manage-group-js-004">';
 
                         container.appendChild(row);
                     }
@@ -355,7 +355,7 @@
             }
 
             if (countElem) countElem.innerText = '0';
-            if (modal) modal.style.display = 'flex';
+            if (modal) { modal.style.display = 'flex'; modal.classList.add('show'); }
         },
 
         filterModalTeams: function (query) {
@@ -385,7 +385,7 @@
 
         closeAddTeamModal: function () {
             var modal = document.getElementById('addTeamToGroupModalBackdrop');
-            if (modal) modal.style.display = 'none';
+            if (modal) { modal.classList.remove('show'); modal.style.display = 'none'; }
             this.activeModalGroup = null;
         },
 
@@ -509,10 +509,12 @@
             var summaryBar = document.createElement('div');
             summaryBar.style.gridColumn = '1 / -1';
             summaryBar.style.display = 'flex';
+            summaryBar.style.flexWrap = 'wrap';
+            summaryBar.style.gap = '12px';
             summaryBar.style.justifyContent = 'space-between';
             summaryBar.style.alignItems = 'center';
-            summaryBar.style.background = 'rgba(18, 22, 32, 0.8)';
-            summaryBar.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+            summaryBar.style.background = 'var(--ui-surface)';
+            summaryBar.style.border = '1px solid var(--ui-line)';
             summaryBar.style.borderRadius = '10px';
             summaryBar.style.padding = '0.75rem 1.25rem';
             summaryBar.style.marginBottom = '0.5rem';
@@ -521,10 +523,10 @@
             var totalCount = this.teamsList.length;
 
             summaryBar.innerHTML = '<div>' +
-                '<span style="font-size: 0.85rem; font-weight: 700; color: #f8fafc;">Tổng Số Đội: ' + totalCount + ' Đội</span>' +
-                '<span style="font-size: 0.8rem; color: #94a3b8; margin-left: 1rem;">| Đội chưa xếp bảng: <strong style="color: ' + (unassignedCount > 0 ? '#fbbf24' : '#2dd4bf') + ';">' + unassignedCount + ' Đội</strong></span>' +
+                '<span data-ui-style="manage-group-js-005">Tổng Số Đội: ' + totalCount + ' Đội</span>' +
+                '<span data-ui-style="manage-group-js-006">| Đội chưa xếp bảng: <strong style="color: ' + (unassignedCount > 0 ? '#fbbf24' : 'var(--ui-accent)') + ';">' + unassignedCount + ' Đội</strong></span>' +
                 '</div>' +
-                '<div style="font-size: 0.78rem; color: #94a3b8;">' +
+                '<div data-ui-style="manage-group-js-007">' +
                 '<i class="fa-solid fa-hand-pointer text-mint"></i> Bấm vào từng bảng để chọn đội bóng vào bảng thi đấu.' +
                 '</div>';
 
@@ -541,14 +543,14 @@
                 emptyNotice.style.justifyContent = 'center';
                 emptyNotice.style.padding = '3rem 1.5rem';
                 emptyNotice.style.textAlign = 'center';
-                emptyNotice.style.background = '#121620';
+                emptyNotice.style.background = 'var(--ui-surface)';
                 emptyNotice.style.borderRadius = '12px';
-                emptyNotice.style.border = '1px dashed rgba(255, 255, 255, 0.15)';
+                emptyNotice.style.border = '1px dashed var(--ui-line-strong)';
 
-                emptyNotice.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size: 2.8rem; color: #2dd4bf; margin-bottom: 1rem;"></i>' +
-                    '<h3 style="font-size: 1.15rem; font-weight: 800; color: #f8fafc; margin: 0 0 0.5rem 0;">Chưa có bảng đấu nào</h3>' +
-                    '<p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 1.25rem 0; max-width: 520px;">Chọn nhanh số lượng bảng rỗng muốn tạo (chỉ tạo bảng, các đội vẫn giữ nguyên ở danh sách chưa xếp):</p>' +
-                    '<div style="display:flex; gap: 0.5rem; justify-content: center; align-items: center; flex-wrap: wrap; max-width: 650px; margin-bottom: 1.25rem;">' +
+                emptyNotice.innerHTML = '<i class="fa-solid fa-layer-group" data-ui-style="manage-group-js-008"></i>' +
+                    '<h3 data-ui-style="manage-group-js-009">Chưa có bảng đấu nào</h3>' +
+                    '<p data-ui-style="manage-group-js-010">Chọn nhanh số lượng bảng rỗng muốn tạo (chỉ tạo bảng, các đội vẫn giữ nguyên ở danh sách chưa xếp):</p>' +
+                    '<div data-ui-style="manage-group-js-011" style="display:flex;">' +
                     '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(2)"><i class="fa-solid fa-bolt"></i> 2 Bảng</button>' +
                     '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(4)"><i class="fa-solid fa-bolt"></i> 4 Bảng</button>' +
                     '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(6)"><i class="fa-solid fa-bolt"></i> 6 Bảng</button>' +
@@ -559,7 +561,7 @@
                     '<button type="button" class="btn-mg-quick-pill" onclick="TourmaManageGroup.quickCreateGroups(32)"><i class="fa-solid fa-bolt"></i> 32 Bảng</button>' +
                     '</div>' +
                     '<div>' +
-                    '<button type="button" class="btn-mg-add" onclick="TourmaManageGroup.addNewGroup()" style="padding: 0.5rem 1.25rem;"><i class="fa-solid fa-plus"></i> Hoặc Tạo Từng Bảng (+1)</button>' +
+                    '<button type="button" class="btn-mg-add" onclick="TourmaManageGroup.addNewGroup()" data-ui-style="manage-group-js-012"><i class="fa-solid fa-plus"></i> Hoặc Tạo Từng Bảng (+1)</button>' +
                     '</div>';
 
                 container.appendChild(emptyNotice);
@@ -596,11 +598,11 @@
 
                     var dispTitle = (gKey.toUpperCase().indexOf('BẢNG') !== -1) ? gKey.toUpperCase() : ('BẢNG ' + gKey.toUpperCase());
                     var headerHtml = '<div class="mg-group-header">' +
-                        '<div class="mg-group-title" onclick="TourmaManageGroup.openAddTeamModal(\'' + gKey + '\')" style="cursor:pointer;" title="Bấm để chọn đội vào ' + dispTitle + '">' +
+                        '<div class="mg-group-title" onclick="TourmaManageGroup.openAddTeamModal(\'' + gKey + '\')" data-ui-style="manage-group-js-013" title="Bấm để chọn đội vào ' + dispTitle + '">' +
                         '<i class="fa-solid fa-layer-group"></i> ' + dispTitle +
                         '</div>' +
-                        '<div style="display: flex; align-items: center; gap: 0.5rem;">' +
-                        '<span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">' + teamList.length + ' Đội</span>' +
+                        '<div data-ui-style="manage-group-js-014" style="display: flex;">' +
+                        '<span data-ui-style="manage-group-js-015">' + teamList.length + ' Đội</span>' +
                         '<button type="button" class="btn-delete-group" onclick="TourmaManageGroup.deleteGroup(\'' + gKey + '\')" title="Xóa ' + dispTitle + '">' +
                         '<i class="fa-solid fa-trash-can"></i>' +
                         '</button>' +
@@ -617,26 +619,26 @@
                         var emptyBox = document.createElement('div');
                         emptyBox.onclick = function() { self.openAddTeamModal(gKey); };
                         emptyBox.style.fontSize = '0.8rem';
-                        emptyBox.style.color = '#94a3b8';
+                        emptyBox.style.color = 'var(--ui-muted)';
                         emptyBox.style.textAlign = 'center';
                         emptyBox.style.padding = '1.25rem 0.75rem';
-                        emptyBox.style.border = '1px dashed rgba(45, 212, 191, 0.35)';
+                        emptyBox.style.border = '1px dashed var(--ui-line-strong)';
                         emptyBox.style.borderRadius = '8px';
                         emptyBox.style.cursor = 'pointer';
-                        emptyBox.style.background = 'rgba(45, 212, 191, 0.03)';
+                        emptyBox.style.background = 'var(--ui-surface)';
                         emptyBox.style.transition = 'all 0.2s ease';
 
                         emptyBox.onmouseover = function() {
-                            this.style.borderColor = '#2dd4bf';
-                            this.style.background = 'rgba(45, 212, 191, 0.08)';
+                            this.style.borderColor = 'var(--ui-accent)';
+                            this.style.background = 'var(--ui-accent-soft)';
                         };
                         emptyBox.onmouseout = function() {
-                            this.style.borderColor = 'rgba(45, 212, 191, 0.35)';
-                            this.style.background = 'rgba(45, 212, 191, 0.03)';
+                            this.style.borderColor = 'var(--ui-line-strong)';
+                            this.style.background = 'var(--ui-surface)';
                         };
 
-                        emptyBox.innerHTML = '<div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(45, 212, 191, 0.15); color: #2dd4bf; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.35rem;"><i class="fa-solid fa-plus"></i></div><br>' +
-                            '<span style="font-size: 0.78rem;">Bảng này đang trống.</span><br><strong style="color: #2dd4bf; font-size: 0.8rem;">Bấm vào đây để chọn đội vào bảng.</strong>';
+                        emptyBox.innerHTML = '<div data-ui-style="manage-group-js-016" style="display: inline-flex;"><i class="fa-solid fa-plus"></i></div><br>' +
+                            '<span data-ui-style="manage-group-js-017">Bảng này đang trống.</span><br><strong data-ui-style="manage-group-js-018">Bấm vào đây để chọn đội vào bảng.</strong>';
 
                         listWrapper.appendChild(emptyBox);
                     } else {
@@ -664,8 +666,8 @@
                                     '<span>' + tName + '</span>' +
                                     '</div>';
 
-                                var actionsHtml = '<div style="display:flex; align-items:center; gap:0.4rem;">';
-                                actionsHtml += '<button type="button" onclick="TourmaManageGroup.removeTeamFromGroup(\'' + gKey + '\', ' + tId + ')" title="Bỏ đội ra khỏi bảng" style="background:transparent; border:none; color:#94a3b8; font-size:0.85rem; cursor:pointer; padding:0.2rem 0.4rem; border-radius:4px; transition:color 0.2s ease;">' +
+                                var actionsHtml = '<div data-ui-style="manage-group-js-019" style="display:flex;">';
+                                actionsHtml += '<button type="button" onclick="TourmaManageGroup.removeTeamFromGroup(\'' + gKey + '\', ' + tId + ')" title="Bỏ đội ra khỏi bảng" data-ui-style="manage-group-js-020">' +
                                     '<i class="fa-solid fa-xmark"></i>' +
                                     '</button>' +
                                     '</div>';
@@ -679,15 +681,15 @@
                         var addMoreRow = document.createElement('div');
                         addMoreRow.onclick = function() { self.openAddTeamModal(gKey); };
                         addMoreRow.style.fontSize = '0.78rem';
-                        addMoreRow.style.color = '#2dd4bf';
+                        addMoreRow.style.color = 'var(--ui-accent)';
                         addMoreRow.style.textAlign = 'center';
                         addMoreRow.style.padding = '0.45rem';
-                        addMoreRow.style.border = '1px dashed rgba(45, 212, 191, 0.3)';
+                        addMoreRow.style.border = '1px dashed var(--ui-line-strong)';
                         addMoreRow.style.borderRadius = '6px';
                         addMoreRow.style.marginTop = '0.5rem';
                         addMoreRow.style.cursor = 'pointer';
                         addMoreRow.style.fontWeight = '600';
-                        addMoreRow.style.background = 'rgba(45, 212, 191, 0.03)';
+                        addMoreRow.style.background = 'var(--ui-surface)';
                         addMoreRow.innerHTML = '<i class="fa-solid fa-plus"></i> Thêm Đội Vào ' + dispTitle;
 
                         listWrapper.appendChild(addMoreRow);
@@ -797,7 +799,7 @@
                 alert('⚠️ Không thể lưu chia bảng: ' + (message || 'Vui lòng thử lại.'));
                 if (nextBtn) {
                     nextBtn.disabled = false;
-                    nextBtn.innerHTML = 'Tiếp theo <i class="fa-solid fa-arrow-right" style="margin-left: 0.4rem;"></i>';
+                    nextBtn.innerHTML = 'Tiếp theo <i class="fa-solid fa-arrow-right" data-ui-style="manage-group-js-021"></i>';
                 }
             }
 

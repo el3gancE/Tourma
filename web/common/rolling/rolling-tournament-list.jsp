@@ -84,53 +84,54 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Danh Sách Giải Con - <%= seriesName %></title>
-        
+
         <!-- Google Fonts & FontAwesome -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        
+
         <!-- Design System CSS & Dedicated CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-list.css">
-    </head>
-    <body>
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-classic"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
+</head>
+    <body class="ui-page workspace-page tournament-workspace series-page rolling-tournament-list-page">
         <!-- Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
-            <jsp:param name="active" value="my-series"/>
+            <jsp:param name="active" value="my-series"/><jsp:param name="themeToggle" value="true"/>
         </jsp:include>
 
         <!-- Dynamic 3-Mode Sidebar Component -->
-        <jsp:include page="/common/component/sidebar.jsp">
+        <div class="tournament-shell"><details class="tournament-navigation" open><summary>Điều hướng chuỗi giải</summary><jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="seriesId" value="<%= seriesIdVal %>"/>
             <jsp:param name="activeStep" value="tournament-list"/>
-        </jsp:include>
+        </jsp:include></details>
 
-        <main class="container has-sidebar" style="max-width: 950px; padding: 1.5rem 1rem;">
-            
-            <!-- Breadcrumb Navigation -->
-            <div style="margin-bottom: 1rem;">
-                <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= seriesIdVal %>" class="text-muted" style="font-size: 0.85rem; font-weight: 600; text-decoration: none;">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard Series
-                </a>
-            </div>
+        <main class="series-main" data-ui-style="rolling-tournament-list-jsp-001">
+
+
 
             <!-- Series Header Banner Card -->
-            <div class="team-list-header-card" style="margin-bottom: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div class="team-list-header-card" data-ui-style="rolling-tournament-list-jsp-004">
+                <div data-ui-style="rolling-tournament-list-jsp-005" style="display: flex;">
                     <div>
-                        <h1 class="rolling-series-name" style="font-size: 1.85rem; font-weight: 800; color: #ffffff; margin: 0 0 0.25rem 0;">
+                        <h1 class="rolling-series-name" data-ui-style="rolling-tournament-list-jsp-006">
                             <i class="fa-solid fa-trophy text-gold"></i> Danh Sách Giải Con
                         </h1>
-                        <p class="text-muted" style="font-size: 0.85rem; margin-top: 0.25rem;">
-                            Quản lý tất cả các giải đấu con thuộc Series <strong><%= seriesName %></strong> (<%= tourneyCount %> Giải Con)
+                        <p class="text-muted" data-ui-style="rolling-tournament-list-jsp-007">
+                            Các giải đấu thuộc <strong><%= seriesName %></strong>, từ mới nhất đến cũ nhất.
                         </p>
                     </div>
                     <div>
-                        <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" style="font-weight: 800; font-size: 0.9rem; padding: 0.65rem 1.25rem; border-radius: 10px; text-decoration: none;">
-                            <i class="fa-solid fa-plus-circle"></i> + Thêm Giải Con Mới
+                        <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" data-ui-style="rolling-tournament-list-jsp-008">
+                            <i class="fa-solid fa-plus-circle"></i> Tạo giải con
                         </a>
                     </div>
                 </div>
@@ -147,14 +148,14 @@
             </form>
             <!-- Tournament Cards Grid -->
             <div class="tourney-cards-grid" id="tourneyCardList">
-                <% if (tournamentsList != null && !tournamentsList.isEmpty()) { 
+                <% if (tournamentsList != null && !tournamentsList.isEmpty()) {
                     // SQL returns this page in newest-first order.
                     for (int i = 0; i < tournamentsList.size(); i++) {
                         Tournament t = tournamentsList.get(i);
                         int nTeams = teamCountMap.containsKey(t.getId()) ? teamCountMap.get(t.getId()) : 0;
                         String tierName = (t.getTierName() != null) ? t.getTierName().toUpperCase() : "S";
                         String fmt = (t.getFormat() != null) ? t.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
-                        
+
                         boolean isMulti = "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType());
                         List<String> stgFormats = (stageFormatsMap != null) ? stageFormatsMap.get(t.getId()) : null;
                         String s1Fmt = (stgFormats != null && !stgFormats.isEmpty()) ? stgFormats.get(0) : fmt;
@@ -167,45 +168,27 @@
                         String championName = t.getChampionName();
                         boolean isFinished = "COMPLETED".equalsIgnoreCase(t.getStatus()) || "FINISHED".equalsIgnoreCase(t.getStatus());
                         boolean isOngoing = "ONGOING".equalsIgnoreCase(t.getStatus()) || "IN_PROGRESS".equalsIgnoreCase(t.getStatus());
-                        String statusStr = isFinished ? "Completed" : (isOngoing ? "In Progress" : "Incoming");
+                        String statusStr = isFinished ? "completed" : (isOngoing ? "in progress" : "incoming");
                         String statusClass = isFinished ? "completed" : (isOngoing ? "in-progress" : "incoming");
                         String stageTypeLabel = isMulti ? "MULTI STAGE" : "SINGLE STAGE";
                 %>
                     <div class="tourney-card" data-id="<%= t.getId() %>" data-stage-type="<%= isMulti ? "MULTI_STAGE" : "SINGLE_STAGE" %>" data-stage1-format="<%= s1Fmt %>" data-stage2-format="<%= s2Fmt %>" data-status="<%= isFinished ? "COMPLETED" : (isOngoing ? "IN_PROGRESS" : "INCOMING") %>" data-db-status="<%= t.getStatus() != null ? t.getStatus() : "" %>" data-db-champion="<%= championName != null ? championName.replace("\"", "&quot;") : "" %>" data-name="<%= t.getName() %>">
-                        <div class="tourney-card-main">
-                            <div class="tourney-card-top-row">
-                                <h3 class="tourney-card-title" style="margin: 0; display: inline-flex; align-items: center;">
-                                    <%= t.getName() %>
-                                    <span class="tier-tag tier-<%= tierName.toLowerCase() %>" style="margin-left: 0.55rem; font-size: 0.95rem; font-weight: 800;">[<%= tierName %>]</span>
-                                </h3>
-                                <span class="tourney-badge-type"><%= stageTypeLabel %></span>
-                                <span class="status-pill <%= statusClass %>">
-                                    <%= statusStr %>
-                                </span>
+                        <div class="tourney-card-main tourney-card-info">
+                            <h3 class="tourney-card-title"><%= t.getName() %> <span class="tier-tag tier-<%= tierName.toLowerCase() %>" aria-label="Tier <%= tierName %>">[<%= tierName %>]</span></h3>
+                            <div class="tourney-info-line">
+                                <span class="team-count-val"><%= nTeams %> đội</span>
+                                <span aria-hidden="true">·</span>
+                                <span class="tourney-format-span"><%= fmtLabel %></span>
                             </div>
-
-                            <div class="tourney-card-meta" style="margin-top: 0.4rem;">
-                                <span class="tourney-teams-meta">
-                                    <i class="fa-solid fa-users text-mint"></i> 
-                                    <span class="team-count-val" style="color: #f8fafc; font-weight: 700;"><%= nTeams %> Đội</span>
-                                </span>
-                                <span class="meta-divider">•</span>
-                                <span><i class="fa-solid fa-layer-group text-gold"></i> Thuộc Series</span>
-                                <span class="meta-divider">•</span>
-                                <span class="tourney-format-span">
-                                    <i class="fa-solid fa-diagram-project text-mint"></i> <%= fmtLabel %>
-                                </span>
-                                <span id="championMeta_<%= t.getId() %>" class="tourney-champion-meta" style="<%= (isFinished) ? "display: inline-flex;" : "display: none;" %>">
-                                    <i class="fa-solid fa-trophy text-gold"></i> Nhà vô địch: <span class="champion-name-val" style="color: #fbbf24;"><%= championName != null ? championName : "" %></span>
-                                </span>
+                            <div class="tourney-series-line"><%= seriesName %></div>
+                            <div id="championMeta_<%= t.getId() %>" class="tourney-champion-meta">
+                                <span class="champion-name-val"><%= isFinished && championName != null ? championName : "" %></span>
                             </div>
-
                         </div>
-
                         <div class="tourney-card-footer">
                             <div class="tourney-card-actions">
                                 <button type="button" class="btn-delete-tourney" title="Xóa" onclick="openDeleteTourneyModal('<%= t.getId() %>', '<%= (t.getName() != null) ? t.getName().replace("'", "\\'").replace("\"", "&quot;") : "" %>')">
-                                    <i class="fa-solid fa-trash-can"></i> Xóa
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i><span class="sr-only">Xóa</span>
                                 </button>
                                 <a href="${pageContext.request.contextPath}/rolling/tournament-teams?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Quản lý đội">
                                     <i class="fa-solid fa-users-gear"></i> QL Đội
@@ -218,20 +201,21 @@
                                 </a>
                             </div>
                             <div class="tourney-progress" title="Số trận đã xong / tổng số trận cả giải, tính trước Stage 2 khi chưa tạo bracket. Không tính BYE; 100% khi xác nhận hoàn thành giải.">
-                                <div class="tourney-progress-label"><span>Tiến độ · <%= t.getCompletedMatches() %>/<%= t.getProgressTotalMatches() %> trận</span><strong><%= t.getProgressPercent() %>%</strong></div>
+                                <span class="tourney-progress-status"><%= statusStr %></span>
+                                <div class="tourney-progress-label"><strong><%= t.getProgressPercent() %>%</strong></div>
                                 <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= t.getProgressPercent() %>">
                                     <span class="tourney-progress-fill" style="width: <%= t.getProgressPercent() %>%"></span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                <% } 
+                <% }
                 } else { %>
-                        <div style="text-align: center; padding: 3rem; background: rgba(18, 22, 31, 0.7); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 16px; color: #94a3b8;">
-                            <i class="fa-solid fa-trophy" style="font-size: 2.5rem; margin-bottom: 0.75rem; color: #fbbf24; opacity: 0.5;"></i>
-                            <h4 style="color: #ffffff; font-weight: 700; margin-bottom: 0.5rem;">${not empty pageInfo.query ? 'Không có giải con phù hợp' : 'Chưa có giải con nào trong Series này'}</h4>
-                            <p style="font-size: 0.85rem; margin-bottom: 1.25rem;">${not empty pageInfo.query ? 'Thử tìm kiếm bằng từ khóa khác.' : 'Hãy bấm nút bên dưới để tạo giải đấu con đầu tiên cho Series.'}</p>
-                            <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" style="font-weight: 800; text-decoration: none;">
+                        <div data-ui-style="rolling-tournament-list-jsp-014">
+                            <i class="fa-solid fa-trophy" data-ui-style="rolling-tournament-list-jsp-015"></i>
+                            <h4 data-ui-style="rolling-tournament-list-jsp-016">${not empty pageInfo.query ? 'Không có giải con phù hợp' : 'Chưa có giải con nào trong Series này'}</h4>
+                            <p data-ui-style="rolling-tournament-list-jsp-017">${not empty pageInfo.query ? 'Thử tìm kiếm bằng từ khóa khác.' : 'Hãy bấm nút bên dưới để tạo giải đấu con đầu tiên cho Series.'}</p>
+                            <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" data-ui-style="rolling-tournament-list-jsp-018">
                                 <i class="fa-solid fa-plus-circle"></i> + Tạo Giải Con Đầu Tiên
                             </a>
                         </div>
@@ -272,9 +256,9 @@
             </c:if>
             <!-- DELETE SUB-TOURNAMENT CONFIRMATION MODAL -->
             <div id="deleteTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeDeleteTourneyModal();">
-                <div class="tourma-modal-card" style="border-color: rgba(244, 63, 94, 0.4);" onclick="event.stopPropagation();">
-                    <div class="modal-header-bar" style="border-bottom: 1px solid rgba(244, 63, 94, 0.2);">
-                        <div class="modal-header-title" style="color: #f43f5e; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                <div class="tourma-modal-card" data-ui-style="rolling-tournament-list-jsp-019" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar" data-ui-style="rolling-tournament-list-jsp-020">
+                        <div class="modal-header-title" data-ui-style="rolling-tournament-list-jsp-021" style="display: flex;">
                             <i class="fa-solid fa-trash-can"></i>
                             <span>Xác Nhận Xóa Giải Con</span>
                         </div>
@@ -283,19 +267,19 @@
                         </button>
                     </div>
 
-                    <div class="modal-body-content" style="padding: 1.25rem 1rem;">
-                        <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
-                            <strong style="color: #f43f5e;">⚠️ Cảnh báo xóa vĩnh viễn:</strong><br>
-                            Hành động này sẽ <strong style="color: #ffffff;">xóa hoàn toàn giải đấu con này</strong> cùng toàn bộ danh sách đội tuyển, cấu hình thể thức, kết quả các trận đấu và tự động cập nhật lại bảng xếp hạng tích lũy Series.
+                    <div class="modal-body-content" data-ui-style="rolling-tournament-list-jsp-022">
+                        <div data-ui-style="rolling-tournament-list-jsp-023">
+                            <strong data-ui-style="rolling-tournament-list-jsp-024">⚠️ Cảnh báo xóa vĩnh viễn:</strong><br>
+                            Hành động này sẽ <strong data-ui-style="rolling-tournament-list-jsp-025">xóa hoàn toàn giải đấu con này</strong> cùng toàn bộ danh sách đội tuyển, cấu hình thể thức, kết quả các trận đấu và tự động cập nhật lại bảng xếp hạng tích lũy Series.
                         </div>
-                        <p style="color: #cbd5e1; font-size: 0.85rem; margin: 0 0 0.35rem 0;">
-                            Bạn có chắc chắn muốn xóa giải con: <strong id="deleteTourneyTargetName" style="color: #f43f5e;"></strong> (ID: <span id="deleteTourneyTargetId" class="text-muted"></span>)?
+                        <p data-ui-style="rolling-tournament-list-jsp-026">
+                            Bạn có chắc chắn muốn xóa giải con: <strong id="deleteTourneyTargetName" data-ui-style="rolling-tournament-list-jsp-027"></strong> (ID: <span id="deleteTourneyTargetId" class="text-muted"></span>)?
                         </p>
                     </div>
 
-                    <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.85rem 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2);">
-                        <button type="button" class="btn btn-secondary" onclick="closeDeleteTourneyModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
-                        <button type="button" class="btn" style="background: #f43f5e; color: #ffffff; border: none; font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer;" onclick="confirmDeleteTourney()">
+                    <div class="modal-footer-bar" data-ui-style="rolling-tournament-list-jsp-028" style="display: flex;">
+                        <button type="button" class="btn btn-secondary" onclick="closeDeleteTourneyModal()" data-ui-style="rolling-tournament-list-jsp-029">Hủy Bỏ</button>
+                        <button type="button" class="btn" data-ui-style="rolling-tournament-list-jsp-030" onclick="confirmDeleteTourney()">
                             <i class="fa-solid fa-trash-can"></i> Xác Nhận Xóa
                         </button>
                     </div>
@@ -304,9 +288,9 @@
 
             <!-- CLONE SUB-TOURNAMENT CONFIRMATION MODAL -->
             <div id="cloneTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeCloneTourneyModal();">
-                <div class="tourma-modal-card" style="border-color: rgba(45, 212, 191, 0.4); max-width: 490px;" onclick="event.stopPropagation();">
-                    <div class="modal-header-bar" style="border-bottom: 1px solid rgba(45, 212, 191, 0.2);">
-                        <div class="modal-header-title" style="color: #2dd4bf; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                <div class="tourma-modal-card" data-ui-style="rolling-tournament-list-jsp-031" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar" data-ui-style="rolling-tournament-list-jsp-032">
+                        <div class="modal-header-title" data-ui-style="rolling-tournament-list-jsp-033" style="display: flex;">
                             <i class="fa-solid fa-copy"></i>
                             <span>Sao Chép Cấu Hình Giải Con</span>
                         </div>
@@ -319,30 +303,30 @@
                         <input type="hidden" name="sourceTournamentId" id="cloneSourceTournamentId" value="">
                         <input type="hidden" name="redirectContext" id="cloneRedirectContext" value="series">
 
-                        <div class="modal-body-content" style="padding: 1.25rem 1rem;">
-                            <div style="background: rgba(45, 212, 191, 0.08); border: 1px solid rgba(45, 212, 191, 0.2); border-radius: 8px; padding: 0.75rem 0.85rem; margin-bottom: 1rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.5;">
-                                <i class="fa-solid fa-circle-info text-mint"></i> 
+                        <div class="modal-body-content" data-ui-style="rolling-tournament-list-jsp-034">
+                            <div data-ui-style="rolling-tournament-list-jsp-035">
+                                <i class="fa-solid fa-circle-info text-mint"></i>
                                 Hệ thống sẽ tạo một giải đấu con mới trong Series này ở trạng thái <strong>DRAFT</strong> với toàn bộ cấu hình thể thức, phân bảng, multi-stage từ giải gốc.
                             </div>
 
-                            <div style="margin-bottom: 1rem;">
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #cbd5e1; margin-bottom: 0.35rem;">
+                            <div data-ui-style="rolling-tournament-list-jsp-036">
+                                <label data-ui-style="rolling-tournament-list-jsp-037" style="display: block;">
                                     Tên giải đấu mới:
                                 </label>
-                                <input type="text" id="cloneNewTourneyName" name="newName" class="form-control" required style="width: 100%; font-size: 0.88rem; font-weight: 600; border-radius: 8px; box-sizing: border-box;" placeholder="Nhập tên giải mới...">
+                                <input type="text" id="cloneNewTourneyName" name="newName" class="form-control" required data-ui-style="rolling-tournament-list-jsp-038" placeholder="Nhập tên giải mới...">
                             </div>
 
-                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.75rem 0.85rem; margin-bottom: 0.5rem; display: flex; align-items: flex-start; gap: 0.6rem;">
-                                 <i class="fa-solid fa-users text-mint" style="margin-top: 0.15rem; font-size: 0.9rem;"></i>
-                                 <div style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.45;">
+                            <div data-ui-style="rolling-tournament-list-jsp-039" style="display: flex;">
+                                 <i class="fa-solid fa-users text-mint" data-ui-style="rolling-tournament-list-jsp-040"></i>
+                                 <div data-ui-style="rolling-tournament-list-jsp-041">
                                      <strong>Ràng buộc số lượng:</strong> Danh sách đội sẽ để trống để bạn nhập hoặc chọn từ Partner ở bước tiếp theo, và <strong>bắt buộc phải khớp đúng số lượng đội</strong> của giải gốc.
                                  </div>
                             </div>
                         </div>
 
-                        <div class="modal-footer-bar" style="display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.85rem 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.2);">
-                            <button type="button" class="btn btn-secondary" onclick="closeCloneTourneyModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">Hủy Bỏ</button>
-                            <button type="submit" class="btn btn-mint" style="font-size: 0.8rem; font-weight: 700; padding: 0.45rem 1.25rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <div class="modal-footer-bar" data-ui-style="rolling-tournament-list-jsp-042" style="display: flex;">
+                            <button type="button" class="btn btn-secondary" onclick="closeCloneTourneyModal()" data-ui-style="rolling-tournament-list-jsp-043">Hủy Bỏ</button>
+                            <button type="submit" class="btn btn-mint" data-ui-style="rolling-tournament-list-jsp-044" style="display: inline-flex;">
                                 <i class="fa-solid fa-copy"></i> Tạo Bản Sao
                             </button>
                         </div>
@@ -350,7 +334,7 @@
                 </div>
             </div>
 
-        </main>
+        </main></div>
 
         <script>
             let pendingDeleteId = null;

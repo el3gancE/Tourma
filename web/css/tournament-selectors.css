@@ -1,0 +1,19 @@
+/* Shared group and round selectors across tournament formats and standings. */
+:root :is(.gsl-group-tabs-bar,.swiss-round-pills-bar,#rrRoundSelectorBar,#gsGroupSelectorBar) {
+    display:flex;
+    flex-wrap:nowrap;
+    gap:8px;
+    min-width:0;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding-bottom:8px;
+    scrollbar-width:thin;
+    scrollbar-color:var(--ui-line-strong,#b8c1cc) var(--ui-surface-alt,#e5e9ee);
+}
+:root :is(.gsl-group-tabs-bar,.swiss-round-pills-bar,#rrRoundSelectorBar,#gsGroupSelectorBar) > :is(button,a) {
+    flex:0 0 auto;
+    white-space:nowrap;
+}
+:root :is(.gsl-group-tabs-bar,.swiss-round-pills-bar,#rrRoundSelectorBar,#gsGroupSelectorBar)::-webkit-scrollbar { height:7px; }
+:root :is(.gsl-group-tabs-bar,.swiss-round-pills-bar,#rrRoundSelectorBar,#gsGroupSelectorBar)::-webkit-scrollbar-thumb { background:var(--ui-line-strong,#b8c1cc); border-radius:5px; }

@@ -1,152 +1,51 @@
-/* ============================================================================
-   TOURMA - ROLLING WINDOW SERIES STEP 3: SUB-TOURNAMENT TEAMS MANAGEMENT STYLESHEET
-   Standard Project Design System (Obsidian Charcoal Theme)
-   ============================================================================ */
-
-.subtourney-teams-header-card {
-  background: var(--bg-card-surface, #181d29);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-lg, 14px);
-  padding: 1.5rem 1.75rem;
-  margin-bottom: 1.75rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
-}
-
-.subtourney-teams-card {
-  background: var(--bg-card-surface, #181d29);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-lg, 14px);
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.partner-checkbox-list {
-  max-height: 320px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.65rem;
-  background: rgba(11, 13, 18, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-}
-
-.partner-checkbox-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.6rem 0.85rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: var(--transition-fast, 0.18s ease);
-}
-
-.partner-checkbox-item:hover {
-  background: rgba(45, 212, 191, 0.08);
-  border-color: rgba(45, 212, 191, 0.3);
-}
-
-.partner-checkbox-item input[type="checkbox"] {
-  accent-color: #2dd4bf;
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-/* Fixed Position Centered Modal Overlay & Card */
-.team-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 99999;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.team-modal-card {
-  background: #181d29 !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 16px !important;
-  width: 100% !important;
-  max-width: 540px !important;
-  padding: 1.75rem !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7) !important;
-  max-height: 90vh !important;
-  overflow-y: auto !important;
-  animation: modalFadeIn 0.2s ease-out !important;
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Partner selection: exclude the union of teams in selected sibling tournaments. */
-.partner-exclusion-filter {
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 10px;
-  padding: .75rem;
-  margin-bottom: .65rem;
-}
-.partner-exclusion-filter h4 { color: #e2e8f0; font-size: .88rem; font-weight: 700; margin: 0; }
-#partnerExclusionCount { float: right; color: #2dd4bf; font-size: .75rem; }
-.partner-exclusion-filter p, .partner-exclusion-hint { color: #94a3b8; font-size: .75rem; margin: .55rem 0; }
-.partner-exclusion-tournaments { max-height: 150px; overflow-y: auto; }
-.partner-exclusion-tournaments label { display: flex; align-items: center; gap: .6rem; padding: .4rem; color: #cbd5e1; cursor: pointer; font-size: .8rem; }
-.partner-exclusion-tournaments small { margin-left: auto; color: #64748b; }
-.partner-exclusion-input { accent-color: #2dd4bf; }
-#partnerModalCheckboxList .partner-is-excluded { opacity: .4; cursor: not-allowed !important; }
-#partnerModalCheckboxList .partner-is-excluded input { cursor: not-allowed; }
-.partner-excluded-label { color: #94a3b8; font-size: .65rem; }
-
-/* Wide Partner dialog with two independently scrollable columns. */
-#partnerSelectModal .partner-select-card {
-  max-width: 1060px !important;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden !important;
-  box-sizing: border-box;
-}
-#partnerSelectForm { display: flex; flex-direction: column; min-height: 0; }
-.partner-selection-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; height: min(58vh, 520px); min-height: 0; }
-.partner-selection-teams { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-#partnerSelectionTitle { margin: 0 0 .75rem; color: #e2e8f0; font-size: .88rem; font-weight: 700; }
-#partnerSelectModal .partner-checkbox-list { flex: 1; min-height: 100px; max-height: none; }
-#partnerSelectModal .partner-exclusion-filter { display: flex; flex-direction: column; min-width: 0; min-height: 0; margin: 0; padding: 1rem; background: rgba(11,13,18,.35); }
-#partnerSelectModal .partner-exclusion-filter h4 { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
-#partnerExclusionCount { flex-shrink: 0; background: rgba(45,212,191,.1); padding: .2rem .5rem; border-radius: 999px; }
-#partnerSelectModal .partner-exclusion-tournaments { flex: 1; max-height: none; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: .35rem; }
-#partnerSelectModal .partner-exclusion-tournaments label { flex-shrink: 0; border: 1px solid rgba(255,255,255,.07); border-radius: 8px; padding: .65rem .75rem; background: rgba(255,255,255,.025); }
-#partnerSelectModal .partner-exclusion-tournaments label:hover { border-color: rgba(45,212,191,.3); background: rgba(45,212,191,.06); }
-#partnerSelectModal .partner-exclusion-tournaments label:has(input:checked) { border-color: rgba(45,212,191,.45); background: rgba(45,212,191,.1); }
-.partner-exclusion-tournaments input { flex-shrink: 0; width: 15px; height: 15px; }
-.partner-exclusion-tournaments span { overflow-wrap: anywhere; }
-.partner-exclusion-tournaments small { flex-shrink: 0; }
-#partnerExclusionHint:empty { display: none; }
-.partner-selection-footer { display: flex; justify-content: flex-end; flex-shrink: 0; gap: .65rem; padding-top: 1rem; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,.08); }
-@media (max-width: 740px) {
-  #partnerSelectModal .partner-select-card { overflow-y: auto !important; padding: 1rem !important; }
-  #partnerSelectForm { min-height: auto; }
-  .partner-selection-columns { grid-template-columns: minmax(0, 1fr); height: auto; }
-  #partnerSelectModal .partner-exclusion-tournaments { max-height: 240px; }
-  #partnerSelectModal .partner-checkbox-list { max-height: 300px; }
-  .partner-selection-footer { flex-wrap: wrap; }
+.subteams-page .page-main-title { font-size:26px; margin-bottom:20px; }
+.subteams-page .team-mgmt-grid { align-items:start; }
+.subteams-page .team-textarea-input { min-height:260px; }
+.subteams-page .team-panel-header { flex-wrap:wrap; }
+.subteams-page .manage-toolbar-right { display:flex; flex-wrap:wrap; gap:8px; }
+.subteams-page .table-scroll-wrapper { max-height:420px; overflow:auto; }
+.subteams-page .team-modal-overlay { position:fixed; inset:0; z-index:2000; align-items:center; justify-content:center; padding:20px; background:rgb(0 0 0 / 55%); }
+.subteams-page .team-modal-card { width:min(1100px,100%); max-height:90dvh; overflow:auto; border:1px solid var(--ui-line); border-radius:10px; background:var(--ui-surface); color:var(--ui-text); box-shadow:var(--ui-shadow); }
+.subteams-page [data-ui-style="rolling-tournament-teams-jsp-046"] { align-items:center; justify-content:space-between; gap:12px; padding:18px; border-bottom:1px solid var(--ui-line); }
+.subteams-page [data-ui-style="rolling-tournament-teams-jsp-047"] { font-size:18px; font-weight:600; }
+.subteams-page [data-ui-style="rolling-tournament-teams-jsp-049"] { font-size:12px; color:var(--ui-muted); padding:14px 18px; }
+.subteams-page .partner-selection-columns { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(230px,1fr); gap:18px; padding:0 18px; }
+.subteams-page .partner-checkbox-item { align-items:center; justify-content:space-between; gap:12px; padding:10px; border:1px solid var(--ui-line); border-radius:6px; margin-bottom:6px; font-size:12px; }
+.subteams-page .partner-checkbox-item > div:first-child { align-items:center; gap:8px; min-width:0; }
+.subteams-page .partner-checkbox-item .rank-badge { font-size:10px; padding:3px 5px; border-radius:4px; }
+.subteams-page .partner-selection-footer { display:flex; justify-content:flex-end; gap:10px; padding:18px; border-top:1px solid var(--ui-line); }
+.subteams-page .partner-exclusion-filter { min-width:0; padding:14px; background:var(--ui-bg); border:1px solid var(--ui-line); border-radius:8px; }
+.subteams-page .partner-exclusion-filter h4 { margin:0 0 12px; font-size:12px; }
+.subteams-page .partner-exclusion-tournaments { display:grid; gap:8px; max-height:320px; overflow:auto; font-size:11px; }
+.subteams-page .partner-exclusion-hint { padding:10px 18px; font-size:11px; color:var(--ui-muted); }
+@media(max-width:700px) { .subteams-page .partner-selection-columns { grid-template-columns:1fr; } }
+.subteams-page #bulkAddForm { flex-direction:column; }
+.subteams-page #bulkAddForm .bulk-input-container { width:100%; flex:none; }
+.subteams-page #teamTextarea { width:100%; min-height:260px; flex:none; }
+.subteams-page .manage-toolbar-right { margin-left:0; align-items:center; }
+.subteams-page .manage-toolbar-right .form-control { width:200px; }
+.subteams-page [data-ui-style="rolling-tournament-teams-jsp-042"] { justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:20px; }
+.subteams-page [data-ui-style="rolling-tournament-teams-jsp-041"] { color:var(--ui-muted); font-size:10px; }
+.subteams-page #partnerModalCheckboxList { max-height:42dvh; overflow:auto; }
+.subteams-page :is([data-ui-style="rolling-tournament-teams-jsp-051"],[data-ui-style="rolling-tournament-teams-jsp-052"],[data-ui-style="rolling-tournament-teams-jsp-055"],[data-ui-style="rolling-tournament-teams-jsp-059"]) { align-items:center; flex-wrap:wrap; gap:8px; font-size:11px; margin-bottom:10px; }
+.subteams-page #quickSelectNum { width:65px; }
+.subteams-page #partnerSelectionTitle { font-size:13px; margin:0 0 12px; }
+.subteams-page #partnerExclusionTitle + p { font-size:11px; line-height:1.7; color:var(--ui-muted); }
+.subteams-page :is([data-ui-style="rolling-tournament-teams-jsp-048"],[data-ui-style="rolling-tournament-teams-jsp-060"],[data-ui-style="rolling-tournament-teams-jsp-061"]) { border:1px solid var(--ui-line); border-radius:5px; background:var(--ui-bg); color:var(--ui-text); padding:6px 9px; font:11px var(--ui-font); cursor:pointer; }
+/* Desktop workspace stays within the screen; only the roster scrolls. */
+@media(min-width:1000px) and (min-height:600px) {
+    .subteams-page .series-main { display:flex; flex-direction:column; min-height:0; padding-block:18px; }
+    .subteams-page .page-main-title { flex-shrink:0; margin-bottom:16px; }
+    .subteams-page .team-mgmt-grid { flex:1; min-height:0; align-items:stretch; }
+    .subteams-page .team-panel-card { display:flex; flex-direction:column; min-height:0; }
+    .subteams-page :is(.team-panel-header,.manage-toolbar,.input-actions-bar) { flex-shrink:0; }
+    .subteams-page #bulkAddForm { display:flex; flex-direction:column; flex:1; min-height:0; }
+    .subteams-page #bulkAddForm .bulk-input-container { flex:1; min-height:0; }
+    .subteams-page #teamTextarea { flex:1; min-height:0; resize:none; }
+    .subteams-page #bulkRemoveTeamsForm { display:flex; flex-direction:column; flex:1; min-height:0; }
+    .subteams-page .table-container { display:flex; flex-direction:column; flex:1; min-height:0; }
+    .subteams-page .table-scroll-wrapper { flex:1; min-height:0; max-height:none; overflow:auto; overscroll-behavior:contain; }
+    .subteams-page [data-ui-style="rolling-tournament-teams-jsp-042"] { flex-shrink:0; margin-top:14px; }
+    .subteams-page .tournament-shell > .tournament-navigation { height:100%; max-height:100%; }
+    .subteams-page .app-left-sidebar.tournament-sidebar { height:100%; max-height:100%; }
 }

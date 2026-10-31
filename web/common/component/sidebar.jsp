@@ -90,29 +90,32 @@
     else if ("GSL".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "gsl.jsp";
     else if ("SWISS_LITE".equalsIgnoreCase(stage2Format) || "SWISS".equalsIgnoreCase(stage2Format)) targetBracketUrlStage2 = "swiss-stage.jsp";
 
-    boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType) || (stageFormats != null && stageFormats.size() >= 2);
+    boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType);
     boolean hasSeries = (currentSeries != null);
     boolean hasTournament = (currentTournament != null);
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=20261031-tabs">
 
-<aside class="app-left-sidebar">
+<aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">
+    <div class="sidebar-workspace-heading"><span class="sidebar-workspace-mark" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span><span>Không gian giải đấu</span></div>
 
     <% if (hasSeries) { %>
+    <nav class="sidebar-section" aria-label="Chuỗi giải">
     <!-- ========================================================= -->
     <!-- MỤC 1: QUẢN LÝ CHUỖI GIẢI (SERIES SECTION)                -->
     <!-- ========================================================= -->
-    <div class="sidebar-section-header" style="color: #fbbf24;">
+    <div class="sidebar-section-header" data-ui-style="sidebar-jsp-001">
         <i class="fa-solid fa-layer-group"></i> CHUỖI GIẢI (SERIES)
     </div>
 
-    <div class="sidebar-subtourney-badge" style="border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12);">
+    <div class="sidebar-subtourney-badge" data-ui-style="sidebar-jsp-002">
         <i class="fa-solid fa-chart-line text-gold"></i>
         <span><%= currentSeries.getName() %></span>
     </div>
 
-    <ul class="sidebar-menu-list" style="margin-bottom: 1.5rem;">
+    <ul class="sidebar-menu-list" data-ui-style="sidebar-jsp-003">
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "dashboard".equals(activeStep) ? "active" : "" %>">
@@ -153,9 +156,11 @@
             </a>
         </li>
     </ul>
+    </nav>
     <% } %>
 
     <% if (hasTournament) { %>
+    <nav class="sidebar-section" aria-label="Giải đấu">
     <!-- ========================================================= -->
     <!-- MỤC 2: QUẢN LÝ GIẢI ĐẤU (GIẢI ĐƠN HOẶC GIẢI CON)           -->
     <!-- ========================================================= -->
@@ -166,11 +171,11 @@
     <div class="sidebar-subtourney-badge">
         <i class="fa-solid fa-trophy text-mint"></i>
         <span><%= tournamentName %></span>
-        <% if (hasSeries) { 
-             String tTier = (currentTournament != null && currentTournament.getTierName() != null && !currentTournament.getTierName().trim().isEmpty()) 
+        <% if (hasSeries) {
+             String tTier = (currentTournament != null && currentTournament.getTierName() != null && !currentTournament.getTierName().trim().isEmpty())
                  ? currentTournament.getTierName().toUpperCase() : "S";
         %>
-            <span class="tier-tag tier-<%= tTier.toLowerCase() %>" style="margin-left: 0.55rem; font-weight: 800;">[<%= tTier %>]</span>
+            <span class="tier-tag tier-<%= tTier.toLowerCase() %>" data-ui-style="sidebar-jsp-004">[<%= tTier %>]</span>
         <% } %>
     </div>
 
@@ -276,12 +281,16 @@
             </a>
         </li>
     </ul>
+    </nav>
     <% } %>
 
 </aside>
 
 <script>
 (function() {
+    document.querySelectorAll('.tournament-sidebar .sidebar-menu-link.active').forEach(function(link) {
+        link.setAttribute('aria-current', 'page');
+    });
     var tid = '<%= tournamentId %>';
     if (!tid) return;
     try {
@@ -291,7 +300,8 @@
 
         var tType = localStorage.getItem('tourma_type_' + tid);
         var multiCfgRaw = localStorage.getItem('tourma_multi_config_' + tid);
-        var isMulti = (dbIsMulti || tType === 'MULTI_STAGE' || !!multiCfgRaw);
+        var hasSavedTournament = <%= hasTournament ? "true" : "false" %>;
+        var isMulti = hasSavedTournament ? dbIsMulti : (tType === 'MULTI_STAGE');
         var m1 = document.getElementById('sidebarMenuStage1');
         var m2 = document.getElementById('sidebarMenuStage2');
         var sSingle = document.getElementById('sidebarMenuSingleStage');
@@ -312,7 +322,7 @@
             var s1Format = dbS1Format || 'SINGLE_ELIMINATION';
             var s2Format = dbS2Format || 'SINGLE_ELIMINATION';
 
-            if (multiCfgRaw) {
+            if (!hasSavedTournament && multiCfgRaw) {
                 try {
                     var mCfg = JSON.parse(multiCfgRaw);
                     if (mCfg.stage1Format) s1Format = mCfg.stage1Format;
@@ -357,7 +367,7 @@
             }
 
         var localFmt = localStorage.getItem('tourma_format_' + tid);
-        if (!isMulti && localFmt && sSingle) {
+        if (!hasSavedTournament && !isMulti && localFmt && sSingle) {
             localFmt = localFmt.toUpperCase();
             var page = 'single-elimination.jsp';
             if (localFmt === 'DOUBLE_ELIMINATION') page = 'double-elimination.jsp';
@@ -365,7 +375,7 @@
             else if (localFmt === 'GROUP_STAGE') page = 'group-stage.jsp';
             else if (localFmt === 'GSL') page = 'gsl.jsp';
             else if (localFmt === 'SWISS_LITE' || localFmt === 'SWISS') page = 'swiss-stage.jsp';
-            
+
             var aLink = sSingle.querySelector('a');
             if (aLink) {
                 var seriesId = '<%= seriesId %>';

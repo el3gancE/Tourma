@@ -667,14 +667,14 @@
 
     if (isEnabled) {
       btn.dataset.active = 'true';
-      btn.style.background = '#10b981';
-      btn.style.color = '#ffffff';
-      btn.style.borderColor = '#10b981';
+      btn.style.background = 'var(--ui-accent)';
+      btn.style.color = 'var(--ui-on-accent)';
+      btn.style.borderColor = 'var(--ui-accent)';
     } else {
       btn.dataset.active = 'false';
-      btn.style.background = 'rgba(255, 255, 255, 0.06)';
-      btn.style.color = '#94a3b8';
-      btn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+      btn.style.background = 'var(--ui-surface)';
+      btn.style.color = 'var(--ui-muted)';
+      btn.style.borderColor = 'var(--ui-line)';
     }
   };
 

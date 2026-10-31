@@ -1,0 +1,65 @@
+/* Shared list workspace: headings, filters, search and controls. */
+.workspace-main { max-width:1440px; margin:auto; padding:0 48px 50px; }
+.workspace-utility { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:25px 0; }
+.workspace-utility>span { font-size:9px; letter-spacing:1.5px; color:var(--ui-muted); }
+.workspace-page .page-header-row { display:flex; justify-content:space-between; align-items:center; gap:24px; padding:24px 0 35px; }
+.workspace-page .page-title { font-size:34px; font-weight:700; letter-spacing:-1.3px; display:flex; align-items:center; gap:13px; }
+.workspace-page .page-title>i { color:var(--ui-accent); font-size:24px; }
+.workspace-page .page-header-row p { color:var(--ui-muted); font-size:12px; margin-top:9px; }
+.workspace-page .btn { display:inline-flex; align-items:center; justify-content:center; gap:9px; border:1px solid var(--ui-line); border-radius:7px; padding:11px 15px; background:var(--ui-surface); color:var(--ui-text); cursor:pointer; font-size:11px; white-space:nowrap; }
+.workspace-page .btn-mint { background:var(--ui-accent-fill,var(--ui-accent)); border-color:var(--ui-accent); color:var(--ui-on-accent); }
+.workspace-page .text-muted { color:var(--ui-muted); }
+.workspace-page .text-mint,.workspace-page .text-gold { color:var(--ui-accent); }
+.toolbar-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px; padding:18px 0; border-block:1px solid var(--ui-line); margin-bottom:26px; }
+.filter-pills-group { display:flex; flex-wrap:wrap; gap:5px; }
+.filter-pill-btn { font:inherit; border:1px solid transparent; background:none; color:var(--ui-muted); padding:9px 11px; border-radius:6px; cursor:pointer; font-size:11px; }
+.filter-pill-btn:hover { background:var(--ui-surface-alt); }
+.filter-pill-btn.active { background:var(--ui-accent-soft); color:var(--ui-accent); }
+.search-input-box { display:flex; align-items:center; gap:10px; border:1px solid var(--ui-line); border-radius:7px; background:var(--ui-surface); padding:6px 7px 6px 12px; flex:0 1 310px; }
+.search-input-box>i { font-size:12px; color:var(--ui-muted); }
+.workspace-page .form-control { font:inherit; font-size:12px; background:var(--ui-surface); color:var(--ui-text); border:1px solid var(--ui-line); border-radius:6px; padding:11px; width:100%; min-width:0; }
+.search-input-box .form-control { padding:5px 0; border:0; background:none; }
+.empty-state-box { text-align:center; padding:70px 20px; border:1px dashed var(--ui-line); border-radius:10px; }
+.empty-state-box>div { font-size:30px; color:var(--ui-accent); margin-bottom:15px; }
+.empty-state-box h3 { font-size:20px; font-weight:500; }
+.empty-state-box p { margin:10px 0 23px; font-size:12px; }
+.workspace-page .btn-view-bracket-card { padding:0 12px; background:var(--ui-accent-soft); color:var(--ui-accent); border-color:transparent; white-space:nowrap; }
+.workspace-page .btn-view-bracket-card { font-weight:500; transition:background .18s; }
+@media(max-width:1100px) { .workspace-main { padding-inline:30px; } .filter-pills-group { flex-basis:100%; } .search-input-box { flex:1; max-width:420px; } }
+@media(max-width:700px) { .workspace-page .page-header-row { flex-direction:column; align-items:start; padding-top:15px; } .workspace-page .page-title { font-size:28px; } }
+@media(max-width:520px) { .workspace-main { padding-inline:20px; } .workspace-utility>span { font-size:7px; letter-spacing:.7px; } .filter-pill-btn { font-size:10px; padding:8px; } }
+/* Shared Series list surfaces and controls. */
+.series-page > .navbar { max-width:none; width:100%; background:var(--ui-bg); }
+.series-page .tournament-shell { padding-right:28px; }
+.series-page .series-main { min-width:0; padding-block:28px; }
+.series-page :is(.team-list-header-card,.hof-header-banner) { padding-bottom:24px; margin-bottom:24px; border-bottom:1px solid var(--ui-line); }
+.series-page :is([data-ui-style="rolling-team-list-jsp-004"],[data-ui-style="rolling-tournament-list-jsp-005"]) { align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px; }
+.series-page :is(.rolling-series-name,.hof-main-title) { font-size:28px; line-height:1.4; font-weight:700; }
+.series-page .rolling-series-name > i { display:none; }
+.series-page :is(.team-list-header-card p,.hof-subtitle) { font-size:12px; color:var(--ui-muted); margin-top:8px; }
+.series-page .text-muted { color:var(--ui-muted); }
+.series-page .team-list-table { width:100%; border-collapse:separate; border-spacing:0; border:1px solid var(--ui-line); border-radius:8px; overflow:hidden; background:var(--ui-surface); font-size:13px; font-variant-numeric:tabular-nums; }
+.series-page .team-list-table :is(th,td) { padding:13px 16px; border-bottom:1px solid var(--ui-line); text-align:center; }
+.series-page .team-list-table th { font-size:11px; font-weight:600; color:var(--ui-muted); background:var(--ui-surface-alt); white-space:nowrap; }
+.series-page .team-list-table :is(th,td):nth-child(2) { text-align:left; min-width:180px; font-weight:600; }
+.series-page .team-list-table tr:last-child td { border-bottom:0; }
+.series-page .team-list-table tbody tr:hover { background:var(--ui-surface-alt); }
+.series-page .team-list-card { min-width:0; overflow-x:auto; }
+.series-page :is(.tier-s,[data-tier="S"].hof-tier-btn) { color:var(--ui-tier-s); }
+.series-page :is(.tier-a,[data-tier="A"].hof-tier-btn) { color:var(--ui-tier-a); }
+.series-page :is(.tier-b,[data-tier="B"].hof-tier-btn) { color:var(--ui-tier-b); }
+.series-page :is(.tier-c,[data-tier="C"].hof-tier-btn) { color:var(--ui-tier-c); }
+.series-page :is(.tier-d,[data-tier="D"].hof-tier-btn) { color:var(--ui-tier-d); }
+.series-page .tier-tag { font-weight:700; font-size:11px; }
+@media(max-width:600px) { .series-page .tournament-shell { padding-right:20px; } .series-page :is(.rolling-series-name,.hof-main-title) { font-size:24px; } }
+/* Shared form language for Series creation and child tournament creation. */
+.series-form-page .form-container-box { max-width:820px; margin:0 auto; }
+.series-form-page .form-header-title { font-size:28px; line-height:1.4; font-weight:700; margin-bottom:10px; }
+.series-form-page .form-header-title i { color:var(--ui-accent); font-size:21px; }
+.series-form-page .form-container-box > p { font-size:12px; color:var(--ui-muted); margin-bottom:24px; }
+.series-form-page .form-group { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; min-width:0; }
+.series-form-page .form-label { font-size:12px; font-weight:600; }
+.series-form-page .form-group p { color:var(--ui-muted); font-size:11px; }
+.series-form-page .form-control { background:var(--ui-surface); padding:11px 12px; min-height:40px; }
+.series-form-page textarea.form-control { min-height:100px; resize:vertical; }
+.series-form-page input[type="radio"],.series-form-page input[type="checkbox"] { accent-color:var(--ui-accent); }

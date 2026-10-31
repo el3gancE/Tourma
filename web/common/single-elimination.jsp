@@ -118,14 +118,19 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><%= tourneyName %> - Single Elimination - Tourma</title>
 
-        <!-- Google Font Lexend -->
+        <!-- Google Font Readex Pro -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-classic"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
         <!-- Main Stylesheets -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=<%= System.currentTimeMillis() %>">
@@ -138,7 +143,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css?v=<%= System.currentTimeMillis() %>">
     </head>
-    <body>
+    <body class="ui-page tournament-workspace se-page">
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp" />
 
@@ -153,8 +158,12 @@
         <!-- Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="tournaments" />
+            <jsp:param name="themeToggle" value="true" />
         </jsp:include>
 
+        <div class="tournament-shell se-workspace">
+        <details class="tournament-navigation" open>
+        <summary>Điều hướng giải đấu <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
         <!-- Sidebar Component (Step 4: Vòng Đấu / Sơ Đồ Nhánh) -->
         <jsp:include page="/common/component/sidebar.jsp">
             <jsp:param name="activeStep" value="bracket" />
@@ -162,8 +171,9 @@
             <jsp:param name="seriesId" value="<%= seriesIdVal %>" />
         </jsp:include>
 
-        <!-- Main Content Area Shifted Right by Sidebar -->
-        <main class="container has-sidebar">
+        </details>
+        <!-- Main Content Area -->
+        <main class="se-main" aria-label="Sơ đồ Single Elimination">
 
             <!-- Top Tournament Navigation & Control Bar Component -->
             <jsp:include page="/common/component/tournament-navbar.jsp">
@@ -186,7 +196,7 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
-            <div id="singleEmptyAlertContainer" style="display: none; width: 100%;"></div>
+            <div id="singleEmptyAlertContainer" data-ui-style="single-elimination-jsp-001" style="display: none;"></div>
 
             <!-- MODE 1: BRACKET TREE VIEW (Inside Drag-to-Pan Viewport Frame) -->
             <div id="bracketViewportFrame" class="bracket-viewport-frame">
@@ -229,6 +239,7 @@
             </div>
 
         </main>
+        </div>
 
         <!-- Score Edit Popup Component -->
         <jsp:include page="/common/component/popup.jsp" />
@@ -255,7 +266,7 @@
             window.TourmaTournamentType = "<%= tournamentType %>";
             window.TourmaCurrentStage = <%= currentStage %>;
             window.TourmaMultiStageConfig = <%= (dbMultiStageConfig != null && !dbMultiStageConfig.trim().isEmpty() && !dbMultiStageConfig.trim().equals("{}")) ? dbMultiStageConfig : "null" %>;
-            
+
             window.addEventListener('DOMContentLoaded', function () {
                 var tourneyId = "<%= (tourneyId != null && !tourneyId.trim().isEmpty()) ? tourneyId : "demo" %>";
                 var dbTournamentStatus = '<%= dbTournamentStatus %>';

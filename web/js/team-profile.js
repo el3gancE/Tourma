@@ -68,7 +68,7 @@
       var hHtml = (prof.highestRank > 0) ? ('#' + prof.highestRank) : '-';
       if (prof.highestRank > 0 && prof.highestRankTourneyName) {
         var hUrl = prof.highestRankTourneyUrl || '#';
-        hHtml += '<span class="rank-tourney-name">(<a href="' + hUrl + '" class="rank-tourney-link" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;" title="Xem giai đoạn cuối giải ' + prof.highestRankTourneyName + '">' + prof.highestRankTourneyName + '</a>)</span>';
+        hHtml += '<span class="rank-tourney-name">(<a href="' + hUrl + '" class="rank-tourney-link" data-ui-style="team-profile-js-001" title="Xem giai đoạn cuối giải ' + prof.highestRankTourneyName + '">' + prof.highestRankTourneyName + '</a>)</span>';
       }
       hEl.innerHTML = hHtml;
       if (prof.highestRank === 1 && prof.currentPoints > 0) {
@@ -112,21 +112,21 @@
     // 6. Tournaments Played
     var tpCountEl = document.getElementById('profTourneysPlayed');
     if (tpCountEl) {
-      tpCountEl.innerHTML = (prof.playedCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700;">Giải</span>';
+      tpCountEl.innerHTML = (prof.playedCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-002">Giải</span>';
     }
 
     // 7. Achievement Cards
     var ccEl = document.getElementById('profChampCount');
-    if (ccEl) ccEl.innerHTML = (prof.champCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">Lần</span>';
+    if (ccEl) ccEl.innerHTML = (prof.champCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-003">Lần</span>';
 
     var ruEl = document.getElementById('profRunnerUpCount');
-    if (ruEl) ruEl.innerHTML = (prof.runnerUpCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">Lần</span>';
+    if (ruEl) ruEl.innerHTML = (prof.runnerUpCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-004">Lần</span>';
 
     var scEl = document.getElementById('profSemiCount');
-    if (scEl) scEl.innerHTML = (prof.semiCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">Lần</span>';
+    if (scEl) scEl.innerHTML = (prof.semiCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-005">Lần</span>';
 
     var qcEl = document.getElementById('profQuarterCount');
-    if (qcEl) qcEl.innerHTML = (prof.quarterCount || 0) + '<span class="pts-unit" style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">Lần</span>';
+    if (qcEl) qcEl.innerHTML = (prof.quarterCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-006">Lần</span>';
 
     // 8. Champion Badges Section (Only if champCount > 0)
     var elChampSection = document.getElementById('profChampionSection');
@@ -139,7 +139,7 @@
           elChampBadges.innerHTML = reversedChampList.map(function (ct) {
             var bUrl = ct.finalStageUrl || '#';
             var tier = (ct.tier || ct.tierName || 'A').toUpperCase();
-            return '<a href="' + bUrl + '" class="champion-badge-pill" data-tournament-id="' + (ct.id || ct.tournamentId || '') + '" data-tier="' + tier + '" style="text-decoration: none; cursor: pointer;" title="Xem giai đoạn cuối giải ' + ct.name + '">' +
+            return '<a href="' + bUrl + '" class="champion-badge-pill" data-tournament-id="' + (ct.id || ct.tournamentId || '') + '" data-tier="' + tier + '" data-ui-style="team-profile-js-007" title="Xem giai đoạn cuối giải ' + ct.name + '">' +
               '<i class="fa-solid fa-crown"></i> ' + ct.name +
             '</a>';
           }).join('');
@@ -183,21 +183,21 @@
           var pTier = (perf.tier || perf.tierName || 'A').toUpperCase();
 
           rowsHtml += '<tr>' +
-            '<td style="font-weight: 700; color: var(--text-muted);">' + sttVal + '</td>' +
-            '<td style="font-weight: 700; color: #ffffff;">' +
-              '<a href="' + tourneyUrl + '" class="tourney-name-link" style="color: #ffffff; text-decoration: none; font-weight: 700; transition: color 0.18s ease;" onmouseover="this.style.color=\'#2dd4bf\'" onmouseout="this.style.color=\'#ffffff\'" title="Xem giai đoạn cuối giải ' + perf.name + '">' +
+            '<td data-ui-style="team-profile-js-008">' + sttVal + '</td>' +
+            '<td data-ui-style="team-profile-js-009">' +
+              '<a href="' + tourneyUrl + '" class="tourney-name-link" data-ui-style="team-profile-js-010" onmouseover="this.style.color=\'var(--ui-accent)\'" onmouseout="this.style.color=\'var(--ui-text)\'" title="Xem giai đoạn cuối giải ' + perf.name + '">' +
                 perf.name +
               '</a>' +
-              '<span class="tier-tag tier-' + pTier.toLowerCase() + '" style="margin-left: 0.55rem;">[' + pTier + ']</span>' +
+              '<span class="tier-tag tier-' + pTier.toLowerCase() + '" data-ui-style="team-profile-js-011">[' + pTier + ']</span>' +
             '</td>' +
-            '<td style="color: var(--text-muted); font-size: 0.82rem; font-weight: 600;">' + perf.format + '</td>' +
+            '<td data-ui-style="team-profile-js-012">' + perf.format + '</td>' +
             '<td><span class="achievement-text ' + achClass + '">' + perf.achievement + '</span></td>' +
-            '<td style="text-align: right; font-weight: 800; color: #fbbf24;">+' + (perf.pointsEarned || 0) + ' pts</td>' +
+            '<td data-ui-style="team-profile-js-013">+' + (perf.pointsEarned || 0) + ' pts</td>' +
           '</tr>';
         });
         elTbody.innerHTML = rowsHtml;
       } else {
-        elTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">Chưa có dữ liệu thành tích thi đấu giải con nào trong Series này.</td></tr>';
+        elTbody.innerHTML = '<tr><td colspan="5" data-ui-style="team-profile-js-014">Chưa có dữ liệu thành tích thi đấu giải con nào trong Series này.</td></tr>';
       }
     }
     // 11. Render Rank Progression Chart
@@ -207,6 +207,7 @@
     renderRankProgressionChart();
   }
 
+  function profileColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
   var currentChartInstance = null;
 
   function renderRankProgressionChart() {
@@ -219,7 +220,7 @@
       if (card) {
         var wrapper = card.querySelector('.rank-chart-wrapper');
         if (wrapper) {
-          wrapper.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.9rem;">Chưa có dữ liệu biến động thứ hạng cho đội này.</div>';
+          wrapper.innerHTML = '<div data-ui-style="team-profile-js-015" style="display: flex;">Chưa có dữ liệu biến động thứ hạng cho đội này.</div>';
         }
       }
       return;
@@ -255,18 +256,18 @@
 
       var isTop1 = (item.rank === 1);
       if (isTop1) {
-        pointBgColors.push('#fbbf24');
-        pointBorderColors.push('#ffffff');
+        pointBgColors.push(profileColor('--ui-tier-s'));
+        pointBorderColors.push(profileColor('--ui-text'));
         pointRadii.push(top1R);
         pointHoverRadii.push(top1HoverR);
       } else if (item.participated) {
-        pointBgColors.push('#2dd4bf');
-        pointBorderColors.push('#0f172a');
+        pointBgColors.push(profileColor('--ui-accent'));
+        pointBorderColors.push(profileColor('--ui-surface'));
         pointRadii.push(partR);
         pointHoverRadii.push(partHoverR);
       } else {
-        pointBgColors.push('#64748b');
-        pointBorderColors.push('#0f172a');
+        pointBgColors.push(profileColor('--ui-muted'));
+        pointBorderColors.push(profileColor('--ui-surface'));
         pointRadii.push(notPartR);
         pointHoverRadii.push(notPartHoverR);
       }
@@ -287,7 +288,7 @@
           datasets: [{
             label: 'Thứ hạng BXH',
             data: ranks,
-            borderColor: '#2dd4bf',
+            borderColor: profileColor('--ui-accent'),
             borderWidth: 2.2,
             backgroundColor: 'transparent',
             fill: false,
@@ -321,12 +322,12 @@
               display: false
             },
             tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              titleColor: '#ffffff',
-              titleFont: { family: 'Lexend, sans-serif', weight: '700', size: 13 },
-              bodyColor: '#cbd5e1',
-              bodyFont: { family: 'Lexend, sans-serif', size: 12 },
-              borderColor: 'rgba(45, 212, 191, 0.4)',
+              backgroundColor: profileColor('--ui-surface'),
+              titleColor: profileColor('--ui-text'),
+              titleFont: { family: profileColor('--ui-font'), weight: '700', size: 13 },
+              bodyColor: profileColor('--ui-text'),
+              bodyFont: { family: profileColor('--ui-font'), size: 12 },
+              borderColor: profileColor('--ui-accent'),
               borderWidth: 1,
               padding: 12,
               cornerRadius: 10,
@@ -363,13 +364,13 @@
                   if (context.tick && (context.tick.value < 0.9 || context.tick.value > yAxisMax + 0.1)) {
                     return 'transparent';
                   }
-                  return 'rgba(255, 255, 255, 0.06)';
+                  return profileColor('--ui-line');
                 }
               },
               ticks: {
                 precision: 0,
-                color: '#94a3b8',
-                font: { family: 'Lexend, sans-serif', weight: '600', size: 11 },
+                color: profileColor('--ui-muted'),
+                font: { family: profileColor('--ui-font'), weight: '600', size: 11 },
                 stepSize: (yAxisMax <= 8) ? 1 : Math.max(1, Math.round(yAxisMax / 6)),
                 callback: function (val) {
                   if (val >= 1 && val <= yAxisMax && Number.isInteger(val)) {
@@ -381,11 +382,11 @@
             },
             x: {
               grid: {
-                color: 'rgba(255, 255, 255, 0.03)'
+                color: profileColor('--ui-line')
               },
               ticks: {
-                color: '#94a3b8',
-                font: { family: 'Lexend, sans-serif', size: 11 },
+                color: profileColor('--ui-muted'),
+                font: { family: profileColor('--ui-font'), size: 11 },
                 maxRotation: 40,
                 minRotation: 0
               }
@@ -414,9 +415,9 @@
 
     ctx.clearRect(0, 0, w, h);
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '11px Lexend, sans-serif';
+    ctx.strokeStyle = profileColor('--ui-line');
+    ctx.fillStyle = profileColor('--ui-muted');
+    ctx.font = '11px ' + profileColor('--ui-font');
     ctx.textAlign = 'right';
 
     var ySteps = 5;
@@ -441,7 +442,7 @@
     }
 
     ctx.beginPath();
-    ctx.strokeStyle = '#2dd4bf';
+    ctx.strokeStyle = profileColor('--ui-accent');
     ctx.lineWidth = 3;
     for (var i = 0; i < pts.length; i++) {
       if (i === 0) ctx.moveTo(pts[i].x, pts[i].y);
@@ -459,9 +460,9 @@
       var isTop1 = (p.item.rank === 1);
       ctx.beginPath();
       ctx.arc(p.x, p.y, isTop1 ? fbTop1R : (p.item.participated ? fbPartR : fbNotPartR), 0, Math.PI * 2);
-      ctx.fillStyle = isTop1 ? '#fbbf24' : (p.item.participated ? '#2dd4bf' : '#64748b');
+      ctx.fillStyle = isTop1 ? profileColor('--ui-tier-s') : (p.item.participated ? profileColor('--ui-accent') : profileColor('--ui-muted'));
       ctx.fill();
-      ctx.strokeStyle = isTop1 ? '#ffffff' : '#0f172a';
+      ctx.strokeStyle = isTop1 ? profileColor('--ui-text') : profileColor('--ui-surface');
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
@@ -488,4 +489,5 @@
     window.addEventListener('resize', debouncedSync);
   }
 
+  new MutationObserver(function () { renderRankProgressionChart(); }).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
 })();

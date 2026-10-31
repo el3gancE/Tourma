@@ -178,6 +178,18 @@
             card.className = 'match-card-item' + bTypeClass + themeClass + (!isPlayable ? ' disabled-unconfirmed' : '') + (hasBye ? ' bye-match-item' : '');
             card.dataset.matchId = matchId;
             card.dataset.status = isDone ? 'COMPLETED' : 'SCHEDULED';
+            if (isPlayable) {
+                card.tabIndex = 0;
+                card.setAttribute('role', 'button');
+                card.setAttribute('aria-label', 'Trận ' + (matchNum || '') + ': ' + t1Name + ' – ' + t2Name);
+                card.addEventListener('keydown', function (event) {
+                    if (event.target === card && (event.key === 'Enter' || event.key === ' ')) {
+                        event.preventDefault();
+                        card.click();
+                    }
+                });
+            }
+
 
             var t1Class = 'match-team-side team-left ' + (isT1Winner ? 'winner ' : '') + (isT1Placeholder ? 'placeholder ' : '') + (isT1Bye ? 'bye-team ' : '');
             var t2Class = 'match-team-side team-right ' + (isT2Winner ? 'winner ' : '') + (isT2Placeholder ? 'placeholder ' : '') + (isT2Bye ? 'bye-team ' : '');
@@ -193,7 +205,7 @@
 
             card.innerHTML =
                 '<div class="match-card-meta">' +
-                '<div class="' + accentClass + '"' + (hasBye ? ' style="background: #475569; box-shadow: none;"' : '') + '></div>' +
+                '<div class="' + accentClass + '"' + (hasBye ? ' data-ui-style="match-card-js-001"' : '') + '></div>' +
                 '<span class="match-card-id">' + matchHeaderLabel + '</span>' +
                 '</div>' +
 

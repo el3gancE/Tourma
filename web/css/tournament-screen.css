@@ -1,0 +1,144 @@
+/* SE screen layout. Shared component redesigns follow separately. */
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) {
+    --ui-canvas:var(--ui-bg);
+    --ui-match-surface:var(--ui-surface);
+    --ui-match-row:var(--ui-surface);
+    --ui-match-border:var(--ui-line);
+    --ui-match-score:var(--ui-surface-alt);
+    background:var(--ui-bg);
+}
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page).ui-page > .navbar { box-sizing:border-box; width:100%; max-width:none; margin:0; background:var(--ui-bg); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page).tournament-workspace .app-left-sidebar.tournament-sidebar { background:var(--ui-bg); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-shell { padding-right:28px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main { background:var(--ui-bg); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .bracket-zoom-toolbar { background:var(--ui-canvas); color:var(--ui-text); border-bottom-color:var(--ui-line); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .bracket-zoom-toolbar .zoom-level-badge { color:var(--ui-muted); font-weight:500; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .bracket-zoom-toolbar .btn-zoom { color:var(--ui-text); background:var(--ui-match-surface); border-color:var(--ui-line); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .bracket-zoom-toolbar .btn-zoom:hover { color:var(--ui-accent); border-color:var(--ui-accent); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-bracket-columns-wrapper { display:flex; align-items:stretch; gap:56px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-column { display:flex; flex-direction:column; flex:0 0 var(--ui-bracket-width, 240px); width:var(--ui-bracket-width, 240px); gap:28px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-header { box-sizing:border-box; display:grid; gap:4px; padding:6px; border:1px solid var(--ui-match-border); border-radius:6px; background:var(--ui-match-surface); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .round-header-title { color:var(--ui-accent); font:600 12px/16px var(--ui-font); text-align:center; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-header .round-header-random-controls { display:flex; align-items:center; justify-content:center; gap:4px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .single-round-header button,
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-header .round-random-input { box-sizing:border-box; height:22px; padding:2px 5px; border:1px solid var(--ui-match-border); border-radius:3px; background:var(--ui-match-score); color:var(--ui-text); font:11px/16px var(--ui-font); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-header .round-random-input {
+    width:40px;
+    min-width:40px;
+    padding-inline:4px;
+    text-align:center;
+    appearance:textfield;
+    -moz-appearance:textfield;
+}
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-header .round-random-input::-webkit-inner-spin-button,
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-header .round-random-input::-webkit-outer-spin-button {
+    -webkit-appearance:none;
+    margin:0;
+}
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-matches-box { display:flex; flex-direction:column; justify-content:space-around; flex:1; gap:26px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-column .bracket-node-card { width:100%; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main { min-width:0; display:flex; flex-direction:column; gap:20px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-navbar-control-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding-bottom:20px; border-bottom:1px solid var(--ui-line); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-info-badge-group { display:flex; align-items:center; flex-wrap:wrap; gap:10px; min-width:0; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-name-title { display:flex; align-items:center; gap:10px; font-size:26px; font-weight:700; line-height:1.3; overflow-wrap:anywhere; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-name-title>i { display:none; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-info-badge-group>span,:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .live-status-count { padding:5px 8px; border:1px solid var(--ui-line); border-radius:5px; font-size:11px; color:var(--ui-muted); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-live-status,:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .control-actions-right-group,:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .view-mode-toggle-group { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) button,:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) input { font:inherit; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main button { cursor:pointer; padding:8px 10px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); color:var(--ui-text); font-size:11px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main button:hover { background:var(--ui-surface-alt); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main button.active { color:var(--ui-on-accent); background:var(--ui-accent-fill,var(--ui-accent)); border-color:var(--ui-accent); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .bracket-viewport-frame { position:relative; height:clamp(360px,calc(100dvh - 260px),760px); min-height:0; flex:0 0 auto; border:1px solid var(--ui-line); border-radius:8px; overflow:hidden; background:var(--ui-canvas); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .bracket-zoom-toolbar { box-sizing:border-box; height:60px; display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:10px; border-bottom:1px solid var(--ui-line); background:var(--ui-bg); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .zoom-level-badge { min-width:45px; text-align:center; font-size:11px; color:var(--ui-muted); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .bracket-viewport-container { height:calc(100% - 60px); min-height:0; overflow:auto; background:var(--ui-canvas); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .bracket-viewport-canvas { position:relative; width:max-content; min-width:100%; padding:24px 24px 24px 38px; transform-origin:0 0; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .bracket-svg-connectors path { stroke:color-mix(in srgb,var(--ui-accent) 55%,var(--ui-connector)); stroke-width:2; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-round-header { border-color:color-mix(in srgb,var(--ui-accent) 25%,var(--ui-match-border)); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .single-round-header button:not(:last-child) { color:var(--ui-accent); background:var(--ui-accent-soft); border-color:color-mix(in srgb,var(--ui-accent) 30%,var(--ui-match-border)); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .single-list-view-container { display:none; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) #singleEmptyAlertContainer .empty-team-alert-card,
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .stage-finish-alert-card { min-height:360px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:16px; text-align:center; padding:40px 24px; border:1px solid var(--ui-line); border-radius:8px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .empty-team-alert-desc,:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .stage-finish-alert-desc { color:var(--ui-muted); max-width:540px; font-size:13px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .btn-empty-team-add,:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .btn-stage-finish-return { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; background:var(--ui-accent-fill,var(--ui-accent)); color:var(--ui-on-accent); border-radius:6px; font-size:12px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .list-round-section { margin-bottom:28px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .list-round-header { display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .list-round-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .list-round-actions .round-random-input {
+    box-sizing:border-box; width:48px; height:34px; padding:5px;
+    border:1px solid var(--ui-line); border-radius:6px;
+    background:var(--ui-surface); color:var(--ui-text);
+    font:inherit; font-size:12px; text-align:center; appearance:textfield;
+}
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .list-round-actions .round-random-input::-webkit-inner-spin-button,
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .list-round-actions .round-random-input::-webkit-outer-spin-button { appearance:none; margin:0; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .list-round-actions button { height:34px; padding:6px 11px; font-size:12px; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .list-matches-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+@media(max-width:999px) { :is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-name-title { font-size:23px; } :is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main { gap:16px; } }
+@media(max-width:600px) { :is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-info-badge-group { width:100%; } :is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .tournament-name-title { width:100%; } }
+
+/* Long group/round selectors remain a single scrollable row. */
+.ui-page:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) :is(.gsl-group-tabs-bar,.swiss-round-pills-bar) {
+    display:flex;
+    flex-wrap:nowrap;
+    min-width:0;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding-bottom:8px;
+    scrollbar-width:thin;
+    scrollbar-color:var(--ui-line-strong) var(--ui-surface-alt);
+}
+.ui-page:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) :is(.gsl-group-tabs-bar,.swiss-round-pills-bar) > button { flex:0 0 auto; white-space:nowrap; }
+/* Group Stage and Round Robin share fixtures, controls and standings. */
+.league-page .rr-control-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding-bottom:20px; border-bottom:1px solid var(--ui-line); }
+.league-page :is(.rr-info-group,.rr-actions-group,.view-mode-toggle-group) { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.league-page .rr-tourney-title { display:flex; align-items:center; gap:10px; font-size:26px; font-weight:700; }
+.league-page .rr-tourney-title > i { display:none; }
+.league-page :is(.format-badge-rr,.team-count-badge) { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border:1px solid var(--ui-line); border-radius:5px; font-size:11px; color:var(--ui-muted); }
+.league-page .btn-view-toggle { display:inline-flex; gap:7px; align-items:center; padding:8px 12px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); font-size:12px; }
+.league-page .btn-view-toggle.active { color:var(--ui-on-accent); background:var(--ui-accent-fill,var(--ui-accent)); border-color:var(--ui-accent); }
+.league-page :is(.rr-fixtures-container,.gst-container,#gsStandingsContainer,#gsStandingsCardsContainer) { display:grid; gap:24px; min-width:0; }
+.league-page :is(.rr-round-selector-bar,#gsGroupSelectorBar) { margin-bottom:20px; }
+.league-page :is(.rr-matches-grid,.list-matches-grid) { display:grid; gap:10px; }
+.league-page :is(.match-list-round-header,.list-round-header) { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-bottom:14px; }
+.league-page :is(.list-round-title-group,.list-round-actions,.round-header-random-controls) { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.league-page :is(.list-round-title,.round-header-title) { font-size:16px; font-weight:600; color:var(--ui-text); text-align:left; }
+.league-page :is(.list-round-badge,.rr-bye-badge) { font-size:11px; color:var(--ui-muted); font-weight:500; }
+.league-page .round-random-input { width:46px; height:32px; padding:4px; text-align:center; border:1px solid var(--ui-line); border-radius:5px; background:var(--ui-surface); color:var(--ui-text); appearance:textfield; }
+.league-page input::-webkit-inner-spin-button,.league-page input::-webkit-outer-spin-button { appearance:none; margin:0; }
+.league-page :is(.rr-standings-card,.gst-group-card) { min-width:0; border:1px solid var(--ui-line); border-radius:8px; overflow:hidden; background:var(--ui-surface); }
+.league-page :is(.rr-standings-header-bar,.gst-group-header) { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:16px; border-bottom:1px solid var(--ui-line); }
+.league-page :is(.rr-standings-title-left,.rr-points-rule-legend) { display:flex; align-items:center; gap:10px; font-size:13px; }
+.league-page :is(.table-responsive,.rr-standings-table-wrapper) { overflow-x:auto; }
+.league-page .rr-table { width:100%; border-collapse:collapse; background:var(--ui-surface); font-size:13px; font-variant-numeric:tabular-nums; }
+.league-page .rr-table :is(th,td) { padding:12px 14px; border-bottom:1px solid var(--ui-line); text-align:center; white-space:nowrap; }
+.league-page .rr-table th { background:var(--ui-surface-alt); color:var(--ui-muted); font-size:11px; font-weight:600; }
+.league-page .rr-table :is(th,td):nth-child(2) { text-align:left; min-width:180px; font-weight:600; }
+.league-page .rr-table tr:last-child td { border-bottom:0; }
+.league-page .rr-table tbody tr:hover { background:var(--ui-surface-alt); }
+.league-page .rr-table :is(.qualified-direct,.qualified-wildcard) { background:var(--ui-accent-soft); }
+.league-page .rr-table :is(.th-pts,.rr-pts-cell) { color:var(--ui-accent); font-weight:700; }
+.league-page .rr-form-badge { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; border-radius:4px; background:var(--ui-surface-alt); margin:2px; font-size:10px; }
+.league-page #gsEmptyAlertContainer,.league-page .empty-team-alert-card { text-align:center; padding:30px; }
+@media(max-width:600px) { .league-page .rr-tourney-title { font-size:22px; } .league-page .rr-table :is(th,td) { padding:10px; } }
+.league-page .gst-group-block { border:1px solid var(--ui-line); border-radius:8px; overflow:hidden; background:var(--ui-surface); }
+.league-page .gst-group-block > [data-ui-style="group-standing-js-002"] { padding:14px 16px; border-bottom:1px solid var(--ui-line); font-size:15px; font-weight:600; color:var(--ui-accent); }
+.league-page .rr-points-cell { color:var(--ui-accent); font-weight:700; }
+.league-page .rr-team-cell { display:flex; align-items:center; gap:8px; }
+
+/* GS/RR match cards omit seeds; standings and pairing data are unchanged. */
+.league-page .match-card-item .match-list-seed { display:none; }
+/* Hidden seeds remove two grid items, so fixtures use three columns. */
+.league-page .match-card-item .match-card-versus { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); }
+/* Seedless cards retain the shared left-team / centered-score / right-team layout. */
+:is(.league-page,.swiss-page) .match-card-item .match-card-versus {
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+    width:100%;
+    padding-inline:34px;
+}
+:is(.league-page,.swiss-page) .match-card-item .team-left { text-align:left; }
+:is(.league-page,.swiss-page) .match-card-item .team-right { text-align:right; }
+@media(max-width:600px) {
+    :is(.league-page,.swiss-page) .match-card-item .match-card-versus { padding-inline:6px; }
+}

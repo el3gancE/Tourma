@@ -119,10 +119,10 @@
             return '<div class="list-round-actions" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + gAttr + '>'
                 + '<input type="number" id="round_random_score_list_' + idSuffix + '" name="round_random_score_list_' + idSuffix + '" class="round-random-input" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + gAttr + ' min="1" max="99" value="' + savedVal + '" autocomplete="off" title="Nhập điểm thắng tùy chỉnh" />'
                 + '<button type="button" class="btn-random-round" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + gAttr + ' title="Tạo tỉ số ngẫu nhiên cho ' + rTitle + '">'
-                + '<i class="fa-solid fa-dice"></i> Random ' + rTitle
+                + '<i class="fa-solid fa-dice"></i> Random'
                 + '</button>'
                 + '<button type="button" class="btn-reset-round" data-round="' + rNum + '"' + (bType ? ' data-bracket-type="' + bType + '"' : '') + gAttr + ' title="Đặt lại kết quả ' + rTitle + '">'
-                + '<i class="fa-solid fa-rotate-right"></i> Reset ' + rTitle
+                + '<i class="fa-solid fa-rotate-right"></i> Reset'
                 + '</button>'
                 + '</div>';
         },
