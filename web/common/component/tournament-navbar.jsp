@@ -81,7 +81,7 @@
     if (view2Label == null || view2Label.trim().isEmpty()) view2Label = "Danh Sách Trận";
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css?v=20261031-sticky">
 
 <!-- Top Control Bar (Tournament Title, Format Badge, Team Count Badge & View Mode Toggle) -->
 <div class="tournament-navbar-control-bar single-elimination-control-bar <%= showLiveStatus ? "has-live-status" : "" %>">
@@ -131,6 +131,7 @@
         <% if (showViewToggle) { %>
         <!-- View Mode Toggle Buttons (Bracket ↔ List View) -->
         <div class="view-mode-toggle-group">
+
             <button type="button" id="btnViewBracket" class="btn-view-toggle active"
                 onclick="window.TourmaNavbar && window.TourmaNavbar.switchViewMode('bracket')" title="<%= view1Label %>" aria-label="<%= view1Label %>">
                 <i class="fa-solid <%= view1Icon %>"></i> Sơ đồ

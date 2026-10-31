@@ -12,6 +12,7 @@
     window.TourmaViewport = {
         instances: {},
         currentScale: 1.0,
+        baseVisualScale: 0.72, // New 100% equals the former 90% (0.9 × 0.8).
         minScale: 0.6,
         maxScale: 1.4,
 
@@ -26,13 +27,23 @@
             var canvas = document.getElementById(cvId);
             if (!container || !canvas) return null;
 
+            var previous = this.instances[cId];
+            var retainedScale = previous ? previous.scale : (cId === 'bracketViewportContainer' ? this.currentScale : 1.0);
+            if (previous && previous.container === container && previous.canvas === canvas) {
+                if (options && options.badgeId) previous.badgeElem = document.getElementById(options.badgeId);
+                if (options && options.onRedraw) previous.onRedraw = options.onRedraw;
+                this.setZoomOnInstance(cId, retainedScale);
+                return previous;
+            }
+            var retainedLeft = previous ? previous.container.scrollLeft : container.scrollLeft;
+            var retainedTop = previous ? previous.container.scrollTop : container.scrollTop;
             var self = this;
             var instance = {
                 containerId: cId,
                 canvasId: cvId,
                 container: container,
                 canvas: canvas,
-                scale: 1.0,
+                scale: retainedScale,
                 minScale: (options && options.minScale) || 0.5,
                 maxScale: (options && options.maxScale) || 1.6,
                 badgeElem: (options && options.badgeId) ? document.getElementById(options.badgeId) : container.querySelector('.zoom-level-badge, .de-zoom-badge'),
@@ -121,8 +132,10 @@
                 }, { passive: true });
             }
 
-            // Apply initial normalized default zoom (100% display = 0.80 physical scale)
-            this.setZoomOnInstance(cId, 1.0);
+            // Preserve user zoom and pan when bracket markup is refreshed.
+            this.setZoomOnInstance(cId, retainedScale);
+            container.scrollLeft = retainedLeft;
+            container.scrollTop = retainedTop;
 
             return instance;
         },
@@ -183,14 +196,15 @@
          * Set Zoom on Instance
          */
         /**
-         * Set Zoom on Instance (Normalizes: 100% scale = 0.80 visual scale)
+         * Set Zoom on Instance (Normalizes: 100% scale = 0.72 visual scale)
          */
         setZoomOnInstance: function (instanceId, scale) {
             var inst = this.instances[instanceId];
             if (!inst) return;
 
             inst.scale = Math.max(inst.minScale, Math.min(inst.maxScale, scale));
-            var visualScale = Number((inst.scale * 0.8).toFixed(3));
+            if (instanceId === 'bracketViewportContainer') this.currentScale = inst.scale;
+            var visualScale = Number((inst.scale * this.baseVisualScale).toFixed(3));
 
             if (inst.canvas) {
                 if ('zoom' in inst.canvas.style) {
@@ -211,8 +225,9 @@
 
         // Legacy compatibility shortcuts for Single Viewport
         setZoom: function (scale) {
+            if (this.instances.bracketViewportContainer) { this.setZoomOnInstance('bracketViewportContainer', scale); return; }
             this.currentScale = Math.max(this.minScale, Math.min(this.maxScale, scale));
-            var visualScale = Number((this.currentScale * 0.8).toFixed(3));
+            var visualScale = Number((this.currentScale * this.baseVisualScale).toFixed(3));
 
             var canvas = document.getElementById('bracketViewportCanvas');
             var badge = document.getElementById('zoomLevelBadge');

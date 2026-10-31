@@ -1,0 +1,16 @@
+/* One joined control with two independently selectable views. */
+.view-mode-toggle-group { display:inline-flex; align-items:stretch; padding:3px; gap:0; border:1px solid var(--ui-line); border-radius:7px; background:var(--ui-surface); }
+.view-mode-toggle-group > .btn-view-toggle,
+.league-page .view-mode-toggle-group > .btn-view-toggle { display:inline-flex; justify-content:center; align-items:center; gap:6px; min-width:72px; min-height:30px; margin:0; padding:6px 11px; border:0; border-radius:4px; background:transparent; color:var(--ui-muted); font:500 11px var(--ui-font); cursor:pointer; transition:background .18s,color .18s; }
+.view-mode-toggle-group > .btn-view-toggle.active,
+.league-page .view-mode-toggle-group > .btn-view-toggle.active { background:var(--ui-accent-fill,var(--ui-accent)); color:var(--ui-on-accent); }
+.view-mode-toggle-group > .btn-view-toggle:not(.active):hover { background:var(--ui-surface-alt); color:var(--ui-text); }
+.view-mode-toggle-group > .btn-view-toggle:focus-visible { outline:2px solid var(--ui-accent); outline-offset:1px; }
+@media(prefers-reduced-motion:reduce) { .view-mode-toggle-group > .btn-view-toggle { transition:none; } }
+/* Follow the document scroll; stay below modal layers. */
+.tournament-navbar-control-bar { position:sticky; top:0; z-index:40; background:var(--ui-bg); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .tournament-navbar-control-bar { padding-top:12px; padding-bottom:12px; }
+/* Keep the joined view selector intact under per-screen button defaults. */
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .view-mode-toggle-group { display:inline-flex; flex-wrap:nowrap; gap:0; }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .view-mode-toggle-group>.btn-view-toggle { border:0; border-radius:4px; background:transparent; color:var(--ui-muted); }
+:is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .view-mode-toggle-group>.btn-view-toggle.active { background:var(--ui-accent-fill,var(--ui-accent)); color:var(--ui-on-accent); }

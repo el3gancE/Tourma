@@ -29,4 +29,4 @@
 
 </div>
 
-<script src="${pageContext.request.contextPath}/js/bracket-viewport.js"></script>
+<script src="${pageContext.request.contextPath}/js/bracket-viewport.js?v=20261031-scale"></script>
