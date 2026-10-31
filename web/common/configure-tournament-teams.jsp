@@ -87,8 +87,8 @@
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-initial"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">

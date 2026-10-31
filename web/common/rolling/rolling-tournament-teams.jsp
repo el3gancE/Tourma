@@ -140,8 +140,8 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-teams.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-teams.css?v=20261024-partner-columns">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-initial"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">

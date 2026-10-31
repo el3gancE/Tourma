@@ -410,6 +410,7 @@ public class TournamentDAO {
         if (groups.isEmpty()) throw new IllegalStateException("Chưa có bảng đấu.");
         int slots = target / groups.size();
         int remaining = target % groups.size();
+        Map<String, Map<String,Integer>> headToHead = new HashMap<>();
         Map<String, int[]> stats = new HashMap<>(); // MP, W, D, L, GF, GA, PTS
         Map<String, Integer> pairs = new HashMap<>();
         for (String team : teams.keySet()) stats.put(team, new int[7]);
@@ -431,6 +432,10 @@ public class TournamentDAO {
             if (!java.util.Objects.equals(winner, game.winner)) throw new IllegalStateException("Kết quả không khớp tỷ số.");
             String pair = game.team1.compareTo(game.team2) < 0 ? game.team1 + "|" + game.team2 : game.team2 + "|" + game.team1;
             if (pairs.merge(pair, 1, Integer::sum) > rules[3]) throw new IllegalStateException("Cặp đấu bị lặp quá số lượt cấu hình.");
+            service.LeagueRanking.addHeadToHead(headToHead, game.team1, game.team2,
+                    winner == null ? rules[1] : winner.equals(game.team1) ? rules[0] : rules[2]);
+            service.LeagueRanking.addHeadToHead(headToHead, game.team2, game.team1,
+                    winner == null ? rules[1] : winner.equals(game.team2) ? rules[0] : rules[2]);
             int[] a = stats.get(game.team1), b = stats.get(game.team2);
             a[0]++; b[0]++; a[4] += game.score1; a[5] += game.score2; b[4] += game.score2; b[5] += game.score1;
             if (winner == null) { a[2]++; b[2]++; a[6] += rules[1]; b[6] += rules[1]; }
@@ -440,7 +445,7 @@ public class TournamentDAO {
         java.util.Comparator<CutTeam> ranking = java.util.Comparator.<CutTeam>comparingInt(t -> stats.get(t.id)[6]).reversed()
                 .thenComparing((a, b) -> Integer.compare(stats.get(b.id)[4] - stats.get(b.id)[5], stats.get(a.id)[4] - stats.get(a.id)[5]))
                 .thenComparing((a, b) -> Integer.compare(stats.get(b.id)[4], stats.get(a.id)[4]))
-                .thenComparingInt(t -> t.seed > 0 ? t.seed : Integer.MAX_VALUE).thenComparing(t -> t.id);
+                .thenComparing(t -> t.name == null ? "" : t.name.trim().toLowerCase(java.util.Locale.ROOT)).thenComparing(t -> t.id);
         List<CutTeam> qualified = new ArrayList<>(), wildcardCandidates = new ArrayList<>();
         for (Map.Entry<String, List<CutTeam>> group : groups.entrySet()) {
             List<CutTeam> members = group.getValue();
@@ -450,7 +455,9 @@ public class TournamentDAO {
                 String key = a.compareTo(b) < 0 ? a + "|" + b : b + "|" + a;
                 if (pairs.getOrDefault(key, 0) != rules[3]) throw new IllegalStateException("Chưa hoàn thành đủ lịch vòng tròn.");
             }
-            members.sort(ranking);
+            service.LeagueRanking.sort(members, t -> t.id, t -> t.name,
+                    t -> stats.get(t.id)[6], t -> stats.get(t.id)[4] - stats.get(t.id)[5],
+                    t -> stats.get(t.id)[4], headToHead);
             for(int rank=0;rank<members.size();rank++){members.get(rank).group=group.getKey();members.get(rank).groupRank=rank+1;}
             qualified.addAll(members.subList(0, slots));
             if (remaining > 0 && members.size() > slots) wildcardCandidates.add(members.get(slots));

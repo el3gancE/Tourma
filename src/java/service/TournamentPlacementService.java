@@ -255,6 +255,7 @@ public class TournamentPlacementService {
     }
     private static void roundRobin(Context ctx,List<MatchInfo> games,StageInfo stage,boolean cut,int order) {
         if(games.isEmpty() || !complete(games,true)) return;
+        Map<String,Map<String,Integer>> headToHead=new HashMap<>();
         Map<String,RRRow> rows=new LinkedHashMap<>();
         Set<String> ids=order==1 ? ctx.teams.keySet() : participants(games);
         for(String id:ids) {
@@ -265,15 +266,15 @@ public class TournamentPlacementService {
             if(m.bye) continue;
             RRRow a=rows.get(m.team1Id),b=rows.get(m.team2Id);
             if(a==null||b==null) continue;
+            LeagueRanking.addHeadToHead(headToHead,m.team1Id,m.team2Id,m.score1>m.score2?stage.winPoints:m.score1.equals(m.score2)?stage.drawPoints:stage.lossPoints);
+            LeagueRanking.addHeadToHead(headToHead,m.team2Id,m.team1Id,m.score2>m.score1?stage.winPoints:m.score1.equals(m.score2)?stage.drawPoints:stage.lossPoints);
             a.scored+=m.score1;a.conceded+=m.score2;b.scored+=m.score2;b.conceded+=m.score1;
             a.points+=m.score1>m.score2?stage.winPoints:m.score1.equals(m.score2)?stage.drawPoints:stage.lossPoints;
             b.points+=m.score2>m.score1?stage.winPoints:m.score1.equals(m.score2)?stage.drawPoints:stage.lossPoints;
         }
         List<RRRow> sorted=new ArrayList<>(rows.values());
-        sorted.sort(Comparator.comparingInt((RRRow r)->r.points).reversed()
-            .thenComparing(Comparator.comparingInt((RRRow r)->r.scored-r.conceded).reversed())
-            .thenComparing(Comparator.comparingInt((RRRow r)->r.scored).reversed())
-            .thenComparingInt(r->r.seed).thenComparing(r->r.id));
+        LeagueRanking.sort(sorted,r->r.id,r->ctx.teams.get(r.id).name,
+                r->r.points,r->r.scored-r.conceded,r->r.scored,headToHead);
         for(int i=0;i<sorted.size();i++) {
             if(cut) {
                 boolean eliminated=ctx.qualified.size()==ctx.cut ? !ctx.qualified.contains(sorted.get(i).id) : i>=ctx.cut;

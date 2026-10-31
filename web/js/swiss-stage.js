@@ -1144,6 +1144,7 @@
             cardEl.innerText = t1Name + ' vs ' + t2Name;
           }
 
+          cardEl.classList.add(getPoolColorClass(pKey));
           cardEl.setAttribute('data-match-key', m.matchKey);
           cardEl.classList.add(cardColorClass);
           if (t1Name === 'TBD' || t2Name === 'TBD') {
@@ -1368,7 +1369,8 @@
               cardEl.innerText = t1Name + ' vs ' + t2Name;
             }
 
-            cardEl.setAttribute('data-match-key', m.matchKey);
+            cardEl.classList.add(getPoolColorClass(pKey));
+          cardEl.setAttribute('data-match-key', m.matchKey);
             cardEl.classList.add(cardColorClass);
             if (t1Name === 'TBD' || t2Name === 'TBD') {
               cardEl.classList.add('disabled-unconfirmed');

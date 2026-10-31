@@ -218,3 +218,42 @@
  --ui-workspace-canvas:var(--ui-bg);
  --ui-canvas:var(--ui-bg);
 }
+
+/* Optional branch/group colors, independent of theme and badge/tier identities. */
+:root { --ui-default-accent:var(--ui-accent); --ui-default-accent-soft:var(--ui-accent-soft); }
+:root[data-theme][data-accent][data-special-colors="off"] {
+ --ui-bracket-lower-accent:var(--ui-default-accent); --ui-bracket-lower-soft:var(--ui-default-accent-soft);
+ --ui-bracket-final-accent:var(--ui-default-accent); --ui-swiss-upper-accent:var(--ui-default-accent);
+ --ui-gsl-0:var(--ui-default-accent);
+ --ui-gsl-1:var(--ui-default-accent);
+ --ui-gsl-2:var(--ui-default-accent);
+ --ui-gsl-3:var(--ui-default-accent);
+ --ui-gsl-4:var(--ui-default-accent);
+ --ui-gsl-5:var(--ui-default-accent);
+ --ui-gsl-6:var(--ui-default-accent);
+ --ui-gsl-7:var(--ui-default-accent);
+ --ui-gsl-8:var(--ui-default-accent);
+ --ui-gsl-9:var(--ui-default-accent);
+ --ui-gsl-10:var(--ui-default-accent);
+ --ui-gsl-11:var(--ui-default-accent);
+ --ui-gsl-12:var(--ui-default-accent);
+ --ui-gsl-13:var(--ui-default-accent);
+ --ui-gsl-14:var(--ui-default-accent);
+ --ui-gsl-15:var(--ui-default-accent);
+ --ui-gsl-16:var(--ui-default-accent);
+ --ui-gsl-17:var(--ui-default-accent);
+ --ui-gsl-18:var(--ui-default-accent);
+ --ui-gsl-19:var(--ui-default-accent);
+ --ui-gsl-20:var(--ui-default-accent);
+ --ui-gsl-21:var(--ui-default-accent);
+ --ui-gsl-22:var(--ui-default-accent);
+ --ui-gsl-23:var(--ui-default-accent);
+ --ui-gsl-24:var(--ui-default-accent);
+ --ui-gsl-25:var(--ui-default-accent);
+ --ui-gsl-26:var(--ui-default-accent);
+ --ui-gsl-27:var(--ui-default-accent);
+ --ui-gsl-28:var(--ui-default-accent);
+ --ui-gsl-29:var(--ui-default-accent);
+ --ui-gsl-30:var(--ui-default-accent);
+ --ui-gsl-31:var(--ui-default-accent);
+}

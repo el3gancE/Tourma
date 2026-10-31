@@ -14,7 +14,7 @@
 %>
 <jsp:include page="/common/component/tournament-config-state.jsp" />
 <!-- Dedicated Header Component Stylesheet -->
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=20261031-icons">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=20261101-settings">
 
 <!-- Header / Navigation Bar Component -->
 <nav class="navbar">
@@ -74,6 +74,16 @@
         <button type="button" class="theme-toggle appearance-switch" role="switch" title="Đổi chế độ Sáng / Tối" aria-label="Chế độ tối" aria-checked="false" data-mode-switch>
             <i class="fa-solid fa-sun mode-icon-light" aria-hidden="true"></i><i class="fa-solid fa-moon mode-icon-dark" aria-hidden="true"></i><span class="theme-switch" aria-hidden="true"></span>
         </button>
+        <details class="display-settings">
+            <summary class="theme-toggle" aria-label="Cài đặt hiển thị" title="Cài đặt hiển thị"><i class="fa-solid fa-gear" aria-hidden="true"></i></summary>
+            <div class="display-settings-panel" role="group" aria-label="Cài đặt hiển thị">
+                <strong>Cài đặt hiển thị</strong>
+                <button type="button" class="special-colors-toggle" role="switch" aria-checked="true" data-special-colors-toggle>
+                    <span>Màu phân biệt nhánh/nhóm</span><span class="theme-switch" aria-hidden="true"></span>
+                </button>
+                <p>Áp dụng cho nhánh đấu, final, các nhóm Swiss và bảng GSL.</p>
+            </div>
+        </details>
     </div>
     <% } %>
 </nav>

@@ -81,7 +81,7 @@
     if (view2Label == null || view2Label.trim().isEmpty()) view2Label = "Danh Sách Trận";
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css?v=20261031-sticky">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css?v=20261101-meta">
 
 <!-- Top Control Bar (Tournament Title, Format Badge, Team Count Badge & View Mode Toggle) -->
 <div class="tournament-navbar-control-bar single-elimination-control-bar <%= showLiveStatus ? "has-live-status" : "" %>">

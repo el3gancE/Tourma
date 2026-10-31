@@ -91,8 +91,8 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-initial"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=4">
@@ -234,7 +234,7 @@
         <jsp:include page="/common/component/tournament-config-state.jsp"/>
         <!-- Scripts -->
         <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
+        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=20261101-rr-ranking"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
