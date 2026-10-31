@@ -158,10 +158,9 @@
                                 int rankChange = dto.getRankChange();
                                 int totalPts = dto.getTotalActivePoints();
                                 int lastPts = dto.getLastTourneyPoints();
-                                int expiredPts = dto.getExpiredPoints();
                                 int activeTourneys = dto.getActiveTourneysCount();
 
-                                int netChange = lastPts - expiredPts;
+                                int netChange = dto.getNetFluctuation();
                                 String lastPtsText = (lastPts > 0) ? ("+" + lastPts + " pts") : "0 pts";
                                 String lastPtsColor = (lastPts > 0) ? "var(--ui-accent)" : "var(--ui-muted)";
 
