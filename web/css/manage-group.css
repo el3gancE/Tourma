@@ -7,7 +7,7 @@
 .manage-group-page [data-ui-style="manage-group-jsp-003"] { align-items:center; flex-wrap:wrap; gap:8px; }
 .manage-group-page button { display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:8px 12px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); color:var(--ui-text); font:500 12px/1.5 var(--ui-font); cursor:pointer; }
 .manage-group-page button:hover { border-color:var(--ui-accent); }
-.manage-group-page :is(.btn-mint,.btn-mg-distribute) { color:var(--ui-on-accent); background:var(--ui-accent); border-color:var(--ui-accent); }
+.manage-group-page :is(.btn-mint,.btn-mg-distribute) { color:var(--ui-on-accent); background:var(--ui-accent-fill,var(--ui-accent)); border-color:var(--ui-accent); }
 .manage-group-page .mg-dropdown-container { position:relative; }
 .manage-group-page .mg-dropdown-menu { display:none; position:absolute; top:calc(100% + 8px); left:0; z-index:30; width:240px; max-height:340px; overflow:auto; padding:6px; border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); box-shadow:var(--ui-shadow); }
 .manage-group-page .mg-dropdown-menu.show { display:block; }

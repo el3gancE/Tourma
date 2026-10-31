@@ -452,7 +452,7 @@
     rarity: 'Huyền Thoại',
     themeClass: 'tourma-badge-gold',
     iconClass: 'fa-solid fa-crown',
-    description: 'Nhà vô địch giải đấu đầu tiên trong lịch sử chuỗi giải.',
+    description: 'Vô địch giải đấu đầu tiên của chuỗi giải.',
     evaluate: function (teamName, context) {
       if (!teamName || !context) return null;
       var subTourneys = context.subTournaments || window.seriesSubTournaments || [];
@@ -489,7 +489,7 @@
     rarity: 'Đương Kim',
     themeClass: 'tourma-badge-defending',
     iconClass: 'fa-solid fa-shield-halved',
-    description: 'Nhà vô địch của giải đấu gần nhất trong chuỗi giải.',
+    description: 'Vô địch giải đấu gần nhất của chuỗi giải.',
     evaluate: function (teamName, context) {
       if (!teamName || !context) return null;
       var subTourneys = context.subTournaments || window.seriesSubTournaments || [];
@@ -551,7 +551,7 @@
           themeClass: 'tourma-badge-tier-s',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier S',
-          description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ S (Tier S).',
+          description: 'Vô địch ' + n + ' giải đấu Tier S trong chuỗi giải.',
           meta: { count: n, tier: 'S', tierTourneys: stat.tourneys }
         };
       }
@@ -583,7 +583,7 @@
           themeClass: 'tourma-badge-tier-a',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier A',
-          description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ A (Tier A).',
+          description: 'Vô địch ' + n + ' giải đấu Tier A trong chuỗi giải.',
           meta: { count: n, tier: 'A', tierTourneys: stat.tourneys }
         };
       }
@@ -615,7 +615,7 @@
           themeClass: 'tourma-badge-tier-b',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier B',
-          description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ B (Tier B).',
+          description: 'Vô địch ' + n + ' giải đấu Tier B trong chuỗi giải.',
           meta: { count: n, tier: 'B', tierTourneys: stat.tourneys }
         };
       }
@@ -647,7 +647,7 @@
           themeClass: 'tourma-badge-tier-c',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier C',
-          description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ C (Tier C).',
+          description: 'Vô địch ' + n + ' giải đấu Tier C trong chuỗi giải.',
           meta: { count: n, tier: 'C', tierTourneys: stat.tourneys }
         };
       }
@@ -679,7 +679,7 @@
           themeClass: 'tourma-badge-tier-d',
           iconClass: 'fa-solid fa-trophy',
           rarity: 'Tier D',
-          description: 'Đội đã đạt ' + n + ' lần vô địch các giải đấu Cấp độ D (Tier D).',
+          description: 'Vô địch ' + n + ' giải đấu Tier D trong chuỗi giải.',
           meta: { count: n, tier: 'D', tierTourneys: stat.tourneys }
         };
       }
@@ -805,7 +805,7 @@
           themeClass: 'tourma-badge-streak',
           iconClass: 'fa-solid fa-fire',
           rarity: 'Đặc Biệt',
-          description: 'Đội đã đạt thành tích vô địch 2 giải đấu liên tiếp.',
+          description: 'Vô địch 2 giải đấu liên tiếp trong chuỗi giải.',
           meta: {
             count: 2,
             streakTourneys: streak.tourneys.slice(0, 2)
@@ -838,7 +838,7 @@
           themeClass: 'tourma-badge-streak-fire',
           iconClass: 'fa-solid fa-fire-flame-curved',
           rarity: 'Huyền Thoại',
-          description: 'Thống trị tuyệt đối với chuỗi ' + streak.length + ' giải đấu vô địch liên tiếp!',
+          description: 'Vô địch liên tiếp ' + streak.length + ' giải đấu trong chuỗi giải.',
           meta: {
             count: streak.length,
             streakTourneys: streak.tourneys
@@ -891,7 +891,7 @@
             rarity: 'Phase 1 #1',
             themeClass: 'tourma-badge-phase-1',
             iconClass: 'fa-solid fa-gem',
-            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 1 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            description: 'Đứng đầu bảng xếp hạng khi kết thúc Phase 1 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
             meta: {
               phase: 1,
               tourneyName: tName,
@@ -946,7 +946,7 @@
             rarity: 'Phase 2 #1',
             themeClass: 'tourma-badge-phase-2',
             iconClass: 'fa-solid fa-meteor',
-            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 2 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            description: 'Đứng đầu bảng xếp hạng khi kết thúc Phase 2 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
             meta: {
               phase: 2,
               tourneyName: tName,
@@ -1001,7 +1001,7 @@
             rarity: 'Phase 3 #1',
             themeClass: 'tourma-badge-phase-3',
             iconClass: 'fa-solid fa-bolt-lightning',
-            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 3 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            description: 'Đứng đầu bảng xếp hạng khi kết thúc Phase 3 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
             meta: {
               phase: 3,
               tourneyName: tName,
@@ -1056,7 +1056,7 @@
             rarity: 'Phase 4 #1',
             themeClass: 'tourma-badge-phase-4',
             iconClass: 'fa-solid fa-atom',
-            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 4 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            description: 'Đứng đầu bảng xếp hạng khi kết thúc Phase 4 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
             meta: {
               phase: 4,
               tourneyName: tName,
@@ -1111,7 +1111,7 @@
             rarity: 'Phase 5 #1',
             themeClass: 'tourma-badge-phase-5',
             iconClass: 'fa-solid fa-sun',
-            description: 'Đội xuất sắc nhất giữ vị trí #1 Bảng Xếp Hạng khi kết thúc Phase 5 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+            description: 'Đứng đầu bảng xếp hạng khi kết thúc Phase 5 (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
             meta: {
               phase: 5,
               tourneyName: tName,
@@ -1148,14 +1148,14 @@
           rarity: 'Chuyên Gia',
           themeClass: 'tourma-badge-runner-up',
           iconClass: 'fa-solid fa-medal',
-          description: 'Góp mặt trong ' + m.finalsCount + ' trận chung kết với ' + m.runnerUpCount + ' lần đạt ngôi Á Quân (nhiều hơn ' + m.champCount + ' lần Vô Địch).',
+          description: 'Góp mặt trong ' + m.finalsCount + ' trận chung kết với ' + m.runnerUpCount + ' lần á quân (nhiều hơn ' + m.champCount + ' lần vô địch).',
           meta: {
             finalsCount: m.finalsCount,
             runnerUpCount: m.runnerUpCount,
             champCount: m.champCount,
             runnerUpTourneys: m.runnerUpTourneys,
             finalTourneys: m.finalTourneys,
-            tourneyName: m.runnerUpCount + ' lần Á Quân / ' + m.finalsCount + ' trận Chung Kết'
+            tourneyName: m.runnerUpCount + ' lần á quân / ' + m.finalsCount + ' trận chung kết'
           }
         };
       }
@@ -1187,7 +1187,7 @@
           rarity: 'Kỳ Cựu',
           themeClass: 'tourma-badge-veteran',
           iconClass: 'fa-solid fa-award',
-          description: 'Bản lĩnh kỳ cựu dày dặn với ' + m.finalsCount + ' lần tiến vào trận chung kết đỉnh cao (' + m.champCount + ' Vô Địch, ' + m.runnerUpCount + ' Á Quân).',
+          description: 'Góp mặt trong ' + m.finalsCount + ' trận chung kết (' + m.champCount + ' Vô Địch, ' + m.runnerUpCount + ' Á Quân).',
           meta: {
             finalsCount: m.finalsCount,
             champCount: m.champCount,
@@ -1225,7 +1225,7 @@
           rarity: 'Ưu Tú',
           themeClass: 'tourma-badge-podium',
           iconClass: 'fa-solid fa-ranking-star',
-          description: 'Tên tuổi quen thuộc trên bục vinh quang với ' + m.top4Count + ' lần lọt vào vòng Bán Kết của chuỗi giải.',
+          description: 'Lọt vào bán kết ' + m.top4Count + ' lần trong chuỗi giải.',
           meta: {
             top4Count: m.top4Count,
             semiCount: m.semiCount,
@@ -1339,7 +1339,7 @@
               '<div class="streak-tourney-list">' + ruHtml + '</div>' +
             '</div>';
           } else {
-            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-medal"></i> ' + (b.meta.runnerUpCount || 0) + ' lần Á Quân / ' + (b.meta.finalsCount || 0) + ' trận Chung Kết</div>';
+            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-medal"></i> ' + (b.meta.runnerUpCount || 0) + ' lần á quân / ' + (b.meta.finalsCount || 0) + ' trận chung kết</div>';
           }
         } else if (b.id === 'VETERAN') {
           if (b.meta && b.meta.finalTourneys && b.meta.finalTourneys.length > 0) {
@@ -1353,7 +1353,7 @@
               '<div class="streak-tourney-list">' + fnHtml + '</div>' +
             '</div>';
           } else {
-            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Đã thi đấu ' + (b.meta.finalsCount || 0) + ' trận Chung Kết (' + (b.meta.champCount || 0) + ' Cúp, ' + (b.meta.runnerUpCount || 0) + ' Nhì)</div>';
+            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-award"></i> Đã thi đấu ' + (b.meta.finalsCount || 0) + ' trận chung kết (' + (b.meta.champCount || 0) + ' Cúp, ' + (b.meta.runnerUpCount || 0) + ' Nhì)</div>';
           }
         } else if (b.id === 'PODIUM') {
           if (b.meta && b.meta.top4Tourneys && b.meta.top4Tourneys.length > 0) {
@@ -1366,7 +1366,7 @@
               '<div class="streak-tourney-list">' + top4Html + '</div>' +
             '</div>';
           } else {
-            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-ranking-star"></i> ' + (b.meta.top4Count || 0) + ' lần vào Bán Kết trở lên</div>';
+            footerText = '<div class="tourma-badge-tooltip-footer"><i class="fa-solid fa-ranking-star"></i> ' + (b.meta.top4Count || 0) + ' lần vào bán kết trở lên</div>';
           }
         } else if (b.meta && b.meta.streakTourneys && b.meta.streakTourneys.length > 0) {
           var itemsHtml = b.meta.streakTourneys.map(function(t) {

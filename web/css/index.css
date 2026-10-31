@@ -4,7 +4,7 @@
 .home-utility>span { font-size:9px; font-weight:500; letter-spacing:1.5px; color:var(--ui-muted); display:flex; align-items:center; gap:9px; }
 .home-hero { display:grid; grid-template-columns:1fr; gap:0; padding:44px 0 56px; align-items:center; }
 .section-kicker { display:flex; align-items:center; gap:10px; font-size:9px; font-weight:500; letter-spacing:1.6px; color:var(--ui-accent); }
-.kicker-line { height:1px; width:26px; background:var(--ui-accent); }
+.kicker-line { height:1px; width:26px; background:var(--ui-accent-fill,var(--ui-accent)); }
 .hero-copy h1 { margin:20px 0; font-size:clamp(32px,3.7vw,57px); line-height:1.17; letter-spacing:-2.7px; font-weight:500; }
 .hero-copy h1 em { font-style:normal; color:var(--ui-accent); }
 .hero-copy>p { max-width:600px; font-size:12px; line-height:1.95; color:var(--ui-muted); }

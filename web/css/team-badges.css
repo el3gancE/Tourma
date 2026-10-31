@@ -1,0 +1,1096 @@
+/* ============================================================================
+   TOURMA - DYNAMIC & STATIC TEAM BADGES STYLESHEET (team-badges.css)
+   Pixel-perfect capsule pill matching sample design with tier color conventions
+   ============================================================================ */
+
+/* Badges Container in Header Top Right */
+.team-profile-badges-top {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+/* Minimal Capsule Pill Badge (Matching Sample Exactly) */
+.tourma-badge-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 0.85rem;
+  height: 28px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  white-space: nowrap;
+  line-height: 1;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.tourma-badge-pill:hover,
+.tourma-badge-pill:focus,
+.tourma-badge-pill.active-touch {
+  transform: translateY(-1.5px);
+  z-index: 10000 !important;
+}
+
+.tourma-badge-pill:active {
+  transform: translateY(0);
+}
+
+/* ============================================================================
+   1. INAUGURAL CHAMPION (Vàng Hổ Phách Hoàng Gia Cổ Điển - Động)
+   ============================================================================ */
+.tourma-badge-gold {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1.25px solid #d97706;
+  color: #fbbf24;
+  box-shadow: 0 0 8px rgba(217, 119, 6, 0.35);
+  animation: dynamicBorderGlowGold 3s infinite ease-in-out;
+}
+
+.tourma-badge-gold .badge-icon {
+  font-size: 0.82rem;
+  color: #fbbf24;
+  flex-shrink: 0;
+  animation: goldIconGlow 3s infinite ease-in-out;
+}
+
+.tourma-badge-gold .tourma-badge-name {
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+  animation: goldTextGlow 3s infinite ease-in-out;
+}
+
+.tourma-badge-gold:hover {
+  border-color: #fde047;
+  background: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.8), inset 0 0 10px rgba(251, 191, 36, 0.35);
+}
+
+/* ============================================================================
+   2. DEFENDING CHAMPION (Vàng Kim Siêu Sáng - Viền Đi 1 Vòng & Tên Sáng Nổi - Động)
+   ============================================================================ */
+.tourma-badge-defending,
+.tourma-badge-bright-gold {
+  background: rgba(250, 204, 21, 0.22);
+  border: 1.25px solid rgba(250, 204, 21, 0.45);
+  color: #fef08a;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.4), inset 0 0 8px rgba(254, 240, 138, 0.18);
+}
+
+.tourma-badge-defending:hover,
+.tourma-badge-bright-gold:hover {
+  border-color: #ffffff;
+  background: rgba(250, 204, 21, 0.38);
+  box-shadow: 0 0 22px rgba(254, 240, 138, 0.95), inset 0 0 12px rgba(255, 255, 255, 0.45);
+}
+
+/* SVG Circuit ôm sát 100% đường viền */
+.tourma-badge-svg-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+
+.defending-beam-stroke {
+  stroke-dasharray: 22 78;
+  stroke-dashoffset: 0;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px #ffffff) drop-shadow(0 0 6px #facc15) drop-shadow(0 0 10px rgba(250, 204, 21, 0.8));
+  animation: uniformBeamSweep 2.8s linear infinite;
+}
+
+.tourma-badge-defending .badge-icon,
+.tourma-badge-bright-gold .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.84rem;
+  color: #fef08a;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.6));
+  animation: brightGoldIconGlow 2.8s infinite ease-in-out;
+}
+
+.tourma-badge-defending .tourma-badge-name,
+.tourma-badge-bright-gold .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  color: #fef08a;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    #fef08a 0%,
+    #facc15 25%,
+    #ffffff 48%,
+    #ffffff 54%,
+    #facc15 75%,
+    #fef08a 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: defendingTextEmbossGlow 2.8s linear infinite;
+}
+
+/* ============================================================================
+   3. TIER WINNER BADGES (Hệ Thống Badge Tĩnh: Tier S, A, B, C, D)
+   ============================================================================ */
+
+/* Tier S Badge (Vàng Gold - >= 1 cup) */
+.tourma-badge-tier-s {
+  background: rgba(251, 191, 36, 0.18);
+  border: 1.25px solid rgba(251, 191, 36, 0.5);
+  color: #fbbf24;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.25);
+}
+.tourma-badge-tier-s .badge-icon {
+  color: #fbbf24;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-tier-s .tourma-badge-name {
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-tier-s:hover {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.28);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.6), inset 0 0 6px rgba(251, 191, 36, 0.2);
+}
+
+/* Tier A Badge (Tím - >= 2 cups) */
+.tourma-badge-tier-a {
+  background: rgba(192, 132, 252, 0.18);
+  border: 1.25px solid rgba(192, 132, 252, 0.5);
+  color: #c084fc;
+  box-shadow: 0 0 6px rgba(192, 132, 252, 0.25);
+}
+.tourma-badge-tier-a .badge-icon {
+  color: #c084fc;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-tier-a .tourma-badge-name {
+  color: #c084fc;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-tier-a:hover {
+  border-color: #c084fc;
+  background: rgba(192, 132, 252, 0.28);
+  box-shadow: 0 0 14px rgba(192, 132, 252, 0.6), inset 0 0 6px rgba(192, 132, 252, 0.2);
+}
+
+/* Tier B Badge (Xanh Emerald - >= 3 cups) */
+.tourma-badge-tier-b {
+  background: rgba(52, 211, 153, 0.18);
+  border: 1.25px solid rgba(52, 211, 153, 0.5);
+  color: #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.25);
+}
+.tourma-badge-tier-b .badge-icon {
+  color: #34d399;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-tier-b .tourma-badge-name {
+  color: #34d399;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-tier-b:hover {
+  border-color: #34d399;
+  background: rgba(52, 211, 153, 0.28);
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.6), inset 0 0 6px rgba(52, 211, 153, 0.2);
+}
+
+/* Tier C Badge (Xanh Blue - >= 4 cups) */
+.tourma-badge-tier-c {
+  background: rgba(96, 165, 250, 0.18);
+  border: 1.25px solid rgba(96, 165, 250, 0.5);
+  color: #60a5fa;
+  box-shadow: 0 0 6px rgba(96, 165, 250, 0.25);
+}
+.tourma-badge-tier-c .badge-icon {
+  color: #60a5fa;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-tier-c .tourma-badge-name {
+  color: #60a5fa;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-tier-c:hover {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.28);
+  box-shadow: 0 0 14px rgba(96, 165, 250, 0.6), inset 0 0 6px rgba(96, 165, 250, 0.2);
+}
+
+/* Tier D Badge (Trắng / Platinum - >= 5 cups) */
+.tourma-badge-tier-d {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1.25px solid rgba(255, 255, 255, 0.38);
+  color: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+}
+.tourma-badge-tier-d .badge-icon {
+  color: #ffffff;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-tier-d .tourma-badge-name {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-tier-d:hover {
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.5), inset 0 0 6px rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================================================
+   KEYFRAME ANIMATIONS
+   ============================================================================ */
+
+/* 1. Viền đi 1 vòng với TỐC ĐỘ ĐỀU 100% dọc theo đường viền viên nang */
+@keyframes uniformBeamSweep {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -100;
+  }
+}
+
+/* 2. Tên sáng nổi từ trái sang phải */
+@keyframes defendingTextEmbossGlow {
+  0% {
+    background-position: 200% center;
+    filter: drop-shadow(0 0 2px rgba(250, 204, 21, 0.6));
+  }
+  50% {
+    background-position: 0% center;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 16px rgba(250, 204, 21, 0.9));
+  }
+  100% {
+    background-position: -200% center;
+    filter: drop-shadow(0 0 2px rgba(250, 204, 21, 0.6));
+  }
+}
+
+/* 3. Icon khiên vàng siêu sáng */
+@keyframes brightGoldIconGlow {
+  0%, 100% {
+    color: #fef08a;
+    transform: scale(1);
+    filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.6));
+  }
+  50% {
+    color: #ffffff;
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 16px rgba(250, 204, 21, 0.8));
+  }
+}
+
+/* 4. Động ở viền Gold (Inaugural Champion) */
+@keyframes dynamicBorderGlowGold {
+  0%, 100% {
+    border-color: #d97706;
+    box-shadow: 0 0 5px rgba(217, 119, 6, 0.35);
+    background: rgba(245, 158, 11, 0.16);
+  }
+  50% {
+    border-color: #fbbf24;
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.65), inset 0 0 8px rgba(251, 191, 36, 0.2);
+    background: rgba(245, 158, 11, 0.24);
+  }
+}
+
+/* 5. Động ở text Gold (Inaugural Champion) */
+@keyframes goldTextGlow {
+  0%, 100% {
+    color: #fbbf24;
+    text-shadow: 0 0 4px rgba(251, 191, 36, 0.4);
+  }
+  50% {
+    color: #fef08a;
+    text-shadow: 0 0 10px rgba(254, 240, 138, 0.8), 0 0 16px rgba(251, 191, 36, 0.7);
+  }
+}
+
+/* 6. Động icon Gold (Inaugural Champion) */
+@keyframes goldIconGlow {
+  0%, 100% {
+    color: #fbbf24;
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(217, 119, 6, 0.5));
+  }
+  50% {
+    color: #fef08a;
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 8px rgba(254, 240, 138, 0.9));
+  }
+}
+
+/* ============================================================================
+   TOOLTIP STYLING (Khi hover chuột)
+   ============================================================================ */
+.tourma-badge-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #0e1422 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f1f5f9;
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  width: 260px;
+  max-width: min(300px, calc(100vw - 32px));
+  box-sizing: border-box;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 1px rgba(255, 255, 255, 0.3) !important;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  z-index: 999999 !important;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform: translateY(4px);
+  pointer-events: none;
+  white-space: normal;
+}
+
+.tourma-badge-gold .tourma-badge-tooltip {
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(245, 158, 11, 0.25) !important;
+}
+
+.tourma-badge-bright-gold .tourma-badge-tooltip,
+.tourma-badge-defending .tourma-badge-tooltip {
+  border-color: rgba(250, 204, 21, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 20px rgba(250, 204, 21, 0.35) !important;
+}
+
+.tourma-badge-tier-s .tourma-badge-tooltip {
+  border-color: rgba(251, 191, 36, 0.65) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(251, 191, 36, 0.25) !important;
+}
+.tourma-badge-tier-s .tourma-badge-tooltip-title { color: #fbbf24; }
+.tourma-badge-tier-s .tourma-badge-tooltip-rarity {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.tourma-badge-tier-a .tourma-badge-tooltip {
+  border-color: rgba(192, 132, 252, 0.65) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(192, 132, 252, 0.25) !important;
+}
+.tourma-badge-tier-a .tourma-badge-tooltip-title { color: #c084fc; }
+.tourma-badge-tier-a .tourma-badge-tooltip-rarity {
+  background: rgba(192, 132, 252, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(192, 132, 252, 0.4);
+}
+
+.tourma-badge-tier-b .tourma-badge-tooltip {
+  border-color: rgba(52, 211, 153, 0.65) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(52, 211, 153, 0.25) !important;
+}
+.tourma-badge-tier-b .tourma-badge-tooltip-title { color: #34d399; }
+.tourma-badge-tier-b .tourma-badge-tooltip-rarity {
+  background: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.tourma-badge-tier-c .tourma-badge-tooltip {
+  border-color: rgba(96, 165, 250, 0.65) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(96, 165, 250, 0.25) !important;
+}
+.tourma-badge-tier-c .tourma-badge-tooltip-title { color: #60a5fa; }
+.tourma-badge-tier-c .tourma-badge-tooltip-rarity {
+  background: rgba(96, 165, 250, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
+.tourma-badge-tier-d .tourma-badge-tooltip {
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(255, 255, 255, 0.2) !important;
+}
+.tourma-badge-tier-d .tourma-badge-tooltip-title { color: #ffffff; }
+.tourma-badge-tier-d .tourma-badge-tooltip-rarity {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.tourma-badge-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 20px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent #0e1422 transparent;
+}
+
+/* Tooltip Alignment Helpers (Prevents Screen & Card Overflow) */
+.tourma-badge-tooltip.align-right {
+  left: auto !important;
+  right: 0 !important;
+}
+
+.tourma-badge-tooltip.align-right::after {
+  left: auto !important;
+  right: 20px !important;
+}
+
+.tourma-badge-tooltip.align-left {
+  left: 0 !important;
+  right: auto !important;
+}
+
+.tourma-badge-tooltip.align-left::after {
+  left: 20px !important;
+  right: auto !important;
+}
+
+/* Specific to Header Badges (.team-profile-badges-top) which are justified to flex-end (top right of screen) */
+.team-profile-badges-top .tourma-badge-tooltip {
+  left: auto !important;
+  right: 0 !important;
+}
+
+.team-profile-badges-top .tourma-badge-tooltip::after {
+  left: auto !important;
+  right: 20px !important;
+}
+
+.tourma-badge-pill:hover .tourma-badge-tooltip,
+.tourma-badge-pill:focus .tourma-badge-tooltip,
+.tourma-badge-pill.active-touch .tourma-badge-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tourma-badge-tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tourma-badge-tooltip-title {
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+.tourma-badge-gold .tourma-badge-tooltip-title { color: #fbbf24; }
+.tourma-badge-bright-gold .tourma-badge-tooltip-title,
+.tourma-badge-defending .tourma-badge-tooltip-title { color: #fef08a; }
+
+.tourma-badge-tooltip-rarity {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 0.08rem 0.3rem;
+  border-radius: 4px;
+}
+
+.tourma-badge-gold .tourma-badge-tooltip-rarity {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.tourma-badge-bright-gold .tourma-badge-tooltip-rarity,
+.tourma-badge-defending .tourma-badge-tooltip-rarity {
+  background: rgba(250, 204, 21, 0.25);
+  color: #fef08a;
+  border: 1px solid rgba(250, 204, 21, 0.5);
+}
+
+.tourma-badge-tooltip-desc {
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  margin-bottom: 0.25rem;
+}
+
+.tourma-badge-tooltip-footer {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #2dd4bf;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ============================================================================
+   4. STREAK BADGES (Back-2-Back & Nx Winning Streak)
+   ============================================================================ */
+
+/* Back-2-Back Badge (Cam Lửa Ấm) */
+.tourma-badge-streak {
+  background: rgba(249, 115, 22, 0.2);
+  border: 1.25px solid #f97316;
+  color: #fdba74;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+}
+
+.tourma-badge-streak .badge-icon {
+  color: #ff8c00;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.tourma-badge-streak .tourma-badge-name {
+  color: #fdba74;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+
+.tourma-badge-streak:hover {
+  border-color: #ffaa00;
+  background: rgba(249, 115, 22, 0.35);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.7), inset 0 0 8px rgba(253, 186, 116, 0.3);
+}
+
+/* Tooltip Theme for Back-2-Back */
+.tourma-badge-streak .tourma-badge-tooltip {
+  border-color: rgba(249, 115, 22, 0.6);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 15px rgba(249, 115, 22, 0.3);
+}
+.tourma-badge-streak .tourma-badge-tooltip-title { color: #fdba74; }
+.tourma-badge-streak .tourma-badge-tooltip-rarity {
+  background: rgba(249, 115, 22, 0.25);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.5);
+}
+
+/* Nx Winning Streak Badge (Đỏ Lửa Rực Rỡ - Tĩnh) */
+.tourma-badge-streak-fire {
+  background: rgba(239, 68, 68, 0.22);
+  border: 1.25px solid #ef4444;
+  color: #fca5a5;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.45), inset 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+.tourma-badge-streak-fire .badge-icon {
+  color: #ff4500;
+  font-size: 0.84rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px #ff4500);
+}
+
+.tourma-badge-streak-fire .tourma-badge-name {
+  color: #fca5a5;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+  background: linear-gradient(90deg, #ff6b6b 0%, #ffa07a 50%, #ff4500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.tourma-badge-streak-fire:hover {
+  border-color: #ff6b6b;
+  background: rgba(239, 68, 68, 0.38);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), inset 0 0 12px rgba(254, 202, 202, 0.4);
+}
+
+/* Tooltip Theme for Nx Winning Streak */
+.tourma-badge-streak-fire .tourma-badge-tooltip {
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 18px rgba(239, 68, 68, 0.4);
+}
+.tourma-badge-streak-fire .tourma-badge-tooltip-title { color: #fca5a5; }
+.tourma-badge-streak-fire .tourma-badge-tooltip-rarity {
+  background: rgba(239, 68, 68, 0.28);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+}
+
+/* Streak Tooltip Footer (Multi-tournament List) */
+.tourma-badge-tooltip-footer.streak-footer {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding-top: 0.3rem;
+  margin-top: 0.3rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  color: #fdba74;
+}
+
+.streak-footer-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #ffaa00;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.streak-tourney-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.35rem;
+  margin-top: 0.15rem;
+  width: 100%;
+}
+
+.streak-tourney-item {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  color: #f1f5f9;
+  font-size: 0.65rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.streak-tourney-item i {
+  color: #fbbf24;
+  font-size: 0.6rem;
+}
+
+.tourma-badge-tier-s .streak-footer-title { color: #fbbf24; }
+.tourma-badge-tier-s .streak-tourney-item i { color: #fbbf24; }
+
+.tourma-badge-tier-a .streak-footer-title { color: #c084fc; }
+.tourma-badge-tier-a .streak-tourney-item i { color: #c084fc; }
+
+.tourma-badge-tier-b .streak-footer-title { color: #34d399; }
+.tourma-badge-tier-b .streak-tourney-item i { color: #34d399; }
+
+.tourma-badge-tier-c .streak-footer-title { color: #60a5fa; }
+.tourma-badge-tier-c .streak-tourney-item i { color: #60a5fa; }
+
+.tourma-badge-tier-d .streak-footer-title { color: #e2e8f0; }
+.tourma-badge-tier-d .streak-tourney-item i { color: #e2e8f0; }
+
+.tourma-badge-runner-up .streak-footer-title { color: #38bdf8; }
+.tourma-badge-runner-up .streak-tourney-item i { color: #38bdf8; }
+
+.tourma-badge-veteran .streak-footer-title { color: #fbbf24; }
+.tourma-badge-veteran .streak-tourney-item i { color: #fbbf24; }
+
+.tourma-badge-podium .streak-footer-title { color: #a78bfa; }
+.tourma-badge-podium .streak-tourney-item i { color: #a78bfa; }
+
+/* ============================================================================
+   10. PHASE 1 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 1)
+   Nền ngọc lục bảo đặc (solid emerald), sóng sonar xung tỏa và vệt sáng pha lê quét chéo
+   ============================================================================ */
+
+/* --- PHASE 1: Nền Xanh Lục Bảo Trong Suốt Kính Mờ (Đồng Bộ Hệ Thống) --- */
+.tourma-badge-phase-1 {
+  position: relative;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1.25px solid #10b981;
+  color: #34d399;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+  animation: phase1SonarPulse 2.8s infinite cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.tourma-badge-phase-1:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.32);
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.7), inset 0 0 8px rgba(52, 211, 153, 0.25);
+}
+
+/* Lớp Phủ Vệt Sáng Pha Lê Lướt Chéo Qua Bề Mặt Badge */
+.phase1-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase1-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -130%;
+  width: 70%;
+  height: 220%;
+  background: linear-gradient(
+    105deg,
+    transparent 15%,
+    rgba(255, 255, 255, 0.15) 35%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(167, 243, 208, 0.5) 62%,
+    transparent 80%
+  );
+  transform: rotate(22deg);
+  animation: phase1GleamSweep 3.2s infinite ease-in-out;
+}
+
+/* Bảo Ngọc Lục Bảo (Emerald Gem) Phase 1 - Xoay lật 3D và lóe sáng giác cắt */
+.tourma-badge-phase-1 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.82rem;
+  color: #34d399;
+  flex-shrink: 0;
+  display: inline-block;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 0 3px #10b981) drop-shadow(0 0 6px rgba(52, 211, 153, 0.7));
+  animation: phase1Gem3DSpin 3.4s infinite ease-in-out;
+}
+
+/* Tên Badge "Phase 1 #1" - Màu xanh ngọc đồng bộ với icon và viền */
+.tourma-badge-phase-1 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+  color: #34d399;
+}
+
+/* Tooltip Hover Cho Phase 1 */
+.tourma-badge-phase-1 .tourma-badge-tooltip {
+  border-color: rgba(16, 185, 129, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 20px rgba(16, 185, 129, 0.35) !important;
+}
+.tourma-badge-phase-1 .tourma-badge-tooltip-title {
+  color: #34d399;
+}
+.tourma-badge-phase-1 .tourma-badge-tooltip-rarity {
+  background: rgba(16, 185, 129, 0.22);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+/* ============================================================================
+   KEYFRAME ANIMATIONS CHO PHASE 1 (Khác biệt hoàn toàn Defending Champion)
+   ============================================================================ */
+
+/* 1. Sóng Sonar xung tỏa ra ngoài nhịp nhàng */
+@keyframes phase1SonarPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.65), 0 0 8px rgba(16, 185, 129, 0.35);
+    border-color: #34d399;
+  }
+  55% {
+    box-shadow: 0 0 0 7px rgba(16, 185, 129, 0), 0 0 12px rgba(16, 185, 129, 0.4);
+    border-color: #10b981;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0), 0 0 8px rgba(16, 185, 129, 0.35);
+    border-color: #34d399;
+  }
+}
+
+/* 2. Vệt sáng pha lê quét chéo qua mặt badge theo chu kỳ */
+@keyframes phase1GleamSweep {
+  0%, 25% {
+    left: -130%;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  65% {
+    left: 150%;
+    opacity: 1;
+  }
+  70%, 100% {
+    left: 150%;
+    opacity: 0;
+  }
+}
+
+/* 3. Viên ngọc lục bảo xoay lật 3D 360 độ và bùng nổ tia sáng phản quang */
+@keyframes phase1Gem3DSpin {
+  0%, 65% {
+    transform: perspective(250px) rotateY(0deg) scale(1);
+    color: #6ee7b7;
+    filter: drop-shadow(0 0 3px #10b981);
+  }
+  73% {
+    transform: perspective(250px) rotateY(90deg) scale(1.18);
+    color: #ffffff;
+    filter: drop-shadow(0 0 10px #ffffff) drop-shadow(0 0 18px #34d399);
+  }
+  82% {
+    transform: perspective(250px) rotateY(180deg) scale(1.22);
+    color: #ffffff;
+    filter: drop-shadow(0 0 12px #ffffff) drop-shadow(0 0 20px #a7f3d0);
+  }
+  90% {
+    transform: perspective(250px) rotateY(270deg) scale(1.12);
+    color: #a7f3d0;
+    filter: drop-shadow(0 0 8px #34d399);
+  }
+  96%, 100% {
+    transform: perspective(250px) rotateY(360deg) scale(1);
+    color: #6ee7b7;
+    filter: drop-shadow(0 0 3px #10b981);
+  }
+}
+
+/* ============================================================================
+   11. STATIC TOURNAMENT MILESTONE BADGES (Runner-Up, Veteran, Podium)
+   Badge tĩnh (Static): Nền kính mờ trong suốt (translucent rgba), màu chữ đồng bộ icon giống hệt hệ thống badge cũ
+   ============================================================================ */
+
+/* --- 1. RUNNER-UP (Bạc Bạch Kim - Silver Platinum) --- */
+.tourma-badge-runner-up {
+  background: rgba(148, 163, 184, 0.18);
+  border: 1.25px solid rgba(148, 163, 184, 0.55);
+  color: #cbd5e1;
+  box-shadow: 0 0 6px rgba(148, 163, 184, 0.25);
+}
+.tourma-badge-runner-up .badge-icon {
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-runner-up .tourma-badge-name {
+  color: #cbd5e1;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-runner-up:hover {
+  border-color: #f1f5f9;
+  background: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 0 14px rgba(148, 163, 184, 0.6), inset 0 0 6px rgba(148, 163, 184, 0.2);
+}
+.tourma-badge-runner-up .tourma-badge-tooltip {
+  border-color: rgba(148, 163, 184, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(148, 163, 184, 0.25) !important;
+}
+.tourma-badge-runner-up .tourma-badge-tooltip-title {
+  color: #cbd5e1;
+}
+.tourma-badge-runner-up .tourma-badge-tooltip-rarity {
+  background: rgba(148, 163, 184, 0.22);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+/* --- 2. VETERAN (Tím Lam Hoàng Gia - Royal Purple / Violet) --- */
+.tourma-badge-veteran {
+  background: rgba(168, 85, 247, 0.18);
+  border: 1.25px solid rgba(168, 85, 247, 0.55);
+  color: #c084fc;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.25);
+}
+.tourma-badge-veteran .badge-icon {
+  color: #c084fc;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-veteran .tourma-badge-name {
+  color: #c084fc;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-veteran:hover {
+  border-color: #d8b4fe;
+  background: rgba(168, 85, 247, 0.28);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.6), inset 0 0 6px rgba(168, 85, 247, 0.2);
+}
+.tourma-badge-veteran .tourma-badge-tooltip {
+  border-color: rgba(168, 85, 247, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(168, 85, 247, 0.25) !important;
+}
+.tourma-badge-veteran .tourma-badge-tooltip-title {
+  color: #c084fc;
+}
+.tourma-badge-veteran .tourma-badge-tooltip-rarity {
+  background: rgba(168, 85, 247, 0.22);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+}
+
+/* --- 3. PODIUM (Hổ Phách Bục Vinh Quang - Warm Amber) --- */
+.tourma-badge-podium {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1.25px solid rgba(245, 158, 11, 0.55);
+  color: #fbbf24;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.25);
+}
+.tourma-badge-podium .badge-icon {
+  color: #fbbf24;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.tourma-badge-podium .tourma-badge-name {
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.2px;
+}
+.tourma-badge-podium:hover {
+  border-color: #fde047;
+  background: rgba(245, 158, 11, 0.28);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.6), inset 0 0 6px rgba(245, 158, 11, 0.2);
+}
+.tourma-badge-podium .tourma-badge-tooltip {
+  border-color: rgba(245, 158, 11, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(245, 158, 11, 0.25) !important;
+}
+.tourma-badge-podium .tourma-badge-tooltip-title {
+  color: #fbbf24;
+}
+.tourma-badge-podium .tourma-badge-tooltip-rarity {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+/* Badge artwork stays unchanged; tooltip follows the shared application theme. */
+.tourma-badge-pill .tourma-badge-tooltip {
+  width:320px; max-width:calc(100vw - 32px); padding:16px;
+  background:var(--ui-surface)!important; color:var(--ui-text);
+  border:1px solid var(--ui-line)!important; border-radius:10px;
+  box-shadow:var(--ui-shadow)!important; font-family:var(--ui-font);
+  font-size:12px; font-weight:400; line-height:1.65; text-shadow:none;
+}
+.tourma-badge-pill .tourma-badge-tooltip::after { border-bottom-color:var(--ui-surface); }
+.tourma-badge-pill .tourma-badge-tooltip-header { align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--ui-line); }
+.tourma-badge-pill .tourma-badge-tooltip-title { color:var(--ui-text); font-size:14px; font-weight:600; line-height:1.4; }
+.tourma-badge-pill .tourma-badge-tooltip-title i { color:var(--ui-accent); }
+.tourma-badge-pill .tourma-badge-tooltip-rarity { color:var(--ui-accent); background:var(--ui-accent-soft); border:0; padding:3px 7px; border-radius:4px; font-size:10px; font-weight:500; text-transform:none; }
+.tourma-badge-pill .tourma-badge-tooltip-desc { color:var(--ui-text); font-size:12px; font-weight:400; }
+.tourma-badge-pill .tourma-badge-tooltip-footer { border-top:1px solid var(--ui-line); margin-top:12px; padding-top:10px; color:var(--ui-muted); font-size:11px; line-height:1.6; }
+.tourma-badge-pill .streak-footer-title { color:var(--ui-muted); font-size:11px; font-weight:500; }
+.tourma-badge-pill .streak-tourney-list { gap:5px; margin-top:6px; }
+.tourma-badge-pill .streak-tourney-item { background:var(--ui-surface-alt); color:var(--ui-text); border:1px solid var(--ui-line); padding:3px 7px; font-size:11px; font-weight:400; }
+.tourma-badge-pill .streak-tourney-item i { color:var(--ui-accent); }
+@media(prefers-reduced-motion:reduce) { .tourma-badge-pill .tourma-badge-tooltip { transition:none; } }
+
+/* All Phase leaders share the capsule and motion treatment. */
+.tourma-badge-phase-1 { --badge-tone:var(--ui-tier-b); }
+.tourma-badge-phase-2 { --badge-tone:var(--ui-tier-c); }
+.tourma-badge-phase-3 { --badge-tone:var(--ui-tier-a); }
+.tourma-badge-phase-4 { --badge-tone:var(--ui-danger); }
+.tourma-badge-phase-5 { --badge-tone:var(--ui-tier-s); }
+.tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) {
+  color:var(--badge-tone); background:color-mix(in srgb,var(--badge-tone) 14%,transparent);
+  border:1.25px solid var(--badge-tone); animation:badgePhasePulse 2.8s ease-in-out infinite;
+}
+.tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) :is(.badge-icon,.tourma-badge-name) { color:var(--badge-tone); position:relative; z-index:2; font-size:.82rem; font-weight:800; }
+.tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) > .badge-icon { animation:phase1Gem3DSpin 3.4s ease-in-out infinite; color:var(--badge-tone)!important; filter:drop-shadow(0 0 3px var(--badge-tone))!important; }
+:is(.phase2-shine-fx,.phase3-shine-fx,.phase4-shine-fx,.phase5-shine-fx) { position:absolute; inset:0; border-radius:9999px; overflow:hidden; pointer-events:none; }
+:is(.phase2-shine-fx,.phase3-shine-fx,.phase4-shine-fx,.phase5-shine-fx)::before { content:''; position:absolute; top:-60%; left:-130%; width:70%; height:220%; background:linear-gradient(105deg,transparent 15%,color-mix(in srgb,var(--badge-tone) 30%,transparent) 35%,var(--ui-surface) 50%,transparent 80%); transform:rotate(22deg); animation:phase1GleamSweep 3.2s ease-in-out infinite; }
+@keyframes badgePhasePulse { 0%,100% { box-shadow:0 0 3px color-mix(in srgb,var(--badge-tone) 25%,transparent); } 55% { box-shadow:0 0 10px color-mix(in srgb,var(--badge-tone) 45%,transparent); } }
+/* Light mode preserves motion while giving lettering enough contrast. */
+:root:not([data-theme="dark"]) .tourma-badge-pill { --badge-tone:var(--ui-tier-d); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-gold,.tourma-badge-defending,.tourma-badge-bright-gold,.tourma-badge-tier-s,.tourma-badge-podium,.tourma-badge-phase-5) { --badge-tone:var(--ui-tier-s); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-tier-a,.tourma-badge-veteran,.tourma-badge-phase-3) { --badge-tone:var(--ui-tier-a); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-tier-b,.tourma-badge-phase-1) { --badge-tone:var(--ui-tier-b); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-tier-c,.tourma-badge-phase-2) { --badge-tone:var(--ui-tier-c); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-streak,.tourma-badge-streak-fire,.tourma-badge-phase-4) { --badge-tone:var(--ui-danger); }
+:root:not([data-theme="dark"]) .tourma-badge-pill { color:var(--badge-tone); background:color-mix(in srgb,var(--badge-tone) 9%,var(--ui-bg)); border-color:color-mix(in srgb,var(--badge-tone) 55%,var(--ui-line)); }
+:root:not([data-theme="dark"]) .tourma-badge-pill > :is(.badge-icon,.tourma-badge-name) { color:var(--badge-tone)!important; -webkit-text-fill-color:var(--badge-tone); text-shadow:none!important; }
+:root:not([data-theme="dark"]) .tourma-badge-pill > .tourma-badge-name { background:none; }
+
+/* Phase 2–5 each have their own motion identity. */
+.tourma-badge-pill.tourma-badge-phase-2 { --badge-tone:var(--ui-tier-c); animation:none; }
+.tourma-badge-pill.tourma-badge-phase-3 { --badge-tone:var(--ui-tier-a); animation:none; }
+.tourma-badge-pill.tourma-badge-phase-4 { --badge-tone:var(--ui-danger); animation:phase4Ripple 3s ease-out infinite; }
+.tourma-badge-pill.tourma-badge-phase-5 { --badge-tone:var(--ui-tier-s); animation:none; }
+:root:not([data-theme="dark"]) .tourma-badge-pill.tourma-badge-phase-2 { --badge-tone:var(--ui-tier-c); }
+:root:not([data-theme="dark"]) .tourma-badge-pill.tourma-badge-phase-3 { --badge-tone:var(--ui-tier-a); }
+:root:not([data-theme="dark"]) .tourma-badge-pill.tourma-badge-phase-4 { --badge-tone:var(--ui-danger); }
+:root:not([data-theme="dark"]) .tourma-badge-pill.tourma-badge-phase-5 { --badge-tone:var(--ui-tier-s); }
+.tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) > .badge-icon { animation:none; }
+/* Phase 2: horizontal light scanner. */
+.tourma-badge-phase-2 .phase2-shine-fx::before { inset:0 auto 0 -40%; width:35%; height:100%; transform:skewX(-18deg); background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--badge-tone) 45%,transparent),transparent); animation:phase2Scan 3s ease-in-out infinite; }
+@keyframes phase2Scan { 0%,15% { left:-40%; opacity:0; } 25% { opacity:1; } 75% { left:110%; opacity:1; } 85%,100% { left:110%; opacity:0; } }
+/* Phase 3: violet trace travels around the capsule. */
+.tourma-badge-phase-3 .phase3-shine-fx::before { inset:0; width:auto; height:auto; border-radius:inherit; background:none; transform:none; border:2px solid var(--badge-tone); clip-path:inset(0 50% 50% 0); animation:phase3Trace 3.2s linear infinite; }
+@keyframes phase3Trace { 0%,100% { clip-path:inset(0 50% 50% 0); } 25% { clip-path:inset(0 0 50% 50%); } 50% { clip-path:inset(50% 0 0 50%); } 75% { clip-path:inset(50% 50% 0 0); } }
+/* Phase 4: coral ripple expands outwards; icon beats with it. */
+.tourma-badge-phase-4 .phase4-shine-fx::before { display:none; }
+.tourma-badge-pill.tourma-badge-phase-4 > .badge-icon { animation:phase4Beat 3s ease-in-out infinite; }
+@keyframes phase4Ripple { 0% { box-shadow:0 0 0 0 color-mix(in srgb,var(--badge-tone) 40%,transparent); } 70%,100% { box-shadow:0 0 0 8px transparent; } }
+@keyframes phase4Beat { 0%,30%,100% { transform:scale(1); } 10% { transform:scale(1.2); } 20% { transform:scale(1.05); } }
+/* Phase 5: gold rays rotate behind the label. */
+.tourma-badge-phase-5 .phase5-shine-fx::before { top:50%; left:50%; width:220%; height:700%; background:conic-gradient(from 0deg,transparent 0deg 65deg,color-mix(in srgb,var(--badge-tone) 25%,transparent) 85deg,transparent 105deg 245deg,color-mix(in srgb,var(--badge-tone) 25%,transparent) 265deg,transparent 285deg); transform:translate(-50%,-50%) rotate(0deg); animation:phase5Rays 6s linear infinite; }
+@keyframes phase5Rays { to { transform:translate(-50%,-50%) rotate(360deg); } }
+/* Independent icon choreography, synchronized with each Phase surface. */
+.tourma-badge-pill.tourma-badge-phase-2 > .badge-icon { animation:phase2IconDash 3s cubic-bezier(.4,0,.2,1) infinite; transform-origin:center; }
+.tourma-badge-pill.tourma-badge-phase-3 > .badge-icon { animation:phase3IconLevitate 3.2s ease-in-out infinite; transform-origin:50% 70%; }
+.tourma-badge-pill.tourma-badge-phase-4 > .badge-icon { animation:phase4IconIgnite 3s ease-in-out infinite; transform-origin:50% 100%; }
+.tourma-badge-pill.tourma-badge-phase-5 > .badge-icon { animation:phase5IconSunburst 6s ease-in-out infinite; transform-origin:center; }
+/* Cyan: pull back, launch forward, then settle as the scanner passes. */
+@keyframes phase2IconDash {
+  0%,12%,78%,100% { transform:translateX(0) rotate(0deg); }
+  22% { transform:translateX(-3px) rotate(-16deg) scaleX(.9); }
+  36% { transform:translateX(5px) rotate(18deg) scaleX(1.15); }
+  50% { transform:translateX(-1px) rotate(-5deg); }
+  62% { transform:translateX(0) rotate(0deg); }
+}
+/* Violet: floating figure-eight, with a gentle sideways roll. */
+@keyframes phase3IconLevitate {
+  0%,100% { transform:translate(0,0) rotate(0deg); }
+  25% { transform:translate(2px,-3px) rotate(12deg); }
+  50% { transform:translate(0,0) rotate(0deg); }
+  75% { transform:translate(-2px,-3px) rotate(-12deg); }
+}
+/* Coral: compress, spring upwards, flicker sideways, land. */
+@keyframes phase4IconIgnite {
+  0%,68%,100% { transform:translateY(0) scale(1) skewX(0deg); }
+  12% { transform:scale(1.12,.78); }
+  26% { transform:translateY(-4px) scale(.9,1.2) skewX(-9deg); }
+  34% { transform:translateY(-4px) scale(.95,1.12) skewX(9deg); }
+  44% { transform:translateY(-2px) skewX(-5deg); }
+  56% { transform:scale(1.08,.9); }
+}
+/* Gold: stepped full revolution followed by a brief expansion. */
+@keyframes phase5IconSunburst {
+  0%,10% { transform:rotate(0deg) scale(1); }
+  25% { transform:rotate(90deg) scale(1.08); }
+  40% { transform:rotate(180deg) scale(1); }
+  55% { transform:rotate(270deg) scale(1.08); }
+  70% { transform:rotate(360deg) scale(1); }
+  80% { transform:rotate(360deg) scale(1.2); }
+  90%,100% { transform:rotate(360deg) scale(1); }
+}
+@media(prefers-reduced-motion:reduce) { .tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5), .tourma-badge-pill:is(.tourma-badge-phase-2,.tourma-badge-phase-3,.tourma-badge-phase-4,.tourma-badge-phase-5) > .badge-icon, :is(.phase2-shine-fx,.phase3-shine-fx,.phase4-shine-fx,.phase5-shine-fx)::before { animation:none; } }

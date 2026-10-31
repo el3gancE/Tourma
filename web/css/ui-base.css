@@ -4,8 +4,8 @@
 .ui-page button { font:inherit; }
 .ui-page h1,.ui-page h2,.ui-page h3,.ui-page p { margin:0; }
 .ui-page a:focus-visible,.ui-page button:focus-visible { outline:3px solid var(--ui-accent); outline-offset:5px; }
-.availability-dot { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--ui-accent); flex-shrink:0; }
-.ui-page .home-button.primary { background:var(--ui-accent); color:var(--ui-on-accent); }
+.availability-dot { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--ui-accent-fill,var(--ui-accent)); flex-shrink:0; }
+.ui-page .home-button.primary { background:var(--ui-accent-fill,var(--ui-accent)); color:var(--ui-on-accent); }
 .ui-page .home-button.primary:hover { background:var(--ui-accent-hover); transform:translateY(-2px); }
 .ui-page .workspace-link { display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--ui-line); padding-top:18px; color:var(--ui-accent); font-size:11px; font-weight:500; margin-top:auto; }
 

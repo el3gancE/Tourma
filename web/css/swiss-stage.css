@@ -22,7 +22,7 @@
 .swiss-page #swissInvalidTeamAlert { padding:36px; border:1px solid var(--ui-line); border-radius:8px; text-align:center; }
 .swiss-page #swissInvalidTeamAlert h2 { font-size:21px; margin:16px 0; }
 .swiss-page #swissInvalidTeamAlert p { color:var(--ui-muted); margin-bottom:20px; }
-.swiss-page #btnGoToConfigureTeams { padding:10px 16px; border-radius:6px; gap:8px; background:var(--ui-accent); color:var(--ui-on-accent); }
+.swiss-page #btnGoToConfigureTeams { padding:10px 16px; border-radius:6px; gap:8px; background:var(--ui-accent-fill,var(--ui-accent)); color:var(--ui-on-accent); }
 
 /* Swiss cards do not display seed columns. */
 .swiss-page :is(.bracket-seed-badge,.match-list-seed) { display:none; }

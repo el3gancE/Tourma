@@ -157,3 +157,64 @@
 }
 :root { --ui-danger:#b84f54; }
 :root[data-theme="dark"] { --ui-danger:#f87171; }
+
+/* Additional palettes, selected centrally by theme.js. */
+:root[data-theme="light"][data-accent="blue"] {
+ --ui-bg:#ffffff; --ui-navigation-bg:#ffffff; --ui-workspace-bg:#ffffff;
+ --ui-workspace-canvas:#ffffff; --ui-canvas:#ffffff; --ui-workspace-card:#f8fafc;
+ --ui-surface:#f8fafc; --ui-surface-alt:#e5e9ee; --ui-match-surface:#f8fafc;
+ --ui-match-row:#f8fafc; --ui-match-border:#d4dae1; --ui-match-score:#e5e9ee;
+ --ui-text:#202124; --ui-muted:#71717a; --ui-line:#d4dae1; --ui-line-strong:#b8c1cc;
+ --ui-accent:#1e40af; --ui-accent-hover:#1e3a8a; --ui-accent-soft:#eff4ff; --ui-on-accent:#ffffff;
+ --ui-pending-bg:#e5e9ee; --ui-pending-text:#475569; --ui-connector:#8a8a8a;
+ --ui-shadow:0 16px 50px rgb(0 0 0 / 4%);
+ --ui-card-shadow:0 2px 6px rgb(15 23 42 / 8%),0 1px 2px rgb(15 23 42 / 4%);
+}
+:root[data-theme="dark"][data-accent="wine"] {
+ --ui-accent:#bc7185; --ui-accent-hover:#cc899b; --ui-accent-soft:#301c24; --ui-on-accent:#000000; --ui-accent-fill:#bc7185;
+}
+:root[data-accent] { --ui-gsl-0:var(--ui-accent); }
+
+/* Light-blue uses the same color families as dark-blue, with readable light tones. */
+:root[data-theme="light"][data-accent="blue"] {
+ --ui-bracket-lower-accent:#b74750; --ui-bracket-lower-soft:#f9e6e9;
+ --ui-swiss-upper-accent:#18794e; --ui-bracket-final-accent:#966900;
+ --ui-gsl-0:#1e40af; --ui-gsl-1:var(--ui-bracket-lower-accent);
+ --ui-gsl-2:#007f9c; --ui-gsl-3:#936200; --ui-gsl-4:#8050ad;
+ --ui-gsl-5:#547c13; --ui-gsl-6:#b13f7d; --ui-gsl-7:#087e8b;
+ --ui-gsl-8:#b34e15; --ui-gsl-9:#555db0; --ui-gsl-10:#18794e;
+ --ui-gsl-11:#9945a8; --ui-gsl-12:#8b7410; --ui-gsl-13:#326cad;
+ --ui-gsl-14:#b94768; --ui-gsl-15:#26733e; --ui-gsl-16:#7359ab;
+ --ui-gsl-17:#b94d4d; --ui-gsl-18:#287ba2; --ui-gsl-19:#927115;
+ --ui-gsl-20:#a84c85; --ui-gsl-21:#247b64; --ui-gsl-22:#a65b20;
+ --ui-gsl-23:#6253a8; --ui-gsl-24:#b03d75; --ui-gsl-25:#647d20;
+ --ui-gsl-26:#287e79; --ui-gsl-27:#b33b38; --ui-gsl-28:#7451b5;
+ --ui-gsl-29:#3469b1; --ui-gsl-30:#a66a16; --ui-gsl-31:#a5346d;
+}
+
+/* Dark-wine keeps the same semantic grouping as light-wine. */
+:root[data-theme="dark"][data-accent="wine"] {
+ --ui-bracket-lower-accent:#8eafd4; --ui-bracket-lower-soft:#1c2a3b;
+ --ui-swiss-upper-accent:#4ade80; --ui-bracket-final-accent:#facc15;
+ --ui-gsl-0:#bc7185; --ui-gsl-1:var(--ui-bracket-lower-accent);
+ --ui-gsl-2:#38bdf8; --ui-gsl-3:#fbbf24; --ui-gsl-4:#c084fc;
+ --ui-gsl-5:#a3e635; --ui-gsl-6:#f472b6; --ui-gsl-7:#06b6d4;
+ --ui-gsl-8:#f97316; --ui-gsl-9:#818cf8; --ui-gsl-10:#4ade80;
+ --ui-gsl-11:#e879f9; --ui-gsl-12:#facc15; --ui-gsl-13:#60a5fa;
+ --ui-gsl-14:#fb7185; --ui-gsl-15:#22c55e; --ui-gsl-16:#a78bfa;
+ --ui-gsl-17:#ff6b6b; --ui-gsl-18:#0ea5e9; --ui-gsl-19:#eab308;
+ --ui-gsl-20:#d946ef; --ui-gsl-21:#10b981; --ui-gsl-22:#ea580c;
+ --ui-gsl-23:#6366f1; --ui-gsl-24:#ec4899; --ui-gsl-25:#84cc16;
+ --ui-gsl-26:#14b8a6; --ui-gsl-27:#ef4444; --ui-gsl-28:#8b5cf6;
+ --ui-gsl-29:#3b82f6; --ui-gsl-30:#f59e0b; --ui-gsl-31:#db2777;
+}
+
+/* A continuous page backdrop across navigation, workspaces and bracket canvases. */
+:root,
+:root[data-theme="dark"],
+:root[data-theme="light"][data-accent="blue"] {
+ --ui-navigation-bg:var(--ui-bg);
+ --ui-workspace-bg:var(--ui-bg);
+ --ui-workspace-canvas:var(--ui-bg);
+ --ui-canvas:var(--ui-bg);
+}

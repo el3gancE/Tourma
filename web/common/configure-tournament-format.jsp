@@ -118,8 +118,8 @@
                         <link rel="stylesheet"
                             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-                        <script src="${pageContext.request.contextPath}/js/theme.js"></script>
-                        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=19-11">
+                        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-classic"></script>
+                        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
                         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
                         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
                         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">

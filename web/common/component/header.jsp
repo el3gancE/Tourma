@@ -1,7 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
 <jsp:include page="/common/component/tournament-config-state.jsp" />
 <!-- Dedicated Header Component Stylesheet -->
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=18">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=20261031-classic">
 
 <!-- Header / Navigation Bar Component -->
 <nav class="navbar">
@@ -54,7 +54,14 @@
         </li>
     </ul>
     <% if ("true".equals(request.getParameter("themeToggle"))) { %>
-    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Chuyển giao diện sáng tối"><i class="fa-solid fa-moon" aria-hidden="true"></i><span data-theme-label>Giao diện tối</span><span class="theme-switch" aria-hidden="true"></span></button>
+    <div class="appearance-switches" role="group" aria-label="Giao diện">
+        <button type="button" class="theme-toggle appearance-switch" role="switch" title="Đổi màu Đỏ / Xanh" aria-label="Màu xanh" aria-checked="false" data-accent-switch>
+            <i class="fa-solid fa-palette" aria-hidden="true"></i><span class="theme-switch" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="theme-toggle appearance-switch" role="switch" title="Đổi chế độ Sáng / Tối" aria-label="Chế độ tối" aria-checked="false" data-mode-switch>
+            <i class="fa-solid fa-sun" aria-hidden="true" data-mode-icon></i><span class="theme-switch" aria-hidden="true"></span>
+        </button>
+    </div>
     <% } %>
 </nav>
 

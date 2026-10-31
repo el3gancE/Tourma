@@ -7,7 +7,7 @@ có thể có bố cục khác nhau theo công việc, nhưng phải dùng chung
 
 - Trang chủ hiện tại là bản thử; người dùng dự định làm lại. Không sao chép bố cục
   hoặc các chi tiết minh họa ở đó như một thiết kế đã được duyệt.
-- Hướng màu hiện tại: light nền trắng + wine; dark đen + sky blue. Emerald là hướng cũ.
+- Có bốn lựa chọn dùng chung token: light-wine (trắng), light-blue (trắng tinh), dark-blue và dark-wine. Chọn bằng hai switch Đỏ/Xanh và Sáng/Tối trên header.
 - Sắc độ nền/card vẫn đang thử nghiệm, chưa được người dùng chốt về mặt thẩm mỹ.
   Dùng bộ token hiện tại để giữ đồng bộ; không tự pha một bảng màu mới cho mỗi màn.
 - Nội dung header (nhãn, thứ tự và URL) được giữ nguyên. Có thể đổi hình thức khi
@@ -97,3 +97,21 @@ Font Readex Pro dùng weight 500 cho nội dung, 600 cho tên đội/menu và 70
 ## Popup dùng chung
 
 `web/css/popup.css` cung cấp lớp nền, khung, header/footer và control cho popup tỉ số, xác nhận, thêm đội, sửa Series và stage. CSS từng popup nhập stylesheet này; không đặt style popup riêng trong CSS của màn SE.
+
+## Bộ màu mở rộng
+
+Theme lưu bằng tourma-ui-theme (light/dark), màu nhấn lưu bằng tourma-ui-accent (wine/blue). theme.js áp dụng data-theme và data-accent trước khi render. Không tạo stylesheet theme riêng theo màn. Light-blue dùng nền trang, navigation và canvas trắng tinh #FFFFFF; blue chỉ là màu nhấn. Light-wine giữ nền trắng hiện tại. Người dùng chưa chọn bộ màu được giữ giao diện cũ.
+
+Light-blue dùng cùng họ màu với dark-blue: LB coral, Swiss nhóm 2 thắng green, nhóm 2 thua coral, 2–2 vàng. GSL A theo UB, B theo LB; C–AF dùng bảng màu riêng có độ đậm phù hợp nền sáng, các họ màu tương tự được đặt xen kẽ.
+
+Dark-wine: UB wine sáng, LB dusty blue để tách khỏi UB; Swiss nhóm 2 thắng green, 2 thua theo LB, 2–2 vàng; GSL A/B theo UB/LB, C–AF giữ các họ màu sáng dành cho nền tối.
+
+Dark-wine dùng ruby #DC5268 cho chữ/icon, wine #861B36 cho nền nhấn đặc qua --ui-accent-fill, chữ trên nền đặc màu trắng. Các bộ khác dùng --ui-accent làm nền nhấn như cũ.
+
+Nền trang, header/sidebar, workspace và canvas dùng chung --ui-bg ở cả bốn bộ màu: sáng #FFFFFF, tối #121212. Card vẫn dùng token surface riêng để giữ phân lớp.
+
+Hai bộ light dùng cùng màu trung tính cho surface, hàng trận, viền, chữ và shadow. Không pha xanh vào nền card/viền ở light-blue; khác biệt nằm ở accent và các màu ngữ nghĩa của nhánh/nhóm.
+
+Light-blue: accent cobalt #1E40AF, hover #1E3A8A, nền nhấn #EFF4FF.
+
+Dark-wine thử màu #BC7185 cho accent và nền nút, chữ trên nút #000000; light-wine giữ nguyên.

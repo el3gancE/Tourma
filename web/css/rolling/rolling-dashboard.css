@@ -8,7 +8,7 @@
 .series-dashboard-page .dashboard-meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .series-dashboard-page .dashboard-meta span { padding:4px 8px; border:1px solid var(--ui-line); border-radius:5px; color:var(--ui-muted); font-size:11px; }
 .series-dashboard-page .dashboard-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); font-size:12px; }
-.series-dashboard-page .dashboard-button.primary { background:var(--ui-accent); border-color:var(--ui-accent); color:var(--ui-on-accent); }
+.series-dashboard-page .dashboard-button.primary { background:var(--ui-accent-fill,var(--ui-accent)); border-color:var(--ui-accent); color:var(--ui-on-accent); }
 .series-dashboard-page .dashboard-button.primary:hover { background:var(--ui-accent-hover); }
 .series-dashboard-page .dashboard-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
 .series-dashboard-page .dashboard-metric { display:flex; flex-direction:column; gap:12px; padding:20px; border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); }

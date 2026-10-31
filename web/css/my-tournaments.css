@@ -35,7 +35,7 @@
 .tourney-card-tools { display:flex; align-items:center; gap:10px; }
 .tourney-progress { display:flex; align-items:center; gap:8px; width:116px; margin-right:6px; flex-shrink:0; }
 .tourney-progress-track { height:4px; flex:1; min-width:0; border-radius:4px; overflow:hidden; background:var(--ui-surface-alt); }
-.tourney-progress-fill { display:block; height:100%; background:var(--ui-accent); border-radius:4px; }
+.tourney-progress-fill { display:block; height:100%; background:var(--ui-accent-fill,var(--ui-accent)); border-radius:4px; }
 .tourney-progress-percent { min-width:29px; text-align:right; color:var(--ui-muted); font-size:10px; font-variant-numeric:tabular-nums; }
 @media(max-width:700px) { .tourney-card { gap:14px; padding:14px 16px; } .tourney-progress { width:95px; margin-right:0; } }
 @media(max-width:520px) { .tourney-card { grid-template-columns:minmax(0,1fr); gap:12px; } .tourney-card-tools { justify-content:flex-end; } .tourney-progress { margin-right:auto; width:116px; } .tourney-card-title { font-size:18px; } }
@@ -61,3 +61,7 @@
 .btn-delete-tourney,.tournaments-page .btn-view-bracket-card { height:32px; display:inline-flex; justify-content:center; align-items:center; gap:9px; border:1px solid var(--ui-line); border-radius:6px; background:none; color:var(--ui-muted); cursor:pointer; font:inherit; font-size:11px; }
 .btn-delete-tourney { width:32px; padding:0; }
 .btn-delete-tourney:hover { background:var(--ui-surface-alt); color:var(--ui-text); }
+
+/* Status sits above the track without moving the percentage or controls. */
+.tourney-progress { position:relative; }
+.tourney-progress-status { position:absolute; left:0; bottom:calc(50% + 7px); color:var(--ui-muted); font:500 9px var(--ui-font); line-height:1.2; white-space:nowrap; }

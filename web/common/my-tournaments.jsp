@@ -18,8 +18,8 @@
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        <script src="${pageContext.request.contextPath}/js/theme.js"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=19-11">
+        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261031-classic"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261031m">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
         <!-- Main Design System CSS & Dedicated My Tournaments CSS -->
@@ -99,6 +99,7 @@
                                 </div>
                                 <div class="tourney-card-tools">
                                     <div class="tourney-progress" aria-label="Tiến độ giải đấu">
+                                        <span class="tourney-progress-status">${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'in progress' : 'incoming')}</span>
                                         <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${t.progressPercent}">
                                             <span class="tourney-progress-fill" style="width: ${t.progressPercent}%"></span>
                                         </div>

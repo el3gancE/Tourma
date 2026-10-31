@@ -7,7 +7,7 @@
 .workspace-page .page-title>i { color:var(--ui-accent); font-size:24px; }
 .workspace-page .page-header-row p { color:var(--ui-muted); font-size:12px; margin-top:9px; }
 .workspace-page .btn { display:inline-flex; align-items:center; justify-content:center; gap:9px; border:1px solid var(--ui-line); border-radius:7px; padding:11px 15px; background:var(--ui-surface); color:var(--ui-text); cursor:pointer; font-size:11px; white-space:nowrap; }
-.workspace-page .btn-mint { background:var(--ui-accent); border-color:var(--ui-accent); color:var(--ui-on-accent); }
+.workspace-page .btn-mint { background:var(--ui-accent-fill,var(--ui-accent)); border-color:var(--ui-accent); color:var(--ui-on-accent); }
 .workspace-page .text-muted { color:var(--ui-muted); }
 .workspace-page .text-mint,.workspace-page .text-gold { color:var(--ui-accent); }
 .toolbar-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px; padding:18px 0; border-block:1px solid var(--ui-line); margin-bottom:26px; }

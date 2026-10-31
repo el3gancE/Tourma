@@ -11,7 +11,7 @@
 .tourma-modal-card button,.add-team-modal-card button,.stage-end-modal-container button { box-sizing:border-box; padding:11px 15px; border:1px solid var(--ui-line); border-radius:7px; background:var(--ui-surface); color:var(--ui-text); font:500 14px/1.4 var(--ui-font); cursor:pointer; }
 .tourma-modal-card button:hover,.add-team-modal-card button:hover,.stage-end-modal-container button:hover { background:var(--ui-surface-alt); }
 .tourma-modal-card .modal-close-btn,.add-team-modal-close { width:30px; height:30px; padding:0; font-size:18px; flex-shrink:0; }
-.tourma-modal-card .btn-modal-save,.add-team-modal-card .btn-mint,.stage-end-modal-container .stage-end-unlock-btn { background:var(--ui-accent); color:var(--ui-on-accent); border-color:var(--ui-accent); }
+.tourma-modal-card .btn-modal-save,.add-team-modal-card .btn-mint,.stage-end-modal-container .stage-end-unlock-btn { background:var(--ui-accent-fill,var(--ui-accent)); color:var(--ui-on-accent); border-color:var(--ui-accent); }
 .tourma-modal-card input:not([type=hidden]),.add-team-modal-card input:not([type=hidden]),.add-team-modal-card textarea { box-sizing:border-box; font:500 14px/1.6 var(--ui-font); color:var(--ui-text); background:var(--ui-bg); border:1px solid var(--ui-line); border-radius:7px; padding:11px; min-width:0; }
 .tourma-modal-card :is(button,input):focus-visible,.add-team-modal-card :is(button,input,textarea):focus-visible { outline:2px solid var(--ui-accent-soft); outline-offset:2px; border-color:var(--ui-accent); }
 #tourmaScoreModalBackdrop .modal-stacked-teams-box { display:grid; gap:0; }
@@ -43,12 +43,12 @@
 .stage-end-popup-content,.final-stage-popup-content { width:100%; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
 .stage-end-popup-actions,.final-stage-popup-actions { display:flex; flex-wrap:wrap; gap:8px; }
 .stage-end-popup-actions button,.final-stage-popup-actions button { padding:8px 12px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface-alt); color:var(--ui-text); font:500 12px var(--ui-font); cursor:pointer; }
-.stage-end-popup-actions .stage-end-confirm-btn,.stage-end-popup-actions .stage-end-next-btn,.final-stage-popup-actions .final-stage-confirm-btn { background:var(--ui-accent); border-color:var(--ui-accent); color:var(--ui-on-accent); }
+.stage-end-popup-actions .stage-end-confirm-btn,.stage-end-popup-actions .stage-end-next-btn,.final-stage-popup-actions .final-stage-confirm-btn { background:var(--ui-accent-fill,var(--ui-accent)); border-color:var(--ui-accent); color:var(--ui-on-accent); }
 .final-stage-champion-name { font-weight:600; color:var(--ui-accent); }
 .stage-end-popup-banner .stage-end-popup-actions :is(.stage-end-confirm-btn,.stage-end-next-btn,.stage-end-unlock-btn),
 .final-stage-popup-banner .final-stage-popup-actions :is(.final-stage-confirm-btn,.final-stage-unlock-btn),
 .stage-end-modal-container :is(.stage-end-confirm-btn,.stage-end-next-btn,.stage-end-unlock-btn) {
-    background:var(--ui-accent);
+    background:var(--ui-accent-fill,var(--ui-accent));
     border-color:var(--ui-accent);
     color:var(--ui-on-accent);
 }
