@@ -53,23 +53,22 @@ public class TournamentPlacementService {
         Map<Integer, StageInfo> stages = new TreeMap<>();
         List<MatchInfo> matches = new ArrayList<>();
         Set<String> qualified = new HashSet<>();
+        Map<String,Map<String,Integer>> groupRanks = new LinkedHashMap<>();
         Map<String, PlacementResult> results = new HashMap<>();
     }
 
     public Map<String, Map<String, Integer>> preloadSeriesPlacements(String seriesId) {
         Map<String, Map<String, Integer>> result = new HashMap<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return result;
-        List<String> ids = new ArrayList<>();
-        try (Connection conn = new DBContext().getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT id FROM tournaments WHERE series_id = ?")) {
-            ps.setString(1, seriesId.trim());
-            try (ResultSet rs = ps.executeQuery()) { while (rs.next()) ids.add(rs.getString(1)); }
+        try {
+            Map<String,Context> contexts = loadContexts(seriesId.trim(), true);
+            for (Map.Entry<String,Context> entry : contexts.entrySet()) {
+                RESULTS.putIfAbsent(entry.getKey(), resolveResults(entry.getValue()));
+                Map<String,Integer> placements = getTournamentPlacements(entry.getKey());
+                result.put(entry.getKey(), placements);
+                RollingWindowPointService.getInstance().putCachedTournamentPlacements(entry.getKey(), placements);
+            }
         } catch (Exception e) { throw new IllegalStateException("Cannot load series results", e); }
-        for (String id : ids) {
-            Map<String, Integer> placements = getTournamentPlacements(id);
-            result.put(id, placements);
-            RollingWindowPointService.getInstance().putCachedTournamentPlacements(id, placements);
-        }
         return result;
     }
 
@@ -90,22 +89,26 @@ public class TournamentPlacementService {
         return results;
     }
 
-    private Map<String, PlacementResult> loadResults(String id) {
+    /** Five reads per scope, independent of the number of tournaments in a Series. */
+    private Map<String,Context> loadContexts(String scopeId, boolean series) throws Exception {
+        String filter = series ? "t.series_id=?" : "t.id=?";
+        Map<String,Context> contexts = new LinkedHashMap<>();
         try (Connection conn = new DBContext().getConnection()) {
-            Context ctx = new Context();
+
             String config = "CASE WHEN ISJSON(t.multi_stage_config)=1 THEN t.multi_stage_config ELSE '{}' END";
-            String sql = "SELECT t.tournament_type, t.advancing_seats_count, s.stage_order, s.format, "
+            String sql = "SELECT t.id AS tournament_id, t.tournament_type, t.advancing_seats_count, s.stage_order, s.format, "
                 + "JSON_VALUE(" + config + ", '$.stage1Config.winPoints') AS w1, "
                 + "JSON_VALUE(" + config + ", '$.stage1Config.drawPoints') AS d1, "
                 + "JSON_VALUE(" + config + ", '$.stage1Config.lossPoints') AS l1, "
                 + "JSON_VALUE(" + config + ", '$.stage2Config.winPoints') AS w2, "
                 + "JSON_VALUE(" + config + ", '$.stage2Config.drawPoints') AS d2, "
                 + "JSON_VALUE(" + config + ", '$.stage2Config.lossPoints') AS l2 "
-                + "FROM tournaments t LEFT JOIN tournament_stages s ON s.tournament_id=t.id WHERE t.id=?";
+                + "FROM tournaments t LEFT JOIN tournament_stages s ON s.tournament_id=t.id WHERE " + filter;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, id);
+                ps.setString(1, scopeId);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
+                        Context ctx = contexts.computeIfAbsent(rs.getString("tournament_id"), key -> new Context());
                         ctx.multi = "MULTI_STAGE".equalsIgnoreCase(rs.getString("tournament_type"));
                         ctx.cut = rs.getInt("advancing_seats_count");
                         int order = rs.getInt("stage_order");
@@ -120,10 +123,11 @@ public class TournamentPlacementService {
                     }
                 }
             }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT id, raw_name, normalized_name, original_seed FROM teams WHERE tournament_id=? ORDER BY original_seed,id")) {
-                ps.setString(1, id);
+            try (PreparedStatement ps = conn.prepareStatement("SELECT tm.tournament_id, tm.id, tm.raw_name, tm.normalized_name, tm.original_seed FROM teams tm JOIN tournaments t ON t.id=tm.tournament_id WHERE " + filter + " ORDER BY tm.tournament_id,tm.original_seed,tm.id")) {
+                ps.setString(1, scopeId);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
+                        Context ctx = contexts.get(rs.getString("tournament_id"));
                         TeamInfo team = new TeamInfo();
                         team.id = rs.getString("id"); team.name = rs.getString("raw_name");
                         team.norm = rs.getString("normalized_name"); team.seed = rs.getInt("original_seed");
@@ -131,10 +135,11 @@ public class TournamentPlacementService {
                     }
                 }
             }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT m.*, ISNULL(s.stage_order,1) AS stage_order FROM matches m LEFT JOIN tournament_stages s ON s.id=m.stage_id WHERE m.tournament_id=? ORDER BY s.stage_order,m.round_number,m.match_order,m.id")) {
-                ps.setString(1, id);
+            try (PreparedStatement ps = conn.prepareStatement("SELECT m.id,m.tournament_id,m.group_id,m.round_number,m.bracket_type,m.status,m.team1_id,m.team2_id,m.winner_id,m.loser_id,m.score1,m.score2,m.is_bye, ISNULL(s.stage_order,1) AS stage_order FROM matches m JOIN tournaments t ON t.id=m.tournament_id LEFT JOIN tournament_stages s ON s.id=m.stage_id WHERE " + filter + " ORDER BY m.tournament_id,s.stage_order,m.round_number,m.match_order,m.id")) {
+                ps.setString(1, scopeId);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
+                        Context ctx = contexts.get(rs.getString("tournament_id"));
                         MatchInfo m = new MatchInfo();
                         m.id=rs.getString("id"); m.groupId=rs.getString("group_id");
                         m.stageOrder=rs.getInt("stage_order"); m.roundNumber=rs.getInt("round_number");
@@ -157,14 +162,34 @@ public class TournamentPlacementService {
                     }
                 }
             }
-            if (ctx.multi) {
-                try (PreparedStatement ps = conn.prepareStatement("SELECT j.team_id FROM tournaments t CROSS APPLY OPENJSON(CASE WHEN ISJSON(t.stage2_teams)=1 THEN t.stage2_teams ELSE '[]' END) WITH (team_id nvarchar(100) '$.id') j WHERE t.id=?")) {
-                    ps.setString(1, id);
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) if (ctx.teams.containsKey(rs.getString(1))) ctx.qualified.add(rs.getString(1));
+            try (PreparedStatement ps = conn.prepareStatement("SELECT t.id AS tournament_id,j.team_id FROM tournaments t CROSS APPLY OPENJSON(CASE WHEN ISJSON(t.stage2_teams)=1 THEN t.stage2_teams ELSE '[]' END) WITH (team_id nvarchar(100) '$.id') j WHERE " + filter)) {
+                ps.setString(1, scopeId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Context ctx=contexts.get(rs.getString("tournament_id"));
+                        if (ctx.multi && ctx.teams.containsKey(rs.getString("team_id"))) ctx.qualified.add(rs.getString("team_id"));
                     }
                 }
             }
+            try (PreparedStatement ps = conn.prepareStatement("SELECT t.id AS tournament_id,g.id AS group_id,gt.team_id,gt.rank_in_group FROM tournaments t JOIN tournament_stages s ON s.tournament_id=t.id AND s.stage_order=1 JOIN groups g ON g.stage_id=s.id JOIN group_teams gt ON gt.group_id=g.id WHERE " + filter)) {
+                ps.setString(1, scopeId);
+                try (ResultSet rs=ps.executeQuery()) {
+                    while(rs.next()) contexts.get(rs.getString("tournament_id")).groupRanks
+                        .computeIfAbsent(rs.getString("group_id"),k->new HashMap<>()).put(rs.getString("team_id"),rs.getInt("rank_in_group"));
+                }
+            }
+        }
+        return contexts;
+    }
+
+    private Map<String, PlacementResult> loadResults(String id) {
+        try {
+            Context ctx=loadContexts(id,false).get(id);
+            return ctx == null ? Collections.emptyMap() : resolveResults(ctx);
+        } catch (Exception e) { throw new IllegalStateException("Cannot calculate tournament results: " + id, e); }
+    }
+
+    private Map<String,PlacementResult> resolveResults(Context ctx) {
             for (Map.Entry<Integer, StageInfo> entry : ctx.stages.entrySet()) {
                 int order=entry.getKey(); StageInfo stage=entry.getValue();
                 List<MatchInfo> games=new ArrayList<>();
@@ -176,10 +201,9 @@ public class TournamentPlacementService {
                 else if ("GSL".equals(format) && cut) knockout(ctx,games,true,true,true,order);
                 else if (format.contains("SWISS") && cut) swiss(ctx,games);
                 else if ("ROUND_ROBIN".equals(format)) roundRobin(ctx,games,stage,cut,order);
-                else if ("GROUP_STAGE".equals(format) && cut) groups(ctx,games,conn,id);
+                else if ("GROUP_STAGE".equals(format) && cut) groups(ctx,games);
             }
             return Collections.unmodifiableMap(ctx.results);
-        } catch (Exception e) { throw new IllegalStateException("Cannot calculate tournament results: " + id, e); }
     }
 
     private static void knockout(Context ctx,List<MatchInfo> games,boolean cut,boolean de,boolean gsl,int order) {
@@ -284,13 +308,9 @@ public class TournamentPlacementService {
         }
     }
 
-    private static void groups(Context ctx,List<MatchInfo> games,Connection conn,String id)throws SQLException {
+    private static void groups(Context ctx,List<MatchInfo> games) {
         if(games.isEmpty() || !complete(games,true)) return;
-        Map<String,Map<String,Integer>> groups=new LinkedHashMap<>();
-        try(PreparedStatement ps=conn.prepareStatement("SELECT g.id, gt.team_id, gt.rank_in_group FROM groups g JOIN tournament_stages s ON s.id=g.stage_id JOIN group_teams gt ON gt.group_id=g.id WHERE s.tournament_id=? AND s.stage_order=1")) {
-            ps.setString(1,id);
-            try(ResultSet rs=ps.executeQuery()) {while(rs.next()) groups.computeIfAbsent(rs.getString(1),k->new HashMap<>()).put(rs.getString(2),rs.getInt(3));}
-        }
+        Map<String,Map<String,Integer>> groups=ctx.groupRanks;
         if (ctx.cut > 0 && ctx.qualified.size() == ctx.cut) {
             for (Map<String,Integer> group : groups.values()) for (String teamId : group.keySet()) {
                 if (!ctx.qualified.contains(teamId)) put(ctx, teamId, ctx.cut+1, "stage1_eliminated");
