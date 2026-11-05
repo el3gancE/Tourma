@@ -256,7 +256,8 @@
                 team1Score: scoreResult.team1Score,
                 team2Score: scoreResult.team2Score,
                 winner: scoreResult.winner,
-                status: 'COMPLETED'
+                status: 'COMPLETED',
+                handledByCallback: typeof this.onSaveCallback === 'function'
             };
 
             // Dispatch Custom DOM Event for Bracket and List update
@@ -319,7 +320,8 @@
                 team1Score: s1,
                 team2Score: s2,
                 winner: this.selectedWinner,
-                status: 'COMPLETED'
+                status: 'COMPLETED',
+                handledByCallback: typeof this.onSaveCallback === 'function'
             };
 
             // Dispatch Custom DOM Event for Bracket and List update

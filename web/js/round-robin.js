@@ -312,6 +312,10 @@
             var container = document.getElementById('rrFixturesContainer');
             if (!container) return;
 
+            var scrollPositions = [];
+            for (var parent = container; parent; parent = parent.parentElement) {
+                scrollPositions.push([parent, parent.scrollLeft, parent.scrollTop]);
+            }
             container.innerHTML = '';
 
             var self = this;
@@ -366,16 +370,12 @@
 
                     var cardNode = null;
                     if (window.TourmaMatchCard && typeof window.TourmaMatchCard.createCardElement === 'function') {
-                        cardNode = window.TourmaMatchCard.createCardElement(matchData);
+                        cardNode = window.TourmaMatchCard.createCardElement(Object.assign({}, matchData, {
+                            onClick: (function (match) { return function () { self.openEditScoreModal(match); }; })(matchData)
+                        }));
                     }
 
                     if (cardNode) {
-                        (function (mObj) {
-                            cardNode.addEventListener('click', function (e) {
-                                self.openEditScoreModal(mObj);
-                            });
-                        })(matchData);
-
                         gridEl.appendChild(cardNode);
                     }
                 }
@@ -388,6 +388,10 @@
             if (window.TourmaRoundControls && typeof window.TourmaRoundControls.updateButtonsState === 'function') {
                 window.TourmaRoundControls.updateButtonsState(this);
             }
+            scrollPositions.forEach(function (position) {
+                position[0].scrollLeft = position[1];
+                position[0].scrollTop = position[2];
+            });
         },
 
         /**
@@ -425,7 +429,7 @@
                     var p2 = (res.penalty2 !== undefined && res.penalty2 !== '') ? parseInt(res.penalty2, 10) : null;
                     var wSlot = res.winner || '';
 
-                    self.saveMatchScore(res.matchId, s1, s2, p1, p2, wSlot);
+                    return self.saveMatchScore(res.matchId, s1, s2, p1, p2, wSlot);
                 });
             }
         },
@@ -490,6 +494,7 @@
                 });
             this.pendingSaves.add(save);
             save.then(function(){self.pendingSaves.delete(save);},function(){self.pendingSaves.delete(save);});
+            return save;
         },
 
         /**
@@ -622,7 +627,7 @@
         setupListeners: function () {
             var self = this;
             document.addEventListener('tourmaMatchUpdated', function (e) {
-                if (e.detail && e.detail.matchId) {
+                if (e.detail && e.detail.matchId && !e.detail.handledByCallback) {
                     var mid = e.detail.matchId;
                     var s1 = (e.detail.team1Score !== undefined) ? parseInt(e.detail.team1Score, 10) : 0;
                     var s2 = (e.detail.team2Score !== undefined) ? parseInt(e.detail.team2Score, 10) : 0;

@@ -352,10 +352,54 @@
         }
     }
 
+    // Build display rounds from existing pairings; persisted roundNumber is a match sequence.
+    function buildGroupRounds(teams, matches) {
+        function key(team) { return String(team && (team.id || team.name || team.rawName) || team); }
+        function pair(a, b) { return JSON.stringify([key(a), key(b)].sort()); }
+        var rotation = teams.slice();
+        if (rotation.length < 2) return [];
+        if (rotation.length % 2) rotation.push(null);
+        var queues = {};
+        matches.forEach(function (match, index) {
+            var k = pair(match.team1, match.team2);
+            (queues[k] || (queues[k] = [])).push({match: match, index: index});
+        });
+        var template = [];
+        for (var r = 0; r < rotation.length - 1; r++) {
+            var pairs = [], bye = null;
+            for (var i = 0; i < rotation.length / 2; i++) {
+                var a = rotation[i], b = rotation[rotation.length - 1 - i];
+                if (a && b) pairs.push(pair(a, b));
+                else bye = a || b;
+            }
+            template.push({pairs: pairs, bye: bye});
+            rotation.splice(1, 0, rotation.pop());
+        }
+        var rounds = [], used = new Set();
+        var legs = Math.max.apply(null, Object.keys(queues).map(function (k) { return queues[k].length; }).concat([0]));
+        for (var leg = 0; leg < legs; leg++) template.forEach(function (round) {
+            var entries = [];
+            round.pairs.forEach(function (k) {
+                var entry = queues[k] && queues[k].shift();
+                if (entry) { entries.push(entry); used.add(entry.index); }
+            });
+            if (entries.length) rounds.push({number: rounds.length + 1, matches: entries, bye: round.bye});
+        });
+        // Keep any legacy pairings with missing team metadata visible.
+        matches.forEach(function (match, index) {
+            if (!used.has(index)) rounds.push({number: rounds.length + 1, matches: [{match: match, index: index}], bye: null});
+        });
+        return rounds;
+    }
+
     // Render Matches View
     function renderMatchesView() {
         var container = document.getElementById('gsMatchesContainer');
         if (!container) return;
+        var scrollPositions = [];
+        for (var parent = container; parent; parent = parent.parentElement) {
+            scrollPositions.push([parent, parent.scrollLeft, parent.scrollTop]);
+        }
         container.innerHTML = '';
 
         var groupKeys = Object.keys(groupsMap);
@@ -442,60 +486,83 @@
             secHeader.appendChild(actionsDiv);
             groupSec.appendChild(secHeader);
 
-            // Full-Width Matches Grid (Shared with SE, DE, Swiss)
-            var grid = document.createElement('div');
-            grid.className = 'list-matches-grid';
-
-            mList.forEach(function (m, idx) {
-                var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
-                var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
-                var s1 = (m.team1 && m.team1.score !== undefined && m.team1.score !== null) ? m.team1.score : '';
-                var s2 = (m.team2 && m.team2.score !== undefined && m.team2.score !== null) ? m.team2.score : '';
-                var isDone = (m.status === 'COMPLETED' || m.status === 'FINISHED' || (s1 !== '' && s2 !== ''));
-
-                var cardEl = null;
-                if (window.TourmaMatchCard && typeof window.TourmaMatchCard.createCardElement === 'function') {
-                    cardEl = window.TourmaMatchCard.createCardElement({
-                        matchId: m.matchKey || m.matchId || ('M_G_' + gKey + '_' + (idx + 1)),
-                        matchNumber: idx + 1,
-                        roundName: 'Bảng ' + gKey + ' • Trận ' + (idx + 1),
-                        status: isDone ? 'COMPLETED' : 'SCHEDULED',
-                        team1: { name: t1Name, score: (isDone && s1 !== '') ? s1 : '', seed: (m.team1 ? m.team1.seed : '') },
-                        team2: { name: t2Name, score: (isDone && s2 !== '') ? s2 : '', seed: (m.team2 ? m.team2.seed : '') },
-                        winnerId: m.winnerId,
-                        allowDraw: true,
-                        tournamentId: tournamentId,
-                        onClick: function () {
-                            openScorePopup(m, gKey);
-                        }
-                    });
+            buildGroupRounds(gTeams, mList).forEach(function (round) {
+                var roundSection = document.createElement('section');
+                roundSection.className = 'list-round-section';
+                roundSection.setAttribute('data-group-round', String(round.number));
+                var roundHeader = document.createElement('div');
+                roundHeader.className = 'match-list-round-header';
+                var roundTitle = document.createElement('h4');
+                roundTitle.className = 'round-header-title';
+                roundTitle.textContent = 'Lượt ' + round.number;
+                roundHeader.appendChild(roundTitle);
+                if (round.bye) {
+                    var bye = document.createElement('span');
+                    bye.className = 'rr-bye-badge';
+                    bye.textContent = 'Nghỉ lượt: ' + (round.bye.name || round.bye.rawName || round.bye);
+                    roundHeader.appendChild(bye);
                 }
+                roundSection.appendChild(roundHeader);
+                var grid = document.createElement('div');
+                grid.className = 'list-matches-grid';
 
-                if (!cardEl) {
-                    cardEl = document.createElement('div');
-                    cardEl.className = 'match-card-item';
-                    cardEl.innerHTML = '<div class="match-card-meta"><div class="match-card-accent-bar"></div><span class="match-card-id">#' + (idx + 1) + '</span></div>'
-                        + '<div class="match-card-versus">'
-                        + '<div class="match-team-side team-left"><span class="match-list-name">' + t1Name + '</span></div>'
-                        + '<div class="match-score-container"><span class="match-score-single-box">' + (isDone ? s1 : '') + '</span><span class="match-score-dash">-</span><span class="match-score-single-box">' + (isDone ? s2 : '') + '</span></div>'
-                        + '<div class="match-team-side team-right"><span class="match-list-name">' + t2Name + '</span></div>'
-                        + '</div>'
-                        + '<div class="match-card-actions"><span class="match-list-status ' + (isDone ? 'done' : 'pending') + '">' + (isDone ? 'DONE' : 'PENDING') + '</span></div>';
-                    cardEl.onclick = function () {
-                        openScorePopup(m, gKey);
-                    };
-                }
+                round.matches.forEach(function (entry) {
+                    var m = entry.match, idx = entry.index;
+                    var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
+                    var t2Name = m.team2 ? (m.team2.name || m.team2) : 'TBD';
+                    var s1 = (m.team1 && m.team1.score !== undefined && m.team1.score !== null) ? m.team1.score : '';
+                    var s2 = (m.team2 && m.team2.score !== undefined && m.team2.score !== null) ? m.team2.score : '';
+                    var isDone = (m.status === 'COMPLETED' || m.status === 'FINISHED' || (s1 !== '' && s2 !== ''));
 
-                grid.appendChild(cardEl);
+                    var cardEl = null;
+                    if (window.TourmaMatchCard && typeof window.TourmaMatchCard.createCardElement === 'function') {
+                        cardEl = window.TourmaMatchCard.createCardElement({
+                            matchId: m.matchKey || m.matchId || ('M_G_' + gKey + '_' + (idx + 1)),
+                            matchNumber: idx + 1,
+                            roundName: 'Bảng ' + gKey + ' • Lượt ' + round.number + ' • Trận ' + (idx + 1),
+                            status: isDone ? 'COMPLETED' : 'SCHEDULED',
+                            team1: { name: t1Name, score: (isDone && s1 !== '') ? s1 : '', seed: (m.team1 ? m.team1.seed : '') },
+                            team2: { name: t2Name, score: (isDone && s2 !== '') ? s2 : '', seed: (m.team2 ? m.team2.seed : '') },
+                            winnerId: m.winnerId,
+                            allowDraw: true,
+                            tournamentId: tournamentId,
+                            onClick: function () {
+                                openScorePopup(m, gKey, round.number);
+                            }
+                        });
+                    }
+
+                    if (!cardEl) {
+                        cardEl = document.createElement('div');
+                        cardEl.className = 'match-card-item';
+                        cardEl.innerHTML = '<div class="match-card-meta"><div class="match-card-accent-bar"></div><span class="match-card-id">#' + (idx + 1) + '</span></div>'
+                            + '<div class="match-card-versus">'
+                            + '<div class="match-team-side team-left"><span class="match-list-name">' + t1Name + '</span></div>'
+                            + '<div class="match-score-container"><span class="match-score-single-box">' + (isDone ? s1 : '') + '</span><span class="match-score-dash">-</span><span class="match-score-single-box">' + (isDone ? s2 : '') + '</span></div>'
+                            + '<div class="match-team-side team-right"><span class="match-list-name">' + t2Name + '</span></div>'
+                            + '</div>'
+                            + '<div class="match-card-actions"><span class="match-list-status ' + (isDone ? 'done' : 'pending') + '">' + (isDone ? 'DONE' : 'PENDING') + '</span></div>';
+                        cardEl.onclick = function () {
+                            openScorePopup(m, gKey, round.number);
+                        };
+                    }
+
+                    grid.appendChild(cardEl);
+                });
+
+                roundSection.appendChild(grid);
+                groupSec.appendChild(roundSection);
             });
-
-            groupSec.appendChild(grid);
             container.appendChild(groupSec);
+        });
+        scrollPositions.forEach(function (position) {
+            position[0].scrollLeft = position[1];
+            position[0].scrollTop = position[2];
         });
     }
 
     // Open Score Modal Popup
-    function openScorePopup(m, gKey) {
+    function openScorePopup(m, gKey, roundNumber) {
         if (!window.TourmaScoreModal) return;
 
         var t1Name = m.team1 ? (m.team1.name || m.team1) : 'TBD';
@@ -506,7 +573,7 @@
         var popupData = {
             matchId: m.matchKey || m.matchId,
             tournamentId: tournamentId,
-            roundName: 'Bảng ' + gKey + ' - Trận ' + (m.roundNumber || 1),
+            roundName: 'Bảng ' + gKey + (roundNumber ? ' • Lượt ' + roundNumber : '') + ' • Trận ' + (m.matchNumber || m.roundNumber || 1),
             team1Name: t1Name,
             team1Score: s1,
             team2Name: t2Name,
@@ -516,22 +583,56 @@
             allowDraw: true // GROUP STAGE FULLY SUPPORTS DRAWS
         };
 
+        popupData.team1Seed = m.team1 && m.team1.seed;
+        popupData.team2Seed = m.team2 && m.team2.seed;
         window.TourmaScoreModal.open(popupData, function (res) {
             if (!res) return;
-            var newS1 = parseInt((res.team1Score !== undefined && res.team1Score !== '') ? res.team1Score : (res.score1 || 0), 10);
-            var newS2 = parseInt((res.team2Score !== undefined && res.team2Score !== '') ? res.team2Score : (res.score2 || 0), 10);
-            if (isNaN(newS1)) newS1 = 0;
-            if (isNaN(newS2)) newS2 = 0;
-
-            var winnerSide = 'draw';
-            if (newS1 > newS2) winnerSide = 'team1';
-            else if (newS2 > newS1) winnerSide = 'team2';
-
-            requestGroupAction('updateScore', {
-                matchKey: m.matchKey || m.matchId,
-                team1Score: newS1, team2Score: newS2, winner: winnerSide
-            });
+            var score1 = res.team1Score !== undefined && res.team1Score !== '' ? parseInt(res.team1Score, 10) : 0;
+            var score2 = res.team2Score !== undefined && res.team2Score !== '' ? parseInt(res.team2Score, 10) : 0;
+            return saveMatchScore(m, score1, score2, res.winner || '');
         });
+    }
+
+    // Use the same score endpoint and success-only local update as Round Robin.
+    function saveMatchScore(m, score1, score2, winnerSlot) {
+        var winner = winnerSlot === 'draw' || winnerSlot === 'none' ? '' : winnerSlot;
+        var payload = {
+            action: 'updateMatch',
+            tournamentId: tournamentId,
+            matchId: m.matchId || m.matchKey || m.id,
+            score1: score1,
+            score2: score2,
+            penalty1: '',
+            penalty2: '',
+            winner: winner,
+            winnerId: winner,
+            team1Name: m.team1 && m.team1.name || '',
+            team2Name: m.team2 && m.team2.name || '',
+            stage: new URLSearchParams(window.location.search).get('stage') === '2' ? 2 : 1,
+            groupId: m.groupId || ''
+        };
+        var save = fetch((window.TourmaContextPath || '') + '/api/match-update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+            body: new URLSearchParams(payload).toString()
+        }).then(function (res) { return res.json(); }).then(function (data) {
+            if (!data || data.status !== 'success') {
+                throw new Error('Lỗi lưu kết quả: ' + (data && data.message || 'Không rõ nguyên nhân'));
+            }
+            m.team1.score = String(score1);
+            m.team2.score = String(score2);
+            m.winnerId = winner || null;
+            m.status = 'COMPLETED';
+            renderCurrentView();
+            checkGroupStageCompletion();
+            return true;
+        }).catch(function (error) {
+            alert(error.message || 'Không lưu được kết quả.');
+            return false;
+        });
+        pendingSaves.add(save);
+        save.then(function () { pendingSaves.delete(save); });
+        return save;
     }
 
     // Randomize Matches in Specific Group
@@ -613,6 +714,9 @@
         tournamentId: tournamentId,
         init: initGroupStageEngine,
         switchViewMode: switchViewMode,
+        openEditScoreModal: openScorePopup,
+        buildGroupRounds: buildGroupRounds,
+        saveMatchScore: saveMatchScore,
         resetAllMatches: resetAllMatches,
         confirmResetBracket: resetAllMatches,
         resetBracket: resetAllMatches,

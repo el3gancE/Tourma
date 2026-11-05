@@ -1,0 +1,9 @@
+/* Compact spacing within Group Stage fixtures. */
+#gsMatchesContainer { gap:16px; }
+#gsMatchesContainer > .list-round-section { margin-bottom:0; }
+#gsMatchesContainer .list-round-header { margin-bottom:8px; padding-bottom:0; }
+#gsMatchesContainer [data-group-round] { margin-bottom:12px; }
+#gsMatchesContainer [data-group-round]:last-child { margin-bottom:0; }
+#gsMatchesContainer .match-list-round-header { gap:8px; padding-bottom:4px; margin-bottom:0; }
+#gsMatchesContainer .round-header-title { margin:0; font-size:13px; line-height:1.5; }
+#gsMatchesContainer .list-matches-grid { gap:6px; }

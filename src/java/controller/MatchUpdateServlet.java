@@ -299,31 +299,10 @@ public class MatchUpdateServlet extends HttpServlet {
 
             TournamentDAO.assertStage2Ready(conn,tournamentId,currentStage);
             if(currentStage>1) {
-                try(PreparedStatement ps=conn.prepareStatement("SELECT 1 FROM matches m JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id WHERE m.id=? AND m.tournament_id=? AND s.stage_order=?")) {
+                try(PreparedStatement ps=conn.prepareStatement("SELECT 1 FROM matches m WITH (NOLOCK) JOIN tournament_stages s WITH (NOLOCK) ON s.id=m.stage_id AND s.tournament_id=m.tournament_id WHERE m.id=? AND m.tournament_id=? AND s.stage_order=?")) {
                     ps.setString(1,matchId);ps.setString(2,tournamentId);ps.setInt(3,currentStage);
                     try(ResultSet rs=ps.executeQuery()){if(!rs.next())throw new IllegalStateException("Nhánh Stage 2 đã thay đổi. Vui lòng tải lại trang.");}
                 }
-            }
-            // Auto-initialize bracket in DB if needed according to tournament format
-            if (currentStage == 1 && tournamentId != null && !tournamentId.trim().isEmpty()) {
-                try {
-                    Tournament tourney = new TournamentDAO().getTournamentById(tournamentId.trim());
-                    String selectedFormat = new TournamentDAO().getStageFormat(tournamentId.trim(), currentStage);
-                    String fmt = selectedFormat == null ? "" : selectedFormat.trim().toUpperCase();
-                    if (fmt.contains("GSL")) {
-                        new dao.GSLStageDAO().ensureGSLInitialized(tournamentId.trim(), currentStage);
-                    } else if (fmt.contains("DOUBLE") || fmt.contains("DE")) {
-                        new dao.DoubleEliminationDAO().ensureBracketInitialized(tournamentId.trim(), currentStage);
-                    } else if (fmt.contains("ROUND") || fmt.contains("ROBIN")) {
-                        new dao.RoundRobinDAO().ensureRoundRobinInitialized(tournamentId.trim(), currentStage);
-                    } else if (fmt.contains("SWISS")) {
-                        new dao.SwissSystemDAO().ensureSwissRoundsInitialized(tournamentId.trim(), currentStage);
-                    } else if (fmt.contains("GROUP")) {
-                        new dao.GroupStageDAO().ensureGroupStageInitialized(tournamentId.trim(), currentStage);
-                    } else {
-                        new dao.SingleEliminationDAO().ensureBracketInitialized(tournamentId.trim(), currentStage);
-                    }
-                } catch (Exception ignore) {}
             }
 
             boolean hasValidTourneyId = (tournamentId != null && !tournamentId.trim().isEmpty() && !"demo".equalsIgnoreCase(tournamentId.trim()));
@@ -547,8 +526,17 @@ public class MatchUpdateServlet extends HttpServlet {
             boolean isDoubleElimination = false;
             int resolvedStageOrder = currentStage;
             String previousWinner = null;
+            String currentTourneyStatus = null;
+            if (resolvedTourneyId != null) {
+                try (PreparedStatement psLock = conn.prepareStatement("SELECT status FROM tournaments WITH (UPDLOCK, HOLDLOCK) WHERE id = ?")) {
+                    psLock.setString(1, resolvedTourneyId);
+                    try (ResultSet rsLock = psLock.executeQuery()) {
+                        if (rsLock.next()) currentTourneyStatus = rsLock.getString(1);
+                    }
+                }
+            }
             try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT m.winner_id, s.format, s.stage_order, t.stage1_status FROM matches m WITH (UPDLOCK, HOLDLOCK) LEFT JOIN tournament_stages s ON s.id = m.stage_id JOIN tournaments t ON t.id = m.tournament_id WHERE m.id = ? AND m.tournament_id = ?")) {
+                    "SELECT m.winner_id, s.format, s.stage_order, t.stage1_status FROM matches m WITH (UPDLOCK, HOLDLOCK) LEFT JOIN tournament_stages s WITH (NOLOCK) ON s.id = m.stage_id JOIN tournaments t WITH (NOLOCK) ON t.id = m.tournament_id WHERE m.id = ? AND m.tournament_id = ?")) {
                 ps.setString(1, dbMatchId); ps.setString(2, resolvedTourneyId);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
@@ -667,7 +655,7 @@ public class MatchUpdateServlet extends HttpServlet {
             }
 
             // 8. Auto-advance tournament status to ONGOING if currently DRAFT / INCOMING
-            if (resolvedTourneyId != null) {
+            if (resolvedTourneyId != null && (currentTourneyStatus == null || "DRAFT".equalsIgnoreCase(currentTourneyStatus) || "INCOMING".equalsIgnoreCase(currentTourneyStatus))) {
                 try (PreparedStatement psTourn = conn.prepareStatement(
                         "UPDATE tournaments SET status = 'ONGOING' WHERE id = ? AND (status IS NULL OR status = 'DRAFT' OR status = 'INCOMING')")) {
                     psTourn.setString(1, resolvedTourneyId);
@@ -680,14 +668,6 @@ public class MatchUpdateServlet extends HttpServlet {
             }
             conn.commit();
 
-            // Clear in-memory caches to reflect new match state immediately
-            RollingWindowPointService.clearAllCaches();
-            TournamentDAO.clearTournamentCaches();
-
-            if (isDoubleElimination) {
-                res.matchesJson = new dao.DoubleEliminationDAO().getMatchesJsonForFrontend(resolvedTourneyId, resolvedStageOrder);
-            }
-
             res.success = true;
             res.matchId = dbMatchId;
             res.winnerId = winnerId;
@@ -698,9 +678,23 @@ public class MatchUpdateServlet extends HttpServlet {
             res.loserNextMatchId = loserNextMatchId;
             res.loserNextSlot = loserNextSlot;
 
+            // Clear in-memory caches to reflect new match state immediately
+            RollingWindowPointService.clearAllCaches();
+            TournamentDAO.clearTournamentCaches();
+
+            if (isDoubleElimination) {
+                try {
+                    res.matchesJson = new dao.DoubleEliminationDAO().getMatchesJsonForFrontend(resolvedTourneyId, resolvedStageOrder, true);
+                } catch (Exception ignore) {}
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
-            res.errorMessage = "Database error: " + e.getMessage();
+            String errMsg = e.getMessage();
+            if (e.getCause() != null && e.getCause().getMessage() != null) {
+                errMsg = errMsg + " (" + e.getCause().getMessage() + ")";
+            }
+            res.errorMessage = "Database error: " + errMsg;
         }
 
         return res;
@@ -753,7 +747,13 @@ public class MatchUpdateServlet extends HttpServlet {
                 try(ResultSet rs=ps.executeQuery()) { if(rs.next()) { conn.rollback(); return false; } }
             }
             // Full DE match IDs must not fall through ambiguous numeric-suffix lookup.
-            try (PreparedStatement ps = conn.prepareStatement("SELECT m.stage_id, s.format FROM matches m JOIN tournament_stages s ON s.id = m.stage_id WHERE m.id = ? AND m.tournament_id = ?")) {
+            if (tournamentId != null && !tournamentId.trim().isEmpty()) {
+                try (PreparedStatement psLock = conn.prepareStatement("SELECT id FROM tournaments WITH (UPDLOCK, HOLDLOCK) WHERE id = ?")) {
+                    psLock.setString(1, tournamentId.trim());
+                    try (ResultSet rsLock = psLock.executeQuery()) { /* serialize per tournament */ }
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement("SELECT m.stage_id, s.format FROM matches m WITH (NOLOCK) JOIN tournament_stages s WITH (NOLOCK) ON s.id = m.stage_id WHERE m.id = ? AND m.tournament_id = ?")) {
                 ps.setString(1, mIdClean); ps.setString(2, tournamentId);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next() && "DOUBLE_ELIMINATION".equalsIgnoreCase(rs.getString(2))) {
