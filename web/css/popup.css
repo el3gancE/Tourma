@@ -1,7 +1,8 @@
 /* Shared popup surfaces and controls follow the application design tokens. */
 @import url('design-tokens.css?v=19');
 .tourma-modal-backdrop { display:none; }
-.tourma-modal-backdrop.show,.add-team-modal-overlay,.stage-end-modal-overlay { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgb(0 0 0 / 55%); font-family:var(--ui-font); color:var(--ui-text); }
+.tourma-modal-backdrop,.add-team-modal-overlay,.stage-end-modal-overlay { position:fixed; inset:0; z-index:2000; align-items:center; justify-content:center; padding:20px; background:rgb(0 0 0 / 55%); font-family:var(--ui-font); color:var(--ui-text); }
+.tourma-modal-backdrop.show,.add-team-modal-overlay,.stage-end-modal-overlay { display:flex; }
 .tourma-modal-backdrop .tourma-modal-card,.add-team-modal-overlay .add-team-modal-card,.stage-end-modal-overlay .stage-end-modal-container { box-sizing:border-box; width:min(100%,520px); max-height:calc(100dvh - 40px); overflow:auto; background:var(--ui-surface); border:1px solid var(--ui-line); border-radius:12px; box-shadow:var(--ui-shadow); padding:0; color:var(--ui-text); font:500 14px/1.6 var(--ui-font); }
 .tourma-modal-card .modal-header-bar,.add-team-modal-header,.stage-end-modal-header { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:20px 22px; border-bottom:1px solid var(--ui-line); font-size:20px; font-weight:600; }
 .modal-header-title { display:flex; align-items:center; gap:9px; }

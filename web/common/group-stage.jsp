@@ -63,7 +63,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-stage.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-stage.css?v=20261105-compact-rounds">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
@@ -92,7 +92,7 @@
 
     <!-- REUSABLE EMPTY ALERT & POPUP MODAL COMPONENTS -->
     <jsp:include page="/common/component/empty-team-alert.jsp" />
-    <jsp:include page="/common/component/popup.jsp" />
+
 
     <main class="se-main round-robin-container">
 
@@ -151,6 +151,8 @@
 
         </div>
     </main></div>
+
+    <jsp:include page="/common/component/popup.jsp" />
 
     <jsp:include page="/common/component/tournament-config-state.jsp"/>
     <!-- JS SCRIPTS -->

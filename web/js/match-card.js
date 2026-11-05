@@ -336,6 +336,10 @@
                     return; // In Quick Mode, only team clicks are active
                 }
 
+                if (typeof data.onClick === 'function') {
+                    data.onClick();
+                    return;
+                }
                 if (window.TourmaScoreModal && typeof window.TourmaScoreModal.open === 'function') {
                     window.TourmaScoreModal.open({
                         matchId: matchId,

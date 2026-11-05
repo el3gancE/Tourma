@@ -862,13 +862,15 @@
             }
 
             // Draw SVG Connectors with multiple frames to ensure DOM layout settles
+            if (this._upperSvgTimer1) clearTimeout(this._upperSvgTimer1);
+            if (this._upperSvgTimer2) clearTimeout(this._upperSvgTimer2);
             requestAnimationFrame(function () {
                 self.drawUpperSvgConnectors();
             });
-            setTimeout(function () {
+            this._upperSvgTimer1 = setTimeout(function () {
                 self.drawUpperSvgConnectors();
             }, 60);
-            setTimeout(function () {
+            this._upperSvgTimer2 = setTimeout(function () {
                 self.drawUpperSvgConnectors();
             }, 250);
         },
@@ -942,13 +944,15 @@
             }
 
             // Draw SVG Connectors with multiple frames to ensure DOM layout settles
+            if (this._lowerSvgTimer1) clearTimeout(this._lowerSvgTimer1);
+            if (this._lowerSvgTimer2) clearTimeout(this._lowerSvgTimer2);
             requestAnimationFrame(function () {
                 self.drawLowerSvgConnectors();
             });
-            setTimeout(function () {
+            this._lowerSvgTimer1 = setTimeout(function () {
                 self.drawLowerSvgConnectors();
             }, 60);
-            setTimeout(function () {
+            this._lowerSvgTimer2 = setTimeout(function () {
                 self.drawLowerSvgConnectors();
             }, 250);
         },
@@ -1130,8 +1134,34 @@
                 winnerId = 'team2';
             }
 
+            var dedupKey = String(m.rawId || m.matchId || m.id) + ':' + s1 + ':' + s2 + ':' + (winnerId || '');
+            var now = Date.now();
+            if (this._lastSaveKey === dedupKey && this._lastSaveTime && (now - this._lastSaveTime) < 150) {
+                return;
+            }
+            this._lastSaveKey = dedupKey;
+            this._lastSaveTime = now;
+
             var t1Name = (m.team1 && m.team1.name) ? m.team1.name : '';
             var t2Name = (m.team2 && m.team2.name) ? m.team2.name : '';
+
+            // Instant optimistic UI update so Quick Mode responds immediately
+            m.team1 = m.team1 || { name: t1Name };
+            m.team2 = m.team2 || { name: t2Name };
+            m.team1.score = s1;
+            m.team2.score = s2;
+            m.winnerId = winnerId;
+            m.status = 'COMPLETED';
+
+            var isT1 = (winnerId === 'team1');
+            if (window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.propagateMatchResult === 'function') {
+                window.TourmaDoubleElimAlgorithm.propagateMatchResult(this.matchesMap, m.matchId || matchId, winnerId, isT1);
+            }
+            this.fillMissingPlaceholders();
+            this.render();
+
+            this._saveSeq = (this._saveSeq || 0) + 1;
+            var reqSeq = this._saveSeq;
 
             var payload = {
                 action: 'updateMatch',
@@ -1155,32 +1185,16 @@
                 .then(function (res) { return res.json(); })
                 .then(function (data) {
                     if (data && data.status === 'success') {
-                        if (Array.isArray(data.matchesData) && data.matchesData.length > 0) {
-                            self.hydrateBracketModel(data.matchesData);
-                            self.render();
+                        if (reqSeq === self._saveSeq) {
+                            if (Array.isArray(data.matchesData) && data.matchesData.length > 0) {
+                                self.hydrateBracketModel(data.matchesData);
+                                self.render();
+                            }
                             self.checkTournamentCompletion();
-                            return;
                         }
-                        // Update local match state
-                        m.team1 = m.team1 || { name: t1Name };
-                        m.team2 = m.team2 || { name: t2Name };
-                        m.team1.score = s1;
-                        m.team2.score = s2;
-                        m.winnerId = winnerId;
-                        m.status = 'COMPLETED';
-
-                        // Propagate across UB, LB, and Grand Finals
-                        var isT1 = (winnerId === 'team1');
-                        if (window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.propagateMatchResult === 'function') {
-                            window.TourmaDoubleElimAlgorithm.propagateMatchResult(self.matchesMap, m.matchId || matchId, winnerId, isT1);
-                        }
-
-                        // Re-render UI
-                        self.render();
-                        self.checkTournamentCompletion();
                     } else {
                         console.error('[DoubleEliminationEngine] Error response:', data);
-                        alert('Lỗi lưu kết quả: ' + (data.message || 'Không rõ nguyên nhân'));
+                        alert('Lỗi lưu kết quả: ' + (data && data.message ? data.message : 'Không rõ nguyên nhân'));
                     }
                 })
                 .catch(function (err) {
@@ -1278,28 +1292,76 @@
             while (size < this.teamsList.length) size *= 2;
             var ubStop = Math.max(1, Math.log2(size) - Math.log2(this.cutTarget / 2));
             var lbStop = (ubStop - 1) * 2;
-            var upper = [], lower = [], seen = {};
+            var ubMatches = [], lbMatches = [], seenMatch = {};
+            var getMatchTreeOrder = function (m) {
+                var s = String(m.rawId || m.matchId || m.id || '');
+                var idx = s.lastIndexOf('_');
+                if (idx !== -1) {
+                    var n = parseInt(s.substring(idx + 1), 10);
+                    if (!isNaN(n)) return n;
+                }
+                var digits = s.replace(/[^0-9]/g, '');
+                return digits ? parseInt(digits, 10) : 0;
+            };
             var keys = Object.keys(this.matchesMap);
             for (var i = 0; i < keys.length; i++) {
                 var match = this.matchesMap[keys[i]];
+                if (!match) continue;
+                var mKey = String(match.rawId || match.matchId || match.id || i);
+                if (seenMatch[mKey]) continue;
                 var type = String(match.bracketType || '').toUpperCase();
                 var isUpper = type === 'UPPER' || type === 'WINNER_BRACKET' || type === 'MAIN';
                 var isLower = type === 'LOWER' || type === 'LOSER_BRACKET' || type === 'LB';
-                if (!((isUpper && Number(match.roundNumber) === ubStop) || (isLower && Number(match.roundNumber) === lbStop))) continue;
+                if (isUpper && Number(match.roundNumber) === ubStop) {
+                    seenMatch[mKey] = true;
+                    ubMatches.push(match);
+                } else if (isLower && Number(match.roundNumber) === lbStop) {
+                    seenMatch[mKey] = true;
+                    lbMatches.push(match);
+                }
+            }
+            ubMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
+            lbMatches.sort(function (a, b) { return getMatchTreeOrder(a) - getMatchTreeOrder(b); });
+
+            var upper = [], lower = [], seen = {};
+            var self = this;
+            var collectWinner = function (match, targetPot) {
                 var team = match.winnerId === 'team1' ? match.team1 : (match.winnerId === 'team2' ? match.team2 : null);
-                if (!team || this.isPlaceholder(team.name) || !team.id || seen[team.id]) continue;
+                if (!team || self.isPlaceholder(team.name) || !team.id || seen[team.id]) return;
                 seen[team.id] = true;
                 var seed = parseInt(String(team.originalSeed || team.seed || '').replace('#', ''), 10) || 0;
-                (isUpper ? upper : lower).push({id: team.id, name: team.name, seed: seed, originalSeed: seed});
-            }
+                targetPot.push({id: team.id, name: team.name, seed: seed, originalSeed: seed});
+            };
+            for (var u = 0; u < ubMatches.length; u++) collectWinner(ubMatches[u], upper);
+            for (var l = 0; l < lbMatches.length; l++) collectWinner(lbMatches[l], lower);
+
             if (upper.length !== this.cutTarget / 2 || lower.length !== this.cutTarget / 2) return [];
-            [upper, lower].forEach(function (pot) {
-                for (var j = pot.length - 1; j > 0; j--) {
-                    var index = Math.floor(Math.random() * (j + 1));
-                    var value = pot[j]; pot[j] = pot[index]; pot[index] = value;
+
+            // Shuffle ONLY Lower Bracket qualifiers; Upper Bracket qualifiers keep their top-to-bottom bracket order
+            for (var j = lower.length - 1; j > 0; j--) {
+                var index = Math.floor(Math.random() * (j + 1));
+                var value = lower[j]; lower[j] = lower[index]; lower[index] = value;
+            }
+
+            // Map each physical bracket match m (top-to-bottom) -> (upper[m] vs lower[m]) into the Stage 2 seed array
+            var total = this.cutTarget;
+            var layout = [1, 2];
+            for (var width = 4; width <= total; width *= 2) {
+                var next = [];
+                for (var s = 0; s < layout.length; s++) {
+                    next.push(layout[s]);
+                    next.push(width + 1 - layout[s]);
                 }
-            });
-            return upper.concat(lower);
+                layout = next;
+            }
+            var seeded = new Array(total);
+            for (var m = 0; m < total / 2; m++) {
+                var a = layout[m * 2], b = layout[m * 2 + 1];
+                var s1 = Math.min(a, b), s2 = Math.max(a, b);
+                seeded[s1 - 1] = upper[m];
+                seeded[s2 - 1] = lower[m];
+            }
+            return seeded;
         },
 
         checkTournamentCompletion: function () {

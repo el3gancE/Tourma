@@ -501,13 +501,15 @@
             this.alignBracketTree();
 
             // Draw SVG connector lines with animation frame & timeout backups
+            if (this._seSvgTimer1) clearTimeout(this._seSvgTimer1);
+            if (this._seSvgTimer2) clearTimeout(this._seSvgTimer2);
             requestAnimationFrame(function () {
                 if (self && typeof self.drawSvgConnectors === 'function') self.drawSvgConnectors();
             });
-            setTimeout(function () {
+            this._seSvgTimer1 = setTimeout(function () {
                 if (self && typeof self.drawSvgConnectors === 'function') self.drawSvgConnectors();
             }, 60);
-            setTimeout(function () {
+            this._seSvgTimer2 = setTimeout(function () {
                 if (self && typeof self.drawSvgConnectors === 'function') self.drawSvgConnectors();
             }, 250);
         },
@@ -528,6 +530,12 @@
             var round1Col = cols[0];
             var round1Box = round1Col.querySelector('.single-round-matches-box');
             if (!round1Box) return;
+
+            // Reset Round 2+ minHeight first so Round 1 measures its true natural height without stretching
+            for (var rReset = 1; rReset < cols.length; rReset++) {
+                var resetBox = cols[rReset].querySelector('.single-round-matches-box');
+                if (resetBox) resetBox.style.minHeight = '';
+            }
 
             var canvas = document.getElementById('bracketViewportCanvas') || wrapper;
             var round1Height = round1Box.offsetHeight || 600;
@@ -639,7 +647,7 @@
 
                             var isMatch = false;
                             for (var ti = 0; ti < tIds.length; ti++) {
-                                if (tIds[ti] && sNxt === tIds[ti]) {
+                                if (tIds[ti] && (sNxt === tIds[ti] || sNxt.endsWith('_' + tIds[ti]) || tIds[ti].endsWith('_' + sNxt))) {
                                     isMatch = true;
                                     break;
                                 }
@@ -715,7 +723,7 @@
                     minAllowedTop = currentBottom + 16;
                 }
 
-                box.style.minHeight = Math.max(round1Height, maxCardBottom + 20) + 'px';
+                box.style.minHeight = Math.max(round1Height, maxCardBottom) + 'px';
             }
         },
 
@@ -900,18 +908,71 @@
             var m = this.findMatch(matchId);
             if (!m) return;
 
+            var s1 = (score1 !== undefined && score1 !== null && score1 !== '') ? parseInt(score1, 10) : 0;
+            var s2 = (score2 !== undefined && score2 !== null && score2 !== '') ? parseInt(score2, 10) : 0;
+            if (isNaN(s1)) s1 = 0;
+            if (isNaN(s2)) s2 = 0;
+
+            var resolvedWinner = winnerSlot;
+            if (resolvedWinner === 1 || resolvedWinner === '1') resolvedWinner = 'team1';
+            else if (resolvedWinner === 2 || resolvedWinner === '2') resolvedWinner = 'team2';
+            else if (!resolvedWinner) {
+                if (s1 > s2) resolvedWinner = 'team1';
+                else if (s2 > s1) resolvedWinner = 'team2';
+            }
+
+            var dedupKey = String(m.rawId || m.matchId || m.id || matchId) + ':' + s1 + ':' + s2 + ':' + (resolvedWinner || '');
+            var now = Date.now();
+            if (this._lastSaveKey === dedupKey && this._lastSaveTime && (now - this._lastSaveTime) < 150) {
+                return;
+            }
+            this._lastSaveKey = dedupKey;
+            this._lastSaveTime = now;
+
             var t1Name = (m.team1 && m.team1.name) ? m.team1.name : '';
             var t2Name = (m.team2 && m.team2.name) ? m.team2.name : '';
+
+            // Instant optimistic UI update so Quick Mode responds immediately
+            m.team1 = m.team1 || { name: t1Name };
+            m.team2 = m.team2 || { name: t2Name };
+            m.team1.score = s1;
+            m.team2.score = s2;
+            m.winnerId = resolvedWinner;
+            m.status = 'COMPLETED';
+
+            var winnerObj = this.getMatchWinner(m);
+            var winnerName = winnerObj ? winnerObj.name : (resolvedWinner === 'team1' ? t1Name : t2Name);
+            var winnerSeed = winnerObj ? winnerObj.seed : (resolvedWinner === 'team1' ? (m.team1 ? m.team1.seed : '') : (m.team2 ? m.team2.seed : ''));
+
+            if (m.nextMatchId) {
+                var nextM = this.findMatch(m.nextMatchId);
+                if (nextM) {
+                    var isSlot2 = (m.nextMatchSlot === 2 || m.nextMatchSlot === '2' || m.nextMatchSlot === 'SLOT_2');
+                    if (isSlot2) {
+                        nextM.team2 = { name: winnerName, seed: winnerSeed, score: (nextM.team2 && nextM.team2.score !== undefined) ? nextM.team2.score : '' };
+                    } else {
+                        nextM.team1 = { name: winnerName, seed: winnerSeed, score: (nextM.team1 && nextM.team1.score !== undefined) ? nextM.team1.score : '' };
+                    }
+                    if (nextM.team1 && nextM.team1.name && !this.isPlaceholder(nextM.team1.name) &&
+                        nextM.team2 && nextM.team2.name && !this.isPlaceholder(nextM.team2.name)) {
+                        nextM.status = 'READY';
+                    }
+                }
+            }
+
+            this.propagateAllWinners();
+            this.render();
 
             var payload = {
                 action: 'updateMatch',
                 tournamentId: this.tournamentId,
-                matchId: m.matchId || matchId,
-                score1: (score1 !== undefined && score1 !== null && score1 !== '') ? score1 : 0,
-                score2: (score2 !== undefined && score2 !== null && score2 !== '') ? score2 : 0,
+                stage: this.currentStage || 1,
+                matchId: m.rawId || m.matchId || matchId,
+                score1: s1,
+                score2: s2,
                 penalty1: (penalty1 !== undefined && penalty1 !== null) ? penalty1 : '',
                 penalty2: (penalty2 !== undefined && penalty2 !== null) ? penalty2 : '',
-                winner: winnerSlot || '',
+                winner: resolvedWinner || '',
                 team1Name: t1Name,
                 team2Name: t2Name
             };
@@ -925,43 +986,11 @@
             })
                 .then(function (res) { return res.json(); })
                 .then(function (data) {
-                    if (data.status === 'success') {
-                        // Update local match state
-                        m.team1.score = payload.score1;
-                        m.team2.score = payload.score2;
-                        m.winnerId = winnerSlot;
-                        m.status = 'COMPLETED';
-
-                        // Determine winner team
-                        var winnerObj = self.getMatchWinner(m);
-                        var winnerName = winnerObj ? winnerObj.name : ((winnerSlot === 'team1' || winnerSlot === '1') ? t1Name : t2Name);
-                        var winnerSeed = winnerObj ? winnerObj.seed : ((winnerSlot === 'team1' || winnerSlot === '1') ? (m.team1 ? m.team1.seed : '') : (m.team2 ? m.team2.seed : ''));
-
-                        // Advance winner to target match
-                        var targetNextId = data.nextMatchId || m.nextMatchId;
-                        var nextM = self.findMatch(targetNextId);
-                        if (nextM) {
-                            var isSlot2 = (m.nextMatchSlot === 2 || m.nextMatchSlot === '2' || m.nextMatchSlot === 'SLOT_2' || data.nextSlot === 'SLOT_2' || data.nextSlot === '2');
-                            if (isSlot2) {
-                                nextM.team2 = { name: winnerName, seed: winnerSeed, score: (nextM.team2 && nextM.team2.score !== undefined) ? nextM.team2.score : '' };
-                            } else {
-                                nextM.team1 = { name: winnerName, seed: winnerSeed, score: (nextM.team1 && nextM.team1.score !== undefined) ? nextM.team1.score : '' };
-                            }
-                            if (nextM.team1 && nextM.team1.name && !self.isPlaceholder(nextM.team1.name) &&
-                                nextM.team2 && nextM.team2.name && !self.isPlaceholder(nextM.team2.name)) {
-                                nextM.status = 'READY';
-                            }
-                        }
-
-                        // Propagate all winners across bracket
-                        self.propagateAllWinners();
-
-                        // Re-render UI
-                        self.render();
+                    if (data && data.status === 'success') {
                         self.checkTournamentCompletion();
                     } else {
                         console.error('[SingleEliminationEngine] Error response:', data);
-                        alert('Lỗi lưu kết quả: ' + (data.message || 'Không rõ nguyên nhân'));
+                        alert('Lỗi lưu kết quả: ' + (data && data.message ? data.message : 'Không rõ nguyên nhân'));
                     }
                 })
                 .catch(function (err) {

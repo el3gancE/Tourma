@@ -4,7 +4,7 @@
     Description: Reusable modal dialog for editing match scores and declaring winners.
 --%>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=20261105-close-layout">
 
 <div id="tourmaScoreModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) window.TourmaScoreModal.close();">
     <div class="tourma-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalMatchTitle" onclick="event.stopPropagation();">

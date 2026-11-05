@@ -168,17 +168,19 @@ public class SingleEliminationDAO extends DBContext {
         ensureBracketInitialized(tournamentId, stageOrder);
 
         // Always ensure BYE winners are synchronized to downstream matches in DB
-        syncByeAdvancementsInDB(tournamentId, stageOrder);
+        try {
+            syncByeAdvancementsInDB(tournamentId, stageOrder);
+        } catch (Exception ignore) {}
 
         String sql = "SELECT m.*, "
                 + "t1.raw_name AS t1_name, t1.original_seed AS t1_seed, "
                 + "t2.raw_name AS t2_name, t2.original_seed AS t2_seed, "
                 + "tw.raw_name AS winner_name "
-                + "FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
-                + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                + "LEFT JOIN teams tw ON m.winner_id = tw.id "
+                + "FROM matches m WITH (NOLOCK) "
+                + "LEFT JOIN tournament_stages s WITH (NOLOCK) ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
+                + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
+                + "LEFT JOIN teams tw WITH (NOLOCK) ON m.winner_id = tw.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1)) "
                 + "AND (? = 0 OR m.round_number <= ?) "
                 + "ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC";

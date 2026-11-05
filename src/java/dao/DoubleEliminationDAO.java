@@ -36,6 +36,10 @@ public class DoubleEliminationDAO extends DBContext {
     public void syncByeAdvancementsInDB(String tournamentId, int stageOrder) {
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+            try (PreparedStatement psLock = conn.prepareStatement("SELECT id FROM tournaments WITH (UPDLOCK, HOLDLOCK) WHERE id = ?")) {
+                psLock.setString(1, tournamentId);
+                try (ResultSet rs = psLock.executeQuery()) { /* serialize per tournament */ }
+            }
             syncByeAdvancementsInDB(conn, tournamentId, stageOrder);
             conn.commit();
         } catch (Exception e) { throw new IllegalStateException("Không thể đồng bộ nhánh DE mà vẫn bảo toàn kết quả.", e); }
@@ -44,7 +48,7 @@ public class DoubleEliminationDAO extends DBContext {
     private void syncStageByes(Connection conn, String tournamentId, String stageId) throws Exception {
         Map<String, DeNode> nodes = new java.util.LinkedHashMap<>();
         Map<String, List<Object>> original = new HashMap<>();
-        try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM matches WITH (UPDLOCK, HOLDLOCK) WHERE tournament_id = ? AND (stage_id = ? OR (stage_id IS NULL AND ? IS NULL))")) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM matches WITH (UPDLOCK, HOLDLOCK) WHERE tournament_id = ? AND (stage_id = ? OR (stage_id IS NULL AND ? IS NULL)) ORDER BY id ASC")) {
             ps.setString(1, tournamentId); ps.setString(2, stageId); ps.setString(3, stageId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -328,33 +332,61 @@ public class DoubleEliminationDAO extends DBContext {
     }
 
     public String getMatchesJsonForFrontend(String tournamentId, int stageOrder) {
-        if(stageOrder>1) {
-            try(Connection access=getConnection()){TournamentDAO.assertStage2Ready(access,tournamentId,stageOrder);}
-            catch(Exception notReady){return "[]";}
+        return getMatchesJsonForFrontend(tournamentId, stageOrder, false);
+    }
+
+    public String getMatchesJsonForFrontend(String tournamentId, int stageOrder, boolean skipInitAndSync) {
+        if (stageOrder > 1) {
+            try (Connection access = getConnection()) { TournamentDAO.assertStage2Ready(access, tournamentId, stageOrder); }
+            catch (Exception notReady) { return "[]"; }
         }
         if (tournamentId == null || tournamentId.trim().isEmpty()) return "[]";
 
-        int cut = new SingleEliminationDAO().getTournamentCutTarget(tournamentId, stageOrder);
-        if (cut > 1) {
-            int count = new ParticipantDAO().getTeamsByTournamentId(tournamentId).size();
-            if (!service.CountAdvanceTeamService.isValidDECutTarget(count, cut)) throw new IllegalStateException("Cấu hình cut DE không hợp lệ.");
-            int ub = service.DECutService.calculateUbStoppingRound(count, cut);
-            new TournamentDAO().trimCutMatches(tournamentId, ub, service.DECutService.calculateLbStoppingRound(ub));
-        }
+        if (!skipInitAndSync) {
+            int existingCount = 0;
+            String checkSql = "SELECT COUNT(*) FROM matches m WITH (NOLOCK) "
+                    + "LEFT JOIN tournament_stages s WITH (NOLOCK) ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
+                    + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1))";
+            try (Connection conn = getConnection();
+                 PreparedStatement ps = conn.prepareStatement(checkSql)) {
+                ps.setString(1, tournamentId);
+                ps.setInt(2, stageOrder);
+                ps.setInt(3, stageOrder);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) existingCount = rs.getInt(1);
+                }
+            } catch (Exception ignore) {}
 
-        // Auto-initialize DE bracket tree in DB if none exists
-        ensureBracketInitialized(tournamentId, stageOrder);
-        syncByeAdvancementsInDB(tournamentId, stageOrder);
+            int cut = new SingleEliminationDAO().getTournamentCutTarget(tournamentId, stageOrder);
+            if (cut > 1) {
+                int count = new ParticipantDAO().getTeamsByTournamentId(tournamentId).size();
+                if (!service.CountAdvanceTeamService.isValidDECutTarget(count, cut)) throw new IllegalStateException("Cấu hình cut DE không hợp lệ.");
+                int ub = service.DECutService.calculateUbStoppingRound(count, cut);
+                int lb = service.DECutService.calculateLbStoppingRound(ub);
+                if (existingCount > 0) {
+                    try {
+                        new TournamentDAO().trimCutMatches(tournamentId, ub, lb);
+                    } catch (Exception ignore) {}
+                }
+            }
+
+            if (existingCount == 0) {
+                ensureBracketInitialized(tournamentId, stageOrder);
+                try {
+                    syncByeAdvancementsInDB(tournamentId, stageOrder);
+                } catch (Exception ignore) {}
+            }
+        }
 
         String sql = "SELECT m.*, "
                 + "t1.raw_name AS t1_name, t1.original_seed AS t1_seed, "
                 + "t2.raw_name AS t2_name, t2.original_seed AS t2_seed, "
                 + "tw.raw_name AS winner_name "
-                + "FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
-                + "LEFT JOIN teams t1 ON m.team1_id = t1.id "
-                + "LEFT JOIN teams t2 ON m.team2_id = t2.id "
-                + "LEFT JOIN teams tw ON m.winner_id = tw.id "
+                + "FROM matches m WITH (NOLOCK) "
+                + "LEFT JOIN tournament_stages s WITH (NOLOCK) ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
+                + "LEFT JOIN teams t1 WITH (NOLOCK) ON m.team1_id = t1.id "
+                + "LEFT JOIN teams t2 WITH (NOLOCK) ON m.team2_id = t2.id "
+                + "LEFT JOIN teams tw WITH (NOLOCK) ON m.winner_id = tw.id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1)) "
                 + "ORDER BY m.round_number ASC, LEN(m.id) ASC, m.id ASC";
 
@@ -479,22 +511,8 @@ public class DoubleEliminationDAO extends DBContext {
     public synchronized void ensureBracketInitialized(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return;
 
-        List<Team> teams;
-        if (stageOrder > 1) {
-            teams = new SingleEliminationDAO().getStage2TeamsList(tournamentId);
-            if (teams == null || teams.size() < 2) {
-                return;
-            }
-        } else {
-            ParticipantDAO pDao = new ParticipantDAO();
-            teams = pDao.getTeamsByTournamentId(tournamentId);
-            if (teams == null || teams.isEmpty()) return;
-        }
-
-        String checkSql = "SELECT COUNT(*), "
-                + "SUM(CASE WHEN bracket_type IN ('LOSER_BRACKET', 'LOWER', 'LB') THEN 1 ELSE 0 END) AS lb_count "
-                + "FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
+        String checkSql = "SELECT COUNT(*) FROM matches m WITH (NOLOCK) "
+                + "LEFT JOIN tournament_stages s WITH (NOLOCK) ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1))";
 
         try (Connection conn = getConnection();
@@ -505,14 +523,24 @@ public class DoubleEliminationDAO extends DBContext {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int totalCount = rs.getInt(1);
-                    int lbCount = rs.getInt(2);
                     if (totalCount > 0) return; // Never automatically replace existing stage data.
-
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
             return;
+        }
+
+        List<Team> teams;
+        if (stageOrder > 1) {
+            teams = new SingleEliminationDAO().getStage2TeamsList(tournamentId);
+            if (teams == null || teams.size() < 2) {
+                return;
+            }
+        } else {
+            ParticipantDAO pDao = new ParticipantDAO();
+            teams = pDao.getTeamsByTournamentId(tournamentId);
+            if (teams == null || teams.isEmpty()) return;
         }
 
         initializeDoubleEliminationInDB(tournamentId, stageOrder, teams);
