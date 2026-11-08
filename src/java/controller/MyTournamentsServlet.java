@@ -36,16 +36,17 @@ public class MyTournamentsServlet extends HttpServlet {
             response.sendRedirect(response.encodeRedirectURL(request.getContextPath() + matchUrl(tournament)));
             return;
         }
-        TournamentDAO.TournamentPage page = dao.getTournamentPage(null, request.getParameter("q"),
-                request.getParameter("filter"), request.getParameter("page"));
+        String kind = request.getParameter("kind"), status = request.getParameter("status");
+        String legacy = request.getParameter("filter");
+        if (kind == null && legacy != null && java.util.Set.of("STANDALONE", "SERIES").contains(legacy)) kind = legacy;
+        if (status == null && legacy != null && java.util.Set.of("INCOMING", "IN_PROGRESS", "COMPLETED").contains(legacy)) status = legacy;
+        TournamentDAO.TournamentPage page = dao.getTournamentPage(request.getParameter("seriesId"), request.getParameter("q"),
+                kind, status, request.getParameter("page"));
         List<Tournament> tournamentList = page.getTournaments();
-        
+        List<model.Series> allSeries = new dao.SeriesDAO().getAllSeries();
         java.util.Map<String, String> seriesNames = new java.util.HashMap<>();
-        if (tournamentList.stream().anyMatch(t -> t.getSeriesId() != null && !t.getSeriesId().trim().isEmpty())) {
-            for (model.Series series : new dao.SeriesDAO().getAllSeries()) {
-                seriesNames.put(series.getId(), series.getName());
-            }
-        }
+        for (model.Series series : allSeries) seriesNames.put(series.getId(), series.getName());
+        request.setAttribute("filterSeries", allSeries);
         request.setAttribute("seriesNames", seriesNames);
         request.setAttribute("tournamentList", tournamentList);
         request.setAttribute("pageInfo", page);

@@ -65,3 +65,26 @@
 /* Status sits above the track without moving the percentage or controls. */
 .tourney-progress { position:relative; }
 .tourney-progress-status { position:absolute; left:0; bottom:calc(50% + 7px); color:var(--ui-muted); font:500 9px var(--ui-font); line-height:1.2; white-space:nowrap; }
+/* Compact filter controls retain the existing server query and pagination contract. */
+.tournaments-page #tournamentFilters { display:flex; align-items:center; justify-content:flex-start; flex-wrap:wrap; gap:10px; padding:12px 0; margin-bottom:18px; }
+.tourney-filter-control { display:flex; align-items:center; gap:8px; }
+.tourney-filter-control label { display:flex; align-items:center; gap:6px; color:var(--ui-muted); font-size:12px; white-space:nowrap; }
+.tourney-filter-control select { box-sizing:border-box; height:36px; width:190px; padding:6px 10px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); color:var(--ui-text); font:12px var(--ui-font); }
+#tournamentFilters .search-input-box { display:flex; align-items:center; gap:8px; flex:1 1 240px; max-width:430px; min-width:0; height:36px; box-sizing:border-box; }
+#tournamentFilters .search-input-box input { width:100%; min-width:0; flex:1; }
+#tournamentFilters .tourney-search-submit { flex-shrink:0; }
+.tourney-clear-filters { padding:6px 4px; font-size:12px; color:var(--ui-accent); white-space:nowrap; }
+.tourney-clear-filters:hover { text-decoration:underline; }
+.tourney-filter-count { margin-left:auto; color:var(--ui-muted); font-size:12px; white-space:nowrap; }
+.tourney-filter-control select:focus-visible,.tourney-clear-filters:focus-visible { outline:2px solid var(--ui-accent); outline-offset:2px; }
+@media(max-width:600px) {
+    .tourney-filter-control { flex:1; }
+    .tourney-filter-control select { flex:1; width:auto; min-width:0; }
+    #tournamentFilters .search-input-box { order:3; flex-basis:100%; max-width:none; }
+    .tourney-filter-count { margin-left:0; }
+}
+#tournamentFilters [hidden] { display:none; }
+#tournamentFilters .tourney-filter-control select { width:155px; }
+#tournamentFilters #tournamentSeries { width:200px; }
+#tournamentFilters .search-input-box { flex:1 1 210px; max-width:360px; }
+@media(max-width:600px) { #tournamentFilters .tourney-filter-control { flex:1 1 100%; } #tournamentFilters .tourney-filter-control select { width:auto; flex:1; } }

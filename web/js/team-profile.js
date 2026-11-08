@@ -182,7 +182,7 @@
           var tourneyUrl = perf.finalStageUrl || '#';
           var pTier = (perf.tier || perf.tierName || 'A').toUpperCase();
 
-          rowsHtml += '<tr>' +
+          rowsHtml += '<tr data-tournament-id="' + String(perf.id || perf.tournamentId || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '">' +
             '<td data-ui-style="team-profile-js-008">' + sttVal + '</td>' +
             '<td data-ui-style="team-profile-js-009">' +
               '<a href="' + tourneyUrl + '" class="tourney-name-link" data-ui-style="team-profile-js-010" onmouseover="this.style.color=\'var(--ui-accent)\'" onmouseout="this.style.color=\'var(--ui-text)\'" title="Xem giai đoạn cuối giải ' + perf.name + '">' +

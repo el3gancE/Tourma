@@ -1,5 +1,13 @@
 # Tourma — Quy chuẩn giao diện
 
+## Luồng thiết lập giải
+
+Giải đơn dùng luồng Lập giải → Thể thức & đội tham gia → Chia bảng nếu cần → Thi đấu.
+Chọn một/hai giai đoạn, thể thức và cấu hình nằm cùng màn thêm đội; nút Tiếp tục
+gửi cả cấu hình lẫn danh sách đội. URL cấu hình thể thức cũ chuyển về màn gộp.
+Giải con trong Series cũng gộp thể thức vào màn thêm đội, dùng chung phần cấu hình gọn.
+Giữ cách chọn đội theo Series, phạm vi sao chép cùng Series và bước set điểm riêng.
+
 Tài liệu này là điểm tham chiếu khi thiết kế hoặc sửa bất kỳ màn nào. Các màn
 có thể có bố cục khác nhau theo công việc, nhưng phải dùng chung ngôn ngữ thiết kế.
 

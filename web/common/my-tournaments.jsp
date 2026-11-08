@@ -24,7 +24,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
         <!-- Main Design System CSS & Dedicated My Tournaments CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css?v=20261028-9">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css?v=20261107-combined-filters">
     </head>
     <body class="ui-page workspace-page tournaments-page">
         <!-- Include Shared Navigation Header Component -->
@@ -55,14 +55,31 @@
 
             <!-- Toolbar & Filters -->
             <form id="tournamentFilters" class="toolbar-bar" method="get" action="${pageContext.request.contextPath}/my-tournaments">
-                <input type="hidden" name="filter" id="tournamentFilterInput" value="<c:out value="${pageInfo.filter}" />">
-                <div class="filter-pills-group">
-                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'ALL' ? 'active' : ''}" onclick="filterTournaments('ALL', this)">Tất Cả</button>
-                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'STANDALONE' ? 'active' : ''}" onclick="filterTournaments('STANDALONE', this)">Giải Đơn Lẻ</button>
-                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'SERIES' ? 'active' : ''}" onclick="filterTournaments('SERIES', this)">Thuộc Series</button>
-                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'INCOMING' ? 'active' : ''}" onclick="filterTournaments('INCOMING', this)">Sắp diễn ra</button>
-                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'IN_PROGRESS' ? 'active' : ''}" onclick="filterTournaments('IN_PROGRESS', this)">Đang diễn ra</button>
-                    <button type="button" class="filter-pill-btn ${pageInfo.filter == 'COMPLETED' ? 'active' : ''}" onclick="filterTournaments('COMPLETED', this)">Đã hoàn thành</button>
+                <div class="tourney-filter-control">
+                    <label for="tournamentKind">Loại giải</label>
+                    <select name="kind" id="tournamentKind" onchange="changeTournamentFilters()">
+                        <option value="ALL" ${pageInfo.kind == 'ALL' ? 'selected' : ''}>Tất cả</option>
+                        <option value="STANDALONE" ${pageInfo.kind == 'STANDALONE' ? 'selected' : ''}>Giải đơn</option>
+                        <option value="SERIES" ${pageInfo.kind == 'SERIES' ? 'selected' : ''}>Giải con</option>
+                    </select>
+                </div>
+                <div class="tourney-filter-control">
+                    <label for="tournamentStatus">Trạng thái</label>
+                    <select name="status" id="tournamentStatus" onchange="changeTournamentFilters()">
+                        <option value="ALL" ${pageInfo.status == 'ALL' ? 'selected' : ''}>Tất cả</option>
+                        <option value="INCOMING" ${pageInfo.status == 'INCOMING' ? 'selected' : ''}>Chưa bắt đầu</option>
+                        <option value="IN_PROGRESS" ${pageInfo.status == 'IN_PROGRESS' ? 'selected' : ''}>Đang diễn ra</option>
+                        <option value="COMPLETED" ${pageInfo.status == 'COMPLETED' ? 'selected' : ''}>Hoàn thành</option>
+                    </select>
+                </div>
+                <div class="tourney-filter-control" id="seriesFilterControl" ${pageInfo.kind != 'SERIES' ? 'hidden' : ''}>
+                    <label for="tournamentSeries">Series</label>
+                    <select name="seriesId" id="tournamentSeries" onchange="changeTournamentFilters()" ${pageInfo.kind != 'SERIES' ? 'disabled' : ''}>
+                        <option value="">Tất cả Series</option>
+                        <c:forEach var="filterSeriesItem" items="${filterSeries}">
+                            <option value="<c:out value='${filterSeriesItem.id}'/>" ${pageInfo.seriesId == filterSeriesItem.id ? 'selected' : ''}><c:out value="${filterSeriesItem.name}"/></option>
+                        </c:forEach>
+                    </select>
                 </div>
 
                 <div class="search-input-box">
@@ -70,6 +87,10 @@
                     <input type="text" aria-label="Tìm kiếm giải đấu" id="searchInput" class="form-control" name="q" value="<c:out value="${pageInfo.query}" />" placeholder="Tìm theo tên giải đấu…">
                     <button type="submit" class="tourney-search-submit">Tìm</button>
                 </div>
+                <c:if test="${not empty pageInfo.query || (pageInfo.kind != 'ALL' || pageInfo.status != 'ALL' || not empty pageInfo.seriesId)}">
+                    <a class="tourney-clear-filters" href="${pageContext.request.contextPath}/my-tournaments">Xóa lọc</a>
+                </c:if>
+                <span class="tourney-filter-count" aria-live="polite">${pageInfo.totalCount} giải đấu</span>
             </form>
 
             <!-- Tournament Cards Container -->
@@ -124,9 +145,9 @@
                         <div data-ui-style="my-tournaments-jsp-004">
                             <i class="fa-solid fa-folder-open"></i>
                         </div>
-                        <h3 data-ui-style="my-tournaments-jsp-005">${not empty pageInfo.query || pageInfo.filter != 'ALL' ? 'Không có giải đấu phù hợp' : 'Chưa có giải đấu nào được tạo'}</h3>
+                        <h3 data-ui-style="my-tournaments-jsp-005">${not empty pageInfo.query || (pageInfo.kind != 'ALL' || pageInfo.status != 'ALL' || not empty pageInfo.seriesId) ? 'Không có giải đấu phù hợp' : 'Chưa có giải đấu nào được tạo'}</h3>
                         <p class="text-muted" data-ui-style="my-tournaments-jsp-006">
-                            ${not empty pageInfo.query || pageInfo.filter != 'ALL' ? 'Thử đổi từ khóa hoặc chọn bộ lọc khác.' : 'Hãy bắt đầu khởi tạo giải đấu đầu tiên.'}
+                            ${not empty pageInfo.query || (pageInfo.kind != 'ALL' || pageInfo.status != 'ALL' || not empty pageInfo.seriesId) ? 'Thử đổi từ khóa hoặc chọn bộ lọc khác.' : 'Hãy bắt đầu khởi tạo giải đấu đầu tiên.'}
                         </p>
                         <a href="${pageContext.request.contextPath}/common/create-tournament.jsp" class="btn btn-mint">
                             <i class="fa-solid fa-plus"></i> Tạo Giải Đấu Mới
@@ -141,7 +162,7 @@
                     <div class="tourney-page-buttons">
                         <c:choose>
                             <c:when test="${pageInfo.page > 1}">
-                                <c:url var="previousPageUrl" value="/my-tournaments"><c:param name="page" value="${pageInfo.page - 1}" /><c:param name="q" value="${pageInfo.query}" /><c:param name="filter" value="${pageInfo.filter}" /></c:url>
+                                <c:url var="previousPageUrl" value="/my-tournaments"><c:param name="page" value="${pageInfo.page - 1}" /><c:param name="q" value="${pageInfo.query}" /><c:param name="kind" value="${pageInfo.kind}" /><c:param name="status" value="${pageInfo.status}" /><c:param name="seriesId" value="${pageInfo.seriesId}" /></c:url>
                                 <a href="<c:out value='${previousPageUrl}' />" class="tourney-page-btn" rel="prev">‹ Trước</a>
                             </c:when>
                             <c:otherwise><span class="tourney-page-btn is-disabled" aria-disabled="true">‹ Trước</span></c:otherwise>
@@ -150,14 +171,14 @@
                             <c:choose>
                                 <c:when test="${pageNumber == pageInfo.page}"><span class="tourney-page-btn is-current" aria-current="page">${pageNumber}</span></c:when>
                                 <c:otherwise>
-                                    <c:url var="numberedPageUrl" value="/my-tournaments"><c:param name="page" value="${pageNumber}" /><c:param name="q" value="${pageInfo.query}" /><c:param name="filter" value="${pageInfo.filter}" /></c:url>
+                                    <c:url var="numberedPageUrl" value="/my-tournaments"><c:param name="page" value="${pageNumber}" /><c:param name="q" value="${pageInfo.query}" /><c:param name="kind" value="${pageInfo.kind}" /><c:param name="status" value="${pageInfo.status}" /><c:param name="seriesId" value="${pageInfo.seriesId}" /></c:url>
                                     <a href="<c:out value='${numberedPageUrl}' />" class="tourney-page-btn" aria-label="Trang ${pageNumber}">${pageNumber}</a>
                                 </c:otherwise>
                             </c:choose>
                         </c:forEach>
                         <c:choose>
                             <c:when test="${pageInfo.page < pageInfo.totalPages}">
-                                <c:url var="nextPageUrl" value="/my-tournaments"><c:param name="page" value="${pageInfo.page + 1}" /><c:param name="q" value="${pageInfo.query}" /><c:param name="filter" value="${pageInfo.filter}" /></c:url>
+                                <c:url var="nextPageUrl" value="/my-tournaments"><c:param name="page" value="${pageInfo.page + 1}" /><c:param name="q" value="${pageInfo.query}" /><c:param name="kind" value="${pageInfo.kind}" /><c:param name="status" value="${pageInfo.status}" /><c:param name="seriesId" value="${pageInfo.seriesId}" /></c:url>
                                 <a href="<c:out value='${nextPageUrl}' />" class="tourney-page-btn" rel="next">Sau ›</a>
                             </c:when>
                             <c:otherwise><span class="tourney-page-btn is-disabled" aria-disabled="true">Sau ›</span></c:otherwise>
@@ -251,8 +272,12 @@
         <script>
             let pendingDeleteId = null;
 
-            function filterTournaments(filterType) {
-                document.getElementById('tournamentFilterInput').value = filterType;
+            function changeTournamentFilters() {
+                var series = document.getElementById('tournamentSeries');
+                var isSeries = document.getElementById('tournamentKind').value === 'SERIES';
+                series.disabled = !isSeries;
+                if (!isSeries) series.value = '';
+                document.getElementById('seriesFilterControl').hidden = !isSeries;
                 document.getElementById('tournamentFilters').requestSubmit();
             }
             function openDeleteTourneyModal(id, name) {

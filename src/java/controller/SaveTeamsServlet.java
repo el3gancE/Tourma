@@ -27,13 +27,70 @@ public class SaveTeamsServlet extends HttpServlet {
         String tournamentId = request.getParameter("id");
         String format = request.getParameter("format");
         String teamListRaw = request.getParameter("teamListRaw");
+        TournamentDAO configurationDAO = new TournamentDAO();
+        model.Tournament savedTournament = configurationDAO.getTournamentById(tournamentId, false);
+        boolean standaloneSetup = savedTournament != null
+                && (savedTournament.getSeriesId() == null || savedTournament.getSeriesId().trim().isEmpty())
+                && request.getParameter("tournamentType") != null;
+        List<String> setupTeams = new ArrayList<>();
+        if (standaloneSetup) {
+            if (teamListRaw != null) for (String line : teamListRaw.split("\\r?\\n")) {
+                String clean = line.trim().replaceAll("^[0-9]+[\\.\\-\\)\\s]+", "").trim().replaceAll("\\s+", " ");
+                if (!clean.isEmpty()) setupTeams.add(clean);
+            }
+            java.util.Set<String> formats = java.util.Set.of("SINGLE_ELIMINATION", "DOUBLE_ELIMINATION", "ROUND_ROBIN", "GROUP_STAGE", "GSL", "SWISS_LITE");
+            String setupType = request.getParameter("tournamentType");
+            boolean multi = "MULTI_STAGE".equals(setupType);
+            if ((!multi && !"SINGLE_STAGE".equals(setupType)) || !formats.contains(format == null ? "" : format)
+                    || (multi && (!formats.contains(request.getParameter("stage1Format") == null ? "" : request.getParameter("stage1Format"))
+                    || !formats.contains(request.getParameter("stage2Format") == null ? "" : request.getParameter("stage2Format"))))
+                    || setupTeams.size() < 2 || new java.util.HashSet<>(setupTeams).size() != setupTeams.size()
+                    || ("ROUND_ROBIN".equals(format) && setupTeams.size() > 24)
+                    || ("SWISS_LITE".equals(format) && setupTeams.size() != 16)) {
+                response.sendError(400, "Thể thức hoặc danh sách đội không hợp lệ.");
+                return;
+            }
+            String copySource = request.getParameter("copiedFrom");
+            if (copySource != null && !copySource.trim().isEmpty()) {
+                model.Tournament source = configurationDAO.getTournamentById(copySource, false);
+                if (!configurationDAO.canCopyTournamentConfig(copySource, tournamentId) || source == null
+                        || (source.getTeamCount() > 0 && source.getTeamCount() != setupTeams.size())) {
+                    response.sendError(400, "Nguồn sao chép hoặc số đội không hợp lệ.");
+                    return;
+                }
+            }
+            List<String> previousTeams = new ArrayList<>();
+            for (model.Team team : new ParticipantDAO().getTeamsByTournamentId(tournamentId)) previousTeams.add(team.getRawName());
+            if ((configurationDAO.hasStageMatches(tournamentId, 1) || configurationDAO.hasStageMatches(tournamentId, 2))
+                    && !previousTeams.equals(setupTeams)) {
+                response.sendError(409, "Giải đã có lịch. Không thể thay đổi danh sách hoặc thứ tự đội tại đây.");
+                return;
+            }
+            String type = request.getParameter("tournamentType");
+            String stage1 = request.getParameter("stage1Format");
+            String stage2 = request.getParameter("stage2Format");
+            int advancing = 0;
+            try { advancing = Integer.parseInt(request.getParameter("advancingSeatsCount")); }
+            catch (Exception ignored) { }
+            if (!configurationDAO.updateTournamentFormatAndType(tournamentId, format, type,
+                    stage1, stage2, advancing, request.getParameter("multiConfig"))) {
+                response.sendError(409, "Không lưu được cấu hình. Stage đã có lịch không thể đổi cấu trúc.");
+                return;
+            }
+            String copiedFrom = request.getParameter("copiedFrom");
+            if (copiedFrom != null && !copiedFrom.trim().isEmpty()
+                    && !configurationDAO.copyPointsConfigFromTournament(copiedFrom, tournamentId, false)) {
+                response.sendError(409, "Không lưu được cấu hình sao chép.");
+                return;
+            }
+        }
         if (!new TournamentDAO().saveTopSeedCount(tournamentId, request.getParameter("topSeedCount"))
                 || !new TournamentDAO().saveClassicDraw(tournamentId, request.getParameter("classicDraw"))) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu cấu hình phân cặp vào DB.");
             return;
         }
 
-        if (tournamentId != null && format != null && !format.trim().isEmpty()) {
+        if (!standaloneSetup && tournamentId != null && format != null && !format.trim().isEmpty()) {
             dao.TournamentDAO tDao = new dao.TournamentDAO();
             tDao.saveOrUpdateStageFormat(tournamentId, format.trim());
         }
@@ -62,7 +119,12 @@ public class SaveTeamsServlet extends HttpServlet {
                     teamNames = new ArrayList<>(teamNames.subList(0, 24));
                 }
                 ParticipantDAO dao = new ParticipantDAO();
-                dao.saveTournamentTeams(tournamentId, teamNames);
+                List<String> previousNames = new ArrayList<>();
+                if (standaloneSetup) for (model.Team team : dao.getTeamsByTournamentId(tournamentId)) previousNames.add(team.getRawName());
+                if ((!standaloneSetup || !previousNames.equals(teamNames)) && !dao.saveTournamentTeams(tournamentId, teamNames)) {
+                    response.sendError(409, "Không lưu được danh sách đội.");
+                    return;
+                }
 
                 // Also persist teams as JSON array to tournaments.teams_json
                 // so rolling standings engine can read from DB instead of localStorage

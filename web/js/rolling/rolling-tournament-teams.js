@@ -502,6 +502,11 @@
   window.openPartnerSelectModal = function () {
     window.calculateAndSyncModalStandings();
     window.applyPartnerExclusions();
+    // Copying configuration updates the editor without reloading this page.
+    var targetInput = document.getElementById('targetTeamCount');
+    var targetCount = Number(targetInput ? targetInput.value : window.targetTeamCount) || 0;
+    var countInput = document.getElementById('quickSelectNum');
+    if (countInput && targetCount > 0) countInput.value = targetCount;
     var modal = document.getElementById('partnerSelectModal');
     if (modal) modal.style.display = 'flex';
   };
@@ -523,6 +528,10 @@
   window.quickSelectTeams = function (mode) {
     var numInput = document.getElementById('quickSelectNum');
     if (!numInput) return;
+    if (!numInput.value.trim()) {
+      numInput.focus();
+      return;
+    }
 
     var availableCbs = Array.from(document.querySelectorAll('.partner-cb-input:not(:disabled)'));
     var totalPartnerCount = availableCbs.length;
@@ -625,7 +634,7 @@
     if (confirm('Bạn có chắc chắn muốn xóa ' + selected.length + ' đội đã chọn khỏi giải con này?')) {
       var bulkForm = document.getElementById('bulkRemoveTeamsForm');
       if (bulkForm) {
-        bulkForm.submit();
+        bulkForm.requestSubmit();
       }
     }
   };
@@ -655,7 +664,7 @@
     }
 
     if (input) {
-      input.value = visibleCount;
+      input.value = Number(visibleCount) > 0 ? String(Number(visibleCount)) : '';
     }
     window.applyHideSeedUI(isEnabled);
     window.saveHideSeedConfig();
@@ -692,6 +701,10 @@
     var input = document.getElementById('lockTopSeedsInput');
     var isEnabled = (btn && btn.dataset.active === 'true');
     var visibleCount = input ? input.value.trim() : '';
+    if (input && visibleCount) {
+      visibleCount = visibleCount.replace(/^0+(?=\d)/, '');
+      input.value = visibleCount;
+    }
     document.querySelectorAll('form').forEach(function (form) {
       var field = form.querySelector('input[name="topSeedCount"]');
       if (!field) { field = document.createElement('input'); field.type = 'hidden'; field.name = 'topSeedCount'; form.appendChild(field); }
@@ -717,6 +730,7 @@
 
   window.proceedToNextStep = function (e) {
     if (e && e.preventDefault) e.preventDefault();
+    if (window.prepareSeriesSetup && !window.prepareSeriesSetup(e)) return false;
     if (typeof window.saveHideSeedConfig === 'function') {
       window.saveHideSeedConfig();
     }
@@ -771,7 +785,7 @@
     }
     var form = document.getElementById('saveOrderAndProceedForm');
     if (form) {
-      form.submit();
+      form.requestSubmit();
     } else {
       var nextBtn = document.getElementById('nextStepBtn');
       if (nextBtn && nextBtn.getAttribute('data-href')) {

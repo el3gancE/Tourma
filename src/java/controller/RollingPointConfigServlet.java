@@ -150,7 +150,7 @@ public class RollingPointConfigServlet extends HttpServlet {
 
         // Redirect directly to Sub-Tournament Management / Overview Screen
         Tournament t = getTournamentByIdSafe(tournamentId);
-        String redirectUrl = request.getContextPath() + "/common/configure-tournament-format.jsp?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : "");
+        String redirectUrl = request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : "");
         if (t != null) {
             String fmt = (t.getFormat() != null) ? t.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
             String tourneyType = (t.getTournamentType() != null) ? t.getTournamentType().toUpperCase() : "SINGLE_STAGE";

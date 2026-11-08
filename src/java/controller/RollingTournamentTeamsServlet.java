@@ -61,6 +61,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         if (fmt == null || fmt.trim().isEmpty()) fmt = request.getParameter("selectedFormat");
         String tType = request.getParameter("tournamentType");
         if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("selectedTournamentType");
+        if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("tournamentType");
         if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("type");
 
         String s1F = request.getParameter("stage1Format");
@@ -150,10 +151,59 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
         String tournamentId = request.getParameter("tournamentId");
         String seriesId = request.getParameter("seriesId");
         ParticipantDAO participantDAO = new ParticipantDAO();
+        Tournament destination = new TournamentDAO().getTournamentById(tournamentId, false);
+        if (destination == null || destination.getSeriesId() == null || destination.getSeriesId().trim().isEmpty()) {
+            response.sendError(400, "Không tìm thấy giải con.");
+            return;
+        }
+        seriesId = destination.getSeriesId();
+        if ("copyConfiguration".equals(action)) {
+            response.setContentType("application/json;charset=UTF-8");
+            TournamentDAO configDAO = new TournamentDAO();
+            String sourceId = request.getParameter("sourceTournamentId");
+            boolean copied = false;
+            try {
+                if (configDAO.canCopyTournamentConfig(sourceId, tournamentId)) {
+                    Tournament source = configDAO.getTournamentById(sourceId, false);
+                    List<String> formats = configDAO.getStageFormats(sourceId);
+                    String first = formats.isEmpty() ? source.getFormat() : formats.get(0);
+                    String second = formats.size() > 1 ? formats.get(1) : null;
+                    String config = source.getMultiStageConfig();
+                    if (config == null || config.trim().isEmpty()) config = request.getParameter("multiConfig");
+                    copied = configDAO.updateTournamentFormatAndType(tournamentId, first,
+                            source.getTournamentType(), first, second, source.getAdvancingSeatsCount(), config)
+                            && configDAO.copyPointsConfigFromTournament(sourceId, tournamentId, false)
+                            && configDAO.updateTournamentTier(tournamentId, source.getTierName());
+                }
+            } catch (Exception error) {
+                getServletContext().log("Cannot copy Series tournament configuration", error);
+            }
+            if (!copied) response.setStatus(409);
+            response.getWriter().write(copied ? "{\"status\":\"success\"}"
+                    : "{\"status\":\"error\",\"message\":\"Không lưu được điểm và cấu hình. Kiểm tra giải nguồn cùng Series và khóa lịch thi đấu.\"}");
+            return;
+        }
+        String copySource = request.getParameter("copiedFrom");
+        TournamentDAO setupDAO = new TournamentDAO();
+        if (copySource != null && !copySource.trim().isEmpty()
+                && !setupDAO.canCopyTournamentConfig(copySource, tournamentId)) {
+            response.sendError(400, "Chỉ được sao chép cấu hình trong cùng Series.");
+            return;
+        }
+        if ("saveTeamsOrder".equalsIgnoreCase(action)) {
+            String names = request.getParameter("orderedTeamNames");
+            int count = names == null || names.trim().isEmpty() ? 0 : names.trim().split("\\r?\\n").length;
+            Tournament source = copySource == null || copySource.trim().isEmpty() ? null : setupDAO.getTournamentById(copySource, false);
+            if (count < 2 || (source != null && source.getTeamCount() > 0 && count != source.getTeamCount())) {
+                response.sendError(400, "Số đội tham gia không hợp lệ hoặc chưa khớp giải nguồn.");
+                return;
+            }
+        }
         if ("addPartnerTeams".equalsIgnoreCase(action)) {
             try {
                 validatePartnerExclusions(tournamentId, request.getParameterValues("excludedTournamentIds"),
@@ -186,7 +236,12 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("type");
 
         if (tournamentId != null && ((fmt != null && !fmt.trim().isEmpty()) || advSeats > 0)) {
-            updateTournamentFormatAndTypeSafe(tournamentId, fmt, tType, null, null, advSeats);
+            if (!setupDAO.updateTournamentFormatAndType(tournamentId, fmt, tType,
+                    request.getParameter("stage1Format"), request.getParameter("stage2Format"), advSeats,
+                    request.getParameter("multiConfig"))) {
+                response.sendError(409, "Không lưu được cấu hình. Stage đã có lịch không thể đổi cấu trúc.");
+                return;
+            }
         }
 
         if ("addPartnerTeams".equalsIgnoreCase(action)) {
@@ -235,14 +290,14 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                     }
                 }
                 if (!teamList.isEmpty()) {
-                    participantDAO.saveTournamentTeams(tournamentId, teamList);
+                    List<String> currentNames = new ArrayList<>();
+                    for (Team team : participantDAO.getTeamsByTournamentId(tournamentId)) currentNames.add(team.getRawName());
+                    if (!currentNames.equals(teamList) && !participantDAO.saveTournamentTeams(tournamentId, teamList)) {
+                        response.sendError(409, "Không lưu được thứ tự đội. Hãy kiểm tra lịch thi đấu hiện có.");
+                        return;
+                    }
                     refreshTeamsJson(tournamentId, participantDAO);
                 }
-            }
-            String nextUrl = request.getParameter("nextUrl");
-            if (nextUrl != null && !nextUrl.trim().isEmpty()) {
-                response.sendRedirect(nextUrl);
-                return;
             }
             String nextFormat = new dao.TournamentDAO().getStage1Format(tournamentId);
             String nextPath = "GSL".equalsIgnoreCase(nextFormat) || "GROUP_STAGE".equalsIgnoreCase(nextFormat)
@@ -334,10 +389,6 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             e.printStackTrace();
         }
         return null;
-    }
-
-    private boolean updateTournamentFormatAndTypeSafe(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format, int advancingSeatsCount) {
-        return new TournamentDAO().updateTournamentFormatAndType(tournamentId, format, tournamentType, stage1Format, stage2Format, advancingSeatsCount);
     }
 
     /**

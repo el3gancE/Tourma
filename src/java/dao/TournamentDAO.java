@@ -895,8 +895,12 @@ public class TournamentDAO {
         private final List<Tournament> tournaments;
         private final int totalCount;
         private final int page;
-        private final String filter;
+        private String filter;
         private final String query;
+        private String kind = "ALL", status = "ALL", seriesId = "";
+        public String getKind() { return kind; }
+        public String getStatus() { return status; }
+        public String getSeriesId() { return seriesId; }
 
         private TournamentPage(List<Tournament> tournaments, int totalCount, int page, String filter, String query) {
             this.tournaments = tournaments; this.totalCount = totalCount; this.page = page;
@@ -912,9 +916,24 @@ public class TournamentDAO {
 
     /** Filter in SQL before fetching a maximum of 25 cards; no browser-side paging of all rows. */
     public TournamentPage getTournamentPage(String seriesId, String rawQuery, String rawFilter, String rawPage) {
+        String legacy = rawFilter == null ? "ALL" : rawFilter.toUpperCase(Locale.ROOT);
+        if (!Set.of("ALL", "STANDALONE", "SERIES", "INCOMING", "IN_PROGRESS", "COMPLETED").contains(legacy)) legacy = "ALL";
+        TournamentPage result = getTournamentPage(seriesId, rawQuery,
+                Set.of("STANDALONE", "SERIES").contains(legacy) ? legacy : "ALL",
+                Set.of("INCOMING", "IN_PROGRESS", "COMPLETED").contains(legacy) ? legacy : "ALL", rawPage);
+        result.filter = legacy;
+        return result;
+    }
+
+    public TournamentPage getTournamentPage(String seriesId, String rawQuery, String rawKind, String rawStatus, String rawPage) {
         String query = rawQuery == null ? "" : rawQuery.trim();
-        String filter = rawFilter == null ? "ALL" : rawFilter.toUpperCase(Locale.ROOT);
-        if (!Set.of("ALL", "STANDALONE", "SERIES", "INCOMING", "IN_PROGRESS", "COMPLETED").contains(filter)) filter = "ALL";
+        String kind = rawKind == null ? "ALL" : rawKind.trim().toUpperCase(Locale.ROOT);
+        String status = rawStatus == null ? "ALL" : rawStatus.trim().toUpperCase(Locale.ROOT);
+        if (!Set.of("ALL", "STANDALONE", "SERIES").contains(kind)) kind = "ALL";
+        if (!Set.of("ALL", "INCOMING", "IN_PROGRESS", "COMPLETED").contains(status)) status = "ALL";
+        seriesId = seriesId == null ? "" : seriesId.trim();
+        if ("STANDALONE".equals(kind)) seriesId = "";
+        else if (!seriesId.isEmpty()) kind = "SERIES";
         int requestedPage = 1;
         try { requestedPage = Math.max(1, Integer.parseInt(rawPage)); } catch (Exception ignored) {}
         List<String> parameters = new ArrayList<>();
@@ -925,18 +944,18 @@ public class TournamentDAO {
         if (!query.isEmpty()) {
             where.append("AND CHARINDEX(LOWER(?),LOWER(t.name))>0 "); parameters.add(query);
         }
-        if ("STANDALONE".equals(filter)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NULL ");
-        else if ("SERIES".equals(filter)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NOT NULL ");
-        else if (!"ALL".equals(filter)) {
+        if ("STANDALONE".equals(kind)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NULL ");
+        else if ("SERIES".equals(kind)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NOT NULL ");
+        if (!"ALL".equals(status)) {
             where.append("AND (CASE WHEN t.status IN ('COMPLETED','FINISHED') THEN 'COMPLETED' ")
                  .append("WHEN t.status IN ('ONGOING','IN_PROGRESS') OR ISNULL(ms.completed_matches,0)>0 THEN 'IN_PROGRESS' ELSE 'INCOMING' END)=? ");
-            parameters.add(filter);
+            parameters.add(status);
         }
         String order = seriesId == null || seriesId.trim().isEmpty()
                 ? "t.created_at DESC,t.id DESC" : "t.tournament_index_in_series DESC,t.created_at DESC,t.id DESC";
         try (Connection conn = new DBContext().getConnection()) {
             int count;
-            boolean statusFilter = Set.of("INCOMING", "IN_PROGRESS", "COMPLETED").contains(filter);
+            boolean statusFilter = !"ALL".equals(status);
             String countFrom = statusFilter ? TOURNAMENT_FROM_QUERY : "FROM tournaments t ";
             try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) " + countFrom + where + "OPTION (MAXDOP 1)")) {
                 for (int i=0; i<parameters.size(); i++) ps.setString(i+1, parameters.get(i));
@@ -955,7 +974,9 @@ public class TournamentDAO {
                     }
                 }
             }
-            return new TournamentPage(rows,count,page,filter,query);
+            TournamentPage result = new TournamentPage(rows,count,page,!"ALL".equals(kind) ? kind : status,query);
+            result.kind=kind; result.status=status; result.seriesId=seriesId;
+            return result;
         } catch (Exception e) { throw new IllegalStateException("Cannot load tournament page",e); }
     }
 

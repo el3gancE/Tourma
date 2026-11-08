@@ -1,0 +1,30 @@
+/* Format above; two equally sized roster panels below. */
+.standalone-setup .team-mgmt-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; align-items:stretch; }
+.standalone-setup .team-panel-card { display:flex; flex-direction:column; min-width:0; }
+.standalone-setup #bulkAddForm { display:flex; flex-direction:column; flex:1; }
+.standalone-setup .bulk-input-container { flex:1; display:flex; flex-direction:column; }
+.standalone-setup #teamTextarea { flex:1; min-height:220px; }
+.standalone-setup .input-actions-bar { flex-shrink:0; }
+/* Tier and copied configuration live between the stage toggle and copy action. */
+.standalone-setup .format-toolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.setup-toolbar-meta { display:flex; align-items:center; flex-wrap:wrap; flex:1; min-width:0; gap:8px 14px; }
+.standalone-setup .standalone-format-panel .setup-toolbar-meta .tier-switcher-box { display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; width:auto; padding:0; margin:0; gap:6px; border:0; }
+.setup-toolbar-meta .tier-switcher-box > span:first-child { font-size:0; }
+.setup-toolbar-meta .tier-switcher-box > span:first-child i { display:none; }
+.setup-toolbar-meta .tier-switcher-box > span:first-child::after { content:'Tier'; font-size:11px; color:var(--ui-muted); }
+.setup-toolbar-meta .tier-pills-row { flex-wrap:nowrap; gap:3px; }
+.standalone-setup .setup-toolbar-meta .tier-pill-btn { padding:4px 6px; font-size:10px; }
+body.standalone-setup .has-copy-source .setup-toolbar-meta #copiedConfigBanner { display:flex!important; flex:1; min-width:230px; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:0; margin:0; background:transparent; border:0; border-radius:0; }
+.standalone-setup .setup-toolbar-meta #copiedConfigBanner .setup-copy-source { display:flex; flex-direction:row; align-items:center; gap:6px; flex:1 1 auto; min-width:0; }
+.setup-toolbar-meta .setup-copy-label { font-size:10px; white-space:nowrap; }
+.setup-toolbar-meta .setup-copy-source strong { font-size:11px; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.setup-toolbar-meta .setup-copy-requirement { display:none; }
+.setup-toolbar-meta .setup-copy-progress { font-size:10px; padding:4px 6px; white-space:nowrap; }
+.standalone-setup .setup-toolbar-meta .setup-copy-unlink { font-size:10px; padding:4px 0; white-space:nowrap; }
+.setup-modal-layer #copyConfigModalBackdrop .tourma-modal-card { width:min(680px,100%); }
+.setup-modal-layer .tourma-modal-backdrop { z-index:3000; }
+@media(max-width:900px) { .standalone-setup .team-mgmt-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:800px) {
+    .setup-toolbar-meta { flex-basis:100%; order:3; }
+    .standalone-setup .format-toolbar > .btn { margin-left:auto; }
+}

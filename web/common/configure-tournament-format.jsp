@@ -2,6 +2,7 @@
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="dao.TournamentDAO, model.Tournament, java.util.List, java.util.ArrayList" %>
 <%
+    boolean embeddedFormat = Boolean.TRUE.equals(request.getAttribute("standaloneFormatEmbedded"));
     String tournamentId = request.getParameter("id");
     String currentFormat = request.getParameter("format");
     String currentType = request.getParameter("type"); // SINGLE_STAGE or MULTI_STAGE
@@ -90,10 +91,16 @@
 
     boolean isRollingSubTournament = (seriesIdParam != null && !seriesIdParam.trim().isEmpty());
 
+    if (!embeddedFormat) {
+        String query = request.getQueryString();
+        response.sendRedirect(request.getContextPath() + (isRollingSubTournament ? "/rolling/tournament-teams" : "/common/configure-tournament-teams.jsp") + (query == null ? "" : "?" + query));
+        return;
+    }
     String formActionUrl = isRollingSubTournament
         ? (request.getContextPath() + "/rolling/tournament-teams")
         : (request.getContextPath() + "/common/configure-tournament-teams.jsp");
 %>
+                    <% if (!embeddedFormat) { %>
                     <!DOCTYPE html>
                     <html lang="vi" data-theme="light">
 
@@ -153,6 +160,9 @@
                         <main class="format-main">
                             <header class="format-page-heading"><h1>Cấu hình thể thức</h1><% if (currentTournament != null) { request.setAttribute("formatTournamentName", currentTournament.getName()); %><p><c:out value="${formatTournamentName}" /></p><% } %></header>
 
+                    <% } else { %>
+                        <section class="format-page standalone-format-panel" aria-label="Thể thức và cấu hình">
+                    <% } %>
                             <!-- Top Stage Model Toggle Bar (Single Stage ↔ Multi-Stage) & Copy Config Button -->
                             <div
                                 class="format-toolbar" data-ui-style="configure-tournament-format-jsp-001" style="display: flex;">
@@ -170,7 +180,7 @@
                                 <!-- Copy Configuration from Existing Tournament Button -->
                                 <button type="button" class="btn btn-secondary" onclick="openCopyConfigModal()"
                                     data-ui-style="configure-tournament-format-jsp-003" style="display: inline-flex;">
-                                    <i class="fa-solid fa-copy"></i> Sao chép cấu hình
+                                    <i class="fa-solid fa-copy"></i> <%= isRollingSubTournament ? "Sao chép điểm &amp; cấu hình" : "Sao chép cấu hình" %>
                                 </button>
                             </div>
 
@@ -180,18 +190,13 @@
                                 <!-- Active Copied Config Banner (Shown when a config is cloned / copied) -->
                                 <div id="copiedConfigBanner"
                                     data-ui-style="configure-tournament-format-jsp-005" style="display: none;">
-                                    <div
-                                        data-ui-style="configure-tournament-format-jsp-006" style="display: flex;">
-                                        <i class="fa-solid fa-circle-check text-mint" data-ui-style="configure-tournament-format-jsp-007"></i>
-                                        <span>Đang áp dụng cấu hình từ: <strong
-                                                id="copiedTourneyNameDisplay">...</strong> (Ràng buộc bắt buộc: <strong
-                                                id="copiedTourneyTeamCountDisplay" data-ui-style="configure-tournament-format-jsp-008">...</strong>
-                                            đội)</span>
+                                    <div class="setup-copy-source">
+                                        <span class="setup-copy-label"><i class="fa-solid fa-copy" aria-hidden="true"></i> Sao chép từ</span>
+                                        <strong id="copiedTourneyNameDisplay">...</strong>
                                     </div>
-                                    <button type="button" onclick="clearCopiedConfig()" class="btn btn-secondary"
-                                        data-ui-style="configure-tournament-format-jsp-009">
-                                        <i class="fa-solid fa-xmark"></i> Bỏ Áp Dụng
-                                    </button>
+                                    <span class="setup-copy-requirement">Yêu cầu <strong id="copiedTourneyTeamCountDisplay">...</strong> đội</span>
+                                    <span id="setupCopyProgress" class="setup-copy-progress" role="status"></span>
+                                    <button type="button" onclick="clearCopiedConfig()" class="setup-copy-unlink" title="Bỏ liên kết nguồn và ràng buộc số đội; giữ các giá trị cấu hình hiện tại">Bỏ liên kết</button>
                                 </div>
 
                                 <!-- Top Controls Row: Stage Badge & Tier Switcher (Tier only for Rolling Series child tournaments) -->
@@ -240,8 +245,12 @@
                                 <!-- Main Card Title -->
                                 <h2 class="form-header-title" data-ui-style="configure-tournament-format-jsp-014">Thể thức thi đấu</h2>
 
+                                <% if (embeddedFormat) { %>
+                                <div id="configureFormatForm">
+                                <% } else { %>
                                 <form id="configureFormatForm" action="<%= formActionUrl %>" method="GET"
                                     onsubmit="return validateAndSubmitFormat(event)">
+                                <% } %>
                                     <input type="hidden" name="id"
                                         value="<%= (tournamentId != null) ? tournamentId : "" %>">
                                     <input type="hidden" name="seriesId"
@@ -342,6 +351,7 @@
                                             <!-- 2. MULTI-STAGE PANEL                                             -->
                                             <!-- ════════════════════════════════════════════════════════════════ -->
                                             <div id="multiStagePanel" style="display: none;">
+                                                <% if (embeddedFormat) { %><div class="standalone-stage-columns"><% } %>
 
                                                 <!-- STAGE 1 -->
                                                 <div
@@ -688,8 +698,10 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <% if (embeddedFormat) { %></div><% } %>
                                             </div>
 
+                                            <% if (!embeddedFormat) { %>
                                             <!-- SUBMIT BUTTONS -->
                                             <div
                                                 class="format-submit-row" data-ui-style="configure-tournament-format-jsp-093" style="display: flex;">
@@ -699,10 +711,13 @@
                                                     Tiếp tục <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                                                 </button>
                                             </div>
-                                </form>
+                                            <% } %>
+                                <% if (embeddedFormat) { %></div><% } else { %></form><% } %>
                             </div>
+                        <% if (!embeddedFormat) { %>
                         </main>
                         </div>
+                        <% } %>
 
                         <!-- ONGOING TOURNAMENT CANNOT CHANGE FORMAT WARNING MODAL -->
                         <div id="formatLockedModalBackdrop" class="tourma-modal-backdrop"
@@ -935,7 +950,7 @@
                             var originalType = "<%= currentType %>";
                             var currentTier = "<%= currentTierVal %>";
                             var hasOngoingMatches = false;
-                            var bypassWarning = false;
+                            var formatBypassWarning = false;
                             var initialLegsCount = 1;
 
                             function openCopyConfigModal() {
@@ -981,11 +996,15 @@
                                 }
                             }
 
-                            function applyTournamentConfig(sourceTourneyId) {
+                            async function applyTournamentConfig(sourceTourneyId) {
                                 if (!sourceTourneyId) return;
                                 var tourney = (window.availableTournamentsToCopy || []).find(function (t) { return t.id === sourceTourneyId; });
                                 if (!tourney) return;
 
+                                var copyButton = document.querySelector('.copy-tourney-item-card[data-tourney-id="' + sourceTourneyId + '"] button');
+                                if (copyButton && copyButton.disabled) return;
+                                if (copyButton) copyButton.disabled = true;
+                                try {
                                 // 1. Apply Type (SINGLE_STAGE vs MULTI_STAGE)
                                 var type = tourney.tournamentType || 'SINGLE_STAGE';
                                 selectStageType(type, false);
@@ -1061,7 +1080,7 @@
                                 }
 
                                 // 3. Apply Tier if Rolling sub-tourney
-                                if (isRollingSubTournament && tourney.tierName) {
+                                if (!isRollingSubTournament && tourney.tierName) {
                                     changeTournamentTier(tourney.tierName);
                                 }
 
@@ -1074,6 +1093,22 @@
                                             localStorage.setItem('tourma_series_points_' + tournamentId, ptsStr);
                                         } catch (e) { }
                                     }
+                                }
+
+                                // Persist the Series copy now; a later roster submit must not be required.
+                                persistFormatSelection();
+                                if (isRollingSubTournament) {
+                                    var copyResponse = await fetch("${pageContext.request.contextPath}/rolling/tournament-teams", {
+                                        method: 'POST',
+                                        headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                                        body: new URLSearchParams({action: 'copyConfiguration', tournamentId: tournamentId,
+                                            sourceTournamentId: tourney.id, multiConfig: document.getElementById('detailConfig').value}).toString()
+                                    });
+                                    var copyResult = await copyResponse.json();
+                                    if (!copyResponse.ok || copyResult.status !== 'success') {
+                                        throw new Error(copyResult.message || 'Không lưu được điểm và cấu hình.');
+                                    }
+                                    if (tourney.tierName) changeTournamentTier(tourney.tierName);
                                 }
 
                                 // 4. Capture Target Team Count & Source Name constraint
@@ -1096,6 +1131,11 @@
 
                                 // 6. Close modal
                                 closeCopyConfigModal();
+                                } catch (error) {
+                                    alert(error.message || "Không lưu được điểm và cấu hình.");
+                                } finally {
+                                    if (copyButton) copyButton.disabled = false;
+                                }
                             }
 
                             function updateCopiedConfigBanner(sourceName, teamCount) {
@@ -1544,13 +1584,14 @@
                                     } catch (e) { }
                                 }
                                 persistFormatSelection();
-                                bypassWarning = true;
+                                formatBypassWarning = true;
                                 var modal = document.getElementById('legsChangeModalBackdrop');
                                 if (modal) {
                                     modal.classList.remove('show');
                                     document.body.style.overflow = '';
                                 }
-                                document.getElementById('configureFormatForm').submit();
+                                if (window.submitStandaloneSetup) window.submitStandaloneSetup();
+                                else document.getElementById('configureFormatForm').submit();
                             }
 
                             function getTotalTeamsCount() {
@@ -1660,7 +1701,7 @@
                             }
 
                             function validateAndSubmitFormat(e) {
-                                if (bypassWarning) return true;
+                                if (formatBypassWarning) return true;
 
                                 var currentType = document.getElementById('selectedTournamentType').value;
                                 var currentSelected = document.getElementById('selectedFormat').value;
@@ -1883,6 +1924,8 @@
                     });
                         </script>
                         <script src="${pageContext.request.contextPath}/js/format-presentation.js?v=2"></script>
+                        <% if (embeddedFormat) { %></section><% } else { %>
                     </body>
 
                     </html>
+                    <% } %>

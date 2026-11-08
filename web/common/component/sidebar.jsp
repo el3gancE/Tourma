@@ -191,15 +191,6 @@
     </div>
 
     <ul class="sidebar-menu-list">
-        <!-- BƯỚC 1: THỂ THỨC -->
-        <li class="sidebar-menu-item">
-            <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=<%= tournamentId %>&seriesId=<%= seriesId %>"
-               class="sidebar-menu-link <%= "format".equals(activeStep) || "step1".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-diagram-project menu-icon"></i>
-                <span>Tổng Quan Giải</span>
-            </a>
-        </li>
-
         <!-- BƯỚC 2: QUẢN LÝ ĐỘI -->
         <li class="sidebar-menu-item">
             <a href="<%= hasSeries ? (request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + seriesId) : (request.getContextPath() + "/common/configure-tournament-teams.jsp?id=" + tournamentId) %>"

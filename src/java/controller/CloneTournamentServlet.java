@@ -64,7 +64,8 @@ public class CloneTournamentServlet extends HttpServlet {
 
         if (cloned != null) {
             String redirectUrl;
-            StringBuilder sb = new StringBuilder(request.getContextPath()).append("/common/configure-tournament-format.jsp");
+            StringBuilder sb = new StringBuilder(request.getContextPath()).append(cloned.getSeriesId() != null && !cloned.getSeriesId().trim().isEmpty()
+                    ? "/rolling/tournament-teams" : "/common/configure-tournament-teams.jsp");
             sb.append("?id=").append(cloned.getId());
             if (cloned.getSeriesId() != null && !cloned.getSeriesId().trim().isEmpty()) {
                 sb.append("&seriesId=").append(cloned.getSeriesId().trim());

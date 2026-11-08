@@ -148,8 +148,11 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-teams.css?v=22">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-teams.css?v=2">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-format.css?v=4">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/standalone-setup.css?v=20261107-redesign">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/setup-workbench.css?v=4-toolbar">
 </head>
-    <body class="ui-page workspace-page tournament-workspace series-page series-form-page subteams-page teams-page">
+    <body class="ui-page workspace-page tournament-workspace series-page series-form-page subteams-page teams-page standalone-setup">
         <!-- Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="my-series"/>
@@ -166,8 +169,13 @@
 
             <!-- CENTERED MAIN TITLE (MATCHING STANDALONE TOURNAMENT 100%) -->
             <h1 class="page-main-title" data-ui-style="rolling-tournament-teams-jsp-001">
-                Quản lý danh sách đội
+                Thể thức &amp; đội tham gia
             </h1>
+
+            <jsp:include page="/common/component/tournament-config-state.jsp"/>
+            <% request.setAttribute("standaloneFormatEmbedded", Boolean.TRUE); %>
+            <jsp:include page="/common/configure-tournament-format.jsp"/>
+            <% request.removeAttribute("standaloneFormatEmbedded"); %>
 
             <% if (targetTeamCountVal > 0) { %>
             <!-- TARGET TEAM COUNT CONSTRAINT BANNER (COPIED CONFIG) -->
@@ -245,7 +253,7 @@
                     <div class="manage-toolbar">
                         <div class="manage-toolbar-left" data-ui-style="rolling-tournament-teams-jsp-018" style="display: flex;">
                             <span data-ui-style="rolling-tournament-teams-jsp-019">Giữ top:</span>
-                            <input type="number" id="lockTopSeedsInput" min="0" max="999" placeholder="0"
+                            <input type="number" id="lockTopSeedsInput" min="0" max="999"
                                    data-ui-style="rolling-tournament-teams-jsp-020"
                                    onfocus="this.select()" onchange="window.saveHideSeedConfig()" oninput="window.saveHideSeedConfig()">
                             <button type="button" class="btn btn-secondary" data-ui-style="rolling-tournament-teams-jsp-021" onclick="shuffleSubtourneyTeams()">
@@ -346,8 +354,8 @@
 
             <!-- STEP FOOTER NAVIGATION BAR -->
             <div data-ui-style="rolling-tournament-teams-jsp-042" style="display: flex;">
-                <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=<%= tourneyId %>&seriesId=<%= seriesIdVal %>" class="btn btn-secondary" data-ui-style="rolling-tournament-teams-jsp-043">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại Bước 2: Thể Thức
+                <a href="${pageContext.request.contextPath}/rolling/tournament-list?id=<%= seriesIdVal %>" class="btn btn-secondary" data-ui-style="rolling-tournament-teams-jsp-043">
+                    <i class="fa-solid fa-arrow-left"></i> Danh sách giải con
                 </a>
                 <button type="button" id="nextStepBtn" onclick="window.proceedToNextStep(event)" class="btn btn-mint" data-ui-style="rolling-tournament-teams-jsp-044">
                     Tiếp theo <i class="fa-solid fa-arrow-right" data-ui-style="rolling-tournament-teams-jsp-045"></i>
@@ -393,7 +401,7 @@
                     <div data-ui-style="rolling-tournament-teams-jsp-051" style="display: flex;">
                         <div data-ui-style="rolling-tournament-teams-jsp-052" style="display: flex;">
                             <span data-ui-style="rolling-tournament-teams-jsp-053">Số đội chọn:</span>
-                            <input type="number" id="quickSelectNum" value="<%= (targetTeamCountVal > 0) ? Math.min(partnerCount, targetTeamCountVal) : Math.min(partnerCount, 4) %>" min="2" max="<%= partnerCount %>" class="form-control" data-ui-style="rolling-tournament-teams-jsp-054">
+                            <input type="number" id="quickSelectNum" value="<%= (targetTeamCountVal > 0) ? String.valueOf(targetTeamCountVal) : "" %>" min="2" max="<%= partnerCount %>" oninput="this.value = this.value.replace(/^0+(?=\d)/, '')" class="form-control" data-ui-style="rolling-tournament-teams-jsp-054">
                         </div>
                         <div data-ui-style="rolling-tournament-teams-jsp-055" style="display: flex;">
                             <button type="button" onclick="quickSelectTeams('TOP')" class="btn btn-mint" data-ui-style="rolling-tournament-teams-jsp-056">
@@ -611,5 +619,8 @@
         <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/standalone-format-layout.js?v=3"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/series-setup.js?v=1"></script>
+        <script src="${pageContext.request.contextPath}/js/setup-presentation.js?v=5-toolbar"></script>
     </body>
 </html>

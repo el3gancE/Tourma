@@ -265,6 +265,16 @@
                     </h3>
                 </div>
 
+                <form id="profileHistoryFilters" class="profile-history-filters" onsubmit="return false">
+                    <label>Tier<select id="profileHistoryTier"><option value="">Tất cả tier</option></select></label>
+                    <label>Phase<select id="profileHistoryPhase"><option value="">Tất cả phase</option></select></label>
+                    <label>Window<select id="profileHistoryWindow"><option value="">Tất cả window</option></select></label>
+                    <label>Từ giải<select id="profileHistoryFrom"><option value="">Từ đầu</option></select></label>
+                    <label>Đến giải<select id="profileHistoryTo"><option value="">Đến cuối</option></select></label>
+                    <button type="button" id="profileHistoryReset" class="btn btn-secondary">Xóa lọc</button>
+                    <span id="profileHistoryCount" role="status" aria-live="polite"></span>
+                </form>
+                <div class="profile-history-scroll" tabindex="0" role="region" aria-label="Lịch sử thi đấu, tối đa 20 giải trong khung">
                 <table class="team-performance-table">
                     <thead>
                         <tr>
@@ -288,7 +298,7 @@
                                 else if (perf.getAchievement() != null && (perf.getAchievement().equals("2-3") || perf.getAchievement().equals("1-3") || perf.getAchievement().equals("0-3") || perf.getAchievement().contains("Bị loại"))) achClass = "eliminated";
                                 String pTier = (perf.getTierName() != null && !perf.getTierName().isEmpty()) ? perf.getTierName().toUpperCase() : "A";
                         %>
-                            <tr>
+                            <tr data-tournament-id="<%= perf.getTournamentId() %>">
                                 <td data-ui-style="team-profile-jsp-018"><%= (perf.getStt() > 0) ? perf.getStt() : (performanceList.size() - idx) %></td>
                                 <td data-ui-style="team-profile-jsp-019">
                                     <a href="<%= (perf.getFinalStageUrl() != null && !perf.getFinalStageUrl().isEmpty()) ? perf.getFinalStageUrl() : "#" %>" class="tourney-name-link" data-ui-style="team-profile-jsp-020" onmouseover="this.style.color='var(--ui-accent)'" onmouseout="this.style.color='var(--ui-text)'" title="Xem giai đoạn cuối giải <%= perf.getTournamentName() %>">
@@ -318,6 +328,8 @@
                         <% } %>
                     </tbody>
                 </table>
+                </div>
+                <p id="profileHistoryEmpty" class="profile-history-empty" hidden>Không có giải phù hợp với bộ lọc.</p>
             </div>
 
         </main></div>
@@ -481,5 +493,6 @@
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/team-badge-engine.js?v=<%= System.currentTimeMillis() %>"></script>
         <script src="${pageContext.request.contextPath}/js/team-profile.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/team-profile-history.js?v=2"></script>
     </body>
 </html>
