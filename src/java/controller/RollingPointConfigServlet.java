@@ -153,40 +153,29 @@ public class RollingPointConfigServlet extends HttpServlet {
         String redirectUrl = request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + (seriesId != null ? seriesId : "");
         if (t != null) {
             String fmt = (t.getFormat() != null) ? t.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
-            String tourneyType = (t.getTournamentType() != null) ? t.getTournamentType().toUpperCase() : "SINGLE_STAGE";
             List<String> stageFormats = getStageFormatsSafe(tournamentId);
             String s1F = (stageFormats != null && !stageFormats.isEmpty()) ? stageFormats.get(0).toUpperCase() : fmt;
 
-            String clientFmt = request.getParameter("clientFormat");
-            String clientS1Fmt = request.getParameter("clientStage1Format");
-            if (clientFmt != null && !clientFmt.trim().isEmpty()) {
-                fmt = clientFmt.trim().toUpperCase();
-            }
-            if (clientS1Fmt != null && !clientS1Fmt.trim().isEmpty()) {
-                s1F = clientS1Fmt.trim().toUpperCase();
-            }
-
-            boolean isGSL = "GSL".equals(fmt) || "GSL".equals(s1F);
-            boolean isGroupStage = "GROUP_STAGE".equals(fmt) || "GROUP_STAGE".equals(s1F);
-
             String sParam = (seriesId != null && !seriesId.trim().isEmpty()) ? ("&seriesId=" + seriesId.trim()) : "";
-
-            if (isGSL) {
-                redirectUrl = request.getContextPath() + "/common/gsl.jsp?id=" + tournamentId + sParam + "&format=GSL";
-            } else if (isGroupStage) {
-                redirectUrl = request.getContextPath() + "/common/group-stage.jsp?id=" + tournamentId + sParam + "&format=GROUP_STAGE";
-            } else if ("SINGLE_ELIMINATION".equals(s1F) || "SINGLE_ELIMINATION".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/single-elimination.jsp?id=" + tournamentId + sParam;
-            } else if ("DOUBLE_ELIMINATION".equals(s1F) || "DOUBLE_ELIMINATION".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/double-elimination.jsp?id=" + tournamentId + sParam;
-            } else if ("ROUND_ROBIN".equals(s1F) || "ROUND_ROBIN".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/round-robin.jsp?id=" + tournamentId + sParam;
-            } else if ("SWISS_LITE".equals(s1F) || "SWISS".equals(s1F) || "SWISS_LITE".equals(fmt) || "SWISS".equals(fmt)) {
-                redirectUrl = request.getContextPath() + "/common/swiss-stage.jsp?id=" + tournamentId + sParam;
-            }
+            // Client hidden fields are display hints, never the source of navigation.
+            redirectUrl = request.getContextPath() + "/common/" + stagePage(s1F)
+                    + "?id=" + tournamentId + sParam;
+            if ("GSL".equals(s1F) || "GROUP_STAGE".equals(s1F)) redirectUrl += "&format=" + s1F;
         }
 
         response.sendRedirect(redirectUrl);
+    }
+
+    static String stagePage(String persistedFormat) {
+        switch (persistedFormat.trim().toUpperCase(java.util.Locale.ROOT)) {
+            case "SINGLE_ELIMINATION": return "single-elimination.jsp";
+            case "DOUBLE_ELIMINATION": return "double-elimination.jsp";
+            case "ROUND_ROBIN": return "round-robin.jsp";
+            case "GROUP_STAGE": return "group-stage.jsp";
+            case "GSL": return "gsl.jsp";
+            case "SWISS": case "SWISS_LITE": return "swiss-stage.jsp";
+            default: throw new IllegalArgumentException("Unsupported saved tournament format");
+        }
     }
 
     private Tournament getTournamentByIdSafe(String id) {

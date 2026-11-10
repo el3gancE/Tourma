@@ -73,6 +73,15 @@ public class RollingStandingsServlet extends HttpServlet {
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
             serverTourneyPoints = serviceEngine.getTourneyPointsPerTournament(seriesId);
             serverTourneyParticipation = serviceEngine.getTourneyParticipationPerTournament(seriesId);
+            if ("ROLLING_WINDOW".equalsIgnoreCase(series.getRankingModel())) {
+                service.NumberOneHistory.Reign announcement = service.NumberOneHistory.announcement(
+                        service.NumberOneHistory.build(tournamentsList, partnerList, serverTourneyPoints,
+                                series.getPhaseSize()>0?series.getPhaseSize():3));
+                if (announcement!=null) {
+                    request.setAttribute("newNumberOneEligible", true);
+                    request.setAttribute("newNumberOneName", announcement.getTeamName());
+                }
+            }
 
             stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(seriesId);
         }

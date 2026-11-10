@@ -103,4 +103,19 @@ public final class NumberOneHistory {
         if(points==null || index<0 || index>=points.size() || points.get(index)==null)return 0;
         return points.get(index).getOrDefault(key,0);
     }
+
+    /** A change of leader is celebrated until the next completed tournament. */
+    public static Reign announcement(List<Leader> history) {
+        Reign latest=null, previous=null;
+        if (history==null) return null;
+        for (Leader leader:history) for (Reign reign:leader.reigns) {
+            if (latest==null || reign.ordinal>latest.ordinal) { previous=latest; latest=reign; }
+            else if (previous==null || reign.ordinal>previous.ordinal) previous=reign;
+        }
+        if (latest==null || previous==null || !latest.latest || latest.milestones!=1) return null;
+        boolean same = latest.getPartnerId()!=null && previous.getPartnerId()!=null
+                ? latest.getPartnerId().equalsIgnoreCase(previous.getPartnerId())
+                : latest.getTeamName().trim().equalsIgnoreCase(previous.getTeamName().trim());
+        return same?null:latest;
+    }
 }

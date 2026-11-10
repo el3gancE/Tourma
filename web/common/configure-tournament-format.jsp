@@ -1785,7 +1785,7 @@
                                 selectFormat(originalFormat);
 
                                 // Restore Multi Stage config if exists
-                                if (tournamentId && localStorage.getItem('tourma_multi_config_' + tournamentId)) {
+                                if (originalType === 'MULTI_STAGE' && tournamentId && localStorage.getItem('tourma_multi_config_' + tournamentId)) {
                                     try {
                                         var mCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tournamentId));
                                         if (mCfg) {

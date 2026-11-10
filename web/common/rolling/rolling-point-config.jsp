@@ -47,7 +47,7 @@
     boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType);
     String reqS1F = (String) request.getAttribute("stage1Format");
     String reqS2F = (String) request.getAttribute("stage2Format");
-    String s1Format = (reqS1F != null && !reqS1F.trim().isEmpty()) ? reqS1F.trim().toUpperCase() : "GROUP_STAGE";
+    String s1Format = (reqS1F != null && !reqS1F.trim().isEmpty()) ? reqS1F.trim().toUpperCase() : tourneyFormat;
     String s2Format = (reqS2F != null && !reqS2F.trim().isEmpty()) ? reqS2F.trim().toUpperCase() : "SINGLE_ELIMINATION";
 
     int cutTarget = (tournament != null && tournament.getAdvancingSeatsCount() > 1) ? tournament.getAdvancingSeatsCount() : 0;

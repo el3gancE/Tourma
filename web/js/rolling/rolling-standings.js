@@ -181,7 +181,9 @@
   // The initial table is already server-rendered. Refresh only when returning
   // from the browser back/forward cache or another page/tab.
   window.addEventListener('pageshow', function (event) {
-    if (event.persisted) triggerAutoUpdate();
+    // A back/forward-cache entry can retain a closed or expired announcement.
+    // Re-enter through the server so every opening uses current eligibility.
+    if (event.persisted) window.location.reload();
   });
   window.addEventListener('focus', triggerAutoUpdate);
   document.addEventListener('visibilitychange', function () {
