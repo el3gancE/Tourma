@@ -784,14 +784,15 @@ public class TournamentDAO {
         "        ELSE 0 END DESC, " +
         "   m.round_number DESC, m.match_order DESC) AS db_champion_name ";
 
-    // Aggregate the match table once instead of repeating four counts for every tournament.
+    // Aggregate only the selected tournament's matches. A global GROUP BY forced
+    // unrelated list/detail requests to compete for large SQL memory grants.
     public static final String TOURNAMENT_FROM_QUERY =
-        "FROM tournaments t LEFT JOIN (" +
-        "SELECT m.tournament_id, COUNT(*) AS total_matches, " +
+        "FROM tournaments t OUTER APPLY (" +
+        "SELECT COUNT(*) AS total_matches, " +
         "SUM(CASE WHEN m.status IN ('FINISHED','COMPLETED','DONE') OR m.winner_id IS NOT NULL OR (m.score1 IS NOT NULL AND m.score2 IS NOT NULL) THEN 1 ELSE 0 END) AS completed_matches, " +
         "SUM(CASE WHEN m.stage_id IS NULL OR ts.stage_order=1 THEN 1 ELSE 0 END) AS stage1_total_matches " +
         "FROM matches m LEFT JOIN tournament_stages ts ON ts.id=m.stage_id AND ts.tournament_id=m.tournament_id " +
-        "WHERE m.is_bye=0 OR m.is_bye IS NULL GROUP BY m.tournament_id) ms ON ms.tournament_id=t.id ";
+        "WHERE m.tournament_id=t.id AND (m.is_bye=0 OR m.is_bye IS NULL)) ms ";
 
     public Tournament mapTournamentFromResultSet(ResultSet rs) {
         try {

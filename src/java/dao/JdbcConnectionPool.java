@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /** Bounded leases, transaction cleanup and statement deadlines for every DAO. */
-public final class JdbcConnectionPool {
+public final class JdbcConnectionPool implements AutoCloseable {
     @FunctionalInterface
     public interface Factory { Connection open() throws SQLException; }
     private static final Logger LOG = Logger.getLogger(JdbcConnectionPool.class.getName());
@@ -19,6 +19,7 @@ public final class JdbcConnectionPool {
     private final BlockingQueue<Connection> idle;
     private final int capacity, querySeconds;
     private final long acquireMillis;
+    private final AtomicBoolean stopped = new AtomicBoolean();
 
     public JdbcConnectionPool(Factory factory, int capacity, long acquireMillis, int querySeconds) {
         if (capacity < 1 || acquireMillis < 1 || querySeconds < 1) throw new IllegalArgumentException("Invalid pool limits");
@@ -36,6 +37,7 @@ public final class JdbcConnectionPool {
     }
 
     public Connection borrow() throws SQLException {
+        if (stopped.get()) throw new SQLNonTransientConnectionException("Database pool is closed", "08003");
         try {
             if (!permits.tryAcquire(acquireMillis, TimeUnit.MILLISECONDS)) {
                 LOG.warning("DB pool exhausted: " + snapshot());
@@ -47,6 +49,7 @@ public final class JdbcConnectionPool {
         }
         Connection physical = null;
         try {
+            if (stopped.get()) throw new SQLNonTransientConnectionException("Database pool is closed", "08003");
             while ((physical = idle.poll()) != null) {
                 try { if (!physical.isClosed() && physical.isValid(2)) break; }
                 catch (SQLException ignored) { }
@@ -87,7 +90,9 @@ public final class JdbcConnectionPool {
                     if (!Objects.equals(physical.getCatalog(), catalog)) physical.setCatalog(catalog);
                     if (physical.isReadOnly() != readOnly) physical.setReadOnly(readOnly);
                     physical.clearWarnings();
-                    if (!reusable || physical.isClosed() || !idle.offer(physical)) dispose(physical);
+                    if (!reusable || physical.isClosed() || stopped.get() || !idle.offer(physical)) dispose(physical);
+                    // Shutdown can race with the offer above.
+                    else if (stopped.get() && idle.remove(physical)) dispose(physical);
                 } catch (SQLException e) {
                     dispose(physical);
                     LOG.warning("Discarded database connection after cleanup failure: " + e.getClass().getSimpleName());
@@ -154,5 +159,12 @@ public final class JdbcConnectionPool {
 
     private static void dispose(AutoCloseable value) {
         if (value != null) try { value.close(); } catch (Exception ignored) { }
+    }
+
+    @Override public void close() {
+        stopped.set(true);
+        Connection connection;
+        while ((connection = idle.poll()) != null) dispose(connection);
+        // In-flight leases are disposed when returned, rather than reused.
     }
 }

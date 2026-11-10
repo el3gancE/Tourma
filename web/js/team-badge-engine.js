@@ -862,7 +862,7 @@
     iconClass: 'fa-solid fa-gem',
     evaluate: function (teamName, context) {
       if (!teamName) return null;
-      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      var badges = (context && Array.isArray(context.phaseBadges)) ? context.phaseBadges : null;
       if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
         var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
         badges = [];
@@ -917,7 +917,7 @@
     iconClass: 'fa-solid fa-meteor',
     evaluate: function (teamName, context) {
       if (!teamName) return null;
-      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      var badges = (context && Array.isArray(context.phaseBadges)) ? context.phaseBadges : null;
       if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
         var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
         badges = [];
@@ -972,7 +972,7 @@
     iconClass: 'fa-solid fa-bolt-lightning',
     evaluate: function (teamName, context) {
       if (!teamName) return null;
-      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      var badges = (context && Array.isArray(context.phaseBadges)) ? context.phaseBadges : null;
       if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
         var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
         badges = [];
@@ -1027,7 +1027,7 @@
     iconClass: 'fa-solid fa-atom',
     evaluate: function (teamName, context) {
       if (!teamName) return null;
-      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      var badges = (context && Array.isArray(context.phaseBadges)) ? context.phaseBadges : null;
       if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
         var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
         badges = [];
@@ -1082,7 +1082,7 @@
     iconClass: 'fa-solid fa-sun',
     evaluate: function (teamName, context) {
       if (!teamName) return null;
-      var badges = (context && context.phaseBadges && context.phaseBadges.length > 0) ? context.phaseBadges : null;
+      var badges = (context && Array.isArray(context.phaseBadges)) ? context.phaseBadges : null;
       if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
         var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
         badges = [];

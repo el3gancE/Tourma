@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');
+const badges=require('../web/js/team-badge-engine.js');
+let calls=0;
+global.TourmaRollingStandingsEngine={getPhaseWinners(){calls++;return [];}};
+const base={subTournaments:[],tourneyPerformances:[],championTourneys:[],serverMode:true};
+let earned=badges.evaluateTeamBadges('Test',{...base,phaseBadges:[]});
+assert.equal(calls,0,'An authoritative empty badge list must not recalculate the Series');
+assert.equal(earned.some(b=>b.id.startsWith('PHASE_')),false);
+earned=badges.evaluateTeamBadges('Test',{...base,phaseBadges:[{phase:1,tourneyName:'Final',totalPts:123}]});
+assert.equal(calls,0);
+assert.equal(earned.some(b=>b.id==='PHASE_1_LEADER'),true);
+badges.evaluateTeamBadges('Test',base);
+assert.ok(calls>0,'Legacy callers without badge data retain the fallback');
+delete global.TourmaRollingStandingsEngine;
+console.log('PASS: empty/nonempty phase data avoids recalculation; legacy fallback preserved');

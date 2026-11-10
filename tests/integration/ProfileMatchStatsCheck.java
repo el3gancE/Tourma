@@ -30,6 +30,14 @@ public class ProfileMatchStatsCheck {
   expected.put("a",new int[]{1,1});expected.put("b",new int[]{1,2});expected.put("c",new int[]{1,0});expected.put("d",new int[]{0,0});expected.put("e",new int[]{0,0});
   if(!result.keySet().equals(expected.keySet()))throw new AssertionError("Missing draw-only participants");
   for(String key:expected.keySet())if(!Arrays.equals(result.get(key),expected.get(key)))throw new AssertionError("Incorrect wins/losses: "+key);
+  dao.MatchStatisticsDAO.clearCache();
+  cursor[0]=-1;
+  Map<String,int[]> cached=dao.MatchStatisticsDAO.get(conn,"cache-check");
+  if(dao.MatchStatisticsDAO.get(conn,"cache-check")!=cached)throw new AssertionError("Series cache missed");
+  service.RollingWindowPointService.clearAllCaches();
+  cursor[0]=-1;
+  if(dao.MatchStatisticsDAO.get(conn,"cache-check")==cached)throw new AssertionError("Score invalidation retained stale stats");
+  dao.MatchStatisticsDAO.clearCache();
   System.out.println("PASS: repeated opponents, either winner, draws and draw-only participants");
  }
 

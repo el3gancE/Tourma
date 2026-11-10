@@ -9,6 +9,7 @@
   'use strict';
 
   function calculateAndSyncTeamProfile() {
+    var initStarted = performance.now();
     var targetTeamName = (window.profileTeamName || '').trim();
     if (!targetTeamName) return;
 
@@ -158,6 +159,7 @@
         currentRank: prof.currentRank,
         highestRank: prof.highestRank,
         totalAccumulatedPoints: prof.totalAccumulatedPoints,
+        serverMode: Boolean(window.hasServerProfile),
         phaseBadges: prof.phaseBadges || [],
         phaseSize: window.seriesPhaseSize || 3
       });
@@ -205,6 +207,12 @@
       window.teamRankProgression = prof.rankProgression;
     }
     renderRankProgressionChart();
+    var navigation = performance.getEntriesByType('navigation')[0];
+    document.documentElement.dataset.profileTiming = JSON.stringify({
+      initMs: Math.round(performance.now() - initStarted), readyMs: Math.round(performance.now()),
+      ttfbMs: navigation ? Math.round(navigation.responseStart) : null,
+      htmlMs: navigation ? Math.round(navigation.responseEnd) : null
+    });
   }
 
   function profileColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }

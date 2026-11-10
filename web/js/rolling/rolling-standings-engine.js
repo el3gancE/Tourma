@@ -1860,6 +1860,8 @@
     var teamProfileStats = {};
 
     Object.keys(teamDataMap).forEach(function (k) {
+      // A profile needs detailed history for its selected team only.
+      if (options.profileTeamName && !isTeamSelf(teamDataMap[k].name, options.profileTeamName)) return;
       allTourneyPerformances[k] = [];
       allChampionTourneys[k] = [];
       var wins = 0, losses = 0, playedCount = 0, totalAccumPts = 0;
@@ -2042,7 +2044,8 @@
   }
 
   function getTeamProfile(teamName, options) {
-    var standingsRes = calculateSeriesStandings(options);
+    var profileOptions = Object.assign({}, options || {}, { profileTeamName: teamName });
+    var standingsRes = calculateSeriesStandings(profileOptions);
     if (!teamName || !standingsRes || !standingsRes.teamProfileStats) return null;
     var targetK = teamName.toLowerCase().trim();
     if (standingsRes.teamProfileStats[targetK]) {

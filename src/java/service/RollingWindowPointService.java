@@ -56,6 +56,7 @@ public class RollingWindowPointService {
     private static final java.util.Set<String> PRELOADED_SERIES = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public static void clearAllCaches() {
+        dao.MatchStatisticsDAO.clearCache();
         GLOBAL_PLACEMENTS_CACHE.clear();
         GLOBAL_TEAMS_CACHE.clear();
         STANDINGS_CACHE.clear();

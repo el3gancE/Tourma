@@ -29,6 +29,7 @@ public class DBContext {
     }
 
     public static String poolSnapshot() { return POOL.snapshot(); }
+    public static void closePool() { POOL.close(); }
 
     static {
         try {
