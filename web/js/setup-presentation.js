@@ -37,19 +37,31 @@
             var selected = Array.from(panel.querySelectorAll('.compact-format-select'))
                 .filter(function (input) { return input.closest('#singleStagePanel') ? document.getElementById('singleStagePanel').style.display !== 'none' : document.getElementById('multiStagePanel').style.display !== 'none'; })
                 .map(function (input) { return input.selectedOptions[0] ? input.selectedOptions[0].textContent.trim() : ''; });
-            summary.querySelector('.setup-settings-summary').textContent = selected.join(' → ');
+            var description = summary.querySelector('.setup-settings-summary');
+            var selectedText = selected.join(' → ');
+            if (description.textContent !== selectedText) description.textContent = selectedText;
             var target = Number(document.getElementById('targetTeamCount').value) || 0;
             var count = document.querySelectorAll('#subtourneyTeamsTable tbody tr.team-table-row, #teamsTableBody tr.team-table-row').length;
             var progress = document.getElementById('setupCopyProgress');
-            progress.textContent = target ? count + '/' + target + ' đội · ' + (count === target ? 'Đã đủ' : count < target ? 'Thiếu ' + (target - count) : 'Thừa ' + (count - target)) : count + ' đội';
+            var progressText = target ? count + '/' + target + ' đội · ' + (count === target ? 'Đã đủ' : count < target ? 'Thiếu ' + (target - count) : 'Thừa ' + (count - target)) : count + ' đội';
+            if (progress.textContent !== progressText) progress.textContent = progressText;
             progress.classList.toggle('is-complete', target > 0 && count === target);
         }
-        new MutationObserver(update).observe(banner, {attributes:true, attributeFilter:['style']});
-        panel.addEventListener('change', update);
+        var updatePending = false;
+        function scheduleUpdate() {
+            if (updatePending) return;
+            updatePending = true;
+            window.requestAnimationFrame(function () {
+                updatePending = false;
+                update();
+            });
+        }
+        new MutationObserver(scheduleUpdate).observe(banner, {attributes:true, attributeFilter:['style']});
+        panel.addEventListener('change', scheduleUpdate);
         var roster = document.querySelector('#subtourneyTeamsTable tbody, #teamsTableBody');
-        if (roster) new MutationObserver(update).observe(roster, {childList:true, subtree:true});
+        if (roster) new MutationObserver(scheduleUpdate).observe(roster, {childList:true, subtree:true});
         var controls = panel.querySelector('#configureFormatForm');
-        if (controls) new MutationObserver(update).observe(controls, {attributes:true, subtree:true, attributeFilter:['class','disabled']});
+        if (controls) new MutationObserver(scheduleUpdate).observe(controls, {attributes:true, subtree:true, attributeFilter:['class','disabled']});
         update();
     });
 })();

@@ -8,6 +8,9 @@
   'use strict';
 
   var dragSrcIndex = null;
+  // The setup page's Series snapshot does not change when its roster is edited.
+  // Keep Partner preparation off the initial render and reuse it between openings.
+  var preparedStandingsInputs = null;
 
   function handleDragStart(e) {
     dragSrcIndex = parseInt(this.getAttribute('data-index'), 10);
@@ -338,6 +341,11 @@
     if (items.length === 0) return;
 
     var curTid = (typeof window.currentSubTourneyId !== 'undefined' && window.currentSubTourneyId) ? window.currentSubTourneyId : getTourneyId();
+    var inputs = [modalList, window.seriesSubTournaments, window.seriesPartners,
+      window.seriesPhaseSize, window.serverTourneyPoints, window.serverTourneyParticipation, curTid];
+    if (preparedStandingsInputs && inputs.every(function (value, index) {
+      return value === preparedStandingsInputs[index];
+    })) return;
 
     // Extract partner list
     var partners = window.seriesPartners || [];
@@ -419,6 +427,7 @@
         // Physically append to modal container in new sorted order
         modalList.appendChild(item);
       });
+      preparedStandingsInputs = inputs;
     }
   };
 
@@ -799,7 +808,6 @@
     document.querySelectorAll('.partner-exclusion-input').forEach(function (cb) {
       cb.addEventListener('change', window.applyPartnerExclusions);
     });
-    window.applyPartnerExclusions();
     var tid = getSubtourneyId();
     if (tid) {
       if (window.targetTeamCount && window.targetTeamCount > 0) {
@@ -821,7 +829,9 @@
 
     window.initSubtourneyDragAndDrop();
     window.initHideSeedConfig();
-    window.calculateAndSyncModalStandings();
   });
+
+  // Other tabs can update cached results while this setup page stays open.
+  window.addEventListener('storage', function () { preparedStandingsInputs = null; });
 
 })();

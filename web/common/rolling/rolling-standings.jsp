@@ -99,6 +99,8 @@
 
         <main class="series-standings-main" data-ui-style="rolling-standings-jsp-001">
 
+            <jsp:include page="/common/component/new-number-one.jsp"><jsp:param name="viewSelector" value="#milestoneSelect"/></jsp:include>
+
             <!-- Full Standings Table Card -->
             <div class="team-list-card" data-phase-size="<%= phaseSize %>">
                 <div class="series-standings-toolbar" data-ui-style="rolling-standings-jsp-011">
@@ -376,6 +378,6 @@
         <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=20261110-performance"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=20261110-performance"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=20261110-performance"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings.js?v=20261110-performance"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings.js?v=20261110-announcement"></script>
     </body>
 </html>

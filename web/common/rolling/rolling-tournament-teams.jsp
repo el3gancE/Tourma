@@ -607,13 +607,13 @@
             };
         </script>
         <!-- Engine Algorithms for Realtime Series Standings Sync -->
-        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=20261110-setup-perf1"></script>
+        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=20261110-setup-perf1"></script>
+        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=20261110-setup-perf1"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=20261110-setup-perf1"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=20261110-setup-perf1"></script>
         <script src="${pageContext.request.contextPath}/js/standalone-format-layout.js?v=3"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/series-setup.js?v=1"></script>
-        <script src="${pageContext.request.contextPath}/js/setup-presentation.js?v=5-toolbar"></script>
+        <script src="${pageContext.request.contextPath}/js/setup-presentation.js?v=6-batched"></script>
     </body>
 </html>

@@ -1,4 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap');
+/* Celebration surfaces are intentionally more vivid than ordinary dialogs. */
+:root {
+    --ui-celebration-bg: #240e25;
+    --ui-celebration-ink: #ffffff;
+    --ui-celebration-glow-a: #e34483;
+    --ui-celebration-glow-b: #a34ce5;
+    --ui-celebration-glow-c: #f09a61;
+    --ui-celebration-backdrop: rgb(0 0 0 / 65%);
+}
+:root[data-accent="blue"], :root[data-theme="dark"]:not([data-accent]) {
+    --ui-celebration-bg: #0b1535;
+    --ui-celebration-glow-a: #2775ef;
+    --ui-celebration-glow-b: #a34ce5;
+    --ui-celebration-glow-c: #32c6ca;
+}
 /* Shared palette. Opt in by loading this sheet; blank pages remain unaffected. */
 :root {
     color-scheme: light;

@@ -1080,6 +1080,6 @@
         <script src="${pageContext.request.contextPath}/js/teams-presentation.js?v=2"></script>
         <script src="${pageContext.request.contextPath}/js/standalone-setup.js?v=1"></script>
         <script src="${pageContext.request.contextPath}/js/standalone-format-layout.js?v=3"></script>
-        <script src="${pageContext.request.contextPath}/js/setup-presentation.js?v=5-toolbar"></script>
+        <script src="${pageContext.request.contextPath}/js/setup-presentation.js?v=6-batched"></script>
     </body>
 </html>
