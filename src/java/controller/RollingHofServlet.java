@@ -120,6 +120,16 @@ public class RollingHofServlet extends HttpServlet {
 
             service.RollingWindowPointService rwps = service.RollingWindowPointService.getInstance();
             rwps.preloadSeriesData(seriesId);
+            if ("ROLLING_WINDOW".equalsIgnoreCase(series.getRankingModel())) {
+                List<service.NumberOneHistory.Leader> history = service.NumberOneHistory.build(
+                        tournamentsList, partnerList, rwps.getTourneyPointsPerTournament(seriesId),
+                        series.getPhaseSize()>0?series.getPhaseSize():3);
+                request.setAttribute("numberOneHistory", history);
+                List<service.NumberOneHistory.Reign> reigns = new ArrayList<>();
+                for (service.NumberOneHistory.Leader leader : history) reigns.addAll(leader.getReigns());
+                reigns.sort(java.util.Comparator.comparingInt(service.NumberOneHistory.Reign::getOrdinal).reversed());
+                request.setAttribute("numberOneReigns", reigns);
+            }
             Map<String, TeamChampionStatsDTO> statsMap = new HashMap<>();
             Map<String, Integer> teamCumulativeChamps = new HashMap<>();
 

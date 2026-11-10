@@ -131,3 +131,9 @@ Cài đặt hiển thị trên header có công tắc Màu phân biệt nhánh/n
 ## CSS màn cấu hình giải
 
 Màn Thể thức & đội tham gia của giải đơn và giải con Series dùng một stylesheet riêng: `web/css/tournament-setup.css`. Token, nền tảng, navigation và popup tiếp tục dùng stylesheet chung. Không nạp thêm CSS riêng cho phần format hoặc thêm đội ở hai màn này.
+
+## Bảng vàng dạng dashboard
+
+Bảng vàng đặt số liệu tổng quan, biểu đồ số mốc giữ #1 và các kỷ lục ở đầu trang; bảng danh hiệu, bộ lọc Tier và lịch sử chi tiết nằm phía dưới. Dùng `web/css/rolling/rolling-hof.css` và token/theme chung. Một mốc #1 là BXH tích lũy sau một giải đã hoàn tất.
+
+Ba bảng nhà vô địch, các giải và lịch sử #1 nằm trên một hàng ở desktop. Lịch sử #1 tách từng đợt liên tiếp, ghi từ giải đến giải; STT đánh từ đợt đầu nhưng hiển thị đợt mới nhất trước. Danh sách giải cũng hiển thị giải mới nhất trước. Mobile chuyển về một cột.
