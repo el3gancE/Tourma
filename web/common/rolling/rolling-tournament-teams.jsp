@@ -137,20 +137,13 @@
 
         <!-- Design System CSS, Standalone Configure Teams CSS & Dedicated Teams CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-teams.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-teams.css?v=20261024-partner-columns">
     <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-teams.css?v=22">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-teams.css?v=2">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-format.css?v=4">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/standalone-setup.css?v=20261107-redesign">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/setup-workbench.css?v=4-toolbar">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-setup.css?v=20261110-roster-v3">
 </head>
     <body class="ui-page workspace-page tournament-workspace series-page series-form-page subteams-page teams-page standalone-setup">
         <!-- Shared Navigation Header Component -->
@@ -207,17 +200,12 @@
             <div class="team-mgmt-grid">
 
                 <!-- LEFT COLUMN: BULK IMPORT WORKSPACE & PARTNER SELECTION -->
-                <div class="team-panel-card">
+                <div class="team-panel-card team-import-panel">
                     <div class="team-panel-header">
                         <div class="team-panel-title">
                             <i class="fa-solid fa-list-check text-mint"></i> Nhập danh sách đội
                         </div>
-                        <div data-ui-style="rolling-tournament-teams-jsp-010" style="display: flex;">
-                            <span class="count-badge" id="inputCountDisplay"><%= teamCount %> Đội</span>
-                            <button type="button" onclick="openPartnerSelectModal()" class="btn btn-mint" data-ui-style="rolling-tournament-teams-jsp-011">
-                                <i class="fa-solid fa-check-double"></i> Chọn Từ Partner (<%= partnerCount %>)
-                            </button>
-                        </div>
+                        <span class="count-badge" id="inputCountDisplay"><%= teamCount %> Đội</span>
                     </div>
 
                     <form id="bulkAddForm" method="POST" action="${pageContext.request.contextPath}/rolling/tournament-teams" data-ui-style="rolling-tournament-teams-jsp-012" style="display: flex;">
@@ -225,34 +213,40 @@
                         <input type="hidden" name="tournamentId" value="<%= tourneyId %>">
                         <input type="hidden" name="seriesId" value="<%= seriesIdVal %>">
 
+                        <div class="team-source-row">
+                            <span class="team-input-label">Mỗi đội một dòng</span>
+                            <button type="button" onclick="openPartnerSelectModal()" class="btn btn-secondary team-partner-action" data-ui-style="rolling-tournament-teams-jsp-011">
+                                <i class="fa-solid fa-users" aria-hidden="true"></i> Chọn từ Partner (<%= partnerCount %>)
+                            </button>
+                        </div>
                         <div class="bulk-input-container" data-ui-style="rolling-tournament-teams-jsp-013" style="display: flex;">
                             <textarea name="teamNamesText" id="teamTextarea" class="team-textarea-input" data-ui-style="rolling-tournament-teams-jsp-014"
-                                      placeholder="Nhập hoặc dán danh sách đội (mỗi đội một dòng)...&#10;Ví dụ:&#10;Hà Nội FC&#10;Hải Phòng FC&#10;Saigon Heat"></textarea>
+                                      aria-label="Danh sách đội, mỗi đội một dòng" placeholder="Hà Nội FC&#10;Hải Phòng FC&#10;Saigon Heat"></textarea>
                         </div>
 
                         <div class="input-actions-bar" data-ui-style="rolling-tournament-teams-jsp-015" style="display: flex;">
                             <button type="button" onclick="document.getElementById('teamTextarea').value=''" class="btn btn-secondary" data-ui-style="rolling-tournament-teams-jsp-016">
-                                <i class="fa-solid fa-rotate-left"></i> Xóa Hết
+                                <i class="fa-solid fa-rotate-left"></i> Xóa ô nhập
                             </button>
                             <button type="submit" class="btn btn-mint" data-ui-style="rolling-tournament-teams-jsp-017">
-                                <i class="fa-solid fa-plus"></i> Thêm Vào Danh Sách
+                                <i class="fa-solid fa-plus"></i> Thêm đội
                             </button>
                         </div>
                     </form>
                 </div>
 
                 <!-- RIGHT COLUMN: LIVE SEED & TEAM LIST MANAGEMENT -->
-                <div class="team-panel-card">
+                <div class="team-panel-card team-list-panel">
                     <div class="team-panel-header">
                         <div class="team-panel-title">
-                            <i class="fa-solid fa-ranking-star text-gold"></i> Quản lý hạt giống & phân cặp
+                            <i class="fa-solid fa-ranking-star text-gold"></i> Danh sách đội
                         </div>
                         <span class="count-badge" id="managedCountDisplay"><%= teamCount %> Đội</span>
                     </div>
 
                     <div class="manage-toolbar">
                         <div class="manage-toolbar-left" data-ui-style="rolling-tournament-teams-jsp-018" style="display: flex;">
-                            <span data-ui-style="rolling-tournament-teams-jsp-019">Giữ top:</span>
+                            <label for="lockTopSeedsInput" data-ui-style="rolling-tournament-teams-jsp-019">Giữ top</label>
                             <input type="number" id="lockTopSeedsInput" min="0" max="999"
                                    data-ui-style="rolling-tournament-teams-jsp-020"
                                    onfocus="this.select()" onchange="window.saveHideSeedConfig()" oninput="window.saveHideSeedConfig()">
@@ -276,7 +270,7 @@
                             </button>
                         </div>
                         <div class="manage-toolbar-right" data-ui-style="rolling-tournament-teams-jsp-025" style="display: flex;">
-                            <input type="text" class="form-control" placeholder="Tìm kiếm tên đội..." onkeyup="filterTournamentTeams(this.value)" data-ui-style="rolling-tournament-teams-jsp-026">
+                            <input type="text" class="form-control" aria-label="Tìm đội" placeholder="Tìm đội..." onkeyup="filterTournamentTeams(this.value)" data-ui-style="rolling-tournament-teams-jsp-026">
                             <button type="button" class="btn btn-secondary" data-ui-style="rolling-tournament-teams-jsp-027" onclick="deleteSelectedSubtourneyTeams()">
                                 Xóa đã chọn
                             </button>
@@ -334,8 +328,7 @@
                                         } else { %>
                                             <tr>
                                                 <td colspan="5" data-ui-style="rolling-tournament-teams-jsp-039">
-                                                    <i class="fa-solid fa-folder-open" data-ui-style="rolling-tournament-teams-jsp-040" style="display: block;"></i>
-                                                    Chưa có đội nào. Hãy nhập ở bảng bên trái hoặc chọn từ Partner!
+                                                    <div class="roster-empty-state"><span class="roster-empty-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span><strong>Chưa có đội tham gia</strong><p>Nhập danh sách hoặc chọn đội từ Partner.</p></div>
                                                 </td>
                                             </tr>
                                         <% } %>
@@ -346,7 +339,7 @@
                     </form>
 
                     <div data-ui-style="rolling-tournament-teams-jsp-041">
-                        <i class="fa-solid fa-hand-pointer text-mint"></i> Kéo thả từng hàng để thay đổi thứ tự Hạt Giống
+                        <i class="fa-solid fa-hand-pointer text-mint"></i> Kéo thả để đổi thứ tự hạt giống
                     </div>
                 </div>
 

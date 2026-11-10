@@ -17,8 +17,18 @@ public class DBContext {
     private static final String password = "123";
     private static final String URL = "jdbc:sqlserver://" + serverName + ":" + portNumber + ";databaseName=" + dbName + ";encrypt=true;trustServerCertificate=true;";
 
-    private static final int MAX_POOL_SIZE = 25;
-    private static final java.util.concurrent.BlockingQueue<Connection> POOL = new java.util.concurrent.ArrayBlockingQueue<>(MAX_POOL_SIZE);
+    private static final JdbcConnectionPool POOL = new JdbcConnectionPool(
+            DBContext::createPhysicalConnection,
+            positiveProperty("tourma.db.poolSize", 12),
+            positiveProperty("tourma.db.acquireTimeoutMs", 5000),
+            positiveProperty("tourma.db.queryTimeoutSeconds", 20));
+
+    private static int positiveProperty(String name, int fallback) {
+        int value = Integer.getInteger(name, fallback);
+        return value > 0 ? value : fallback;
+    }
+
+    public static String poolSnapshot() { return POOL.snapshot(); }
 
     static {
         try {
@@ -31,11 +41,14 @@ public class DBContext {
     private static volatile boolean schemaMigrated = false;
 
     private static Connection createPhysicalConnection() throws SQLException {
-        Connection conn = DriverManager.getConnection(URL, userID, password);
+        Connection conn = DriverManager.getConnection(URL
+                + "loginTimeout=" + positiveProperty("tourma.db.loginTimeoutSeconds", 5)
+                + ";socketTimeout=" + positiveProperty("tourma.db.socketTimeoutMs", 45000) + ";", userID, password);
         if (!schemaMigrated) {
             synchronized (DBContext.class) {
                 if (!schemaMigrated) {
                     try (java.sql.Statement st = conn.createStatement()) {
+                        st.setQueryTimeout(20);
                         st.executeUpdate("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tournaments') AND name = 'champion_name') " +
                                         "BEGIN ALTER TABLE tournaments ADD champion_name NVARCHAR(255) NULL; END");
                         st.executeUpdate("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'tournaments') AND name = 'teams_json') " +
@@ -53,65 +66,9 @@ public class DBContext {
     }
 
     public Connection getConnection() throws Exception {
-        Connection realConn = null;
-        while (!POOL.isEmpty()) {
-            Connection candidate = POOL.poll();
-            if (candidate != null) {
-                try {
-                    if (!candidate.isClosed()) {
-                        realConn = candidate;
-                        break;
-                    } else {
-                        try { candidate.close(); } catch (Exception ignore) {}
-                    }
-                } catch (Exception e) {
-                    try { candidate.close(); } catch (Exception ignore) {}
-                }
-            }
-        }
-
-        if (realConn == null) {
-            realConn = createPhysicalConnection();
-        }
-
-        final Connection underlying = realConn;
-        return (Connection) java.lang.reflect.Proxy.newProxyInstance(
-            Connection.class.getClassLoader(),
-            new Class<?>[]{Connection.class},
-            new java.lang.reflect.InvocationHandler() {
-                private boolean isClosed = false;
-
-                @Override
-                public Object invoke(Object proxy, java.lang.reflect.Method method, Object[] args) throws Throwable {
-                    String mName = method.getName();
-                    if ("close".equals(mName)) {
-                        if (!isClosed) {
-                            isClosed = true;
-                            try {
-                                if (!underlying.isClosed()) {
-                                    if (!underlying.getAutoCommit()) {
-                                        underlying.rollback();
-                                        underlying.setAutoCommit(true);
-                                    }
-                                    if (!POOL.offer(underlying)) {
-                                        underlying.close();
-                                    }
-                                }
-                            } catch (Exception ex) {
-                                try { underlying.close(); } catch (Exception ignore) {}
-                            }
-                        }
-                        return null;
-                    }
-                    if ("isClosed".equals(mName)) {
-                        return isClosed || underlying.isClosed();
-                    }
-                    return method.invoke(underlying, args);
-                }
-            }
-        );
+        return POOL.borrow();
     }
-    
+
     public void closeConnection(Connection con, PreparedStatement ps, ResultSet rs) throws SQLException {
         if (rs != null && !rs.isClosed()) {
             rs.close();

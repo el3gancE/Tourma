@@ -84,7 +84,6 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-format.css?v=4">
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -96,10 +95,8 @@
         <!-- Team workspace -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-teams.css?v=4">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/standalone-setup.css?v=20261107-redesign">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/setup-workbench.css?v=4-toolbar">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-setup.css?v=20261110-roster-v3">
 </head>
     <body class="ui-page workspace-page tournament-workspace teams-page standalone-setup">
         <!-- Include Shared Navigation Header Component -->
@@ -215,7 +212,7 @@
 
                                 <!-- SEEDING TABLE -->
                                 <div class="table-container">
-                                    <div id="teamsEmptyState" class="teams-empty" hidden>Chưa có đội. Nhập danh sách ở ô bên cạnh rồi chọn “Thêm đội”.</div>
+                                    <div id="teamsEmptyState" class="teams-empty" hidden><span class="roster-empty-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span><strong>Chưa có đội tham gia</strong><p>Nhập danh sách rồi chọn “Thêm đội”.</p></div>
                                     <div class="table-scroll-wrapper" tabindex="0" role="region" aria-label="Danh sách đội có thể cuộn">
                                         <table class="table" id="teamsTable" aria-label="Danh sách đội và thứ tự hạt giống">
                                             <thead>

@@ -55,11 +55,11 @@
         <!-- Main Design System CSS, Sidebar CSS, Dedicated Team Profile CSS & Badges CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=20261110-performance">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=20261110-performance">
 
         <!-- Chart.js for Rank Progression Chart -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script id="profile-chart-library" async src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
@@ -490,9 +490,9 @@
             window.seriesIdVal = "<%= (series != null && series.getId() != null) ? series.getId() : "" %>";
         </script>
         <!-- Rolling Standings Engine, Modular Team Badge Engine & Unified Profile Stats Script -->
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/team-badge-engine.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/team-profile.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=20261110-performance"></script>
+        <script src="${pageContext.request.contextPath}/js/team-badge-engine.js?v=20261110-performance"></script>
+        <script src="${pageContext.request.contextPath}/js/team-profile.js?v=20261110-performance"></script>
         <script src="${pageContext.request.contextPath}/js/team-profile-history.js?v=2"></script>
     </body>
 </html>

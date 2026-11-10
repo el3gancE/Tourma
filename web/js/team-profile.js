@@ -478,6 +478,13 @@
   }
 
   // Auto-run on DOM ready
+  var chartLibrary = document.getElementById('profile-chart-library');
+  if (chartLibrary) {
+    chartLibrary.addEventListener('load', function () {
+      if (document.readyState !== 'loading' && !currentChartInstance) renderRankProgressionChart();
+    });
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', calculateAndSyncTeamProfile);
   } else {

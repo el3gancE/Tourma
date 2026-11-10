@@ -688,8 +688,9 @@ public class TeamProfileServlet extends HttpServlet {
 
     /** Aggregate persisted results across all stages; draws count as neither wins nor losses. */
     static Map<String, int[]> loadMatchStats(Connection conn, String seriesId) throws java.sql.SQLException {
-        String sql = "WITH results AS ("
-                + "SELECT m.team1_id, m.team2_id, CASE "
+        // Stream each match once. SQL aggregation/hash joins required a memory grant
+        // and stalled profile requests under server memory pressure.
+        String sql = "SELECT m.team1_id, m.team2_id, CASE "
                 + "WHEN m.winner_id IN (m.team1_id, m.team2_id) THEN m.winner_id "
                 + "WHEN m.winner_id IS NULL THEN CASE "
                 + "WHEN m.score1 > m.score2 THEN m.team1_id WHEN m.score2 > m.score1 THEN m.team2_id "
@@ -700,17 +701,22 @@ public class TeamProfileServlet extends HttpServlet {
                 + "JOIN teams b ON b.id = m.team2_id AND b.tournament_id = m.tournament_id "
                 + "WHERE t.series_id = ? AND ISNULL(m.is_bye, 0) = 0 AND m.team1_id <> m.team2_id "
                 + "AND UPPER(m.status) IN ('FINISHED', 'COMPLETED', 'DONE') "
-                + "AND m.score1 >= 0 AND m.score2 >= 0), appearances AS ("
-                + "SELECT team1_id AS team_id, winner_id FROM results UNION ALL "
-                + "SELECT team2_id, winner_id FROM results) "
-                + "SELECT team_id, SUM(CASE WHEN winner_id = team_id THEN 1 ELSE 0 END) AS wins, "
-                + "SUM(CASE WHEN winner_id IS NOT NULL AND winner_id <> team_id THEN 1 ELSE 0 END) AS losses "
-                + "FROM appearances GROUP BY team_id";
+                + "AND m.score1 >= 0 AND m.score2 >= 0 OPTION (LOOP JOIN, MAXDOP 1)";
         Map<String, int[]> stats = new HashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, seriesId);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) stats.put(rs.getString("team_id"), new int[]{rs.getInt("wins"), rs.getInt("losses")});
+                while (rs.next()) {
+                    String first = rs.getString("team1_id");
+                    String second = rs.getString("team2_id");
+                    String winner = rs.getString("winner_id");
+                    int[] firstStats = stats.computeIfAbsent(first, key -> new int[2]);
+                    int[] secondStats = stats.computeIfAbsent(second, key -> new int[2]);
+                    if (winner != null) {
+                        firstStats[winner.equals(first) ? 0 : 1]++;
+                        secondStats[winner.equals(second) ? 0 : 1]++;
+                    }
+                }
             }
         }
         return stats;
