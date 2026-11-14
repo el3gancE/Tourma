@@ -11,6 +11,60 @@
   // The setup page's Series snapshot does not change when its roster is edited.
   // Keep Partner preparation off the initial render and reuse it between openings.
   var preparedStandingsInputs = null;
+  var partnerPickerRequest;
+
+  function loadPartnerPicker() {
+    var host = document.getElementById('partnerPickerHost');
+    if (!host) return Promise.reject(new Error('Thiếu vùng hiển thị Partner.'));
+    if (!partnerPickerRequest) {
+      var url = new URL(window.location.href);
+      url.search = new URLSearchParams({id: getTourneyId(), view: 'partner-picker'});
+      partnerPickerRequest = fetch(url).then(function (response) {
+        if (!response.ok) throw new Error('Không tải được danh sách Partner.');
+        return response.text();
+      }).then(function (html) {
+        var fragment = document.createElement('template');
+        fragment.innerHTML = html;
+        var data = JSON.parse(fragment.content.querySelector('#partnerStandingsData').textContent);
+        fragment.content.querySelector('#partnerStandingsData').remove();
+        data.seriesSubTournaments.forEach(function (tournament) {
+          try { tournament.pointsConfig = JSON.parse(tournament.pointsConfig) || {}; }
+          catch (error) { tournament.pointsConfig = {}; }
+        });
+        Object.assign(window, data);
+        host.replaceChildren(fragment.content);
+        host.querySelectorAll('.partner-exclusion-input').forEach(function (checkbox) {
+          checkbox.addEventListener('change', window.applyPartnerExclusions);
+        });
+      }).catch(function (error) {
+        partnerPickerRequest = null;
+        throw error;
+      });
+    }
+    return partnerPickerRequest;
+  }
+
+  async function withPartnerPicker(button, action) {
+    var label;
+    if (button) {
+      label = button.innerHTML;
+      button.textContent = 'Đang tải…';
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+    }
+    try {
+      await loadPartnerPicker();
+      action();
+    } catch (error) {
+      alert('Không tải được danh sách Partner. Vui lòng thử lại.');
+    } finally {
+      if (button) {
+        button.innerHTML = label;
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+      }
+    }
+  }
 
   function handleDragStart(e) {
     dragSrcIndex = parseInt(this.getAttribute('data-index'), 10);
@@ -434,7 +488,11 @@
   /**
    * Sort the current tournament teams in the seeding table by overall Rolling Standings
    */
-  window.sortByRollingStandings = function () {
+  window.sortByRollingStandings = function (button) {
+    return withPartnerPicker(button, sortByRollingStandings);
+  };
+
+  function sortByRollingStandings() {
     var tbody = document.querySelector('#subtourneyTeamsTable tbody');
     if (!tbody) return;
 
@@ -481,7 +539,7 @@
     });
 
     reindexSubtourneyRows();
-  };
+  }
 
   window.applyPartnerExclusions = function () {
     var selected = new Set(Array.from(document.querySelectorAll('.partner-exclusion-input:checked')).map(function (cb) { return cb.value; }));
@@ -508,7 +566,11 @@
     if (input) input.max = available;
   };
 
-  window.openPartnerSelectModal = function () {
+  window.openPartnerSelectModal = function (button) {
+    return withPartnerPicker(button, showPartnerPicker);
+  };
+
+  function showPartnerPicker() {
     window.calculateAndSyncModalStandings();
     window.applyPartnerExclusions();
     // Copying configuration updates the editor without reloading this page.
@@ -518,7 +580,7 @@
     if (countInput && targetCount > 0) countInput.value = targetCount;
     var modal = document.getElementById('partnerSelectModal');
     if (modal) modal.style.display = 'flex';
-  };
+  }
 
   window.closePartnerSelectModal = function () {
     var modal = document.getElementById('partnerSelectModal');
@@ -805,9 +867,6 @@
   };
 
   document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.partner-exclusion-input').forEach(function (cb) {
-      cb.addEventListener('change', window.applyPartnerExclusions);
-    });
     var tid = getSubtourneyId();
     if (tid) {
       if (window.targetTeamCount && window.targetTeamCount > 0) {

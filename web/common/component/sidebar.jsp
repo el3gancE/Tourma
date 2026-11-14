@@ -39,7 +39,10 @@
     if (!tournamentId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
-            currentTournament = tDao.getTournamentById(tournamentId);
+            currentTournament = (Tournament) request.getAttribute("setupTournament");
+            if (currentTournament == null || !tournamentId.equals(currentTournament.getId())) {
+                currentTournament = tDao.getTournamentById(tournamentId);
+            }
             if (currentTournament != null) {
                 if (currentTournament.getName() != null) tournamentName = currentTournament.getName();
                 if (currentTournament.getFormat() != null) format = currentTournament.getFormat();
@@ -59,13 +62,16 @@
     }
 
     Series currentSeries = null;
-    List<Tournament> subTourneys = null;
+    int subTourneyCount = 0;
     if (!seriesId.trim().isEmpty()) {
         try {
             SeriesDAO sDao = new SeriesDAO();
-            currentSeries = sDao.getSeriesById(seriesId.trim());
+            Series setupSeries = (Series) request.getAttribute("setupSeries");
+            boolean setupPage = setupSeries != null && seriesId.trim().equals(setupSeries.getId());
+            currentSeries = setupPage ? setupSeries : sDao.getSeriesById(seriesId.trim());
             if (currentSeries != null) {
-                subTourneys = sDao.getTournamentsBySeriesId(currentSeries.getId());
+                subTourneyCount = setupPage ? sDao.countTournamentsBySeriesId(currentSeries.getId())
+                        : sDao.getTournamentsBySeriesId(currentSeries.getId()).size();
             }
         } catch (Exception e) {}
     }
@@ -163,7 +169,7 @@
             <a href="${pageContext.request.contextPath}/rolling/tournament-list?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "tournament-list".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid fa-trophy menu-icon text-gold"></i>
-                <span>Danh Sách Giải Con (<%= subTourneys != null ? subTourneys.size() : 0 %>)</span>
+                <span>Danh Sách Giải Con (<%= subTourneyCount %>)</span>
             </a>
         </li>
     </ul>

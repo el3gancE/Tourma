@@ -5,11 +5,13 @@
 <%
     String tournamentId = request.getParameter("id");
     String seriesIdParam = request.getParameter("seriesId");
+    model.Tournament setupTournament = null;
     if (seriesIdParam == null || seriesIdParam.trim().isEmpty()) {
         if (tournamentId != null && !tournamentId.trim().isEmpty()) {
             try {
                 dao.TournamentDAO tDaoCheck = new dao.TournamentDAO();
-                model.Tournament tObj = tDaoCheck.getTournamentById(tournamentId);
+                model.Tournament tObj = tDaoCheck.getTournamentById(tournamentId, false);
+                setupTournament = tObj;
                 if (tObj != null && tObj.getSeriesId() != null && !tObj.getSeriesId().trim().isEmpty()) {
                     seriesIdParam = tObj.getSeriesId();
                 }
@@ -46,26 +48,27 @@
                     response.sendError(409, "Không lưu được cấu hình. Stage đã có trận không thể đổi cấu trúc.");
                     return;
                 }
+                setupTournament = null;
             } else if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
                 tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
+                setupTournament = null;
             }
             String copiedFromParam = request.getParameter("copiedFrom");
             if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()) {
                 tDao.copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim(), request.getParameter("multiConfig") == null);
+                setupTournament = null;
             }
         } catch (Exception ignore) {}
         ParticipantDAO pDao = new ParticipantDAO();
         existingTeams = pDao.getTeamsByTournamentId(tournamentId);
-        if (tourneyFormat == null || tourneyFormat.trim().isEmpty()) {
-            try {
-                dao.TournamentDAO tDao = new dao.TournamentDAO();
-                model.Tournament t = tDao.getTournamentById(tournamentId);
-                if (t != null && t.getFormat() != null) {
-                    tourneyFormat = t.getFormat();
-                }
-            } catch(Exception e) {}
+        if (setupTournament == null) {
+            setupTournament = new dao.TournamentDAO().getTournamentById(tournamentId, false);
+        }
+        if (setupTournament != null && (tourneyFormat == null || tourneyFormat.trim().isEmpty())) {
+            tourneyFormat = setupTournament.getFormat();
         }
     }
+    request.setAttribute("setupTournament", setupTournament);
     String initialDrawFormat = tournamentId == null ? tourneyFormat : new dao.TournamentDAO().getStage1Format(tournamentId);
     if (initialDrawFormat == null || initialDrawFormat.trim().isEmpty()) initialDrawFormat = stage1FormatParam != null ? stage1FormatParam : tourneyFormat;
 %>

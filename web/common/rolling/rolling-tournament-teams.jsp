@@ -1,40 +1,14 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="model.Series, model.Tournament, model.Team, model.PartnerParticipant, model.SeriesStanding, service.RollingWindowPointService.RollingStandingDTO, java.util.List, java.util.ArrayList, java.util.Map, java.util.HashMap"%>
-<%!
-    private String partnerAttr(String value) {
-        return value == null ? "" : value.replace("&", "&amp;").replace("\"", "&quot;")
-                .replace("<", "&lt;").replace(">", "&gt;").replace("'", "&#39;");
-    }
-%>
+<%@page import="model.Series, model.Tournament, model.Team, java.util.List"%>
 <%
-    Map<String, List<Team>> seriesTournamentTeams = (Map<String, List<Team>>) request.getAttribute("seriesTournamentTeams");
-    if (seriesTournamentTeams == null) seriesTournamentTeams = java.util.Collections.emptyMap();
     Tournament tournament = (Tournament) request.getAttribute("tournament");
     Series series = (Series) request.getAttribute("series");
     List<Team> currentTeams = (List<Team>) request.getAttribute("currentTeams");
-    List<PartnerParticipant> partnerList = (List<PartnerParticipant>) request.getAttribute("partnerList");
-    List<SeriesStanding> standingsList = (List<SeriesStanding>) request.getAttribute("standingsList");
-    List<RollingStandingDTO> standingsDTOList = (List<RollingStandingDTO>) request.getAttribute("standingsDTOList");
-    List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
-    if (tournamentsList != null && tournamentsList.size() > 1) {
-        tournamentsList = new java.util.ArrayList<>(tournamentsList);
-        tournamentsList.sort((a, b) -> {
-            int idxA = a.getTournamentIndexInSeries();
-            int idxB = b.getTournamentIndexInSeries();
-            if (idxA != idxB) return Integer.compare(idxA, idxB);
-            if (a.getCreatedAt() != null && b.getCreatedAt() != null) return a.getCreatedAt().compareTo(b.getCreatedAt());
-            return 0;
-        });
-    }
-
     String tourneyId = (tournament != null) ? tournament.getId() : "";
     String tourneyName = (tournament != null) ? tournament.getName() : "Giải Đấu Con";
     String seriesIdVal = (series != null && series.getId() != null) ? series.getId() : "";
-    String seriesName = (series != null) ? series.getName() : "Series";
     String tourneyFormat = (tournament != null && tournament.getFormat() != null) ? tournament.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
     int teamCount = (currentTeams != null) ? currentTeams.size() : 0;
-    int partnerCount = (partnerList != null) ? partnerList.size() : 0;
-    int phaseSize = (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3;
 
     String targetTeamCountParam = request.getParameter("targetTeamCount");
     String copiedSourceTourneyNameParam = request.getParameter("copiedSourceTourneyName");
@@ -56,70 +30,6 @@
     }
     String nextStepLabel = "Tiếp theo";
 
-    // Order partnerList by Series Rolling Standings rank (Rank 1, 2, 3...)
-    List<PartnerParticipant> orderedPartners = new ArrayList<>();
-    Map<String, Integer> partnerRankMap = new HashMap<>();
-    Map<String, Integer> partnerPointsMap = new HashMap<>();
-    java.util.Set<String> addedPartnerIds = new java.util.HashSet<>();
-
-    if (standingsDTOList != null && !standingsDTOList.isEmpty()) {
-        for (RollingStandingDTO dto : standingsDTOList) {
-            String tName = dto.getTeamName();
-            int r = dto.getRank();
-            int pts = dto.getTotalActivePoints();
-            if (tName != null) {
-                String key = tName.trim().toLowerCase();
-                partnerRankMap.put(key, r);
-                partnerPointsMap.put(key, pts);
-                if (partnerList != null) {
-                    for (PartnerParticipant p : partnerList) {
-                        if (p.getId() != null && !addedPartnerIds.contains(p.getId())) {
-                            if ((dto.getPartnerParticipantId() != null && dto.getPartnerParticipantId().equals(p.getId()))
-                                    || (p.getName() != null && p.getName().trim().equalsIgnoreCase(tName.trim()))) {
-                                orderedPartners.add(p);
-                                addedPartnerIds.add(p.getId());
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } else if (standingsList != null && !standingsList.isEmpty()) {
-        for (int r = 0; r < standingsList.size(); r++) {
-            SeriesStanding st = standingsList.get(r);
-            if (st.getNormalizedTeamName() != null) {
-                String key = st.getNormalizedTeamName().trim().toLowerCase();
-                partnerRankMap.put(key, r + 1);
-                partnerPointsMap.put(key, st.getTotalRollingPoints());
-                if (partnerList != null) {
-                    for (PartnerParticipant p : partnerList) {
-                        if (p.getId() != null && !addedPartnerIds.contains(p.getId())) {
-                            if (p.getName() != null && p.getName().trim().equalsIgnoreCase(st.getNormalizedTeamName().trim())) {
-                                orderedPartners.add(p);
-                                addedPartnerIds.add(p.getId());
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (partnerList != null) {
-        for (PartnerParticipant p : partnerList) {
-            if (p.getId() != null && !addedPartnerIds.contains(p.getId())) {
-                orderedPartners.add(p);
-                addedPartnerIds.add(p.getId());
-                String key = (p.getName() != null) ? p.getName().trim().toLowerCase() : "";
-                if (!partnerRankMap.containsKey(key)) {
-                    partnerRankMap.put(key, orderedPartners.size());
-                    partnerPointsMap.put(key, 0);
-                }
-            }
-        }
-    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -215,8 +125,8 @@
 
                         <div class="team-source-row">
                             <span class="team-input-label">Mỗi đội một dòng</span>
-                            <button type="button" onclick="openPartnerSelectModal()" class="btn btn-secondary team-partner-action" data-ui-style="rolling-tournament-teams-jsp-011">
-                                <i class="fa-solid fa-users" aria-hidden="true"></i> Chọn từ Partner (<%= partnerCount %>)
+                            <button type="button" onclick="openPartnerSelectModal(this)" class="btn btn-secondary team-partner-action" data-ui-style="rolling-tournament-teams-jsp-011">
+                                <i class="fa-solid fa-users" aria-hidden="true"></i> Chọn từ Partner
                             </button>
                         </div>
                         <div class="bulk-input-container" data-ui-style="rolling-tournament-teams-jsp-013" style="display: flex;">
@@ -263,7 +173,7 @@
                                             Classic draw
                                         </label>
                                         <% } %>
-                            <button type="button" class="btn btn-secondary" onclick="window.sortByRollingStandings()"
+                            <button type="button" class="btn btn-secondary" onclick="window.sortByRollingStandings(this)"
                                     data-ui-style="rolling-tournament-teams-jsp-024"
                                     title="Sắp xếp danh sách đội tham gia theo Bảng Xếp Hạng tổng sau giải gần nhất">
                                 <i class="fa-solid fa-arrow-down-wide-short"></i> Xếp theo BXH
@@ -365,255 +275,19 @@
 
         </main></div>
 
-        <!-- MODAL: SELECT QUICKLY FROM PARTNER TEAMS ORDERED BY STANDINGS -->
-        <div id="partnerSelectModal" class="team-modal-overlay" style="display: none;">
-            <div class="team-modal-card partner-select-card">
-                <div data-ui-style="rolling-tournament-teams-jsp-046" style="display: flex;">
-                    <h3 data-ui-style="rolling-tournament-teams-jsp-047">
-                        <i class="fa-solid fa-check-double text-mint"></i> Chọn Đội Partner Trong Series
-                    </h3>
-                    <button type="button" onclick="closePartnerSelectModal()" data-ui-style="rolling-tournament-teams-jsp-048">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>
-
-                <p data-ui-style="rolling-tournament-teams-jsp-049">
-                    Tích chọn các đội Partner chính thức của Series <strong><%= seriesName %></strong> để đưa vào giải con này:
-                </p>
-
-                <form id="partnerSelectForm" method="POST" action="${pageContext.request.contextPath}/rolling/tournament-teams">
-                    <input type="hidden" name="action" value="addPartnerTeams">
-                    <input type="hidden" name="tournamentId" value="<%= tourneyId %>">
-                    <input type="hidden" name="seriesId" value="<%= seriesIdVal %>">
-
-                <div class="partner-selection-columns">
-                <section class="partner-selection-teams" aria-labelledby="partnerSelectionTitle">
-                    <h4 id="partnerSelectionTitle">Chọn đội Partner</h4>
-                <!-- QUICK SELECTION TOOLBAR -->
-                <div data-ui-style="rolling-tournament-teams-jsp-050">
-                    <div data-ui-style="rolling-tournament-teams-jsp-051" style="display: flex;">
-                        <div data-ui-style="rolling-tournament-teams-jsp-052" style="display: flex;">
-                            <span data-ui-style="rolling-tournament-teams-jsp-053">Số đội chọn:</span>
-                            <input type="number" id="quickSelectNum" value="<%= (targetTeamCountVal > 0) ? String.valueOf(targetTeamCountVal) : "" %>" min="2" max="<%= partnerCount %>" oninput="this.value = this.value.replace(/^0+(?=\d)/, '')" class="form-control" data-ui-style="rolling-tournament-teams-jsp-054">
-                        </div>
-                        <div data-ui-style="rolling-tournament-teams-jsp-055" style="display: flex;">
-                            <button type="button" onclick="quickSelectTeams('TOP')" class="btn btn-mint" data-ui-style="rolling-tournament-teams-jsp-056">
-                                <i class="fa-solid fa-arrow-trend-up"></i> Top Đầu
-                            </button>
-                            <button type="button" onclick="quickSelectTeams('BOTTOM')" class="btn" data-ui-style="rolling-tournament-teams-jsp-057">
-                                <i class="fa-solid fa-arrow-trend-down"></i> Top Cuối
-                            </button>
-                            <button type="button" onclick="quickSelectTeams('RANDOM')" class="btn" data-ui-style="rolling-tournament-teams-jsp-058">
-                                <i class="fa-solid fa-shuffle"></i> Ngẫu Nhiên
-                            </button>
-                        </div>
-                    </div>
-                    <div data-ui-style="rolling-tournament-teams-jsp-059" style="display: flex;">
-                        <span>Chọn theo BXH hoặc tích thủ công (Tổng: <%= partnerCount %> đội)</span>
-                        <div>
-                            <button type="button" onclick="selectAllPartnerCheckboxes(true)" data-ui-style="rolling-tournament-teams-jsp-060">Chọn tất cả</button>
-                            <button type="button" onclick="selectAllPartnerCheckboxes(false)" data-ui-style="rolling-tournament-teams-jsp-061">Bỏ chọn</button>
-                        </div>
-                    </div>
-                </div>
-
-                    <!-- SINGLE COLUMN VERTICAL LIST - ORDERED BY ROLLING STANDINGS -->
-                    <div class="partner-checkbox-list" id="partnerModalCheckboxList">
-                        <% if (orderedPartners != null && !orderedPartners.isEmpty()) {
-                            for (int pIdx = 0; pIdx < orderedPartners.size(); pIdx++) {
-                                PartnerParticipant p = orderedPartners.get(pIdx);
-                                String pKey = (p.getName() != null) ? p.getName().trim().toLowerCase() : "";
-                                int pRank = partnerRankMap.containsKey(pKey) ? partnerRankMap.get(pKey) : (pIdx + 1);
-                                int pPts = partnerPointsMap.containsKey(pKey) ? partnerPointsMap.get(pKey) : 0;
-
-                                List<String> playedTournaments = new ArrayList<>();
-                                for (Map.Entry<String, List<Team>> played : seriesTournamentTeams.entrySet()) {
-                                    for (Team member : played.getValue()) {
-                                        if (member.getRawName() != null && member.getRawName().trim().equalsIgnoreCase(p.getName().trim())) {
-                                            playedTournaments.add(played.getKey());
-                                            break;
-                                        }
-                                    }
-                                }
-                                boolean isAlreadyIn = false;
-                                if (currentTeams != null) {
-                                    for (Team ct : currentTeams) {
-                                        if (ct.getRawName() != null && ct.getRawName().equalsIgnoreCase(p.getName())) {
-                                            isAlreadyIn = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                        %>
-                            <label class="partner-checkbox-item" data-played-tournaments="<%= partnerAttr(String.join(" ", playedTournaments)) %>" data-already-in="<%= isAlreadyIn %>" data-index="<%= pIdx %>" data-team-name="<%= p.getName() != null ? p.getName() : "" %>" data-rank="<%= pRank %>" data-points="<%= pPts %>" data-ui-style="rolling-tournament-teams-jsp-062" style="display: flex;">
-                                <div data-ui-style="rolling-tournament-teams-jsp-063" style="display: flex;">
-                                    <input type="checkbox" name="selectedTeamNames" value="<%= p.getName() %>" class="partner-cb-input" data-index="<%= pIdx %>" <%= isAlreadyIn ? "checked disabled" : "" %>>
-                                    <span class="rank-badge rank-<%= pRank %>" data-ui-style="rolling-tournament-teams-jsp-064" style="display: inline-flex; color: <%= (pRank == 1) ? "#fbbf24" : (pRank == 2 ? "#e2e8f0" : (pRank == 3 ? "#f97316" : "#cbd5e1")) %>; border: 1px solid <%= (pRank == 1) ? "rgba(251,191,36,0.3)" : (pRank == 2 ? "rgba(226,232,240,0.2)" : (pRank == 3 ? "rgba(249,115,22,0.3)" : "rgba(255,255,255,0.1)")) %>;">#<%= pRank %></span>
-                                    <span data-ui-style="rolling-tournament-teams-jsp-065" style="color: <%= isAlreadyIn ? "var(--ui-muted)" : "var(--ui-text)" %>;">
-                                        <%= p.getName() %> <%= isAlreadyIn ? "<span style='font-size: 0.75rem; font-weight: 500; color: var(--ui-muted); margin-left: 0.35rem;'>(Đã thêm)</span>" : "" %>
-                                    </span>
-                                    <small class="partner-excluded-label" hidden>Đã tham gia giải loại trừ</small>
-                                </div>
-                                <div data-ui-style="rolling-tournament-teams-jsp-066">
-                                    <%= pPts %> pts
-                                </div>
-                            </label>
-                        <% }
-                        } else { %>
-                            <div data-ui-style="rolling-tournament-teams-jsp-067">
-                                Chưa có đội Partner nào trong Series.
-                            </div>
-                        <% } %>
-                    </div>
-
-                </section>
-                <aside class="partner-exclusion-filter" aria-labelledby="partnerExclusionTitle">
-                    <h4 id="partnerExclusionTitle">Không chọn đội từ… <span id="partnerExclusionCount">0 giải</span></h4>
-                    <p>Các đội có mặt trong bất kỳ giải nào được chọn sẽ bị khóa chọn.</p>
-                    <div class="partner-exclusion-tournaments">
-                        <% int exclusionOptions = 0;
-                           if (tournamentsList != null) for (int exclusionIndex = tournamentsList.size() - 1; exclusionIndex >= 0; exclusionIndex--) {
-                               Tournament other = tournamentsList.get(exclusionIndex);
-                               if (other == null || tourneyId.equals(other.getId()) || !seriesIdVal.equals(other.getSeriesId())) continue;
-                               exclusionOptions++;
-                        %>
-                        <label>
-                            <input type="checkbox" class="partner-exclusion-input" name="excludedTournamentIds"
-                                   form="partnerSelectForm" value="<%= partnerAttr(other.getId()) %>">
-                            <span><%= partnerAttr(other.getName()) %></span>
-                            <small>#<%= other.getTournamentIndexInSeries() %></small>
-                        </label>
-                        <% } if (exclusionOptions == 0) { %>
-                        <p>Chưa có giải con khác trong Series.</p>
-                        <% } %>
-                    </div>
-                <div id="partnerExclusionHint" class="partner-exclusion-hint" aria-live="polite"></div>
-                </aside>
-
-                </div>
-                    <div class="partner-selection-footer">
-                        <button type="button" onclick="closePartnerSelectModal()" class="btn btn-secondary">Hủy Bỏ</button>
-                        <button type="submit" class="btn btn-mint" data-ui-style="rolling-tournament-teams-jsp-068">
-                            Thêm Đội Đã Chọn VÀO Giải Con
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
+        <div id="partnerPickerHost"></div>
         <script>
             window.currentSubTourneyId = "<%= tourneyId %>";
             window.seriesIdVal = "<%= seriesIdVal %>";
             window.appContextPath = "${pageContext.request.contextPath}";
             window.targetTeamCount = <%= targetTeamCountVal %>;
             window.copiedSourceTourneyName = "<%= (copiedSourceTourneyNameParam != null) ? copiedSourceTourneyNameParam.replace("\\", "\\\\").replace("\"", "\\\"") : "" %>";
-            window.seriesSubTournaments = [
-                <% if (tournamentsList != null) {
-                    for (int i = 0; i < tournamentsList.size(); i++) {
-                        Tournament t = tournamentsList.get(i);
-                        String rawCfg = (t != null) ? t.getSeriesPointsConfig() : null;
-                        String cfgJson = "{}";
-                        if (rawCfg != null && rawCfg.trim().startsWith("{") && rawCfg.trim().endsWith("}")) {
-                            cfgJson = rawCfg.trim();
-                        }
-                        String safeName = (t != null && t.getName() != null) ? t.getName().replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
-                        String safeId = (t != null && t.getId() != null) ? t.getId() : "";
-                        int tIdx = (t != null && t.getTournamentIndexInSeries() > 0) ? t.getTournamentIndexInSeries() : (i + 1);
-                        String tType = (t != null && t.getTournamentType() != null) ? t.getTournamentType() : "SINGLE_STAGE";
-                        boolean isMulti = (t != null && "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType()));
-                        String fmt = (t != null && t.getFormat() != null) ? t.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
-                        String tTier = (t != null && t.getTierName() != null) ? t.getTierName().toUpperCase() : "A";
-                %>
-                    {
-                        id: "<%= safeId %>",
-                        name: "<%= safeName %>",
-                        index: <%= tIdx %>,
-                        format: "<%= fmt %>",
-                        tournamentType: "<%= tType %>",
-                        isMultiStage: <%= isMulti %>,
-                        tierName: "<%= tTier %>",
-                        pointsConfig: <%= cfgJson %>
-                    }<%= (i < tournamentsList.size() - 1) ? "," : "" %>
-                <%  }
-                } %>
-            ];
-            window.seriesPartners = [
-                <% if (partnerList != null) {
-                    for (int i = 0; i < partnerList.size(); i++) {
-                        PartnerParticipant p = partnerList.get(i);
-                        String pName = (p != null && p.getName() != null) ? p.getName().replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ").replace("\r", "") : "";
-                        String pId = (p != null && p.getId() != null) ? p.getId() : "";
-                %>
-                    {
-                        id: "<%= pId %>",
-                        name: "<%= pName %>"
-                    }<%= (i < partnerList.size() - 1) ? "," : "" %>
-                <%  }
-                } %>
-            ];
-            <%
-                List<java.util.Map<String, Integer>> serverTourneyPoints = (series != null) ? service.RollingWindowPointService.getInstance().getTourneyPointsPerTournament(series.getId()) : null;
-                List<java.util.Map<String, Boolean>> serverTourneyParticipation = (series != null) ? service.RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(series.getId()) : null;
-            %>
-            window.serverTourneyPoints = [
-                <% if (serverTourneyPoints != null) {
-                    for (int sIdx = 0; sIdx < serverTourneyPoints.size(); sIdx++) {
-                        java.util.Map<String, Integer> map = serverTourneyPoints.get(sIdx);
-                        StringBuilder sb = new StringBuilder("{");
-                        if (map != null) {
-                            int count = 0;
-                            for (java.util.Map.Entry<String, Integer> e : map.entrySet()) {
-                                if (count++ > 0) sb.append(",");
-                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":").append(e.getValue());
-                            }
-                        }
-                        sb.append("}");
-                %>
-                    <%= sb.toString() %><%= (sIdx < serverTourneyPoints.size() - 1) ? "," : "" %>
-                <%  }
-                } %>
-            ];
-            window.serverTourneyParticipation = [
-                <% if (serverTourneyParticipation != null) {
-                    for (int sIdx = 0; sIdx < serverTourneyParticipation.size(); sIdx++) {
-                        java.util.Map<String, Boolean> map = serverTourneyParticipation.get(sIdx);
-                        StringBuilder sb = new StringBuilder("{");
-                        if (map != null) {
-                            int count = 0;
-                            for (java.util.Map.Entry<String, Boolean> e : map.entrySet()) {
-                                if (count++ > 0) sb.append(",");
-                                sb.append("\"").append(e.getKey().replace("\\", "\\\\").replace("\"", "\\\"")).append("\":true");
-                            }
-                        }
-                        sb.append("}");
-                %>
-                    <%= sb.toString() %><%= (sIdx < serverTourneyParticipation.size() - 1) ? "," : "" %>
-                <%  }
-                } %>
-            ];
-            window.seriesPhaseSize = <%= phaseSize %>;
             window.tourneyFormat = "<%= tourneyFormat %>";
-            window.seriesStandingsRankMap = {
-                <%
-                int mapIdx = 0;
-                for (Map.Entry<String, Integer> entry : partnerRankMap.entrySet()) {
-                    int pts = partnerPointsMap.containsKey(entry.getKey()) ? partnerPointsMap.get(entry.getKey()) : 0;
-                %>
-                    "<%= entry.getKey().replace("\"", "\\\"") %>": { "rank": <%= entry.getValue() %>, "points": <%= pts %> }<%= (mapIdx < partnerRankMap.size() - 1) ? "," : "" %>
-                <%
-                    mapIdx++;
-                }
-                %>
-            };
         </script>
-        <!-- Engine Algorithms for Realtime Series Standings Sync -->
-        <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=20261110-setup-perf1"></script>
-        <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=20261110-setup-perf1"></script>
-        <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=20261110-setup-perf1"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=20261110-setup-perf1"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=20261110-setup-perf1"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=20261113-lazy-partner"></script>
         <script src="${pageContext.request.contextPath}/js/standalone-format-layout.js?v=3"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/series-setup.js?v=1"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/series-setup.js?v=2-form-action"></script>
         <script src="${pageContext.request.contextPath}/js/setup-presentation.js?v=6-batched"></script>
     </body>
 </html>

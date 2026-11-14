@@ -228,6 +228,17 @@ public class SeriesDAO {
         return list;
     }
 
+    public int countTournamentsBySeriesId(String seriesId) throws java.sql.SQLException {
+        try (Connection connection = new DBContext().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT COUNT(*) FROM tournaments WHERE series_id = ?")) {
+            statement.setString(1, seriesId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        }
+    }
+
     public List<Tournament> getTournamentsBySeriesId(String seriesId) {
         List<Tournament> list = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return list;

@@ -90,3 +90,4 @@
 
 <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
 <script src="${pageContext.request.contextPath}/js/popup.js"></script>
+<jsp:include page="/common/component/h2h.jsp" />

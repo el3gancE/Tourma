@@ -31,7 +31,9 @@
 
     document.addEventListener('submit', function (event) {
         var form = event.target;
-        if (!form.action || !new URL(form.action, window.location.href).pathname.endsWith('/rolling/tournament-teams')) return;
+        // An input named "action" shadows HTMLFormElement.action in these forms.
+        var actionUrl = form.getAttribute('action');
+        if (!actionUrl || !new URL(actionUrl, window.location.href).pathname.endsWith('/rolling/tournament-teams')) return;
         if (form.id === 'saveOrderAndProceedForm' && !window.prepareSeriesSetup(event)) {
             event.preventDefault();
             return;

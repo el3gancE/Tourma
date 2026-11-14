@@ -11,7 +11,7 @@ const document={getElementById(id){return id==='configureFormatForm'?editor:fiel
  querySelectorAll(){return Array.from({length:count},(_,i)=>({querySelector(){return {textContent:'Team '+i};}}));},
  addEventListener(type,handler){submitHandler=handler;},createElement(){return {};}};
 vm.runInNewContext(fs.readFileSync('web/js/rolling/series-setup.js','utf8'),{window,document,localStorage:{setItem(k,v){storage.set(k,v);}},URL,Array,Number,JSON,alert(){}});
-function form(id){const inputs=new Map([['excludedTournamentIds',{value:'older-sibling'}]]);return {id,action:'http://localhost/Tourma/rolling/tournament-teams',inputs,
+function form(id){const inputs=new Map([['excludedTournamentIds',{value:'older-sibling'}]]);return {id,action:{name:'action',value:'bulkAdd'},getAttribute(name){return name==='action'?'/Tourma/rolling/tournament-teams':null;},inputs,
  querySelector(selector){return inputs.get(selector.match(/name="([^"]+)/)[1]);},appendChild(input){inputs.set(input.name,input);}};}
 assert.equal(window.prepareSeriesSetup({}),true);assert.equal(window.targetTeamCount,4);
 assert.equal(window.tourneyFormat,'GROUP_STAGE');assert.equal(JSON.parse(storage.get('tourma_teams_child')).length,4);
@@ -24,4 +24,19 @@ valid=false;blocked=false;submitHandler({target:next,preventDefault(){blocked=tr
 const before=checks;let add=form('bulkAddForm');submitHandler({target:add,preventDefault(){throw Error('Adding teams must allow incomplete advance count');}});
 assert.equal(checks,before);assert.equal(add.inputs.get('selectedTournamentType').value,'MULTI_STAGE');
 count=1;assert.equal(window.prepareSeriesSetup({}),false);
+// Every supported Stage 1 format must survive the shadowed action property.
+valid=true;
+for(const format of ['SINGLE_ELIMINATION','DOUBLE_ELIMINATION','ROUND_ROBIN','GROUP_STAGE','GSL','SWISS_LITE']) {
+ count=format==='SWISS_LITE'?16:8;
+ fields.selectedFormat.value=format;
+ settings[0].value=format;
+ settings[2].value=format;
+ const submitted=form('saveOrderAndProceedForm');
+ let rejected=false;
+ submitHandler({target:submitted,preventDefault(){rejected=true;}});
+ assert.equal(rejected,false,format);
+ assert.equal(submitted.inputs.get('format').value,format);
+ assert.equal(submitted.inputs.get('selectedFormat').value,format);
+ assert.equal(submitted.inputs.get('stage1Format').value,format);
+}
 console.log('PASS: Series stage configuration/copy fields, partial roster actions, partner exclusions, continue validation');

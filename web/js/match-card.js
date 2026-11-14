@@ -234,6 +234,10 @@
                 (hasBye ? '' : ('<span class="match-list-status ' + statusClass + '">' + statusLabel + '</span>')) +
                 '</div>';
 
+            if (!hasBye && !isT1Placeholder && !isT2Placeholder && window.TourmaH2h) {
+                window.TourmaH2h.addButton(card, t1Name, t2Name, data.tournamentId || data.tourneyId);
+            }
+
             var checkCardLocked = function (shouldPrompt) {
                 var tid = (data && (data.tournamentId || data.tourneyId)) || null;
                 var isL = false;

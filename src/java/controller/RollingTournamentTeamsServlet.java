@@ -36,6 +36,11 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             tournamentId = request.getParameter("tournamentId");
         }
 
+        if ("partner-picker".equals(request.getParameter("view"))) {
+            renderPartnerPicker(request, response, tournamentId);
+            return;
+        }
+
         String copiedFromParam = request.getParameter("copiedFrom");
         if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()
                 && !new TournamentDAO().canCopyTournamentConfig(copiedFromParam, tournamentId)) {
@@ -95,7 +100,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
 
         Tournament tournament = null;
         if (tournamentId != null && !tournamentId.trim().isEmpty()) {
-            tournament = getTournamentByIdSafe(tournamentId.trim());
+            tournament = new TournamentDAO().getTournamentById(tournamentId.trim(), false);
         }
 
         if (tournament == null) {
@@ -110,29 +115,32 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         }
 
         List<Team> currentTeams = participantDAO.getTeamsByTournamentId(tournament.getId());
-        List<PartnerParticipant> partnerList = new ArrayList<>();
-        List<model.SeriesStanding> standingsList = new ArrayList<>();
-        List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = new ArrayList<>();
-        List<Tournament> tournamentsList = new ArrayList<>();
-        List<java.util.Map<String, Integer>> serverTourneyPoints = null;
-        List<java.util.Map<String, Boolean>> serverTourneyParticipation = null;
-        if (seriesId != null && !seriesId.trim().isEmpty()) {
-            standingsList = seriesDAO.getStandingsBySeriesId(seriesId.trim());
-            if (standingsList == null || standingsList.isEmpty()) {
-                try {
-                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
-                    standingsList = seriesDAO.getStandingsBySeriesId(seriesId.trim());
-                } catch (Exception ignore) {}
-            }
-            partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
-            standingsDTOList = service.RollingWindowPointService.getInstance().calculateSeriesStandingsWithExpiry(seriesId.trim());
-            tournamentsList = new TournamentDAO().getTournamentsBySeriesId(seriesId.trim());
-            try {
-                serverTourneyPoints = service.RollingWindowPointService.getInstance().getTourneyPointsPerTournament(seriesId.trim());
-                serverTourneyParticipation = service.RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(seriesId.trim());
-            } catch (Exception ignore) {}
-        }
+        request.setAttribute("tournament", tournament);
+        request.setAttribute("setupTournament", tournament);
+        request.setAttribute("series", series);
+        request.setAttribute("setupSeries", series);
+        request.setAttribute("currentTeams", currentTeams);
+        request.getRequestDispatcher("/common/rolling/rolling-tournament-teams.jsp").forward(request, response);
+    }
 
+    private void renderPartnerPicker(HttpServletRequest request, HttpServletResponse response, String tournamentId)
+            throws ServletException, IOException {
+        Tournament tournament = getTournamentByIdSafe(tournamentId);
+        if (tournament == null || tournament.getSeriesId() == null || tournament.getSeriesId().isBlank()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        String seriesId = tournament.getSeriesId();
+        SeriesDAO seriesDAO = new SeriesDAO();
+        Series series = seriesDAO.getSeriesById(seriesId);
+        ParticipantDAO participantDAO = new ParticipantDAO();
+        List<Team> currentTeams = participantDAO.getTeamsByTournamentId(tournament.getId());
+        service.RollingWindowPointService standings = service.RollingWindowPointService.getInstance();
+        List<PartnerParticipant> partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
+        List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = partnerList.isEmpty()
+                ? java.util.Collections.emptyList() : standings.calculateSeriesStandingsWithExpiry(seriesId);
+        List<model.SeriesStanding> standingsList = !partnerList.isEmpty() && standingsDTOList.isEmpty()
+                ? seriesDAO.getStandingsBySeriesId(seriesId) : java.util.Collections.emptyList();
         request.setAttribute("seriesTournamentTeams", participantDAO.getTeamsBySeriesId(seriesId));
         request.setAttribute("tournament", tournament);
         request.setAttribute("series", series);
@@ -140,11 +148,14 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         request.setAttribute("partnerList", partnerList);
         request.setAttribute("standingsList", standingsList);
         request.setAttribute("standingsDTOList", standingsDTOList);
-        request.setAttribute("tournamentsList", tournamentsList);
-        request.setAttribute("serverTourneyPoints", serverTourneyPoints);
-        request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
+        request.setAttribute("tournamentsList", new TournamentDAO().getTournamentsBySeriesId(seriesId));
+        request.setAttribute("serverTourneyPoints", partnerList.isEmpty()
+                ? java.util.Collections.emptyList() : standings.getTourneyPointsPerTournament(seriesId));
+        request.setAttribute("serverTourneyParticipation", partnerList.isEmpty()
+                ? java.util.Collections.emptyList() : standings.getTourneyParticipationPerTournament(seriesId));
 
-        request.getRequestDispatcher("/common/rolling/rolling-tournament-teams.jsp").forward(request, response);
+        response.setHeader("Cache-Control", "no-store");
+        request.getRequestDispatcher("/WEB-INF/rolling-partner-picker.jsp").forward(request, response);
     }
 
     @Override
