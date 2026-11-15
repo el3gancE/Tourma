@@ -228,7 +228,7 @@ public class SeriesDAO {
         return list;
     }
 
-    public int countTournamentsBySeriesId(String seriesId) throws java.sql.SQLException {
+    public int countTournamentsBySeriesId(String seriesId) throws Exception {
         try (Connection connection = new DBContext().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT COUNT(*) FROM tournaments WHERE series_id = ?")) {

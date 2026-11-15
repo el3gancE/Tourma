@@ -1114,6 +1114,7 @@
          * Save Match Score via AJAX to match-update servlet
          */
         saveMatchScore: function (matchId, score1, score2, penalty1, penalty2, winnerSlot) {
+            if (window.TourmaScoreModal && window.TourmaScoreModal.isLocked(this.tournamentId)) return;
             var self = this;
             var m = this.findMatch(matchId);
             if (!m) return;

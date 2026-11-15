@@ -767,37 +767,15 @@
                 document.body.classList.remove('stage1-is-locked');
             }
 
-            // Quick mode buttons
-            var qBtns = document.querySelectorAll('#singleBtnQuickMode, #deBtnQuickMode, #gslBtnQuickMode, .btn-quick-mode-toggle');
-            for (var q = 0; q < qBtns.length; q++) {
-                if (isLocked) {
-                    qBtns[q].classList.remove('active');
-                    var statusSpan = qBtns[q].querySelector('.quick-mode-status-text');
-                    if (statusSpan) statusSpan.textContent = 'OFF';
-                    qBtns[q].style.opacity = '0.5';
-                    qBtns[q].style.pointerEvents = 'none';
-                } else {
-                    qBtns[q].style.opacity = '1';
-                    qBtns[q].style.pointerEvents = 'auto';
-                }
+            if (isLocked) {
+                document.querySelectorAll('.btn-quick-mode-toggle').forEach(function (button) {
+                    button.classList.remove('active');
+                    var status = button.querySelector('.quick-mode-status-text');
+                    if (status) status.textContent = 'OFF';
+                });
             }
-
-            // Disable random score buttons, edit score inputs if locked
-            var scoreInputs = document.querySelectorAll('.match-score-input, .score-input, .group-score-input');
-            for (var i = 0; i < scoreInputs.length; i++) {
-                scoreInputs[i].disabled = isLocked;
-            }
-
-            var randomBtns = document.querySelectorAll('.btn-random-scores, .btn-random-round, .btn-random-group, .btn-auto-score, #gslBtnRandomAll, .btn-random-all');
-            for (var j = 0; j < randomBtns.length; j++) {
-                randomBtns[j].disabled = isLocked;
-                if (isLocked) {
-                    randomBtns[j].style.opacity = '0.5';
-                    randomBtns[j].style.pointerEvents = 'none';
-                } else {
-                    randomBtns[j].style.opacity = '1';
-                    randomBtns[j].style.pointerEvents = 'auto';
-                }
+            if (window.TourmaScoreModal && window.TourmaScoreModal.syncStageEditing) {
+                window.TourmaScoreModal.syncStageEditing();
             }
         },
 

@@ -233,7 +233,7 @@
             try {
                 if (window.TourmaDbTournamentStatus && window.TourmaDbTournamentStatus[tournamentId] !== undefined) {
                     var s = window.TourmaDbTournamentStatus[tournamentId];
-                    if (s === 'COMPLETED') return true;
+                    if (s === 'COMPLETED' || s === 'FINISHED') return true;
                     if (s === 'ONGOING' || s === 'IN_PROGRESS' || s === 'DRAFT' || s === 'INCOMING') return false;
                 }
                 return localStorage.getItem('tourma_final_locked_' + tournamentId) === 'true';
@@ -339,7 +339,8 @@
             this.isLocked = this.isTournamentLocked(this.tournamentId);
 
             if (this.isLocked) {
-                if (!this.championName) {
+                var dbStatus = window.TourmaDbTournamentStatus && window.TourmaDbTournamentStatus[this.tournamentId];
+                if (!this.championName && dbStatus !== 'COMPLETED' && dbStatus !== 'FINISHED') {
                     // Stale lock from previous stage or reset -> auto unlock
                     this.isLocked = false;
                     try { localStorage.removeItem('tourma_final_locked_' + this.tournamentId); } catch(e) {}
@@ -359,7 +360,8 @@
                     }
                     textEl.innerHTML = 
                         '<div class="final-stage-title-line">Giải đấu đã kết thúc</div>' +
-                        '<div class="final-stage-champion-line">Nhà vô địch: <span class="final-stage-champion-name">' + this.championName + '</span></div>';
+                        (this.championName ? '<div class="final-stage-champion-line">Nhà vô địch: <span class="final-stage-champion-name"></span></div>' : '');
+                    if (this.championName) textEl.querySelector('.final-stage-champion-name').textContent = this.championName;
                     if (confirmBtn) confirmBtn.style.display = 'none';
                     if (unlockBtn) unlockBtn.style.display = 'inline-block';
                     banner.classList.add('is-locked');
@@ -442,6 +444,7 @@
 
             if (!window.TourmaDbTournamentStatus) window.TourmaDbTournamentStatus = {};
             window.TourmaDbTournamentStatus[this.tournamentId] = 'COMPLETED';
+            if (window.TourmaScoreModal) window.TourmaScoreModal.syncStageEditing?.();
 
             try {
                 localStorage.setItem('tourma_final_locked_' + this.tournamentId, 'true');
@@ -525,6 +528,7 @@
 
             if (!window.TourmaDbTournamentStatus) window.TourmaDbTournamentStatus = {};
             window.TourmaDbTournamentStatus[this.tournamentId] = 'ONGOING';
+            if (window.TourmaScoreModal) window.TourmaScoreModal.syncStageEditing?.();
 
             this.isLocked = false;
 

@@ -235,7 +235,7 @@
         <!-- Scripts -->
         <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=20261101-rr-ranking"></script>
-        <script src="${pageContext.request.contextPath}/js/final-stage-popup.js"></script>
+        <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=db-edit-lock"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin-standings.js"></script>

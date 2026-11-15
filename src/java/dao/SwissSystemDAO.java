@@ -686,13 +686,7 @@ public class SwissSystemDAO extends DBContext {
         if (score1 < 0 || score2 < 0 || score1 == score2) return false;
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
-            TournamentDAO.assertStage2Ready(conn,tournamentId,stageOrder);
-            try (PreparedStatement ps = conn.prepareStatement("SELECT stage1_status FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
-                ps.setString(1, tournamentId);
-                try (ResultSet rs=ps.executeQuery()) {
-                    if (!rs.next() || (stageOrder==1 && ("LOCKED".equalsIgnoreCase(rs.getString(1)) || "COMPLETED".equalsIgnoreCase(rs.getString(1))))) return false;
-                }
-            }
+            TournamentDAO.assertStageEditable(conn, tournamentId, stageOrder);
             int round = -1, order = -1;
             java.util.regex.Matcher key = java.util.regex.Pattern.compile("^R(\\d+)_M(\\d+)$").matcher(matchId);
             if (key.matches()) { round=Integer.parseInt(key.group(1)); order=Integer.parseInt(key.group(2)); }
@@ -824,12 +818,7 @@ public class SwissSystemDAO extends DBContext {
         if(round<1 || round>5) return false;
         try(Connection conn=getConnection()) {
             conn.setAutoCommit(false);
-            try(PreparedStatement ps=conn.prepareStatement("SELECT stage1_status FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
-                ps.setString(1,tournamentId);
-                try(ResultSet rs=ps.executeQuery()) {
-                    if(!rs.next() || (stageOrder==1 && ("LOCKED".equalsIgnoreCase(rs.getString(1)) || "COMPLETED".equalsIgnoreCase(rs.getString(1))))) return false;
-                }
-            }
+            TournamentDAO.assertStageEditable(conn, tournamentId, stageOrder);
             if(stageOrder==1) try(PreparedStatement ps=conn.prepareStatement("SELECT COUNT(*) FROM matches m JOIN tournament_stages s ON s.id=m.stage_id WHERE m.tournament_id=? AND s.stage_order>1")) {
                 ps.setString(1,tournamentId); try(ResultSet rs=ps.executeQuery()){rs.next();if(rs.getInt(1)>0)return false;}
             }

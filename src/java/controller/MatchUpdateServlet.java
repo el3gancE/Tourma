@@ -524,7 +524,7 @@ public class MatchUpdateServlet extends HttpServlet {
             }
 
             boolean isDoubleElimination = false;
-            int resolvedStageOrder = currentStage;
+            int resolvedStageOrder = 1;
             String previousWinner = null;
             String currentTourneyStatus = null;
             if (resolvedTourneyId != null) {
@@ -536,19 +536,22 @@ public class MatchUpdateServlet extends HttpServlet {
                 }
             }
             try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT m.winner_id, s.format, s.stage_order, t.stage1_status FROM matches m WITH (UPDLOCK, HOLDLOCK) LEFT JOIN tournament_stages s WITH (NOLOCK) ON s.id = m.stage_id JOIN tournaments t WITH (NOLOCK) ON t.id = m.tournament_id WHERE m.id = ? AND m.tournament_id = ?")) {
+                    "SELECT m.winner_id, s.format, s.stage_order FROM matches m WITH (UPDLOCK, HOLDLOCK) LEFT JOIN tournament_stages s ON s.id = m.stage_id AND s.tournament_id = m.tournament_id WHERE m.id = ? AND m.tournament_id = ?")) {
                 ps.setString(1, dbMatchId); ps.setString(2, resolvedTourneyId);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         previousWinner = rs.getString(1);
                         isDoubleElimination = "DOUBLE_ELIMINATION".equalsIgnoreCase(rs.getString(2));
                         if (rs.getObject(3) != null) resolvedStageOrder = rs.getInt(3);
-                        if (isDoubleElimination && resolvedStageOrder == 1 && ("LOCKED".equalsIgnoreCase(rs.getString(4)) || "COMPLETED".equalsIgnoreCase(rs.getString(4)))) {
-                            throw new IllegalStateException("Stage 1 đã khóa. Cần mở khóa trước khi sửa kết quả.");
-                        }
+                    } else {
+                        throw new IllegalStateException("Trận đấu đã thay đổi. Vui lòng tải lại trang.");
                     }
                 }
             }
+            if (resolvedStageOrder != currentStage) {
+                throw new IllegalStateException("Trận đấu không thuộc stage đang mở. Vui lòng tải lại trang.");
+            }
+            TournamentDAO.assertStageEditable(conn, resolvedTourneyId, resolvedStageOrder);
             if (isDoubleElimination && (team1Id == null || team2Id == null || team1Id.equals(team2Id) || winnerId == null)) {
                 throw new IllegalStateException("Trận DE cần đủ hai đội và một đội thắng hợp lệ.");
             }
@@ -737,7 +740,7 @@ public class MatchUpdateServlet extends HttpServlet {
             try(PreparedStatement ps=conn.prepareStatement("SELECT s.stage_order FROM matches m LEFT JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id WHERE m.id=? AND m.tournament_id=?")) {
                 ps.setString(1,mIdClean);ps.setString(2,tournamentId);
                 try(ResultSet rs=ps.executeQuery()) {
-                    if(rs.next()) TournamentDAO.assertStage2Ready(conn,tournamentId,rs.getInt(1));
+                    if(rs.next()) TournamentDAO.assertStageEditable(conn,tournamentId,Math.max(1, rs.getInt(1)));
                     else if(mIdClean.startsWith("M_")) return false;
                 }
             }
@@ -812,6 +815,14 @@ public class MatchUpdateServlet extends HttpServlet {
                 return false;
             }
 
+            try (PreparedStatement stageQuery = conn.prepareStatement(
+                    "SELECT COALESCE(s.stage_order, 1) FROM matches m LEFT JOIN tournament_stages s ON s.id=m.stage_id WHERE m.id=?")) {
+                stageQuery.setString(1, dbMatchId);
+                try (ResultSet rs = stageQuery.executeQuery()) {
+                    if (!rs.next()) return false;
+                    TournamentDAO.assertStageEditable(conn, resolvedTourneyId, rs.getInt(1));
+                }
+            }
             String newStatus = (team1Id != null && team2Id != null) ? "READY" : "PENDING";
             String updateSql = "UPDATE matches SET score1 = NULL, score2 = NULL, penalty1 = NULL, penalty2 = NULL, "
                     + "winner_id = NULL, loser_id = NULL, status = ? WHERE id = ?";

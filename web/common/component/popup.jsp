@@ -4,7 +4,7 @@
     Description: Reusable modal dialog for editing match scores and declaring winners.
 --%>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=20261105-close-layout">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=stage-edit-ui">
 
 <div id="tourmaScoreModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) window.TourmaScoreModal.close();">
     <div class="tourma-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalMatchTitle" onclick="event.stopPropagation();">
@@ -89,5 +89,5 @@
 </div>
 
 <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
-<script src="${pageContext.request.contextPath}/js/popup.js"></script>
+<script src="${pageContext.request.contextPath}/js/popup.js?v=db-edit-lock"></script>
 <jsp:include page="/common/component/h2h.jsp" />

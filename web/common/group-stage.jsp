@@ -197,6 +197,6 @@
     <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
     <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
     <script src="${pageContext.request.contextPath}/js/group-standing.js?v=20261101-gs-qualifiers"></script>
-    <script src="${pageContext.request.contextPath}/js/group-stage.js"></script>
+    <script src="${pageContext.request.contextPath}/js/group-stage.js?v=db-edit-lock"></script>
 </body>
 </html>

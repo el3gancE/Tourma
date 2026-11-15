@@ -259,7 +259,7 @@ public class TournamentRandomServlet extends HttpServlet {
 
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
-            TournamentDAO.assertStage2Ready(conn,tournamentId,stageOrder);
+            TournamentDAO.assertStageEditable(conn, tournamentId, stageOrder);
 
             String updateMatchSql = "UPDATE matches SET score1 = ?, score2 = ?, winner_id = ?, loser_id = ?, status = 'FINISHED' WHERE id = ?";
             String advSql = "UPDATE matches SET %SLOT% = ?, status = CASE WHEN (%OTHER_SLOT% IS NOT NULL) THEN 'READY' ELSE status END "
@@ -530,6 +530,7 @@ public class TournamentRandomServlet extends HttpServlet {
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
 
+            TournamentDAO.assertStageEditable(conn, tournamentId, stageOrder);
             List<String> groupPatterns = getGroupFilterPatterns(groupId, rawGroupId);
             StringBuilder selSql = new StringBuilder("SELECT m.id, m.round_number, m.bracket_type, m.is_bye, m.team1_id, m.team2_id, "
                     + "m.next_match_id, m.next_slot, m.loser_next_match_id, m.loser_next_slot, m.group_id "
@@ -702,6 +703,7 @@ public class TournamentRandomServlet extends HttpServlet {
         try (Connection conn = db.getConnection()) {
             conn.setAutoCommit(false);
 
+            TournamentDAO.assertStageEditable(conn, tournamentId, stageOrder);
             List<String> groupPatterns = (groupId != null && !groupId.trim().isEmpty()) ? getGroupFilterPatterns(groupId, null) : Collections.emptyList();
             boolean isGrandFinal = bracketType != null && bracketType.trim().toUpperCase().contains("GRAND");
 

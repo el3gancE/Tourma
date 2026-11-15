@@ -162,7 +162,7 @@ public class TournamentDAO {
         if (tournamentId == null || (stage != 1 && stage != 2)) return false;
         try (Connection conn = new DBContext().getConnection()) {
             conn.setAutoCommit(false);
-            lockCutTournament(conn, tournamentId);
+            assertStageEditable(conn, tournamentId, stage);
             String scope = "tournament_id = ? AND (stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id = ? AND stage_order >= ?) OR (stage_id IS NULL AND ? = 1))";
             try (PreparedStatement ps = conn.prepareStatement("UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE " + scope)) {
                 bindResetScope(ps, tournamentId, stage); ps.executeUpdate();
@@ -1863,6 +1863,25 @@ public class TournamentDAO {
                 return "{\"ready\":"+ready+",\"stage1Status\":\""+cutEscape(rs.getString(2))+"\",\"stage1Format\":\""+cutEscape(rs.getString(4))+"\",\"generation\":\""+cutEscape(rs.getString(5))+"\"}";
             }
         } catch(Exception e){throw new IllegalStateException("Cannot load stage state",e);}
+    }
+
+    public static void assertStageEditable(Connection conn, String id, int stage) throws java.sql.SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT status, stage1_status FROM tournaments WITH (UPDLOCK, HOLDLOCK) WHERE id = ?")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw new IllegalStateException("Không tìm thấy giải đấu.");
+                String status = rs.getString(1);
+                String stage1 = rs.getString(2);
+                if ("COMPLETED".equalsIgnoreCase(status) || "FINISHED".equalsIgnoreCase(status)) {
+                    throw new IllegalStateException("Giải đã khóa. Cần mở khóa trước khi sửa kết quả.");
+                }
+                if (stage == 1 && ("LOCKED".equalsIgnoreCase(stage1) || "COMPLETED".equalsIgnoreCase(stage1))) {
+                    throw new IllegalStateException("Stage 1 đã khóa. Cần mở khóa trước khi sửa kết quả.");
+                }
+            }
+        }
+        assertStage2Ready(conn, id, stage);
     }
 
     public static void assertStage2Ready(Connection conn, String id, int stage) throws java.sql.SQLException {

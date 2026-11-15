@@ -17,7 +17,13 @@ import java.util.Map;
 @WebServlet("/api/h2h")
 public class H2hServlet extends HttpServlet {
     private static final String HISTORY_SQL = """
-            SELECT t.name, m.round_number, m.match_code,
+            SELECT t.name, m.round_number, m.bracket_type, s.format AS stage_format,
+                   CASE WHEN s.format = 'SINGLE_ELIMINATION' THEN (
+                       SELECT COUNT(*) FROM matches slot
+                       WHERE slot.tournament_id = m.tournament_id
+                         AND slot.stage_id = m.stage_id
+                         AND slot.round_number = m.round_number
+                   ) END AS round_slots,
                    COALESCE(s.stage_order, 1) AS stage_order,
                    m.score1, m.score2, m.penalty1, m.penalty2,
                    CASE WHEN LTRIM(RTRIM(a.raw_name)) COLLATE Latin1_General_100_CI_AS = ?
@@ -107,10 +113,9 @@ public class H2hServlet extends HttpServlet {
 
                     Map<String, Object> match = new LinkedHashMap<>();
                     match.put("tournament", rows.getString("name"));
-                    String code = rows.getString("match_code");
-                    match.put("round", "Giai đoạn " + rows.getInt("stage_order")
-                            + " · Vòng " + rows.getInt("round_number")
-                            + (code == null || code.isBlank() ? "" : " · " + code));
+                    match.put("round", roundLabel(rows.getString("stage_format"),
+                            rows.getString("bracket_type"), rows.getInt("round_number"),
+                            rows.getInt("round_slots")));
                     match.put("firstScore", rows.getInt(left ? "score1" : "score2"));
                     match.put("winnerPosition", winnerPosition);
                     match.put("secondScore", rows.getInt(left ? "score2" : "score1"));
@@ -122,6 +127,26 @@ public class H2hServlet extends HttpServlet {
         }
         return Map.of("scope", series ? "Series" : "giải này", "firstWins", firstWins,
                 "secondWins", secondWins, "draws", draws, "matches", matches);
+    }
+
+    static String roundLabel(String format, String bracket, int round, int slots) {
+        if ("SINGLE_ELIMINATION".equalsIgnoreCase(format) && slots > 0) {
+            return switch (slots) {
+                case 1 -> "F";
+                case 2 -> "SF";
+                case 4 -> "QF";
+                default -> "RO" + (slots * 2);
+            };
+        }
+        if (bracket == null) return "R" + round;
+        return switch (bracket.toUpperCase(java.util.Locale.ROOT)) {
+            case "UPPER", "WINNER_BRACKET" -> "UB R" + round;
+            case "LOWER", "LOSER_BRACKET" -> "LB R" + round;
+            case "GRAND_FINAL" -> "GF";
+            case "GRAND_FINAL_RESET" -> "GF Reset";
+            case "THIRD_PLACE" -> "3P";
+            default -> "R" + round;
+        };
     }
 
     private static Integer penalty(ResultSet row, String column) throws java.sql.SQLException {

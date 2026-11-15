@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/h2h.css?v=4">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/h2h.css?v=6">
 <dialog id="tourmaH2h" class="h2h-dialog" aria-labelledby="h2hTitle"
         data-endpoint="${pageContext.request.contextPath}/api/h2h">
     <header class="h2h-header">
@@ -15,9 +15,9 @@
         <p class="h2h-status" data-h2h-status role="status"></p>
         <button type="button" class="h2h-button" data-h2h-retry hidden>Thử lại</button>
         <section data-h2h-results hidden>
-            <h3 class="h2h-list-title">Các trận đã gặp</h3>
-            <ol class="h2h-history" data-h2h-history aria-label="Các trận đã gặp" tabindex="0"></ol>
+            <h3 id="h2hHistoryTitle" class="h2h-list-title">Các trận đã gặp</h3>
+            <ol class="h2h-history" data-h2h-history aria-labelledby="h2hHistoryTitle" tabindex="0"></ol>
         </section>
     </div>
 </dialog>
-<script src="${pageContext.request.contextPath}/js/h2h.js?v=4"></script>
+<script src="${pageContext.request.contextPath}/js/h2h.js?v=6"></script>

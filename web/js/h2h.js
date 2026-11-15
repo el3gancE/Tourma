@@ -31,11 +31,10 @@
             var row = document.createElement('li');
             var details = document.createElement('div');
             details.className = 'h2h-match-details';
-            var tournament = document.createElement('span');
-            tournament.textContent = match.tournament;
+            details.textContent = match.tournament;
             var round = document.createElement('small');
             round.textContent = match.round;
-            details.append(tournament, round);
+            details.appendChild(round);
             var matchup = document.createElement('div');
             matchup.className = 'h2h-matchup';
             var left = document.createElement('span');
