@@ -99,22 +99,22 @@
         row.classList.add('top-10');
       }
 
-      var lastPtsText = data.lastPts > 0 ? ('<span data-ui-style="rolling-standings-js-001">+' + data.lastPts + ' pts</span>') : '<span data-ui-style="rolling-standings-js-002">0 pts</span>';
+      var lastPtsText = data.lastPts > 0 ? ('<span style="color: var(--ui-success); font-weight: 600;">+' + data.lastPts + ' pts</span>') : '<span style="color: var(--ui-muted);">0 pts</span>';
 
       var netChange = data.lastPts - (data.droppedPts || 0);
       var changeText = '0 pts';
       var changeColor = 'var(--ui-muted)';
       if (netChange > 0) {
         changeText = '+' + netChange + ' pts';
-        changeColor = 'var(--ui-accent)';
+        changeColor = 'var(--ui-success)';
       } else if (netChange < 0) {
         changeText = netChange + ' pts';
         changeColor = 'var(--ui-danger)';
       }
 
-      var rankColor = isTop10 ? 'var(--ui-accent)' : 'var(--ui-text)';
-      var nameColor = isTop10 ? 'var(--ui-accent)' : 'var(--ui-text)';
-      var nameHover = isTop10 ? 'var(--ui-accent-hover)' : 'var(--ui-accent)';
+      var rankColor = (rank === 1) ? 'var(--ui-tier-s)' : (isTop10 ? 'var(--ui-text)' : 'var(--ui-muted)');
+      var nameColor = 'var(--ui-text)';
+      var nameHover = 'var(--ui-accent)';
       var badgeClass = 'rank-badge' + (isTop10 ? ' top-10' : '') + ' rank-' + rank;
 
       row.innerHTML = 
