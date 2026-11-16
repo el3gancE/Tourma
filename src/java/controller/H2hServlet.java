@@ -130,6 +130,7 @@ public class H2hServlet extends HttpServlet {
     }
 
     static String roundLabel(String format, String bracket, int round, int slots) {
+        if ("THIRD_PLACE".equalsIgnoreCase(bracket)) return "3P";
         if ("SINGLE_ELIMINATION".equalsIgnoreCase(format) && slots > 0) {
             return switch (slots) {
                 case 1 -> "F";
@@ -144,7 +145,6 @@ public class H2hServlet extends HttpServlet {
             case "LOWER", "LOSER_BRACKET" -> "LB R" + round;
             case "GRAND_FINAL" -> "GF";
             case "GRAND_FINAL_RESET" -> "GF Reset";
-            case "THIRD_PLACE" -> "3P";
             default -> "R" + round;
         };
     }

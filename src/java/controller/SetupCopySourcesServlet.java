@@ -19,15 +19,14 @@ public class SetupCopySourcesServlet extends HttpServlet {
         String tournamentId = request.getParameter("id");
         TournamentDAO tDao = new TournamentDAO();
         Tournament destination = tournamentId == null || tournamentId.isBlank()
-                ? null : tDao.getTournamentById(tournamentId.trim(), false);
+                ? null : tDao.getTournamentById(tournamentId.trim(), true);
         if (destination == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
         String seriesIdParam = destination.getSeriesId();
         List<Tournament> availableTournaments = new ArrayList<>();
-        List<Tournament> allTourneys = seriesIdParam != null && !seriesIdParam.trim().isEmpty()
-                ? tDao.getTournamentsBySeriesId(seriesIdParam.trim()) : tDao.getAllTournaments();
+        List<Tournament> allTourneys = tDao.getCopySourceTournaments(seriesIdParam);
         if (allTourneys != null) {
             for (Tournament t : allTourneys) {
                 if (!destination.getId().equalsIgnoreCase(t.getId())) {

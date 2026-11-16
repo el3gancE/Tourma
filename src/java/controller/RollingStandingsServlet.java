@@ -66,13 +66,18 @@ public class RollingStandingsServlet extends HttpServlet {
 
         if (series != null) {
             seriesId = series.getId();
+            long t0 = System.currentTimeMillis();
             service.RollingWindowPointService serviceEngine = service.RollingWindowPointService.getInstance();
             // Viewing standings is read-only. Persistence belongs to mutation workflows.
             standingsDTOList = serviceEngine.calculateSeriesStandingsWithExpiry(seriesId);
+            long t1 = System.currentTimeMillis();
             tournamentsList = seriesDAO.getTournamentsBySeriesId(seriesId);
+            long t2 = System.currentTimeMillis();
             partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
+            long t3 = System.currentTimeMillis();
             serverTourneyPoints = serviceEngine.getTourneyPointsPerTournament(seriesId);
             serverTourneyParticipation = serviceEngine.getTourneyParticipationPerTournament(seriesId);
+            long t4 = System.currentTimeMillis();
             if ("ROLLING_WINDOW".equalsIgnoreCase(series.getRankingModel())) {
                 service.NumberOneHistory.Reign announcement = service.NumberOneHistory.announcement(
                         service.NumberOneHistory.build(tournamentsList, partnerList, serverTourneyPoints,
@@ -82,8 +87,13 @@ public class RollingStandingsServlet extends HttpServlet {
                     request.setAttribute("newNumberOneName", announcement.getTeamName());
                 }
             }
-
+            long t5 = System.currentTimeMillis();
             stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(seriesId);
+            long t6 = System.currentTimeMillis();
+            java.util.logging.Logger.getLogger(RollingStandingsServlet.class.getName()).warning(
+                "[TIMING RollingStandings] calcStandings=" + (t1-t0) + "ms, getTourneys=" + (t2-t1)
+                + "ms, getPartners=" + (t3-t2) + "ms, getPoints=" + (t4-t3) + "ms, numOne=" + (t5-t4)
+                + "ms, formats=" + (t6-t5) + "ms, totalServletBeforeJsp=" + (t6-t0) + "ms");
         }
 
         request.setAttribute("series", series);
@@ -94,7 +104,11 @@ public class RollingStandingsServlet extends HttpServlet {
         request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
         request.setAttribute("stageFormatsMap", stageFormatsMap);
 
+        long tFwdStart = System.currentTimeMillis();
         request.getRequestDispatcher("/common/rolling/rolling-standings.jsp").forward(request, response);
+        long tFwdEnd = System.currentTimeMillis();
+        java.util.logging.Logger.getLogger(RollingStandingsServlet.class.getName()).warning(
+                "[TIMING RollingStandings] forwardJsp=" + (tFwdEnd - tFwdStart) + "ms");
     }
 
     @Override

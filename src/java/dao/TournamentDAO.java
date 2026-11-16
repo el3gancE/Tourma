@@ -1056,6 +1056,44 @@ public class TournamentDAO {
         return list;
     }
 
+    public List<Tournament> getCopySourceTournaments(String seriesId) {
+        List<Tournament> list = new ArrayList<>();
+        boolean hasSeries = (seriesId != null && !seriesId.trim().isEmpty());
+        String where = hasSeries ? "WHERE t.series_id = ? " : "";
+        String order = hasSeries
+                ? "ORDER BY t.tournament_index_in_series DESC, t.created_at DESC "
+                : "ORDER BY t.created_at DESC ";
+        String sql = "SELECT t.id, t.name, t.tournament_type, t.tier_name, t.tournament_index_in_series, t.created_at, "
+                + "ts.stage_format, ISNULL(tc.team_count, 0) AS team_count "
+                + "FROM tournaments t WITH (NOLOCK) "
+                + "OUTER APPLY (SELECT TOP 1 format AS stage_format FROM tournament_stages WITH (NOLOCK) WHERE tournament_id = t.id ORDER BY stage_order ASC) ts "
+                + "LEFT JOIN (SELECT tournament_id, COUNT(*) AS team_count FROM teams WITH (NOLOCK) GROUP BY tournament_id) tc ON tc.tournament_id = t.id "
+                + where + order + "OPTION (MAXDOP 1)";
+        try (Connection conn = new DBContext().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (hasSeries) {
+                ps.setString(1, seriesId.trim());
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Tournament t = new Tournament();
+                    t.setId(rs.getString("id"));
+                    t.setName(rs.getString("name"));
+                    t.setTournamentType(rs.getString("tournament_type"));
+                    t.setTierName(rs.getString("tier_name"));
+                    t.setTournamentIndexInSeries(rs.getInt("tournament_index_in_series"));
+                    t.setCreatedAt(rs.getTimestamp("created_at"));
+                    t.setFormat(rs.getString("stage_format"));
+                    t.setTeamCount(rs.getInt("team_count"));
+                    list.add(t);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
     public boolean insertTournament(Tournament t) {
         String sql = "INSERT INTO tournaments (id, series_id, name, tournament_type, series_event_type, " +
                 "tier_name, tournament_index_in_series, phase_number, max_teams_per_group, " +

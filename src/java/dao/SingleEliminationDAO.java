@@ -308,29 +308,47 @@ public class SingleEliminationDAO extends DBContext {
 
     public void syncByeAdvancementsInDB(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return;
+        String preCheckSql = "SELECT TOP 1 1 FROM matches WITH (NOLOCK) WHERE tournament_id = ? AND is_bye = 1 AND winner_id IS NOT NULL AND next_match_id IS NOT NULL";
         String sql = "SELECT m.winner_id, m.next_match_id, m.next_slot "
-                   + "FROM matches m LEFT JOIN tournament_stages s ON s.id=m.stage_id AND s.tournament_id=m.tournament_id WHERE m.tournament_id = ? AND (s.stage_order=? OR (m.stage_id IS NULL AND ?=1)) AND m.is_bye = 1 AND m.winner_id IS NOT NULL AND m.next_match_id IS NOT NULL";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tournamentId);
-            ps.setInt(2,stageOrder); ps.setInt(3,stageOrder);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String wId = rs.getString("winner_id");
-                    String nextId = rs.getString("next_match_id");
-                    String nextSlot = rs.getString("next_slot");
-                    if (nextId != null && wId != null) {
-                        String slotCol = ("SLOT_2".equalsIgnoreCase(nextSlot) || "2".equals(nextSlot)) ? "team2_id" : "team1_id";
-                        String otherSlotCol = ("SLOT_2".equalsIgnoreCase(nextSlot) || "2".equals(nextSlot)) ? "team1_id" : "team2_id";
-                        String upSql = "UPDATE matches SET " + slotCol + " = ?, status = CASE WHEN (" + otherSlotCol + " IS NOT NULL) THEN 'READY' ELSE status END "
-                                     + "WHERE tournament_id = ? AND id = ? AND (stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id=? AND stage_order=?) OR (stage_id IS NULL AND ?=1)) AND score1 IS NULL AND score2 IS NULL AND winner_id IS NULL";
-                        try (PreparedStatement psUp = conn.prepareStatement(upSql)) {
-                            psUp.setString(1, wId);
-                            psUp.setString(2, tournamentId);
-                            psUp.setString(3, nextId);
-                            psUp.setString(4, tournamentId);
-                            psUp.setInt(5, stageOrder); psUp.setInt(6, stageOrder);
-                            psUp.executeUpdate();
+                   + "FROM matches m WITH (NOLOCK) "
+                   + "JOIN matches nm WITH (NOLOCK) ON nm.id = m.next_match_id AND nm.tournament_id = m.tournament_id "
+                   + "LEFT JOIN tournament_stages s WITH (NOLOCK) ON s.id = m.stage_id AND s.tournament_id = m.tournament_id "
+                   + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1)) "
+                   + "  AND m.is_bye = 1 AND m.winner_id IS NOT NULL AND m.next_match_id IS NOT NULL "
+                   + "  AND nm.score1 IS NULL AND nm.score2 IS NULL AND nm.winner_id IS NULL "
+                   + "  AND ("
+                   + "      (m.next_slot IN ('SLOT_2', '2') AND (nm.team2_id IS NULL OR nm.team2_id <> m.winner_id)) "
+                   + "      OR "
+                   + "      (m.next_slot NOT IN ('SLOT_2', '2') AND (nm.team1_id IS NULL OR nm.team1_id <> m.winner_id)) "
+                   + "  )";
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement psPre = conn.prepareStatement(preCheckSql)) {
+                psPre.setString(1, tournamentId);
+                try (ResultSet rsPre = psPre.executeQuery()) {
+                    if (!rsPre.next()) return;
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, tournamentId);
+                ps.setInt(2, stageOrder); ps.setInt(3, stageOrder);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String wId = rs.getString("winner_id");
+                        String nextId = rs.getString("next_match_id");
+                        String nextSlot = rs.getString("next_slot");
+                        if (nextId != null && wId != null) {
+                            String slotCol = ("SLOT_2".equalsIgnoreCase(nextSlot) || "2".equals(nextSlot)) ? "team2_id" : "team1_id";
+                            String otherSlotCol = ("SLOT_2".equalsIgnoreCase(nextSlot) || "2".equals(nextSlot)) ? "team1_id" : "team2_id";
+                            String upSql = "UPDATE matches SET " + slotCol + " = ?, status = CASE WHEN (" + otherSlotCol + " IS NOT NULL) THEN 'READY' ELSE status END "
+                                         + "WHERE tournament_id = ? AND id = ? AND (stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id=? AND stage_order=?) OR (stage_id IS NULL AND ?=1)) AND score1 IS NULL AND score2 IS NULL AND winner_id IS NULL";
+                            try (PreparedStatement psUp = conn.prepareStatement(upSql)) {
+                                psUp.setString(1, wId);
+                                psUp.setString(2, tournamentId);
+                                psUp.setString(3, nextId);
+                                psUp.setString(4, tournamentId);
+                                psUp.setInt(5, stageOrder); psUp.setInt(6, stageOrder);
+                                psUp.executeUpdate();
+                            }
                         }
                     }
                 }
@@ -405,8 +423,8 @@ public class SingleEliminationDAO extends DBContext {
     public synchronized void ensureBracketInitialized(String tournamentId, int stageOrder) {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return;
 
-        String checkSql = "SELECT COUNT(*) FROM matches m "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
+        String checkSql = "SELECT TOP 1 1 FROM matches m WITH (NOLOCK) "
+                + "LEFT JOIN tournament_stages s WITH (NOLOCK) ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (m.stage_id IS NULL AND ? = 1))";
 
         try (Connection conn = getConnection();
@@ -415,7 +433,7 @@ public class SingleEliminationDAO extends DBContext {
             ps.setInt(2, stageOrder);
             ps.setInt(3, stageOrder);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next() && rs.getInt(1) > 0) {
+                if (rs.next()) {
                     return; // Already initialized!
                 }
             }

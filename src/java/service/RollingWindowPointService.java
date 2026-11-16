@@ -54,6 +54,8 @@ public class RollingWindowPointService {
     private static final java.util.Map<String, CacheEntry<List<Map<String, Boolean>>>> TOURNEY_PART_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static final java.util.Map<String, CacheEntry<HighestRankDTO>> HIGHEST_RANK_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static final java.util.Set<String> PRELOADED_SERIES = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final Object[] STANDINGS_LOCKS = new Object[16];
+    static { java.util.Arrays.setAll(STANDINGS_LOCKS, i -> new Object()); }
 
     public static void clearAllCaches() {
         dao.MatchStatisticsDAO.clearCache();
@@ -179,14 +181,31 @@ public class RollingWindowPointService {
 
     private List<RollingStandingDTO> calculateSeriesStandingsWithExpiry(String seriesId, Integer milestoneIndex,
             String changingTournamentId, String targetStatus) {
+        if (seriesId == null || seriesId.trim().isEmpty()) return new ArrayList<>();
+        String sKey = seriesId.trim();
+
+        if (changingTournamentId == null && milestoneIndex == null) {
+            CacheEntry<List<RollingStandingDTO>> cached = STANDINGS_CACHE.get(sKey);
+            if (cached != null && !cached.isExpired(3600000L)) {
+                return cached.data;
+            }
+            synchronized (STANDINGS_LOCKS[(sKey.hashCode() & Integer.MAX_VALUE) % STANDINGS_LOCKS.length]) {
+                cached = STANDINGS_CACHE.get(sKey);
+                if (cached != null && !cached.isExpired(3600000L)) {
+                    return cached.data;
+                }
+                return doCalculateSeriesStandings(seriesId, null, null, null);
+            }
+        }
+        return doCalculateSeriesStandings(seriesId, milestoneIndex, changingTournamentId, targetStatus);
+    }
+
+    private List<RollingStandingDTO> doCalculateSeriesStandings(String seriesId, Integer milestoneIndex,
+            String changingTournamentId, String targetStatus) {
         List<RollingStandingDTO> resultList = new ArrayList<>();
         if (seriesId == null || seriesId.trim().isEmpty()) return resultList;
 
         String sKey = seriesId.trim();
-        CacheEntry<List<RollingStandingDTO>> cached = STANDINGS_CACHE.get(sKey);
-        if (changingTournamentId == null && milestoneIndex == null && cached != null && !cached.isExpired(60000L)) {
-            return cached.data;
-        }
 
         // 0. Preload stage formats, teams and result categories if the series cache is cold
         preloadSeriesData(sKey);
@@ -367,7 +386,7 @@ public class RollingWindowPointService {
         if (seriesId == null || seriesId.trim().isEmpty()) return new ArrayList<>();
         String sKey = seriesId.trim();
         CacheEntry<List<Map<String, Integer>>> cached = TOURNEY_POINTS_CACHE.get(sKey);
-        if (cached != null && !cached.isExpired(60000L)) {
+        if (cached != null && !cached.isExpired(3600000L)) {
             return cached.data;
         }
         calculateSeriesStandingsWithExpiry(seriesId);
@@ -382,7 +401,7 @@ public class RollingWindowPointService {
         if (seriesId == null || seriesId.trim().isEmpty()) return new ArrayList<>();
         String sKey = seriesId.trim();
         CacheEntry<List<Map<String, Boolean>>> cached = TOURNEY_PART_CACHE.get(sKey);
-        if (cached != null && !cached.isExpired(60000L)) {
+        if (cached != null && !cached.isExpired(3600000L)) {
             return cached.data;
         }
         calculateSeriesStandingsWithExpiry(seriesId);
@@ -587,7 +606,7 @@ public class RollingWindowPointService {
 
         String cacheKey = seriesId.trim() + "___" + teamName.trim().toLowerCase();
         CacheEntry<HighestRankDTO> cached = HIGHEST_RANK_CACHE.get(cacheKey);
-        if (cached != null && !cached.isExpired(60000L)) {
+        if (cached != null && !cached.isExpired(3600000L)) {
             return cached.data;
         }
 

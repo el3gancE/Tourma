@@ -109,14 +109,15 @@ public final class JdbcConnectionPool implements AutoCloseable {
                 try { statement.setQueryTimeout(querySeconds); }
                 catch (SQLException e) { dispose(statement); throw e; }
                 statements.add(statement);
-                return wrapStatement(statement, logical[0], closed, statements);
+                String sqlCtx = (args != null && args.length > 0 && args[0] instanceof String) ? (String) args[0] : null;
+                return wrapStatement(statement, logical[0], closed, statements, sqlCtx);
             }
             return value;
         });
         return logical[0];
     }
 
-    private Statement wrapStatement(Statement physical, Connection connection, AtomicBoolean leaseClosed, Set<Statement> statements) {
+    private Statement wrapStatement(Statement physical, Connection connection, AtomicBoolean leaseClosed, Set<Statement> statements, String sqlContext) {
         Class<?> api = physical instanceof CallableStatement ? CallableStatement.class
                 : physical instanceof PreparedStatement ? PreparedStatement.class : Statement.class;
         AtomicBoolean closed = new AtomicBoolean();
@@ -139,7 +140,10 @@ public final class JdbcConnectionPool implements AutoCloseable {
                 throw e;
             } finally {
                 long millis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-                if (name.startsWith("execute") && millis >= 1000) LOG.warning("Slow DB operation: " + name + " " + millis + "ms; " + snapshot());
+                if (name.startsWith("execute") && millis >= 1000) {
+                    String sText = sqlContext != null ? sqlContext.replaceAll("\\s+", " ") : (args != null && args.length > 0 ? String.valueOf(args[0]) : "unknown");
+                    LOG.warning("Slow DB operation: " + name + " " + millis + "ms; SQL: " + sText + "; " + snapshot());
+                }
             }
         });
     }

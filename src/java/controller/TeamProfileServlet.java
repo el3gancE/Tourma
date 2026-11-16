@@ -167,12 +167,15 @@ public class TeamProfileServlet extends HttpServlet {
         List<PartnerParticipant> partners = null;
         List<Tournament> tourneys = null;
         Map<String, List<String>> stageFormatsMap = new HashMap<>();
+        long profStart = System.currentTimeMillis();
+        long tPreloadEnd = 0, tPerfEnd = 0, tProgEnd = 0;
 
         if (series != null) {
             RollingWindowPointService.getInstance().preloadSeriesData(series.getId());
             partners = seriesDAO.getPartnerParticipantsBySeriesId(series.getId());
             tourneys = seriesDAO.getTournamentsBySeriesId(series.getId());
             stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(series.getId());
+            tPreloadEnd = System.currentTimeMillis();
 
             if (partners != null) {
                 for (PartnerParticipant p : partners) {
@@ -444,6 +447,7 @@ public class TeamProfileServlet extends HttpServlet {
                 }
             }
 
+            tPerfEnd = System.currentTimeMillis();
             // Calculate Rank Progression and track highest rank in a single fast pass
             List<RankProgressionDTO> rankProgressionList = new ArrayList<>();
             List<PartnerParticipant> allPartners = (partners != null) ? partners : new ArrayList<>();
@@ -637,7 +641,15 @@ public class TeamProfileServlet extends HttpServlet {
         request.setAttribute("serverTourneyPoints", serverTourneyPoints);
         request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
 
+        long tBeforeFwd = System.currentTimeMillis();
         request.getRequestDispatcher("/common/team-profile.jsp").forward(request, response);
+        long tAfterFwd = System.currentTimeMillis();
+        java.util.logging.Logger.getLogger(TeamProfileServlet.class.getName()).warning(
+            "[TIMING TeamProfile: " + teamName + "] preload=" + (tPreloadEnd - profStart)
+            + "ms, performances=" + (tPerfEnd - tPreloadEnd)
+            + "ms, prog=" + (tBeforeFwd - tPerfEnd)
+            + "ms, forwardJsp=" + (tAfterFwd - tBeforeFwd)
+            + "ms, total=" + (tAfterFwd - profStart) + "ms");
     }
 
     public static String getTournamentFinalStageUrl(String contextPath, String tournamentId, String seriesId, boolean isMultiStage, String s1Format, String s2Format) {

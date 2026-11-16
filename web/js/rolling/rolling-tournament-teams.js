@@ -44,7 +44,12 @@
     return partnerPickerRequest;
   }
 
-  async function withPartnerPicker(button, action) {
+  function withPartnerPicker(button, action) {
+    var host = document.getElementById('partnerPickerHost');
+    if (!host) {
+      action();
+      return Promise.resolve();
+    }
     var label;
     if (button) {
       label = button.innerHTML;
@@ -52,18 +57,17 @@
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
     }
-    try {
-      await loadPartnerPicker();
+    return loadPartnerPicker().then(function () {
       action();
-    } catch (error) {
+    }).catch(function (error) {
       alert('Không tải được danh sách Partner. Vui lòng thử lại.');
-    } finally {
+    }).finally(function () {
       if (button) {
         button.innerHTML = label;
         button.disabled = false;
         button.removeAttribute('aria-busy');
       }
-    }
+    });
   }
 
   function handleDragStart(e) {
@@ -891,6 +895,8 @@
   });
 
   // Other tabs can update cached results while this setup page stays open.
-  window.addEventListener('storage', function () { preparedStandingsInputs = null; });
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('storage', function () { preparedStandingsInputs = null; });
+  }
 
 })();

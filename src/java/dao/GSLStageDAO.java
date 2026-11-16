@@ -197,12 +197,11 @@ public class GSLStageDAO extends DBContext {
 
         // Check if DB already contains valid GSL matches for ALL expected groups
         String checkSql = "SELECT COUNT(*) AS total_matches, "
-                + "COUNT(DISTINCT ISNULL(g.group_name, m.group_id)) AS distinct_groups, "
+                + "COUNT(DISTINCT m.group_id) AS distinct_groups, "
                 + "SUM(CASE WHEN m.group_id IS NULL OR m.group_id = '' THEN 1 ELSE 0 END) AS null_groups, "
                 + "SUM(CASE WHEN m.id LIKE '%_UB_%' OR m.id LIKE '%_LB_%' THEN 1 ELSE 0 END) AS gsl_matches "
-                + "FROM matches m "
-                + "LEFT JOIN groups g ON (m.group_id = g.id OR m.group_id = g.group_name) "
-                + "LEFT JOIN tournament_stages s ON m.stage_id = s.id "
+                + "FROM matches m WITH (NOLOCK) "
+                + "LEFT JOIN tournament_stages s WITH (NOLOCK) ON m.stage_id = s.id AND s.tournament_id = m.tournament_id "
                 + "WHERE m.tournament_id = ? AND (s.stage_order = ? OR (s.stage_order IS NULL AND ? = 1) OR m.stage_id LIKE '%_S' + CAST(? AS VARCHAR) + '%' OR m.stage_id = 'STAGE_' + CAST(? AS VARCHAR))";
 
         boolean alreadyInitialized = false;
@@ -865,31 +864,43 @@ public class GSLStageDAO extends DBContext {
     public void healMissingLinks(String tournamentId) {
         if (tournamentId == null || tournamentId.trim().isEmpty())
             return;
-        String sql1 = "UPDATE m SET m.next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'UB_R2_M1', "
-                + "m.next_slot = 'SLOT_1', "
-                + "m.loser_next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'LB_R1_M1', "
-                + "m.loser_next_slot = 'SLOT_1' "
-                + "FROM matches m "
-                + "WHERE m.tournament_id = ? AND m.id LIKE '%_UB_R1_M1' AND (m.next_match_id IS NULL OR m.loser_next_match_id IS NULL)";
-
-        String sql2 = "UPDATE m SET m.next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'UB_R2_M1', "
-                + "m.next_slot = 'SLOT_2', "
-                + "m.loser_next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'LB_R1_M1', "
-                + "m.loser_next_slot = 'SLOT_2' "
-                + "FROM matches m "
-                + "WHERE m.tournament_id = ? AND m.id LIKE '%_UB_R1_M2' AND (m.next_match_id IS NULL OR m.loser_next_match_id IS NULL)";
-
-        String sql3 = "UPDATE m SET m.loser_next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R2_M', m.id)) + 'LB_R2_M1', "
-                + "m.loser_next_slot = 'SLOT_1' "
-                + "FROM matches m "
-                + "WHERE m.tournament_id = ? AND m.id LIKE '%_UB_R2_M1' AND m.loser_next_match_id IS NULL";
-
-        String sql4 = "UPDATE m SET m.next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_LB_R1_M', m.id)) + 'LB_R2_M1', "
-                + "m.next_slot = 'SLOT_2' "
-                + "FROM matches m "
-                + "WHERE m.tournament_id = ? AND m.id LIKE '%_LB_R1_M1' AND m.next_match_id IS NULL";
+        String checkSql = "SELECT TOP 1 1 FROM matches WITH (NOLOCK) WHERE tournament_id = ? AND ("
+                + "(id LIKE '%_UB_R1_M1' AND (next_match_id IS NULL OR loser_next_match_id IS NULL)) OR "
+                + "(id LIKE '%_UB_R1_M2' AND (next_match_id IS NULL OR loser_next_match_id IS NULL)) OR "
+                + "(id LIKE '%_UB_R2_M1' AND loser_next_match_id IS NULL) OR "
+                + "(id LIKE '%_LB_R1_M1' AND next_match_id IS NULL))";
 
         try (Connection conn = getConnection()) {
+            try (PreparedStatement psCheck = conn.prepareStatement(checkSql)) {
+                psCheck.setString(1, tournamentId);
+                try (ResultSet rsCheck = psCheck.executeQuery()) {
+                    if (!rsCheck.next()) return; // All links intact, no healing needed!
+                }
+            }
+            String sql1 = "UPDATE m SET m.next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'UB_R2_M1', "
+                    + "m.next_slot = 'SLOT_1', "
+                    + "m.loser_next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'LB_R1_M1', "
+                    + "m.loser_next_slot = 'SLOT_1' "
+                    + "FROM matches m "
+                    + "WHERE m.tournament_id = ? AND m.id LIKE '%_UB_R1_M1' AND (m.next_match_id IS NULL OR m.loser_next_match_id IS NULL)";
+
+            String sql2 = "UPDATE m SET m.next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'UB_R2_M1', "
+                    + "m.next_slot = 'SLOT_2', "
+                    + "m.loser_next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R1_M', m.id)) + 'LB_R1_M1', "
+                    + "m.loser_next_slot = 'SLOT_2' "
+                    + "FROM matches m "
+                    + "WHERE m.tournament_id = ? AND m.id LIKE '%_UB_R1_M2' AND (m.next_match_id IS NULL OR m.loser_next_match_id IS NULL)";
+
+            String sql3 = "UPDATE m SET m.loser_next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_UB_R2_M', m.id)) + 'LB_R2_M1', "
+                    + "m.loser_next_slot = 'SLOT_1' "
+                    + "FROM matches m "
+                    + "WHERE m.tournament_id = ? AND m.id LIKE '%_UB_R2_M1' AND m.loser_next_match_id IS NULL";
+
+            String sql4 = "UPDATE m SET m.next_match_id = SUBSTRING(m.id, 1, CHARINDEX('_LB_R1_M', m.id)) + 'LB_R2_M1', "
+                    + "m.next_slot = 'SLOT_2' "
+                    + "FROM matches m "
+                    + "WHERE m.tournament_id = ? AND m.id LIKE '%_LB_R1_M1' AND m.next_match_id IS NULL";
+
             try (PreparedStatement ps1 = conn.prepareStatement(sql1)) { ps1.setString(1, tournamentId); ps1.executeUpdate(); }
             try (PreparedStatement ps2 = conn.prepareStatement(sql2)) { ps2.setString(1, tournamentId); ps2.executeUpdate(); }
             try (PreparedStatement ps3 = conn.prepareStatement(sql3)) { ps3.setString(1, tournamentId); ps3.executeUpdate(); }

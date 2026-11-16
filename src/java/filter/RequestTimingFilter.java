@@ -28,7 +28,7 @@ public class RequestTimingFilter implements Filter {
         HttpServletResponse res = (HttpServletResponse) response;
         String path = req.getRequestURI().substring(req.getContextPath().length());
         if (path.startsWith("/css/") || path.startsWith("/js/") || path.startsWith("/images/")
-                || path.startsWith("/fonts/") || path.equals("/favicon.ico")) {
+                || path.startsWith("/fonts/") || path.equals("/favicon.ico") || path.equals("/favicon.svg")) {
             chain.doFilter(request, response);
             return;
         }

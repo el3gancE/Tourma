@@ -4,6 +4,13 @@
 -- Mô tả: Cơ sở dữ liệu chuẩn hóa cho hệ thống quản lý giải đấu Tourma
 -- Hỗ trợ: Single/Multi-Stage, Single/Double Elimination, Round Robin, Swiss,
 --         Group Stage, Series Rolling Window, FIFA Elo Ranking & League System.
+--
+-- CẢNH BÁO QUAN TRỌNG VỀ DỮ LIỆU:
+-- Script này là kịch bản khởi tạo từ đầu (Fresh Setup), có lệnh DROP DATABASE [tourma].
+-- NẾU BẠN ĐÃ CÓ DATABASE 'tourma' VÀ ĐANG CHỨA DỮ LIỆU CŨ, KHÔNG CHẠY FILE NÀY!
+-- Thay vào đó, hãy chạy script migration bảo toàn dữ liệu:
+--     web/database/migration_db_persistence.sql
+-- hoặc khởi động ứng dụng web (DBContext sẽ tự động cập nhật an toàn).
 -- ============================================================================
 
 USE master;
@@ -474,5 +481,5 @@ VALUES
 GO
 
 PRINT N'===================================================================';
-PRINT N'ĐÃ KHỞI TẠO THÀNH CÔNG DATABASE tourma_db VỚI 13 BẢNG CHUẨN HÓA!';
+PRINT N'ĐÃ KHỞI TẠO THÀNH CÔNG DATABASE tourma VỚI 13 BẢNG CHUẨN HÓA!';
 PRINT N'===================================================================';

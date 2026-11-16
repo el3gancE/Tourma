@@ -468,22 +468,28 @@
                 } %>
             ];
             window.serverTourneyAchievements = [
-                <% if (tournamentsList != null) {
-                    for (int tIdx = 0; tIdx < tournamentsList.size(); tIdx++) {
-                        java.util.Map<String, service.TournamentPlacementService.PlacementResult> results =
-                            service.TournamentPlacementService.getInstance().getTournamentResults(tournamentsList.get(tIdx).getId());
-                        StringBuilder resultJson = new StringBuilder("{");
-                        int resultIdx = 0;
-                        for (java.util.Map.Entry<String, service.TournamentPlacementService.PlacementResult> entry : results.entrySet()) {
-                            if (resultIdx++ > 0) resultJson.append(',');
-                            String resultKey = entry.getKey().replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t").replace("<", "\\u003c");
-                            String resultLabel = entry.getValue().getAchievement().replace("\\", "\\\\").replace("\"", "\\\"");
-                            resultJson.append('"').append(resultKey).append("\":\"").append(resultLabel).append('"');
+                <%
+                java.util.Map<String, String> perfAchMap = new java.util.HashMap<>();
+                if (performanceList != null) {
+                    for (controller.TeamProfileServlet.TourneyPerformanceDTO perf : performanceList) {
+                        if (perf.getTournamentId() != null && perf.getAchievement() != null) {
+                            perfAchMap.put(perf.getTournamentId(), perf.getAchievement());
                         }
-                        resultJson.append('}');
+                    }
+                }
+                String targetTeamKeySafe = (teamName != null) ? teamName.trim().toLowerCase().replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                if (tournamentsList != null) {
+                    for (int tIdx = 0; tIdx < tournamentsList.size(); tIdx++) {
+                        String tId = tournamentsList.get(tIdx).getId();
+                        String achVal = perfAchMap.get(tId);
+                        if (achVal != null && !achVal.isEmpty() && !targetTeamKeySafe.isEmpty()) {
+                            String safeAch = achVal.replace("\\", "\\\\").replace("\"", "\\\"");
                 %>
-                    <%= resultJson.toString() %><%= tIdx < tournamentsList.size()-1 ? "," : "" %>
-                <%  }
+                    {"<%= targetTeamKeySafe %>":"<%= safeAch %>"}<%= tIdx < tournamentsList.size()-1 ? "," : "" %>
+                <%      } else { %>
+                    {}<%= tIdx < tournamentsList.size()-1 ? "," : "" %>
+                <%      }
+                    }
                 } %>
             ];
             window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
