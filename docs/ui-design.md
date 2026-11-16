@@ -124,7 +124,7 @@ Hệ màu phụ và ngữ nghĩa dùng thống nhất 1 bộ duy nhất cho cả
 - Trận chung kết / Vô địch: `#FACC15` cho Dark mode, `#D49500` cho Light mode.
 - Điểm cộng (+), tăng hạng (▲), thành tích tốt (`--ui-success`): Xanh lá `#16A34A` mặc định (không đổi theo theme accent).
 - Giảm điểm (-), giảm hạng (▼), nguy hiểm (`--ui-danger`): Đỏ `#BE123C`.
-- Nhánh thua (LB): Cam đất `#EA580C` (ở bộ Xanh và bộ Xanh lá), Royal Blue `#2563EB` (ở bộ Đỏ), và Emerald Green `#059669` (ở bộ Cam).
+- Nhánh thua (LB): Đỏ `#BE123C` (ở bộ Xanh dương), Royal Blue `#2563EB` (ở bộ Đỏ), Cam đất `#EA580C` (ở bộ Xanh lá), và Emerald Green `#059669` (ở bộ Cam).
 - 32 bảng GSL: A theo UB (`var(--ui-accent)`), B theo LB (`var(--ui-bracket-lower-accent)`); C–AF dùng dải quang phổ 30 màu cố định, dùng chung 1 bộ duy nhất cho cả Light và Dark.
 
 Nền trang, header/sidebar, workspace và canvas dùng chung --ui-bg: sáng #FFFFFF, tối #121212. Card dùng token surface riêng để giữ phân lớp.

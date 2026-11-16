@@ -58,8 +58,8 @@
     --ui-line: #d4dae1;
     --ui-accent: #2563eb;
     --ui-swiss-upper-accent: #16a34a;
-    --ui-bracket-lower-accent: #ea580c;
-    --ui-bracket-lower-soft: #fff7ed;
+    --ui-bracket-lower-accent: #be123c;
+    --ui-bracket-lower-soft: #fff1f2;
     --ui-accent-hover: #1d4ed8;
     --ui-accent-soft: rgba(37, 99, 235, 0.08);
     --ui-on-accent: #ffffff;
@@ -97,8 +97,8 @@
     --ui-line: #2a2c33;
     --ui-accent: #2563eb;
     --ui-swiss-upper-accent: #16a34a;
-    --ui-bracket-lower-accent: #ea580c;
-    --ui-bracket-lower-soft: rgba(234, 88, 12, 0.12);
+    --ui-bracket-lower-accent: #be123c;
+    --ui-bracket-lower-soft: rgba(190, 18, 60, 0.12);
     --ui-accent-hover: #3b82f6;
     --ui-accent-soft: rgba(37, 99, 235, 0.10);
     --ui-on-accent: #ffffff;
@@ -159,7 +159,7 @@
 :root[data-accent="blue"] {
     --ui-accent: #2563eb;
     --ui-on-accent: #ffffff;
-    --ui-bracket-lower-accent: #ea580c;
+    --ui-bracket-lower-accent: #be123c;
 }
 :root[data-theme="light"][data-accent="blue"] {
     --ui-bg: #ffffff; --ui-navigation-bg: #ffffff; --ui-workspace-bg: #ffffff;
@@ -168,7 +168,7 @@
     --ui-match-row: #f8fafc; --ui-match-border: #d4dae1; --ui-match-score: #e5e9ee;
     --ui-text: #202124; --ui-muted: #71717a; --ui-line: #d4dae1; --ui-line-strong: #b8c1cc;
     --ui-accent-hover: #1d4ed8; --ui-accent-soft: rgba(37, 99, 235, 0.08);
-    --ui-bracket-lower-soft: #fff7ed;
+    --ui-bracket-lower-soft: #fff1f2;
     --ui-pending-bg: #e5e9ee; --ui-pending-text: #475569; --ui-connector: #8a8a8a;
     --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
     --ui-card-shadow: 0 2px 6px rgb(15 23 42 / 8%), 0 1px 2px rgb(15 23 42 / 4%);
@@ -176,7 +176,7 @@
 :root[data-theme="dark"][data-accent="blue"] {
     --ui-accent-hover: #3b82f6;
     --ui-accent-soft: rgba(37, 99, 235, 0.10);
-    --ui-bracket-lower-soft: rgba(234, 88, 12, 0.12);
+    --ui-bracket-lower-soft: rgba(190, 18, 60, 0.12);
 }
 
 :root[data-accent="wine"] {
