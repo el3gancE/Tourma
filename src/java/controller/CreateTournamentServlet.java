@@ -69,11 +69,13 @@ public class CreateTournamentServlet extends HttpServlet {
                 System.out.println("ID: " + tournamentId);
                 System.out.println("Name: " + name);
             } else {
-                System.err.println("Failed to insert tournament into database: " + tournamentId);
+                request.setAttribute("errorMessage", "Không thể tạo giải đấu. Vui lòng thử lại.");
+                request.getRequestDispatcher("/common/create-tournament.jsp").forward(request, response);
+                return;
             }
 
-            // 4. Redirect to Step 2: Format Configuration Screen (web/common/configure-tournament-format.jsp)
-            response.sendRedirect(request.getContextPath() + "/common/configure-tournament-format.jsp?id=" + tournamentId);
+            // 4. Configure format and teams together.
+            response.sendRedirect(request.getContextPath() + "/common/configure-tournament-teams.jsp?id=" + tournamentId);
 
         } catch (Exception e) {
             e.printStackTrace();

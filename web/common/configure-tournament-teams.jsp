@@ -5,11 +5,13 @@
 <%
     String tournamentId = request.getParameter("id");
     String seriesIdParam = request.getParameter("seriesId");
+    model.Tournament setupTournament = null;
     if (seriesIdParam == null || seriesIdParam.trim().isEmpty()) {
         if (tournamentId != null && !tournamentId.trim().isEmpty()) {
             try {
                 dao.TournamentDAO tDaoCheck = new dao.TournamentDAO();
-                model.Tournament tObj = tDaoCheck.getTournamentById(tournamentId);
+                model.Tournament tObj = tDaoCheck.getTournamentById(tournamentId, false);
+                setupTournament = tObj;
                 if (tObj != null && tObj.getSeriesId() != null && !tObj.getSeriesId().trim().isEmpty()) {
                     seriesIdParam = tObj.getSeriesId();
                 }
@@ -46,26 +48,27 @@
                     response.sendError(409, "Không lưu được cấu hình. Stage đã có trận không thể đổi cấu trúc.");
                     return;
                 }
+                setupTournament = null;
             } else if (tourneyFormat != null && !tourneyFormat.trim().isEmpty()) {
                 tDao.saveOrUpdateStageFormat(tournamentId, tourneyFormat.trim());
+                setupTournament = null;
             }
             String copiedFromParam = request.getParameter("copiedFrom");
             if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()) {
                 tDao.copyPointsConfigFromTournament(copiedFromParam.trim(), tournamentId.trim(), request.getParameter("multiConfig") == null);
+                setupTournament = null;
             }
         } catch (Exception ignore) {}
         ParticipantDAO pDao = new ParticipantDAO();
         existingTeams = pDao.getTeamsByTournamentId(tournamentId);
-        if (tourneyFormat == null || tourneyFormat.trim().isEmpty()) {
-            try {
-                dao.TournamentDAO tDao = new dao.TournamentDAO();
-                model.Tournament t = tDao.getTournamentById(tournamentId);
-                if (t != null && t.getFormat() != null) {
-                    tourneyFormat = t.getFormat();
-                }
-            } catch(Exception e) {}
+        if (setupTournament == null) {
+            setupTournament = new dao.TournamentDAO().getTournamentById(tournamentId, false);
+        }
+        if (setupTournament != null && (tourneyFormat == null || tourneyFormat.trim().isEmpty())) {
+            tourneyFormat = setupTournament.getFormat();
         }
     }
+    request.setAttribute("setupTournament", setupTournament);
     String initialDrawFormat = tournamentId == null ? tourneyFormat : new dao.TournamentDAO().getStage1Format(tournamentId);
     if (initialDrawFormat == null || initialDrawFormat.trim().isEmpty()) initialDrawFormat = stage1FormatParam != null ? stage1FormatParam : tourneyFormat;
 %>
@@ -95,10 +98,10 @@
         <!-- Team workspace -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/configure-tournament-teams.css?v=4">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
-    </head>
-    <body class="ui-page workspace-page tournament-workspace teams-page">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-setup.css?v=20261110-roster-v3">
+</head>
+    <body class="ui-page workspace-page tournament-workspace teams-page standalone-setup">
         <!-- Include Shared Navigation Header Component -->
         <jsp:include page="/common/component/header.jsp">
             <jsp:param name="active" value="create-tournament"/><jsp:param name="themeToggle" value="true"/>
@@ -115,14 +118,19 @@
         </details>
         <main class="teams-main">
             <header class="teams-page-header">
-                <h1 class="page-main-title">Thêm &amp; quản lý đội</h1>
+                <h1 class="page-main-title">Thể thức &amp; đội tham gia</h1>
                 <div class="teams-page-actions">
-                    <a href="${pageContext.request.contextPath}/common/configure-tournament-format.jsp?id=${param.id}" class="btn btn-secondary">Quay lại</a>
+                    <a href="${pageContext.request.contextPath}/my-tournaments" class="btn btn-secondary">Quay lại</a>
                     <button type="submit" form="configureTeamsForm" class="btn btn-mint">Tiếp tục <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
                 </div>
             </header>
 
             <!-- Active Copied Config Constraint Banner (if targetTeamCount > 0) -->
+            <jsp:include page="/common/component/tournament-config-state.jsp"/>
+            <% request.setAttribute("standaloneFormatEmbedded", Boolean.TRUE); %>
+            <jsp:include page="/common/configure-tournament-format.jsp"/>
+            <% request.removeAttribute("standaloneFormatEmbedded"); %>
+
             <div id="targetTeamConstraintBanner" data-ui-style="configure-tournament-teams-jsp-002" style="<%= (targetTeamCountVal > 0) ? "display: flex;" : "display: none;" %>">
                 <div data-ui-style="configure-tournament-teams-jsp-003" style="display: flex;">
                     <i class="fa-solid fa-lock text-mint"></i>
@@ -133,9 +141,9 @@
                 </span>
             </div>
 
-                    <form id="configureTeamsForm" action="${pageContext.request.contextPath}/save-teams" method="POST" onsubmit="return prepareFormSubmission(event)">
+                    <form id="configureTeamsForm" action="${pageContext.request.contextPath}/save-teams" method="POST" onsubmit="return prepareStandaloneSetup(event)">
                         <input type="hidden" name="id" value="${param.id}">
-                        <input type="hidden" name="format" value="<%= (tourneyFormat != null) ? tourneyFormat : "" %>">
+                        <input type="hidden" name="format" id="teamFormFormat" value="<%= (tourneyFormat != null) ? tourneyFormat : "" %>">
                         <input type="hidden" id="targetTeamCountInput" name="targetTeamCount" value="<%= (targetTeamCountVal > 0) ? targetTeamCountVal : "" %>">
                         <input type="hidden" id="copiedSourceTourneyNameInput" name="copiedSourceTourneyName" value="<%= (copiedSourceTourneyNameParam != null) ? copiedSourceTourneyNameParam : "" %>">
                         <input type="hidden" id="finalTeamsInput" name="teamListRaw" value="">
@@ -181,7 +189,7 @@
                                 <div class="manage-toolbar">
                                     <div class="manage-toolbar-left" data-ui-style="configure-tournament-teams-jsp-007" style="display: flex;">
                                         <label for="lockTopSeedsInput" data-ui-style="configure-tournament-teams-jsp-008">Giữ top</label>
-                                        <input type="number" id="lockTopSeedsInput" min="0" max="999" placeholder="0"
+                                        <input type="number" id="lockTopSeedsInput" min="0" max="999"
                                                data-ui-style="configure-tournament-teams-jsp-009"
                                                onfocus="this.select()" onchange="window.saveHideSeedConfig()" oninput="window.saveHideSeedConfig()">
                                         <button type="button" class="btn btn-secondary" data-ui-style="configure-tournament-teams-jsp-010" onclick="window.shuffleTeams()">
@@ -207,7 +215,7 @@
 
                                 <!-- SEEDING TABLE -->
                                 <div class="table-container">
-                                    <div id="teamsEmptyState" class="teams-empty" hidden>Chưa có đội. Nhập danh sách ở ô bên cạnh rồi chọn “Thêm đội”.</div>
+                                    <div id="teamsEmptyState" class="teams-empty" hidden><span class="roster-empty-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span><strong>Chưa có đội tham gia</strong><p>Nhập danh sách rồi chọn “Thêm đội”.</p></div>
                                     <div class="table-scroll-wrapper" tabindex="0" role="region" aria-label="Danh sách đội có thể cuộn">
                                         <table class="table" id="teamsTable" aria-label="Danh sách đội và thứ tự hạt giống">
                                             <thead>
@@ -235,6 +243,9 @@
 
                         </div>
                     </form>
+            <div class="teams-page-actions standalone-setup-footer">
+                <button type="submit" form="configureTeamsForm" class="btn btn-mint">Tiếp tục <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+            </div>
         </main>
         </div>
 
@@ -353,6 +364,8 @@
 
             // Helper to get effective Stage 1 Format
             function getStage1Format() {
+                var selection = document.getElementById('selectedFormat');
+                if (selection && selection.value) return selection.value.toUpperCase();
                 var urlParams = new URLSearchParams(window.location.search);
                 var urlType = urlParams.get('tournamentType');
                 var urlStage1 = urlParams.get('stage1Format');
@@ -839,7 +852,7 @@
                     document.body.style.overflow = '';
                 }
                 document.getElementById('finalTeamsInput').value = currentTeamsList.join('\n');
-                document.getElementById('configureTeamsForm').submit();
+                window.submitStandaloneSetup();
             };
 
             window.prepareFormSubmission = function(e) {
@@ -996,7 +1009,7 @@
                 }
 
                 if (input) {
-                    input.value = visibleCount;
+                    input.value = Number(visibleCount) > 0 ? String(Number(visibleCount)) : '';
                 }
                 window.applyHideSeedUI(isEnabled);
                 window.saveHideSeedConfig();
@@ -1032,6 +1045,10 @@
                 var input = document.getElementById('lockTopSeedsInput');
                 var isEnabled = (btn && btn.dataset.active === 'true');
                 var visibleCount = input ? input.value.trim() : '';
+                if (input && visibleCount) {
+                    visibleCount = visibleCount.replace(/^0+(?=\d)/, '');
+                    input.value = visibleCount;
+                }
                 document.querySelectorAll('form').forEach(function (form) {
                     var field = form.querySelector('input[name="topSeedCount"]');
                     if (!field) { field = document.createElement('input'); field.type = 'hidden'; field.name = 'topSeedCount'; form.appendChild(field); }
@@ -1064,5 +1081,8 @@
             });
         </script>
         <script src="${pageContext.request.contextPath}/js/teams-presentation.js?v=2"></script>
+        <script src="${pageContext.request.contextPath}/js/standalone-setup.js?v=1"></script>
+        <script src="${pageContext.request.contextPath}/js/standalone-format-layout.js?v=3"></script>
+        <script src="${pageContext.request.contextPath}/js/setup-presentation.js?v=6-batched"></script>
     </body>
 </html>

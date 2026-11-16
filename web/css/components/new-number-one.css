@@ -1,0 +1,201 @@
+@import url('../design-tokens.css?v=20261117-v10');
+
+/* Inline stage-style announcement. It stays in the page flow above the standings. */
+.new-number-one {
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 24px;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: var(--ui-celebration-ink);
+    background: linear-gradient(
+        135deg,
+        var(--ui-celebration-bg) 0%,
+        var(--ui-celebration-glow-a) 25%,
+        var(--ui-celebration-glow-b) 50%,
+        var(--ui-celebration-glow-c) 75%,
+        var(--ui-celebration-glow-d) 100%
+    );
+    background-size: 280% 280%;
+    animation: new-number-one-enter .45s ease-out both, new-number-one-mesh-flow 9s ease-in-out infinite alternate;
+    font-family: var(--ui-font);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.new-number-one[hidden] { display: none; }
+.new-number-one__art {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    border-radius: inherit;
+}
+.new-number-one__art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: .07;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: linear-gradient(transparent, black);
+}
+.new-number-one__art > span:not(.new-number-one__streak) {
+    position: absolute;
+    width: 65%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    filter: blur(52px);
+    opacity: .72;
+    will-change: transform;
+}
+.new-number-one__art > span:nth-child(1) {
+    background: var(--ui-celebration-glow-a);
+    top: -45%;
+    left: -15%;
+    animation: new-number-one-drift-1 8s ease-in-out infinite alternate;
+}
+.new-number-one__art > span:nth-child(2) {
+    background: var(--ui-celebration-glow-b);
+    top: -35%;
+    right: -10%;
+    animation: new-number-one-drift-2 10s ease-in-out infinite alternate -2s;
+}
+.new-number-one__art > span:nth-child(3) {
+    background: var(--ui-celebration-glow-c);
+    bottom: -55%;
+    right: 10%;
+    animation: new-number-one-drift-3 9s ease-in-out infinite alternate -4s;
+}
+.new-number-one__art > span:nth-child(4) {
+    background: var(--ui-celebration-glow-d);
+    bottom: -45%;
+    left: 5%;
+    animation: new-number-one-drift-4 11s ease-in-out infinite alternate -6s;
+}
+
+/* White animated light streaks - soft blurred luminous effect */
+.new-number-one__streak {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 999px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.02) 20%,
+        rgba(255, 255, 255, 0.45) 50%,
+        rgba(255, 255, 255, 0.02) 80%,
+        transparent 100%
+    );
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
+    filter: blur(4px);
+}
+.new-number-one__streak--1 {
+    width: 260px;
+    height: 4px;
+    top: 25%;
+    left: -280px;
+    transform: rotate(-25deg);
+    animation: new-number-one-streak-1 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.new-number-one__streak--2 {
+    width: 360px;
+    height: 3px;
+    top: 65%;
+    left: -380px;
+    transform: rotate(-22deg);
+    animation: new-number-one-streak-2 8s cubic-bezier(0.4, 0, 0.2, 1) infinite 2.5s;
+}
+
+.new-number-one__content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    padding: 30px 40px;
+}
+.new-number-one__headline { flex: 0 0 auto; }
+.new-number-one h2 {
+    margin: 0;
+    font-size: clamp(44px, 6vw, 68px);
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1.05;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.65);
+}
+.new-number-one .new-number-one__name {
+    margin: 0;
+    min-width: 0;
+    padding-left: 36px;
+    border-left: 1px solid rgba(255, 255, 255, 0.25);
+    font-size: clamp(23px, 3vw, 36px);
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+}
+
+@keyframes new-number-one-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes new-number-one-mesh-flow {
+    0% { background-position: 0% 40%; }
+    50% { background-position: 100% 60%; }
+    100% { background-position: 0% 40%; }
+}
+@keyframes new-number-one-drift-1 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(35%, 40%) scale(1.2); }
+}
+@keyframes new-number-one-drift-2 {
+    0% { transform: translate(0, 0) scale(1.15); }
+    100% { transform: translate(-40%, 35%) scale(0.9); }
+}
+@keyframes new-number-one-drift-3 {
+    0% { transform: translate(0, 0) scale(0.9); }
+    100% { transform: translate(-35%, -40%) scale(1.25); }
+}
+@keyframes new-number-one-drift-4 {
+    0% { transform: translate(0, 0) scale(1.2); }
+    100% { transform: translate(40%, -30%) scale(0.95); }
+}
+@keyframes new-number-one-streak-1 {
+    0% { transform: translateX(0) translateY(0) rotate(-25deg); opacity: 0; }
+    20% { opacity: 0.55; }
+    50% { transform: translateX(1200px) translateY(220px) rotate(-25deg); opacity: 0.55; }
+    70%, 100% { transform: translateX(1400px) translateY(260px) rotate(-25deg); opacity: 0; }
+}
+@keyframes new-number-one-streak-2 {
+    0% { transform: translateX(0) translateY(0) rotate(-22deg); opacity: 0; }
+    25% { opacity: 0.45; }
+    55% { transform: translateX(1300px) translateY(-200px) rotate(-22deg); opacity: 0.45; }
+    75%, 100% { transform: translateX(1500px) translateY(-240px) rotate(-22deg); opacity: 0; }
+}
+
+@media(max-width: 650px) {
+    .new-number-one__content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 24px 20px;
+    }
+    .new-number-one .new-number-one__name {
+        padding: 0;
+        border: 0;
+    }
+    .new-number-one__art > span:not(.new-number-one__streak) { width: 100%; }
+    .new-number-one__art > span:nth-child(1) { top: -60%; }
+    .new-number-one__art > span:nth-child(2) { top: -20%; right: -40%; }
+    .new-number-one__art > span:nth-child(3) { bottom: -80%; right: -20%; }
+    .new-number-one__art > span:nth-child(4) { bottom: -60%; left: -20%; }
+}
+@media(prefers-reduced-motion: reduce) {
+    .new-number-one, .new-number-one__art > span, .new-number-one__streak { animation: none; }
+}

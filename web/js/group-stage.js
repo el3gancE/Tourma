@@ -595,6 +595,7 @@
 
     // Use the same score endpoint and success-only local update as Round Robin.
     function saveMatchScore(m, score1, score2, winnerSlot) {
+        if (window.TourmaScoreModal && window.TourmaScoreModal.isLocked(tournamentId)) return Promise.resolve(false);
         var winner = winnerSlot === 'draw' || winnerSlot === 'none' ? '' : winnerSlot;
         var payload = {
             action: 'updateMatch',

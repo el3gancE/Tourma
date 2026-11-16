@@ -55,11 +55,11 @@
         <!-- Main Design System CSS, Sidebar CSS, Dedicated Team Profile CSS & Badges CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=20261110-profile-latency-v4">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=20261110-profile-latency-v4">
 
         <!-- Chart.js for Rank Progression Chart -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script id="profile-chart-library" async src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
@@ -265,6 +265,16 @@
                     </h3>
                 </div>
 
+                <form id="profileHistoryFilters" class="profile-history-filters" onsubmit="return false">
+                    <label>Tier<select id="profileHistoryTier"><option value="">Tất cả tier</option></select></label>
+                    <label>Phase<select id="profileHistoryPhase"><option value="">Tất cả phase</option></select></label>
+                    <label>Window<select id="profileHistoryWindow"><option value="">Tất cả window</option></select></label>
+                    <label>Từ giải<select id="profileHistoryFrom"><option value="">Từ đầu</option></select></label>
+                    <label>Đến giải<select id="profileHistoryTo"><option value="">Đến cuối</option></select></label>
+                    <button type="button" id="profileHistoryReset" class="btn btn-secondary">Xóa lọc</button>
+                    <span id="profileHistoryCount" role="status" aria-live="polite"></span>
+                </form>
+                <div class="profile-history-scroll" tabindex="0" role="region" aria-label="Lịch sử thi đấu, tối đa 20 giải trong khung">
                 <table class="team-performance-table">
                     <thead>
                         <tr>
@@ -288,7 +298,7 @@
                                 else if (perf.getAchievement() != null && (perf.getAchievement().equals("2-3") || perf.getAchievement().equals("1-3") || perf.getAchievement().equals("0-3") || perf.getAchievement().contains("Bị loại"))) achClass = "eliminated";
                                 String pTier = (perf.getTierName() != null && !perf.getTierName().isEmpty()) ? perf.getTierName().toUpperCase() : "A";
                         %>
-                            <tr>
+                            <tr data-tournament-id="<%= perf.getTournamentId() %>">
                                 <td data-ui-style="team-profile-jsp-018"><%= (perf.getStt() > 0) ? perf.getStt() : (performanceList.size() - idx) %></td>
                                 <td data-ui-style="team-profile-jsp-019">
                                     <a href="<%= (perf.getFinalStageUrl() != null && !perf.getFinalStageUrl().isEmpty()) ? perf.getFinalStageUrl() : "#" %>" class="tourney-name-link" data-ui-style="team-profile-jsp-020" onmouseover="this.style.color='var(--ui-accent)'" onmouseout="this.style.color='var(--ui-text)'" title="Xem giai đoạn cuối giải <%= perf.getTournamentName() %>">
@@ -318,6 +328,8 @@
                         <% } %>
                     </tbody>
                 </table>
+                </div>
+                <p id="profileHistoryEmpty" class="profile-history-empty" hidden>Không có giải phù hợp với bộ lọc.</p>
             </div>
 
         </main></div>
@@ -456,30 +468,37 @@
                 } %>
             ];
             window.serverTourneyAchievements = [
-                <% if (tournamentsList != null) {
-                    for (int tIdx = 0; tIdx < tournamentsList.size(); tIdx++) {
-                        java.util.Map<String, service.TournamentPlacementService.PlacementResult> results =
-                            service.TournamentPlacementService.getInstance().getTournamentResults(tournamentsList.get(tIdx).getId());
-                        StringBuilder resultJson = new StringBuilder("{");
-                        int resultIdx = 0;
-                        for (java.util.Map.Entry<String, service.TournamentPlacementService.PlacementResult> entry : results.entrySet()) {
-                            if (resultIdx++ > 0) resultJson.append(',');
-                            String resultKey = entry.getKey().replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t").replace("<", "\\u003c");
-                            String resultLabel = entry.getValue().getAchievement().replace("\\", "\\\\").replace("\"", "\\\"");
-                            resultJson.append('"').append(resultKey).append("\":\"").append(resultLabel).append('"');
+                <%
+                java.util.Map<String, String> perfAchMap = new java.util.HashMap<>();
+                if (performanceList != null) {
+                    for (controller.TeamProfileServlet.TourneyPerformanceDTO perf : performanceList) {
+                        if (perf.getTournamentId() != null && perf.getAchievement() != null) {
+                            perfAchMap.put(perf.getTournamentId(), perf.getAchievement());
                         }
-                        resultJson.append('}');
+                    }
+                }
+                String targetTeamKeySafe = (teamName != null) ? teamName.trim().toLowerCase().replace("\\", "\\\\").replace("\"", "\\\"") : "";
+                if (tournamentsList != null) {
+                    for (int tIdx = 0; tIdx < tournamentsList.size(); tIdx++) {
+                        String tId = tournamentsList.get(tIdx).getId();
+                        String achVal = perfAchMap.get(tId);
+                        if (achVal != null && !achVal.isEmpty() && !targetTeamKeySafe.isEmpty()) {
+                            String safeAch = achVal.replace("\\", "\\\\").replace("\"", "\\\"");
                 %>
-                    <%= resultJson.toString() %><%= tIdx < tournamentsList.size()-1 ? "," : "" %>
-                <%  }
+                    {"<%= targetTeamKeySafe %>":"<%= safeAch %>"}<%= tIdx < tournamentsList.size()-1 ? "," : "" %>
+                <%      } else { %>
+                    {}<%= tIdx < tournamentsList.size()-1 ? "," : "" %>
+                <%      }
+                    }
                 } %>
             ];
             window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
             window.seriesIdVal = "<%= (series != null && series.getId() != null) ? series.getId() : "" %>";
         </script>
         <!-- Rolling Standings Engine, Modular Team Badge Engine & Unified Profile Stats Script -->
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/team-badge-engine.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script src="${pageContext.request.contextPath}/js/team-profile.js?v=<%= System.currentTimeMillis() %>"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=20261110-profile-latency-v4"></script>
+        <script src="${pageContext.request.contextPath}/js/team-badge-engine.js?v=20261110-profile-latency-v4"></script>
+        <script src="${pageContext.request.contextPath}/js/team-profile.js?v=20261110-profile-latency-v4"></script>
+        <script src="${pageContext.request.contextPath}/js/team-profile-history.js?v=2"></script>
     </body>
 </html>

@@ -1,4 +1,39 @@
 @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap');
+/* Celebration surfaces (New #1 announcement banner: 4 distinct colors, dynamic animated mesh, soft white light streaks). */
+:root, :root[data-accent="wine"] {
+    --ui-celebration-bg: #180505;
+    --ui-celebration-ink: #ffffff;
+    --ui-celebration-glow-a: #ef4444; /* Pure Bright Red - Hue 0 */
+    --ui-celebration-glow-b: #dc2626; /* Pure Vivid Red - Hue 0 */
+    --ui-celebration-glow-c: #b91c1c; /* Pure Dark Red - Hue 0 */
+    --ui-celebration-glow-d: #7f1d1d; /* Pure Deep Burgundy Red - Hue 0, 0% blue/violet */
+    --ui-celebration-backdrop: rgb(0 0 0 / 65%);
+}
+:root[data-accent="blue"] {
+    --ui-celebration-bg: #060d1a;
+    --ui-celebration-glow-a: #2563eb; /* Royal Blue */
+    --ui-celebration-glow-b: #0ea5e9; /* Sky Blue */
+    --ui-celebration-glow-c: #7c3aed; /* Electric Violet */
+    --ui-celebration-glow-d: #0f172a; /* Deep Navy Midnight */
+}
+:root[data-accent="green"] {
+    --ui-celebration-bg: #021a10;
+    --ui-celebration-ink: #ffffff;
+    --ui-celebration-glow-a: #34d399; /* Mint Green */
+    --ui-celebration-glow-b: #10b981; /* Vivid Emerald */
+    --ui-celebration-glow-c: #059669; /* Deep Forest Emerald */
+    --ui-celebration-glow-d: #064e3b; /* Pine Midnight */
+    --ui-celebration-backdrop: rgb(0 0 0 / 65%);
+}
+:root[data-accent="orange"] {
+    --ui-celebration-bg: #1c0a02;
+    --ui-celebration-ink: #ffffff;
+    --ui-celebration-glow-a: #fb923c; /* Bright Amber */
+    --ui-celebration-glow-b: #ea580c; /* Vivid Orange */
+    --ui-celebration-glow-c: #c2410c; /* Rust Orange */
+    --ui-celebration-glow-d: #7c2d12; /* Deep Burnt Sienna */
+    --ui-celebration-backdrop: rgb(0 0 0 / 65%);
+}
 /* Shared palette. Opt in by loading this sheet; blank pages remain unaffected. */
 :root {
     color-scheme: light;
@@ -21,16 +56,17 @@
     --ui-text: #202124;
     --ui-muted: #71717a;
     --ui-line: #d4dae1;
-    --ui-accent: #800020;
-    --ui-swiss-upper-accent: #287e49;
-    --ui-bracket-lower-accent: #526f91;
-    --ui-bracket-lower-soft: #e8edf3;
-    --ui-accent-hover: #66001a;
-    --ui-accent-soft: #fbf1f4;
+    --ui-accent: #2563eb;
+    --ui-swiss-upper-accent: #16a34a;
+    --ui-bracket-lower-accent: #be123c;
+    --ui-bracket-lower-soft: #fff1f2;
+    --ui-accent-hover: #1d4ed8;
+    --ui-accent-soft: rgba(37, 99, 235, 0.08);
     --ui-on-accent: #ffffff;
     --ui-line-strong: #b8c1cc;
     --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
-    --ui-bracket-final-accent: #ad852b;
+    --ui-bracket-final-accent: #d49500;
+    --ui-success: #16a34a;
     --ui-bracket-width: 240px;
     --ui-bracket-radius: 6px;
     --ui-bracket-cell: 20px;
@@ -42,177 +78,183 @@
     --ui-bracket-final-accent: #facc15;
     --ui-bg: #121212;
     --ui-navigation-bg: #141414;
-    --ui-workspace-bg: #1f1f22;
+    --ui-workspace-bg: #18191d;
     --ui-workspace-canvas: #141416;
-    --ui-workspace-card: #232326;
+    --ui-workspace-card: #1c1d22;
     --ui-canvas: #141416;
-    --ui-match-surface: #232326;
-    --ui-match-row: #18181b;
-    --ui-match-border: #3f3f46;
-    --ui-match-score: #27272a;
-    --ui-connector: #71717a;
-    --ui-pending-bg: #27272a;
-    --ui-pending-text: #a1a1aa;
+    --ui-match-surface: #1c1d22;
+    --ui-match-row: #16171b;
+    --ui-match-border: #2a2c33;
+    --ui-match-score: #222329;
+    --ui-connector: #52545d;
+    --ui-pending-bg: #222329;
+    --ui-pending-text: #8e919b;
     --ui-card-shadow: 0 4px 12px rgb(0 0 0 / 40%), 0 1px 2px rgb(0 0 0 / 20%);
-    --ui-surface: #1c1c1f;
-    --ui-surface-alt: #27272a;
-    --ui-text: #f4f4f5;
-    --ui-muted: #a1a1aa;
-    --ui-line: #333338;
-    --ui-accent: #38bdf8;
-    --ui-swiss-upper-accent: #34d399;
-    --ui-bracket-lower-accent: #f87171;
-    --ui-bracket-lower-soft: #351e23;
-    --ui-accent-hover: #7dd3fc;
-    --ui-accent-soft: #12283a;
-    --ui-on-accent: #071e2a;
-    --ui-line-strong: #52525b;
+    --ui-surface: #18191d;
+    --ui-surface-alt: #222329;
+    --ui-text: #e2e4e9;
+    --ui-muted: #8e919b;
+    --ui-line: #2a2c33;
+    --ui-accent: #2563eb;
+    --ui-swiss-upper-accent: #16a34a;
+    --ui-bracket-lower-accent: #be123c;
+    --ui-bracket-lower-soft: rgba(190, 18, 60, 0.12);
+    --ui-accent-hover: #3b82f6;
+    --ui-accent-soft: rgba(37, 99, 235, 0.10);
+    --ui-on-accent: #ffffff;
+    --ui-line-strong: #3f424c;
     --ui-shadow: 0 16px 50px rgb(0 0 0 / 12%);
 }
 
 :root {
-    --ui-gsl-0: #800020;
+    --ui-gsl-0: var(--ui-accent);
     --ui-gsl-1: var(--ui-bracket-lower-accent);
-    --ui-gsl-2: #237aa7;
-    --ui-gsl-3: #946a12;
-    --ui-gsl-4: #8150ac;
-    --ui-gsl-5: #597b1b;
-    --ui-gsl-6: #b44380;
-    --ui-gsl-7: #147b91;
-    --ui-gsl-8: #aa551e;
-    --ui-gsl-9: #5862b3;
-    --ui-gsl-10: #287e49;
-    --ui-gsl-11: #9e459f;
-    --ui-gsl-12: #8b7410;
-    --ui-gsl-13: #326cad;
-    --ui-gsl-14: #b9475c;
-    --ui-gsl-15: #26733e;
-    --ui-gsl-16: #7359ab;
-    --ui-gsl-17: #b94d4d;
-    --ui-gsl-18: #287ba2;
-    --ui-gsl-19: #927115;
-    --ui-gsl-20: #a84c85;
-    --ui-gsl-21: #46649b;
-    --ui-gsl-22: #94723c;
-    --ui-gsl-23: #7561a5;
-    --ui-gsl-24: #2c7d68;
-    --ui-gsl-25: #647d20;
-    --ui-gsl-26: #287e79;
-    --ui-gsl-27: #b33b38;
-    --ui-gsl-28: #7451b5;
-    --ui-gsl-29: #3469b1;
-    --ui-gsl-30: #a66a16;
-    --ui-gsl-31: #a5346d;
+    --ui-gsl-2: #0284c7;
+    --ui-gsl-3: #d97706;
+    --ui-gsl-4: #7c3aed;
+    --ui-gsl-5: #059669;
+    --ui-gsl-6: #db2777;
+    --ui-gsl-7: #0d9488;
+    --ui-gsl-8: #c026d3;
+    --ui-gsl-9: #16a34a;
+    --ui-gsl-10: #4f46e5;
+    --ui-gsl-11: #ca8a04;
+    --ui-gsl-12: #0891b2;
+    --ui-gsl-13: #be123c;
+    --ui-gsl-14: #65a30d;
+    --ui-gsl-15: #9333ea;
+    --ui-gsl-16: #1d72fe;
+    --ui-gsl-17: #ea580c;
+    --ui-gsl-18: #6d28d9;
+    --ui-gsl-19: #10b981;
+    --ui-gsl-20: #be185d;
+    --ui-gsl-21: #0f766e;
+    --ui-gsl-22: #a21caf;
+    --ui-gsl-23: #15803d;
+    --ui-gsl-24: #4338ca;
+    --ui-gsl-25: #b45309;
+    --ui-gsl-26: #0e7490;
+    --ui-gsl-27: #e11d48;
+    --ui-gsl-28: #4d7c0f;
+    --ui-gsl-29: #7e22ce;
+    --ui-gsl-30: #2563eb;
+    --ui-gsl-31: #c2410c;
+}
+
+/* Tournament tier identity, shared across all themes. */
+:root, :root[data-theme="light"] {
+    --ui-tier-s: #d49500;
+    --ui-tier-a: #7c3aed;
+    --ui-tier-b: #059669;
+    --ui-tier-c: #0284c7;
+    --ui-tier-d: #64748b;
+    --ui-danger: #be123c;
 }
 
 :root[data-theme="dark"] {
-    --ui-gsl-0: #38bdf8;
-    --ui-gsl-1: var(--ui-bracket-lower-accent);
-    --ui-gsl-2: #38bdf8;
-    --ui-gsl-3: #fbbf24;
-    --ui-gsl-4: #c084fc;
-    --ui-gsl-5: #a3e635;
-    --ui-gsl-6: #f472b6;
-    --ui-gsl-7: #06b6d4;
-    --ui-gsl-8: #f97316;
-    --ui-gsl-9: #818cf8;
-    --ui-gsl-10: #4ade80;
-    --ui-gsl-11: #e879f9;
-    --ui-gsl-12: #facc15;
-    --ui-gsl-13: #60a5fa;
-    --ui-gsl-14: #fb7185;
-    --ui-gsl-15: #22c55e;
-    --ui-gsl-16: #a78bfa;
-    --ui-gsl-17: #ff6b6b;
-    --ui-gsl-18: #0ea5e9;
-    --ui-gsl-19: #eab308;
-    --ui-gsl-20: #d946ef;
-    --ui-gsl-21: #10b981;
-    --ui-gsl-22: #ea580c;
-    --ui-gsl-23: #6366f1;
-    --ui-gsl-24: #ec4899;
-    --ui-gsl-25: #84cc16;
-    --ui-gsl-26: #14b8a6;
-    --ui-gsl-27: #ef4444;
-    --ui-gsl-28: #8b5cf6;
-    --ui-gsl-29: #3b82f6;
-    --ui-gsl-30: #f59e0b;
-    --ui-gsl-31: #db2777;
+    --ui-tier-s: #facc15;
 }
-
-/* Tournament tier identity, shared by Series screens. */
-:root {
-    --ui-tier-s:#9a7015;
-    --ui-tier-a:#8050ad;
-    --ui-tier-b:#287e49;
-    --ui-tier-c:#087d91;
-    --ui-tier-d:#202124;
-}
-:root[data-theme="dark"] {
-    --ui-tier-s:#facc15;
-    --ui-tier-a:#c084fc;
-    --ui-tier-b:#4ade80;
-    --ui-tier-c:#22d3ee;
-    --ui-tier-d:#f4f4f5;
-}
-:root { --ui-danger:#b84f54; }
-:root[data-theme="dark"] { --ui-danger:#f87171; }
 
 /* Additional palettes, selected centrally by theme.js. */
-:root[data-theme="light"][data-accent="blue"] {
- --ui-bg:#ffffff; --ui-navigation-bg:#ffffff; --ui-workspace-bg:#ffffff;
- --ui-workspace-canvas:#ffffff; --ui-canvas:#ffffff; --ui-workspace-card:#f8fafc;
- --ui-surface:#f8fafc; --ui-surface-alt:#e5e9ee; --ui-match-surface:#f8fafc;
- --ui-match-row:#f8fafc; --ui-match-border:#d4dae1; --ui-match-score:#e5e9ee;
- --ui-text:#202124; --ui-muted:#71717a; --ui-line:#d4dae1; --ui-line-strong:#b8c1cc;
- --ui-accent:#1e40af; --ui-accent-hover:#1e3a8a; --ui-accent-soft:#eff4ff; --ui-on-accent:#ffffff;
- --ui-pending-bg:#e5e9ee; --ui-pending-text:#475569; --ui-connector:#8a8a8a;
- --ui-shadow:0 16px 50px rgb(0 0 0 / 4%);
- --ui-card-shadow:0 2px 6px rgb(15 23 42 / 8%),0 1px 2px rgb(15 23 42 / 4%);
+:root[data-accent="blue"] {
+    --ui-accent: #2563eb;
+    --ui-on-accent: #ffffff;
+    --ui-bracket-lower-accent: #be123c;
 }
-:root[data-theme="dark"][data-accent="wine"] {
- --ui-accent:#bc7185; --ui-accent-hover:#cc899b; --ui-accent-soft:#301c24; --ui-on-accent:#000000; --ui-accent-fill:#bc7185;
-}
-:root[data-accent] { --ui-gsl-0:var(--ui-accent); }
-
-/* Light-blue uses the same color families as dark-blue, with readable light tones. */
 :root[data-theme="light"][data-accent="blue"] {
- --ui-bracket-lower-accent:#b74750; --ui-bracket-lower-soft:#f9e6e9;
- --ui-swiss-upper-accent:#18794e; --ui-bracket-final-accent:#966900;
- --ui-gsl-0:#1e40af; --ui-gsl-1:var(--ui-bracket-lower-accent);
- --ui-gsl-2:#007f9c; --ui-gsl-3:#936200; --ui-gsl-4:#8050ad;
- --ui-gsl-5:#547c13; --ui-gsl-6:#b13f7d; --ui-gsl-7:#087e8b;
- --ui-gsl-8:#b34e15; --ui-gsl-9:#555db0; --ui-gsl-10:#18794e;
- --ui-gsl-11:#9945a8; --ui-gsl-12:#8b7410; --ui-gsl-13:#326cad;
- --ui-gsl-14:#b94768; --ui-gsl-15:#26733e; --ui-gsl-16:#7359ab;
- --ui-gsl-17:#b94d4d; --ui-gsl-18:#287ba2; --ui-gsl-19:#927115;
- --ui-gsl-20:#a84c85; --ui-gsl-21:#247b64; --ui-gsl-22:#a65b20;
- --ui-gsl-23:#6253a8; --ui-gsl-24:#b03d75; --ui-gsl-25:#647d20;
- --ui-gsl-26:#287e79; --ui-gsl-27:#b33b38; --ui-gsl-28:#7451b5;
- --ui-gsl-29:#3469b1; --ui-gsl-30:#a66a16; --ui-gsl-31:#a5346d;
+    --ui-bg: #ffffff; --ui-navigation-bg: #ffffff; --ui-workspace-bg: #ffffff;
+    --ui-workspace-canvas: #ffffff; --ui-canvas: #ffffff; --ui-workspace-card: #f8fafc;
+    --ui-surface: #f8fafc; --ui-surface-alt: #e5e9ee; --ui-match-surface: #f8fafc;
+    --ui-match-row: #f8fafc; --ui-match-border: #d4dae1; --ui-match-score: #e5e9ee;
+    --ui-text: #202124; --ui-muted: #71717a; --ui-line: #d4dae1; --ui-line-strong: #b8c1cc;
+    --ui-accent-hover: #1d4ed8; --ui-accent-soft: rgba(37, 99, 235, 0.08);
+    --ui-bracket-lower-soft: #fff1f2;
+    --ui-pending-bg: #e5e9ee; --ui-pending-text: #475569; --ui-connector: #8a8a8a;
+    --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
+    --ui-card-shadow: 0 2px 6px rgb(15 23 42 / 8%), 0 1px 2px rgb(15 23 42 / 4%);
+}
+:root[data-theme="dark"][data-accent="blue"] {
+    --ui-accent-hover: #3b82f6;
+    --ui-accent-soft: rgba(37, 99, 235, 0.10);
+    --ui-bracket-lower-soft: rgba(190, 18, 60, 0.12);
 }
 
-/* Dark-wine keeps the same semantic grouping as light-wine. */
-:root[data-theme="dark"][data-accent="wine"] {
- --ui-bracket-lower-accent:#8eafd4; --ui-bracket-lower-soft:#1c2a3b;
- --ui-swiss-upper-accent:#4ade80; --ui-bracket-final-accent:#facc15;
- --ui-gsl-0:#bc7185; --ui-gsl-1:var(--ui-bracket-lower-accent);
- --ui-gsl-2:#38bdf8; --ui-gsl-3:#fbbf24; --ui-gsl-4:#c084fc;
- --ui-gsl-5:#a3e635; --ui-gsl-6:#f472b6; --ui-gsl-7:#06b6d4;
- --ui-gsl-8:#f97316; --ui-gsl-9:#818cf8; --ui-gsl-10:#4ade80;
- --ui-gsl-11:#e879f9; --ui-gsl-12:#facc15; --ui-gsl-13:#60a5fa;
- --ui-gsl-14:#fb7185; --ui-gsl-15:#22c55e; --ui-gsl-16:#a78bfa;
- --ui-gsl-17:#ff6b6b; --ui-gsl-18:#0ea5e9; --ui-gsl-19:#eab308;
- --ui-gsl-20:#d946ef; --ui-gsl-21:#10b981; --ui-gsl-22:#ea580c;
- --ui-gsl-23:#6366f1; --ui-gsl-24:#ec4899; --ui-gsl-25:#84cc16;
- --ui-gsl-26:#14b8a6; --ui-gsl-27:#ef4444; --ui-gsl-28:#8b5cf6;
- --ui-gsl-29:#3b82f6; --ui-gsl-30:#f59e0b; --ui-gsl-31:#db2777;
+:root[data-accent="wine"] {
+    --ui-accent: #be123c;
+    --ui-on-accent: #ffffff;
+    --ui-accent-fill: #be123c;
+    --ui-bracket-lower-accent: #2563eb;
 }
+:root[data-theme="light"][data-accent="wine"] {
+    --ui-accent-hover: #9f1239;
+    --ui-accent-soft: rgba(190, 18, 60, 0.08);
+    --ui-bracket-lower-soft: #eff6ff;
+}
+:root[data-theme="dark"][data-accent="wine"] {
+    --ui-accent-hover: #e11d48;
+    --ui-accent-soft: rgba(190, 18, 60, 0.10);
+    --ui-bracket-lower-soft: rgba(37, 99, 235, 0.12);
+}
+
+:root[data-accent="green"] {
+    --ui-accent: #059669;
+    --ui-on-accent: #ffffff;
+    --ui-accent-fill: #059669;
+    --ui-bracket-lower-accent: #ea580c;
+}
+:root[data-theme="light"][data-accent="green"] {
+    --ui-bg: #ffffff; --ui-navigation-bg: #ffffff; --ui-workspace-bg: #ffffff;
+    --ui-workspace-canvas: #ffffff; --ui-canvas: #ffffff; --ui-workspace-card: #f8fafc;
+    --ui-surface: #f8fafc; --ui-surface-alt: #e5e9ee; --ui-match-surface: #f8fafc;
+    --ui-match-row: #f8fafc; --ui-match-border: #d4dae1; --ui-match-score: #e5e9ee;
+    --ui-text: #202124; --ui-muted: #71717a; --ui-line: #d4dae1; --ui-line-strong: #b8c1cc;
+    --ui-accent-hover: #047857;
+    --ui-accent-soft: rgba(5, 150, 105, 0.08);
+    --ui-bracket-lower-soft: #fff7ed;
+    --ui-pending-bg: #e5e9ee; --ui-pending-text: #475569; --ui-connector: #8a8a8a;
+    --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
+    --ui-card-shadow: 0 2px 6px rgb(15 23 42 / 8%), 0 1px 2px rgb(15 23 42 / 4%);
+}
+:root[data-theme="dark"][data-accent="green"] {
+    --ui-accent-hover: #10b981;
+    --ui-accent-soft: rgba(16, 185, 129, 0.12);
+    --ui-bracket-lower-soft: rgba(234, 88, 12, 0.12);
+}
+
+:root[data-accent="orange"] {
+    --ui-accent: #ea580c;
+    --ui-on-accent: #ffffff;
+    --ui-accent-fill: #ea580c;
+    --ui-bracket-lower-accent: #059669;
+}
+:root[data-theme="light"][data-accent="orange"] {
+    --ui-bg: #ffffff; --ui-navigation-bg: #ffffff; --ui-workspace-bg: #ffffff;
+    --ui-workspace-canvas: #ffffff; --ui-canvas: #ffffff; --ui-workspace-card: #f8fafc;
+    --ui-surface: #f8fafc; --ui-surface-alt: #e5e9ee; --ui-match-surface: #f8fafc;
+    --ui-match-row: #f8fafc; --ui-match-border: #d4dae1; --ui-match-score: #e5e9ee;
+    --ui-text: #202124; --ui-muted: #71717a; --ui-line: #d4dae1; --ui-line-strong: #b8c1cc;
+    --ui-accent-hover: #c2410c;
+    --ui-accent-soft: rgba(234, 88, 12, 0.08);
+    --ui-bracket-lower-soft: #ecfdf5;
+    --ui-pending-bg: #e5e9ee; --ui-pending-text: #475569; --ui-connector: #8a8a8a;
+    --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
+    --ui-card-shadow: 0 2px 6px rgb(15 23 42 / 8%), 0 1px 2px rgb(15 23 42 / 4%);
+}
+:root[data-theme="dark"][data-accent="orange"] {
+    --ui-accent-hover: #f97316;
+    --ui-accent-soft: rgba(249, 115, 22, 0.12);
+    --ui-bracket-lower-soft: rgba(5, 150, 105, 0.12);
+}
+
+:root[data-accent] { --ui-gsl-0: var(--ui-accent); }
+:root { --ui-gsl-1: var(--ui-bracket-lower-accent); }
 
 /* A continuous page backdrop across navigation, workspaces and bracket canvases. */
 :root,
 :root[data-theme="dark"],
-:root[data-theme="light"][data-accent="blue"] {
+:root[data-theme="light"][data-accent="blue"],
+:root[data-theme="light"][data-accent="green"],
+:root[data-theme="light"][data-accent="orange"] {
  --ui-navigation-bg:var(--ui-bg);
  --ui-workspace-bg:var(--ui-bg);
  --ui-workspace-canvas:var(--ui-bg);

@@ -83,3 +83,11 @@
 @media(prefers-reduced-motion:reduce) {
     .tourma-modal-backdrop,.add-team-modal-overlay,.stage-end-modal-overlay { transition:none; }
 }
+
+.tourma-edit-locked :is(.bracket-node-card, .match-card-item, .bracket-team-row, .match-team-side) {
+    cursor: default;
+}
+.tourma-edit-locked :is(button, input):disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}

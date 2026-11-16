@@ -1,5 +1,13 @@
 # Tourma — Quy chuẩn giao diện
 
+## Luồng thiết lập giải
+
+Giải đơn dùng luồng Lập giải → Thể thức & đội tham gia → Chia bảng nếu cần → Thi đấu.
+Chọn một/hai giai đoạn, thể thức và cấu hình nằm cùng màn thêm đội; nút Tiếp tục
+gửi cả cấu hình lẫn danh sách đội. URL cấu hình thể thức cũ chuyển về màn gộp.
+Giải con trong Series cũng gộp thể thức vào màn thêm đội, dùng chung phần cấu hình gọn.
+Giữ cách chọn đội theo Series, phạm vi sao chép cùng Series và bước set điểm riêng.
+
 Tài liệu này là điểm tham chiếu khi thiết kế hoặc sửa bất kỳ màn nào. Các màn
 có thể có bố cục khác nhau theo công việc, nhưng phải dùng chung ngôn ngữ thiết kế.
 
@@ -7,7 +15,7 @@ có thể có bố cục khác nhau theo công việc, nhưng phải dùng chung
 
 - Trang chủ hiện tại là bản thử; người dùng dự định làm lại. Không sao chép bố cục
   hoặc các chi tiết minh họa ở đó như một thiết kế đã được duyệt.
-- Có bốn lựa chọn dùng chung token: light-wine (trắng), light-blue (trắng tinh), dark-blue và dark-wine. Chọn bằng hai switch Đỏ/Xanh và Sáng/Tối trên header.
+- Có bốn lựa chọn màu nhấn dùng chung token: Bộ Đỏ (Crimson Velvet), Bộ Xanh dương (Royal Blue), Bộ Xanh lá (Emerald Green) và Bộ Cam (Vibrant Orange), mỗi bộ dùng đúng 1 mã màu duy nhất trên cả Light và Dark mode. Chọn bằng nút switch 4 mode trên header (Đỏ ➔ Xanh dương ➔ Xanh lá ➔ Cam) kết hợp switch Sáng/Tối.
 - Sắc độ nền/card vẫn đang thử nghiệm, chưa được người dùng chốt về mặt thẩm mỹ.
   Dùng bộ token hiện tại để giữ đồng bộ; không tự pha một bảng màu mới cho mỗi màn.
 - Nội dung header (nhãn, thứ tự và URL) được giữ nguyên. Có thể đổi hình thức khi
@@ -100,22 +108,48 @@ Font Readex Pro dùng weight 500 cho nội dung, 600 cho tên đội/menu và 70
 
 ## Bộ màu mở rộng
 
-Theme lưu bằng tourma-ui-theme (light/dark), màu nhấn lưu bằng tourma-ui-accent (wine/blue). theme.js áp dụng data-theme và data-accent trước khi render. Không tạo stylesheet theme riêng theo màn. Light-blue dùng nền trang, navigation và canvas trắng tinh #FFFFFF; blue chỉ là màu nhấn. Light-wine giữ nền trắng hiện tại. Người dùng chưa chọn bộ màu được giữ giao diện cũ.
+Theme lưu bằng tourma-ui-theme (light/dark), màu nhấn lưu bằng tourma-ui-accent (wine/blue/green/orange). Header dùng 4 ô checkbox có màu tương ứng (Đỏ, Xanh dương, Xanh lá, Cam) để chuyển đổi nhanh màu chủ đạo. theme.js áp dụng data-theme và data-accent trước khi render. Không tạo stylesheet theme riêng theo màn.
+Mỗi bộ nhấn dùng đúng 1 mã màu duy nhất cho cả Light và Dark mode:
+- Bộ Xanh (Blue): Royal Blue `#2563EB` cho cả Light và Dark (hover `#1D4ED8` sáng / `#3B82F6` tối, chữ trên nút màu trắng `#FFFFFF`).
+- Bộ Đỏ (Wine): Crimson Velvet `#BE123C` cho cả Light và Dark (hover `#9F1239` sáng / `#E11D48` tối, chữ trên nút màu trắng `#FFFFFF`).
+- Bộ Xanh lá (Green): Emerald Green `#059669` cho cả Light và Dark (hover `#047857` sáng / `#10B981` tối, chữ trên nút màu trắng `#FFFFFF`).
+- Bộ Cam (Orange): Vibrant Orange `#EA580C` cho cả Light và Dark (hover `#C2410C` sáng / `#F97316` tối, chữ trên nút màu trắng `#FFFFFF`).
 
-Light-blue dùng cùng họ màu với dark-blue: LB coral, Swiss nhóm 2 thắng green, nhóm 2 thua coral, 2–2 vàng. GSL A theo UB, B theo LB; C–AF dùng bảng màu riêng có độ đậm phù hợp nền sáng, các họ màu tương tự được đặt xen kẽ.
+Hệ màu phụ và ngữ nghĩa dùng thống nhất 1 bộ duy nhất cho cả Light và Dark mode:
+- Tier S: Bù trừ quang học theo nền — Vàng tươi `#FACC15` cho Dark mode (sáng rực rỡ trên nền tối), Vàng kim tươi `#D49500` cho Light mode (đậm đà, tương phản chuẩn WCAG 4.7:1 trên nền trắng).
+- Tier A: Tím hoàng gia `#7C3AED` cho cả Light và Dark.
+- Tier B: Lục bảo `#059669` cho cả Light và Dark.
+- Tier C: Xanh biển `#0284C7` cho cả Light và Dark.
+- Tier D: Xám chì `#64748B` cho cả Light và Dark.
+- Trận chung kết / Vô địch: `#FACC15` cho Dark mode, `#D49500` cho Light mode.
+- Điểm cộng (+), tăng hạng (▲), thành tích tốt (`--ui-success`): Xanh lá `#16A34A` mặc định (không đổi theo theme accent).
+- Giảm điểm (-), giảm hạng (▼), nguy hiểm (`--ui-danger`): Đỏ `#BE123C`.
+- Nhánh thua (LB): Đỏ `#BE123C` (ở bộ Xanh dương), Royal Blue `#2563EB` (ở bộ Đỏ), Cam đất `#EA580C` (ở bộ Xanh lá), và Emerald Green `#059669` (ở bộ Cam).
+- 32 bảng GSL: A theo UB (`var(--ui-accent)`), B theo LB (`var(--ui-bracket-lower-accent)`); C–AF dùng dải quang phổ 30 màu cố định, dùng chung 1 bộ duy nhất cho cả Light và Dark.
 
-Dark-wine: UB wine sáng, LB dusty blue để tách khỏi UB; Swiss nhóm 2 thắng green, 2 thua theo LB, 2–2 vàng; GSL A/B theo UB/LB, C–AF giữ các họ màu sáng dành cho nền tối.
-
-Dark-wine dùng ruby #DC5268 cho chữ/icon, wine #861B36 cho nền nhấn đặc qua --ui-accent-fill, chữ trên nền đặc màu trắng. Các bộ khác dùng --ui-accent làm nền nhấn như cũ.
-
-Nền trang, header/sidebar, workspace và canvas dùng chung --ui-bg ở cả bốn bộ màu: sáng #FFFFFF, tối #121212. Card vẫn dùng token surface riêng để giữ phân lớp.
-
-Hai bộ light dùng cùng màu trung tính cho surface, hàng trận, viền, chữ và shadow. Không pha xanh vào nền card/viền ở light-blue; khác biệt nằm ở accent và các màu ngữ nghĩa của nhánh/nhóm.
-
-Light-blue: accent cobalt #1E40AF, hover #1E3A8A, nền nhấn #EFF4FF.
-
-Dark-wine thử màu #BC7185 cho accent và nền nút, chữ trên nút #000000; light-wine giữ nguyên.
+Nền trang, header/sidebar, workspace và canvas dùng chung --ui-bg: sáng #FFFFFF, tối #121212. Card dùng token surface riêng để giữ phân lớp.
+Cả hai bộ nhấn dùng cùng màu trung tính cho surface, hàng trận, viền, chữ và shadow. Không pha xanh vào nền card/viền ở bộ xanh; khác biệt nằm ở accent và các màu ngữ nghĩa của nhánh/nhóm.
 
 Header desktop cao 64px, chạy hết chiều rộng trang. Mục active phủ cả chiều cao ô điều hướng và có gạch dưới 3px theo accent; không dùng pill nổi. Mobile tách hàng menu cuộn ngang.
 
 Cài đặt hiển thị trên header có công tắc Màu phân biệt nhánh/nhóm. Lưu tourma-ui-special-colors (on/off), áp dụng data-special-colors ngay trong theme.js. Tắt sẽ cho LB/final/Swiss/GSL dùng accent chung; không đổi tier và badge.
+
+## CSS màn cấu hình giải
+
+Màn Thể thức & đội tham gia của giải đơn và giải con Series dùng một stylesheet riêng: `web/css/tournament-setup.css`. Token, nền tảng, navigation và popup tiếp tục dùng stylesheet chung. Không nạp thêm CSS riêng cho phần format hoặc thêm đội ở hai màn này.
+
+## Màn Bảng xếp hạng Series (Rolling Standings)
+
+Ở màn Bảng Xếp Hạng Series: Hạng 1 nhận màu Vàng Tier S (`--ui-tier-s`). Tên của toàn bộ các đội trong Top 10 (Rank 1–10) và số thứ tự Hạng 2–10 mang màu accent (`--ui-accent`) để làm nổi bật nhóm tinh anh dẫn đầu; các đội từ Rank 11 trở đi dùng màu chữ chuẩn (`--ui-text`). Điểm cộng và tăng hạng luôn giữ màu Xanh lá (`--ui-success`).
+
+## Bảng vàng dạng dashboard
+
+Bảng vàng đặt số liệu tổng quan, biểu đồ số mốc giữ #1 và các kỷ lục ở đầu trang; bảng danh hiệu, bộ lọc Tier và lịch sử chi tiết nằm phía dưới. Dùng `web/css/rolling/rolling-hof.css` và token/theme chung. Một mốc #1 là BXH tích lũy sau một giải đã hoàn tất.
+
+Ba bảng nhà vô địch, các giải và lịch sử #1 nằm trên một hàng ở desktop. Lịch sử #1 tách từng đợt liên tiếp, ghi từ giải đến giải; STT đánh từ đợt đầu nhưng hiển thị đợt mới nhất trước. Danh sách giải cũng hiển thị giải mới nhất trước. Mobile chuyển về một cột.
+
+## Component New #1
+
+`web/common/component/new-number-one.jsp` nhận hai request attribute `newNumberOneEligible` và `newNumberOneName`. Màn BXH chỉ include component; giao diện và hành vi nằm ở `web/css/components/new-number-one.css` và `web/js/components/new-number-one.js`. Màu nền công bố dùng token `--ui-celebration-*` gồm 4 màu gradient động có độ tương phản cao, chuyển động rõ nét (chu kỳ 8-11s, biên độ lớn), điểm xuyết các đường vệt sáng trắng mảnh (white light streaks) lướt chéo qua banner, không dùng màu vàng, bỏ chữ phụ "BẢNG XẾP HẠNG SERIES". Phối 4 màu theo theme: Bộ Đỏ 100% thuần sắc đỏ, triệt tiêu toàn bộ xanh/tím (`#BE123C` Crimson Velvet, `#DC2626` Scarlet Red, `#991B1B` Deep Blood Red, `#4C0519` Deep Wine Maroon); Bộ Xanh (`#2563EB` Royal Blue, `#06B6D4` Aqua Cyan, `#A855F7` Electric Violet, `#0F172A` Deep Navy). Không có icon vương miện.
+
+Popup hiện mỗi lần mở BXH sau khi đổi người giữ #1, đến khi giải tiếp theo hoàn tất. Giữ nguyên #1 ở giải tiếp theo thì hết popup; đổi chủ thì hiện tên mới. Người dẫn đầu đầu tiên khi chưa từng đổi ngôi không tạo popup. Không lưu trạng thái đã xem trong browser storage; chuyển mốc lịch sử không kích hoạt popup. Quay lại BXH qua back/forward cache tải lại điều kiện từ server. Component hiển thị như banner stage trong luồng nội dung, ngay trên bảng BXH; không có dialog, backdrop, khóa cuộn hay tự chiếm focus. Khi chọn mốc lịch sử, banner ẩn; quay về mốc mới nhất sẽ hiện lại nếu còn đủ điều kiện. Hỗ trợ giảm chuyển động.

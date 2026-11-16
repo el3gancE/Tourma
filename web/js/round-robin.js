@@ -438,6 +438,7 @@
          * Core Function: Save Match Score to Database via /api/match-update
          */
         saveMatchScore: function (matchId, score1, score2, penalty1, penalty2, winnerSlot) {
+            if (window.TourmaScoreModal && window.TourmaScoreModal.isLocked(this.tournamentId)) return;
             var self = this;
             var m = this.findMatch(matchId);
             if (!m) return;

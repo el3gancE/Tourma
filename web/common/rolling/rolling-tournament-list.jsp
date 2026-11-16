@@ -1,4 +1,4 @@
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
+﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="model.Series, model.Tournament, dao.SeriesDAO, dao.TournamentDAO, dao.ParticipantDAO, model.Team, java.util.List, java.util.Map, java.util.HashMap"%>
 <%
@@ -187,7 +187,7 @@
                         </div>
                         <div class="tourney-card-footer">
                             <div class="tourney-card-actions">
-                                <button type="button" class="btn-delete-tourney" title="Xóa" onclick="openDeleteTourneyModal('<%= t.getId() %>', '<%= (t.getName() != null) ? t.getName().replace("'", "\\'").replace("\"", "&quot;") : "" %>')">
+                                <button type="button" class="btn-delete-tourney" title="Xóa" data-tourney-id="<%= t.getId() %>" data-tourney-name="<%= (t.getName() != null) ? t.getName().replace("\"", "&quot;") : "" %>" onclick="openDeleteTourneyModal(this.dataset.tourneyId, this.dataset.tourneyName)">
                                     <i class="fa-solid fa-trash-can" aria-hidden="true"></i><span class="sr-only">Xóa</span>
                                 </button>
                                 <a href="${pageContext.request.contextPath}/rolling/tournament-teams?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Quản lý đội">
@@ -254,87 +254,87 @@
                     </div>
                 </nav>
             </c:if>
-            <!-- DELETE SUB-TOURNAMENT CONFIRMATION MODAL -->
-            <div id="deleteTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeDeleteTourneyModal();">
-                <div class="tourma-modal-card" data-ui-style="rolling-tournament-list-jsp-019" onclick="event.stopPropagation();">
-                    <div class="modal-header-bar" data-ui-style="rolling-tournament-list-jsp-020">
-                        <div class="modal-header-title" data-ui-style="rolling-tournament-list-jsp-021" style="display: flex;">
-                            <i class="fa-solid fa-trash-can"></i>
-                            <span>Xác Nhận Xóa Giải Con</span>
-                        </div>
-                        <button type="button" class="modal-close-btn" onclick="closeDeleteTourneyModal()" title="Đóng">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-
-                    <div class="modal-body-content" data-ui-style="rolling-tournament-list-jsp-022">
-                        <div data-ui-style="rolling-tournament-list-jsp-023">
-                            <strong data-ui-style="rolling-tournament-list-jsp-024">⚠️ Cảnh báo xóa vĩnh viễn:</strong><br>
-                            Hành động này sẽ <strong data-ui-style="rolling-tournament-list-jsp-025">xóa hoàn toàn giải đấu con này</strong> cùng toàn bộ danh sách đội tuyển, cấu hình thể thức, kết quả các trận đấu và tự động cập nhật lại bảng xếp hạng tích lũy Series.
-                        </div>
-                        <p data-ui-style="rolling-tournament-list-jsp-026">
-                            Bạn có chắc chắn muốn xóa giải con: <strong id="deleteTourneyTargetName" data-ui-style="rolling-tournament-list-jsp-027"></strong> (ID: <span id="deleteTourneyTargetId" class="text-muted"></span>)?
-                        </p>
-                    </div>
-
-                    <div class="modal-footer-bar" data-ui-style="rolling-tournament-list-jsp-028" style="display: flex;">
-                        <button type="button" class="btn btn-secondary" onclick="closeDeleteTourneyModal()" data-ui-style="rolling-tournament-list-jsp-029">Hủy Bỏ</button>
-                        <button type="button" class="btn" data-ui-style="rolling-tournament-list-jsp-030" onclick="confirmDeleteTourney()">
-                            <i class="fa-solid fa-trash-can"></i> Xác Nhận Xóa
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CLONE SUB-TOURNAMENT CONFIRMATION MODAL -->
-            <div id="cloneTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeCloneTourneyModal();">
-                <div class="tourma-modal-card" data-ui-style="rolling-tournament-list-jsp-031" onclick="event.stopPropagation();">
-                    <div class="modal-header-bar" data-ui-style="rolling-tournament-list-jsp-032">
-                        <div class="modal-header-title" data-ui-style="rolling-tournament-list-jsp-033" style="display: flex;">
-                            <i class="fa-solid fa-copy"></i>
-                            <span>Sao Chép Cấu Hình Giải Con</span>
-                        </div>
-                        <button type="button" class="modal-close-btn" onclick="closeCloneTourneyModal()" title="Đóng">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-
-                    <form id="cloneTourneyForm" method="POST" action="${pageContext.request.contextPath}/clone-tournament">
-                        <input type="hidden" name="sourceTournamentId" id="cloneSourceTournamentId" value="">
-                        <input type="hidden" name="redirectContext" id="cloneRedirectContext" value="series">
-
-                        <div class="modal-body-content" data-ui-style="rolling-tournament-list-jsp-034">
-                            <div data-ui-style="rolling-tournament-list-jsp-035">
-                                <i class="fa-solid fa-circle-info text-mint"></i>
-                                Hệ thống sẽ tạo một giải đấu con mới trong Series này ở trạng thái <strong>DRAFT</strong> với toàn bộ cấu hình thể thức, phân bảng, multi-stage từ giải gốc.
-                            </div>
-
-                            <div data-ui-style="rolling-tournament-list-jsp-036">
-                                <label data-ui-style="rolling-tournament-list-jsp-037" style="display: block;">
-                                    Tên giải đấu mới:
-                                </label>
-                                <input type="text" id="cloneNewTourneyName" name="newName" class="form-control" required data-ui-style="rolling-tournament-list-jsp-038" placeholder="Nhập tên giải mới...">
-                            </div>
-
-                            <div data-ui-style="rolling-tournament-list-jsp-039" style="display: flex;">
-                                 <i class="fa-solid fa-users text-mint" data-ui-style="rolling-tournament-list-jsp-040"></i>
-                                 <div data-ui-style="rolling-tournament-list-jsp-041">
-                                     <strong>Ràng buộc số lượng:</strong> Danh sách đội sẽ để trống để bạn nhập hoặc chọn từ Partner ở bước tiếp theo, và <strong>bắt buộc phải khớp đúng số lượng đội</strong> của giải gốc.
-                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="modal-footer-bar" data-ui-style="rolling-tournament-list-jsp-042" style="display: flex;">
-                            <button type="button" class="btn btn-secondary" onclick="closeCloneTourneyModal()" data-ui-style="rolling-tournament-list-jsp-043">Hủy Bỏ</button>
-                            <button type="submit" class="btn btn-mint" data-ui-style="rolling-tournament-list-jsp-044" style="display: inline-flex;">
-                                <i class="fa-solid fa-copy"></i> Tạo Bản Sao
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
         </main></div>
+
+        <!-- DELETE SUB-TOURNAMENT CONFIRMATION MODAL -->
+        <div id="deleteTourneyModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) closeDeleteTourneyModal();">
+            <div class="tourma-modal-card" onclick="event.stopPropagation();">
+                <div class="modal-header-bar">
+                    <div class="modal-header-title">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Xác Nhận Xóa Giải Con</span>
+                    </div>
+                    <button type="button" class="modal-close-btn" onclick="closeDeleteTourneyModal()" title="Đóng">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body-content">
+                    <div>
+                        <strong>⚠️ Cảnh báo xóa vĩnh viễn:</strong><br>
+                        Hành động này sẽ <strong>xóa hoàn toàn giải đấu con này</strong> cùng toàn bộ danh sách đội tuyển, cấu hình thể thức, kết quả các trận đấu và tự động cập nhật lại bảng xếp hạng tích lũy Series.
+                    </div>
+                    <p>
+                        Bạn có chắc chắn muốn xóa giải con: <strong id="deleteTourneyTargetName"></strong> (ID: <span id="deleteTourneyTargetId" class="text-muted"></span>)?
+                    </p>
+                </div>
+
+                <div class="modal-footer-bar">
+                    <button type="button" class="btn btn-secondary" onclick="closeDeleteTourneyModal()">Hủy Bỏ</button>
+                    <button type="button" class="btn btn-modal-save" onclick="confirmDeleteTourney()">
+                        <i class="fa-solid fa-trash-can"></i> Xác Nhận Xóa
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLONE SUB-TOURNAMENT CONFIRMATION MODAL -->
+        <div id="cloneTourneyModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) closeCloneTourneyModal();">
+            <div class="tourma-modal-card" onclick="event.stopPropagation();">
+                <div class="modal-header-bar">
+                    <div class="modal-header-title">
+                        <i class="fa-solid fa-copy"></i>
+                        <span>Sao Chép Cấu Hình Giải Con</span>
+                    </div>
+                    <button type="button" class="modal-close-btn" onclick="closeCloneTourneyModal()" title="Đóng">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <form id="cloneTourneyForm" method="POST" action="${pageContext.request.contextPath}/clone-tournament">
+                    <input type="hidden" name="sourceTournamentId" id="cloneSourceTournamentId" value="">
+                    <input type="hidden" name="redirectContext" id="cloneRedirectContext" value="series">
+
+                    <div class="modal-body-content">
+                        <div>
+                            <i class="fa-solid fa-circle-info"></i>
+                            Hệ thống sẽ tạo một giải đấu con mới trong Series này ở trạng thái <strong>DRAFT</strong> với toàn bộ cấu hình thể thức, phân bảng, multi-stage từ giải gốc.
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 7px; font-weight: 500;">
+                                Tên giải đấu mới:
+                            </label>
+                            <input type="text" id="cloneNewTourneyName" name="newName" class="form-control" required placeholder="Nhập tên giải mới...">
+                        </div>
+
+                        <div style="display: flex; gap: 10px; align-items: flex-start;">
+                             <i class="fa-solid fa-users" style="margin-top: 2px;"></i>
+                             <div>
+                                 <strong>Ràng buộc số lượng:</strong> Danh sách đội sẽ để trống để bạn nhập hoặc chọn từ Partner ở bước tiếp theo, và <strong>bắt buộc phải khớp đúng số lượng đội</strong> của giải gốc.
+                             </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-bar">
+                        <button type="button" class="btn btn-secondary" onclick="closeCloneTourneyModal()">Hủy Bỏ</button>
+                        <button type="submit" class="btn btn-modal-save">
+                            <i class="fa-solid fa-copy"></i> Tạo Bản Sao
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <script>
             let pendingDeleteId = null;
@@ -344,10 +344,13 @@
                 var targetIdEl = document.getElementById('deleteTourneyTargetId');
                 if (targetIdEl) targetIdEl.innerText = id;
                 var targetNameEl = document.getElementById('deleteTourneyTargetName');
-                if (targetNameEl) targetNameEl.innerText = name;
+                if (targetNameEl) targetNameEl.innerText = name ? name : id;
                 var modal = document.getElementById('deleteTourneyModalBackdrop');
                 if (modal) {
+                    modal.classList.add('show');
                     modal.style.display = 'flex';
+                    modal.style.opacity = '1';
+                    modal.style.pointerEvents = 'auto';
                     document.body.style.overflow = 'hidden';
                 }
             }
@@ -356,7 +359,10 @@
                 pendingDeleteId = null;
                 var modal = document.getElementById('deleteTourneyModalBackdrop');
                 if (modal) {
+                    modal.classList.remove('show');
                     modal.style.display = 'none';
+                    modal.style.opacity = '';
+                    modal.style.pointerEvents = '';
                     document.body.style.overflow = '';
                 }
             }
@@ -366,43 +372,10 @@
                 var tid = pendingDeleteId;
                 var seriesId = "<%= (seriesIdVal != null) ? seriesIdVal : "" %>";
 
-                // 1. Clean localStorage for this sub-tournament
-                try {
-                    localStorage.removeItem("tourma_matches_" + tid);
-                    localStorage.removeItem("tourma_de_matches_" + tid);
-                    localStorage.removeItem("tourma_rr_matches_" + tid);
-                    localStorage.removeItem("tourma_group_matches_" + tid);
-                    localStorage.removeItem("tourma_bracket_" + tid);
-                    localStorage.removeItem("tourma_bracket_stage2_" + tid);
-                    localStorage.removeItem("tourma_teams_" + tid);
-                    localStorage.removeItem("tourma_format_" + tid);
-                    localStorage.removeItem("tourma_type_" + tid);
-                    localStorage.removeItem("tourma_champion_" + tid);
-                    localStorage.removeItem("tourma_final_champion_" + tid);
-                    localStorage.removeItem("tourma_final_locked_" + tid);
-                    localStorage.removeItem("tourma_group_assignments_" + tid);
-                    localStorage.removeItem("tourma_multi_config_" + tid);
-                    localStorage.removeItem("tourma_point_config_" + tid);
-                } catch(e) {}
-
-                // 2. Remove card from DOM instantly with smooth fade-out animation
-                var card = document.querySelector('.tourney-card[data-id="' + tid + '"]');
-                if (card) {
-                    card.style.transition = 'all 0.3s ease';
-                    card.style.opacity = '0';
-                    card.style.transform = 'scale(0.9)';
-                    setTimeout(function() {
-                        if (card.parentNode) card.parentNode.removeChild(card);
-                        var remaining = document.querySelectorAll('.tourney-card');
-                        if (remaining.length === 0) {
-                            window.location.reload();
-                        }
-                    }, 300);
-                }
-
                 closeDeleteTourneyModal();
 
-                // 3. Send async delete request to backend in background
+                var card = document.querySelector('.tourney-card[data-id="' + tid + '"]');
+
                 fetch('${pageContext.request.contextPath}/delete-tournament?id=' + encodeURIComponent(tid) + '&seriesId=' + encodeURIComponent(seriesId), {
                     method: 'POST',
                     headers: {
@@ -410,8 +383,55 @@
                         'Accept': 'application/json'
                     }
                 })
-                .then(function() { console.log('Sub-tournament ' + tid + ' deleted on backend.'); })
-                .catch(function(err) { console.warn('Backend delete fetch note:', err); });
+                .then(function(res) {
+                    return res.json().catch(function() {
+                        return { success: res.ok };
+                    });
+                })
+                .then(function(data) {
+                    if (data && data.success) {
+                        // 1. Clean localStorage for this sub-tournament
+                        try {
+                            localStorage.removeItem("tourma_matches_" + tid);
+                            localStorage.removeItem("tourma_de_matches_" + tid);
+                            localStorage.removeItem("tourma_rr_matches_" + tid);
+                            localStorage.removeItem("tourma_group_matches_" + tid);
+                            localStorage.removeItem("tourma_bracket_" + tid);
+                            localStorage.removeItem("tourma_bracket_stage2_" + tid);
+                            localStorage.removeItem("tourma_teams_" + tid);
+                            localStorage.removeItem("tourma_format_" + tid);
+                            localStorage.removeItem("tourma_type_" + tid);
+                            localStorage.removeItem("tourma_champion_" + tid);
+                            localStorage.removeItem("tourma_final_champion_" + tid);
+                            localStorage.removeItem("tourma_final_locked_" + tid);
+                            localStorage.removeItem("tourma_group_assignments_" + tid);
+                            localStorage.removeItem("tourma_multi_config_" + tid);
+                            localStorage.removeItem("tourma_point_config_" + tid);
+                        } catch(e) {}
+
+                        // 2. Remove card from DOM with animation
+                        if (card) {
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.9)';
+                            setTimeout(function() {
+                                if (card.parentNode) card.parentNode.removeChild(card);
+                                var remaining = document.querySelectorAll('.tourney-card');
+                                if (remaining.length === 0) {
+                                    window.location.reload();
+                                }
+                            }, 300);
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert(data && data.message ? data.message : 'Không thể xóa giải đấu này.');
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Delete tournament error:', err);
+                    alert('Lỗi kết nối khi xóa giải đấu. Vui lòng thử lại.');
+                });
             }
 
             function openCloneTourneyModal(id, currentName) {
@@ -423,7 +443,10 @@
                     nameInput.value = (currentName ? currentName : 'Giải Con') + ' (Bản sao)';
                 }
                 if (modal) {
+                    modal.classList.add('show');
                     modal.style.display = 'flex';
+                    modal.style.opacity = '1';
+                    modal.style.pointerEvents = 'auto';
                     document.body.style.overflow = 'hidden';
                     if (nameInput) {
                         setTimeout(function() { nameInput.focus(); nameInput.select(); }, 50);
@@ -434,7 +457,10 @@
             function closeCloneTourneyModal() {
                 var modal = document.getElementById('cloneTourneyModalBackdrop');
                 if (modal) {
+                    modal.classList.remove('show');
                     modal.style.display = 'none';
+                    modal.style.opacity = '';
+                    modal.style.pointerEvents = '';
                     document.body.style.overflow = '';
                 }
             }

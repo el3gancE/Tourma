@@ -8,6 +8,67 @@
   'use strict';
 
   var dragSrcIndex = null;
+  // The setup page's Series snapshot does not change when its roster is edited.
+  // Keep Partner preparation off the initial render and reuse it between openings.
+  var preparedStandingsInputs = null;
+  var partnerPickerRequest;
+
+  function loadPartnerPicker() {
+    var host = document.getElementById('partnerPickerHost');
+    if (!host) return Promise.reject(new Error('Thiếu vùng hiển thị Partner.'));
+    if (!partnerPickerRequest) {
+      var url = new URL(window.location.href);
+      url.search = new URLSearchParams({id: getTourneyId(), view: 'partner-picker'});
+      partnerPickerRequest = fetch(url).then(function (response) {
+        if (!response.ok) throw new Error('Không tải được danh sách Partner.');
+        return response.text();
+      }).then(function (html) {
+        var fragment = document.createElement('template');
+        fragment.innerHTML = html;
+        var data = JSON.parse(fragment.content.querySelector('#partnerStandingsData').textContent);
+        fragment.content.querySelector('#partnerStandingsData').remove();
+        data.seriesSubTournaments.forEach(function (tournament) {
+          try { tournament.pointsConfig = JSON.parse(tournament.pointsConfig) || {}; }
+          catch (error) { tournament.pointsConfig = {}; }
+        });
+        Object.assign(window, data);
+        host.replaceChildren(fragment.content);
+        host.querySelectorAll('.partner-exclusion-input').forEach(function (checkbox) {
+          checkbox.addEventListener('change', window.applyPartnerExclusions);
+        });
+      }).catch(function (error) {
+        partnerPickerRequest = null;
+        throw error;
+      });
+    }
+    return partnerPickerRequest;
+  }
+
+  function withPartnerPicker(button, action) {
+    var host = document.getElementById('partnerPickerHost');
+    if (!host) {
+      action();
+      return Promise.resolve();
+    }
+    var label;
+    if (button) {
+      label = button.innerHTML;
+      button.textContent = 'Đang tải…';
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+    }
+    return loadPartnerPicker().then(function () {
+      action();
+    }).catch(function (error) {
+      alert('Không tải được danh sách Partner. Vui lòng thử lại.');
+    }).finally(function () {
+      if (button) {
+        button.innerHTML = label;
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+      }
+    });
+  }
 
   function handleDragStart(e) {
     dragSrcIndex = parseInt(this.getAttribute('data-index'), 10);
@@ -338,6 +399,11 @@
     if (items.length === 0) return;
 
     var curTid = (typeof window.currentSubTourneyId !== 'undefined' && window.currentSubTourneyId) ? window.currentSubTourneyId : getTourneyId();
+    var inputs = [modalList, window.seriesSubTournaments, window.seriesPartners,
+      window.seriesPhaseSize, window.serverTourneyPoints, window.serverTourneyParticipation, curTid];
+    if (preparedStandingsInputs && inputs.every(function (value, index) {
+      return value === preparedStandingsInputs[index];
+    })) return;
 
     // Extract partner list
     var partners = window.seriesPartners || [];
@@ -419,13 +485,18 @@
         // Physically append to modal container in new sorted order
         modalList.appendChild(item);
       });
+      preparedStandingsInputs = inputs;
     }
   };
 
   /**
    * Sort the current tournament teams in the seeding table by overall Rolling Standings
    */
-  window.sortByRollingStandings = function () {
+  window.sortByRollingStandings = function (button) {
+    return withPartnerPicker(button, sortByRollingStandings);
+  };
+
+  function sortByRollingStandings() {
     var tbody = document.querySelector('#subtourneyTeamsTable tbody');
     if (!tbody) return;
 
@@ -472,7 +543,7 @@
     });
 
     reindexSubtourneyRows();
-  };
+  }
 
   window.applyPartnerExclusions = function () {
     var selected = new Set(Array.from(document.querySelectorAll('.partner-exclusion-input:checked')).map(function (cb) { return cb.value; }));
@@ -499,12 +570,21 @@
     if (input) input.max = available;
   };
 
-  window.openPartnerSelectModal = function () {
+  window.openPartnerSelectModal = function (button) {
+    return withPartnerPicker(button, showPartnerPicker);
+  };
+
+  function showPartnerPicker() {
     window.calculateAndSyncModalStandings();
     window.applyPartnerExclusions();
+    // Copying configuration updates the editor without reloading this page.
+    var targetInput = document.getElementById('targetTeamCount');
+    var targetCount = Number(targetInput ? targetInput.value : window.targetTeamCount) || 0;
+    var countInput = document.getElementById('quickSelectNum');
+    if (countInput && targetCount > 0) countInput.value = targetCount;
     var modal = document.getElementById('partnerSelectModal');
     if (modal) modal.style.display = 'flex';
-  };
+  }
 
   window.closePartnerSelectModal = function () {
     var modal = document.getElementById('partnerSelectModal');
@@ -523,6 +603,10 @@
   window.quickSelectTeams = function (mode) {
     var numInput = document.getElementById('quickSelectNum');
     if (!numInput) return;
+    if (!numInput.value.trim()) {
+      numInput.focus();
+      return;
+    }
 
     var availableCbs = Array.from(document.querySelectorAll('.partner-cb-input:not(:disabled)'));
     var totalPartnerCount = availableCbs.length;
@@ -625,7 +709,7 @@
     if (confirm('Bạn có chắc chắn muốn xóa ' + selected.length + ' đội đã chọn khỏi giải con này?')) {
       var bulkForm = document.getElementById('bulkRemoveTeamsForm');
       if (bulkForm) {
-        bulkForm.submit();
+        bulkForm.requestSubmit();
       }
     }
   };
@@ -655,7 +739,7 @@
     }
 
     if (input) {
-      input.value = visibleCount;
+      input.value = Number(visibleCount) > 0 ? String(Number(visibleCount)) : '';
     }
     window.applyHideSeedUI(isEnabled);
     window.saveHideSeedConfig();
@@ -692,6 +776,10 @@
     var input = document.getElementById('lockTopSeedsInput');
     var isEnabled = (btn && btn.dataset.active === 'true');
     var visibleCount = input ? input.value.trim() : '';
+    if (input && visibleCount) {
+      visibleCount = visibleCount.replace(/^0+(?=\d)/, '');
+      input.value = visibleCount;
+    }
     document.querySelectorAll('form').forEach(function (form) {
       var field = form.querySelector('input[name="topSeedCount"]');
       if (!field) { field = document.createElement('input'); field.type = 'hidden'; field.name = 'topSeedCount'; form.appendChild(field); }
@@ -717,6 +805,7 @@
 
   window.proceedToNextStep = function (e) {
     if (e && e.preventDefault) e.preventDefault();
+    if (window.prepareSeriesSetup && !window.prepareSeriesSetup(e)) return false;
     if (typeof window.saveHideSeedConfig === 'function') {
       window.saveHideSeedConfig();
     }
@@ -771,7 +860,7 @@
     }
     var form = document.getElementById('saveOrderAndProceedForm');
     if (form) {
-      form.submit();
+      form.requestSubmit();
     } else {
       var nextBtn = document.getElementById('nextStepBtn');
       if (nextBtn && nextBtn.getAttribute('data-href')) {
@@ -782,10 +871,6 @@
   };
 
   document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.partner-exclusion-input').forEach(function (cb) {
-      cb.addEventListener('change', window.applyPartnerExclusions);
-    });
-    window.applyPartnerExclusions();
     var tid = getSubtourneyId();
     if (tid) {
       if (window.targetTeamCount && window.targetTeamCount > 0) {
@@ -807,7 +892,11 @@
 
     window.initSubtourneyDragAndDrop();
     window.initHideSeedConfig();
-    window.calculateAndSyncModalStandings();
   });
+
+  // Other tabs can update cached results while this setup page stays open.
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('storage', function () { preparedStandingsInputs = null; });
+  }
 
 })();

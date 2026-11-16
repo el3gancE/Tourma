@@ -162,7 +162,7 @@ public class TournamentDAO {
         if (tournamentId == null || (stage != 1 && stage != 2)) return false;
         try (Connection conn = new DBContext().getConnection()) {
             conn.setAutoCommit(false);
-            lockCutTournament(conn, tournamentId);
+            assertStageEditable(conn, tournamentId, stage);
             String scope = "tournament_id = ? AND (stage_id IN (SELECT id FROM tournament_stages WHERE tournament_id = ? AND stage_order >= ?) OR (stage_id IS NULL AND ? = 1))";
             try (PreparedStatement ps = conn.prepareStatement("UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL WHERE " + scope)) {
                 bindResetScope(ps, tournamentId, stage); ps.executeUpdate();
@@ -784,14 +784,15 @@ public class TournamentDAO {
         "        ELSE 0 END DESC, " +
         "   m.round_number DESC, m.match_order DESC) AS db_champion_name ";
 
-    // Aggregate the match table once instead of repeating four counts for every tournament.
+    // Aggregate only the selected tournament's matches. A global GROUP BY forced
+    // unrelated list/detail requests to compete for large SQL memory grants.
     public static final String TOURNAMENT_FROM_QUERY =
-        "FROM tournaments t LEFT JOIN (" +
-        "SELECT m.tournament_id, COUNT(*) AS total_matches, " +
+        "FROM tournaments t OUTER APPLY (" +
+        "SELECT COUNT(*) AS total_matches, " +
         "SUM(CASE WHEN m.status IN ('FINISHED','COMPLETED','DONE') OR m.winner_id IS NOT NULL OR (m.score1 IS NOT NULL AND m.score2 IS NOT NULL) THEN 1 ELSE 0 END) AS completed_matches, " +
         "SUM(CASE WHEN m.stage_id IS NULL OR ts.stage_order=1 THEN 1 ELSE 0 END) AS stage1_total_matches " +
         "FROM matches m LEFT JOIN tournament_stages ts ON ts.id=m.stage_id AND ts.tournament_id=m.tournament_id " +
-        "WHERE m.is_bye=0 OR m.is_bye IS NULL GROUP BY m.tournament_id) ms ON ms.tournament_id=t.id ";
+        "WHERE m.tournament_id=t.id AND (m.is_bye=0 OR m.is_bye IS NULL)) ms ";
 
     public Tournament mapTournamentFromResultSet(ResultSet rs) {
         try {
@@ -895,8 +896,12 @@ public class TournamentDAO {
         private final List<Tournament> tournaments;
         private final int totalCount;
         private final int page;
-        private final String filter;
+        private String filter;
         private final String query;
+        private String kind = "ALL", status = "ALL", seriesId = "";
+        public String getKind() { return kind; }
+        public String getStatus() { return status; }
+        public String getSeriesId() { return seriesId; }
 
         private TournamentPage(List<Tournament> tournaments, int totalCount, int page, String filter, String query) {
             this.tournaments = tournaments; this.totalCount = totalCount; this.page = page;
@@ -912,9 +917,24 @@ public class TournamentDAO {
 
     /** Filter in SQL before fetching a maximum of 25 cards; no browser-side paging of all rows. */
     public TournamentPage getTournamentPage(String seriesId, String rawQuery, String rawFilter, String rawPage) {
+        String legacy = rawFilter == null ? "ALL" : rawFilter.toUpperCase(Locale.ROOT);
+        if (!Set.of("ALL", "STANDALONE", "SERIES", "INCOMING", "IN_PROGRESS", "COMPLETED").contains(legacy)) legacy = "ALL";
+        TournamentPage result = getTournamentPage(seriesId, rawQuery,
+                Set.of("STANDALONE", "SERIES").contains(legacy) ? legacy : "ALL",
+                Set.of("INCOMING", "IN_PROGRESS", "COMPLETED").contains(legacy) ? legacy : "ALL", rawPage);
+        result.filter = legacy;
+        return result;
+    }
+
+    public TournamentPage getTournamentPage(String seriesId, String rawQuery, String rawKind, String rawStatus, String rawPage) {
         String query = rawQuery == null ? "" : rawQuery.trim();
-        String filter = rawFilter == null ? "ALL" : rawFilter.toUpperCase(Locale.ROOT);
-        if (!Set.of("ALL", "STANDALONE", "SERIES", "INCOMING", "IN_PROGRESS", "COMPLETED").contains(filter)) filter = "ALL";
+        String kind = rawKind == null ? "ALL" : rawKind.trim().toUpperCase(Locale.ROOT);
+        String status = rawStatus == null ? "ALL" : rawStatus.trim().toUpperCase(Locale.ROOT);
+        if (!Set.of("ALL", "STANDALONE", "SERIES").contains(kind)) kind = "ALL";
+        if (!Set.of("ALL", "INCOMING", "IN_PROGRESS", "COMPLETED").contains(status)) status = "ALL";
+        seriesId = seriesId == null ? "" : seriesId.trim();
+        if ("STANDALONE".equals(kind)) seriesId = "";
+        else if (!seriesId.isEmpty()) kind = "SERIES";
         int requestedPage = 1;
         try { requestedPage = Math.max(1, Integer.parseInt(rawPage)); } catch (Exception ignored) {}
         List<String> parameters = new ArrayList<>();
@@ -925,18 +945,18 @@ public class TournamentDAO {
         if (!query.isEmpty()) {
             where.append("AND CHARINDEX(LOWER(?),LOWER(t.name))>0 "); parameters.add(query);
         }
-        if ("STANDALONE".equals(filter)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NULL ");
-        else if ("SERIES".equals(filter)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NOT NULL ");
-        else if (!"ALL".equals(filter)) {
+        if ("STANDALONE".equals(kind)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NULL ");
+        else if ("SERIES".equals(kind)) where.append("AND NULLIF(LTRIM(RTRIM(t.series_id)),'') IS NOT NULL ");
+        if (!"ALL".equals(status)) {
             where.append("AND (CASE WHEN t.status IN ('COMPLETED','FINISHED') THEN 'COMPLETED' ")
                  .append("WHEN t.status IN ('ONGOING','IN_PROGRESS') OR ISNULL(ms.completed_matches,0)>0 THEN 'IN_PROGRESS' ELSE 'INCOMING' END)=? ");
-            parameters.add(filter);
+            parameters.add(status);
         }
         String order = seriesId == null || seriesId.trim().isEmpty()
                 ? "t.created_at DESC,t.id DESC" : "t.tournament_index_in_series DESC,t.created_at DESC,t.id DESC";
         try (Connection conn = new DBContext().getConnection()) {
             int count;
-            boolean statusFilter = Set.of("INCOMING", "IN_PROGRESS", "COMPLETED").contains(filter);
+            boolean statusFilter = !"ALL".equals(status);
             String countFrom = statusFilter ? TOURNAMENT_FROM_QUERY : "FROM tournaments t ";
             try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) " + countFrom + where + "OPTION (MAXDOP 1)")) {
                 for (int i=0; i<parameters.size(); i++) ps.setString(i+1, parameters.get(i));
@@ -955,7 +975,9 @@ public class TournamentDAO {
                     }
                 }
             }
-            return new TournamentPage(rows,count,page,filter,query);
+            TournamentPage result = new TournamentPage(rows,count,page,!"ALL".equals(kind) ? kind : status,query);
+            result.kind=kind; result.status=status; result.seriesId=seriesId;
+            return result;
         } catch (Exception e) { throw new IllegalStateException("Cannot load tournament page",e); }
     }
 
@@ -1026,6 +1048,44 @@ public class TournamentDAO {
                     if (t != null) {
                         list.add(t);
                     }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Tournament> getCopySourceTournaments(String seriesId) {
+        List<Tournament> list = new ArrayList<>();
+        boolean hasSeries = (seriesId != null && !seriesId.trim().isEmpty());
+        String where = hasSeries ? "WHERE t.series_id = ? " : "";
+        String order = hasSeries
+                ? "ORDER BY t.tournament_index_in_series DESC, t.created_at DESC "
+                : "ORDER BY t.created_at DESC ";
+        String sql = "SELECT t.id, t.name, t.tournament_type, t.tier_name, t.tournament_index_in_series, t.created_at, "
+                + "ts.stage_format, ISNULL(tc.team_count, 0) AS team_count "
+                + "FROM tournaments t WITH (NOLOCK) "
+                + "OUTER APPLY (SELECT TOP 1 format AS stage_format FROM tournament_stages WITH (NOLOCK) WHERE tournament_id = t.id ORDER BY stage_order ASC) ts "
+                + "LEFT JOIN (SELECT tournament_id, COUNT(*) AS team_count FROM teams WITH (NOLOCK) GROUP BY tournament_id) tc ON tc.tournament_id = t.id "
+                + where + order + "OPTION (MAXDOP 1)";
+        try (Connection conn = new DBContext().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (hasSeries) {
+                ps.setString(1, seriesId.trim());
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Tournament t = new Tournament();
+                    t.setId(rs.getString("id"));
+                    t.setName(rs.getString("name"));
+                    t.setTournamentType(rs.getString("tournament_type"));
+                    t.setTierName(rs.getString("tier_name"));
+                    t.setTournamentIndexInSeries(rs.getInt("tournament_index_in_series"));
+                    t.setCreatedAt(rs.getTimestamp("created_at"));
+                    t.setFormat(rs.getString("stage_format"));
+                    t.setTeamCount(rs.getInt("team_count"));
+                    list.add(t);
                 }
             }
         } catch (Exception e) {
@@ -1157,7 +1217,9 @@ public class TournamentDAO {
 
         String sqlUpdateTourneys = "UPDATE tournaments SET linked_qualifier_tournament_id = NULL WHERE linked_qualifier_tournament_id = ?";
         String sqlHistory = "DELETE FROM series_tournament_history WHERE tournament_id = ?";
-        String sqlUpdateMatches = "UPDATE matches SET next_match_id = NULL WHERE tournament_id = ?";
+        String sqlPlacementPoints = "DELETE FROM tournament_placement_points WHERE tournament_id = ?";
+        String sqlStageParticipants = "DELETE FROM stage_participants WHERE tournament_id = ?";
+        String sqlUpdateMatches = "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL, team1_id = NULL, team2_id = NULL, winner_id = NULL, loser_id = NULL WHERE tournament_id = ?";
         String sqlMatches = "DELETE FROM matches WHERE tournament_id = ?";
         String sqlGroupTeams1 = "DELETE FROM group_teams WHERE group_id IN (SELECT g.id FROM groups g JOIN tournament_stages s ON g.stage_id = s.id WHERE s.tournament_id = ?)";
         String sqlGroupTeams2 = "DELETE FROM group_teams WHERE team_id IN (SELECT id FROM teams WHERE tournament_id = ?)";
@@ -1179,6 +1241,16 @@ public class TournamentDAO {
                 } catch (Exception ignore) {}
 
                 try (PreparedStatement ps = conn.prepareStatement(sqlHistory)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlPlacementPoints)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlStageParticipants)) {
                     ps.setString(1, tid);
                     ps.executeUpdate();
                 } catch (Exception ignore) {}
@@ -1841,6 +1913,25 @@ public class TournamentDAO {
                 return "{\"ready\":"+ready+",\"stage1Status\":\""+cutEscape(rs.getString(2))+"\",\"stage1Format\":\""+cutEscape(rs.getString(4))+"\",\"generation\":\""+cutEscape(rs.getString(5))+"\"}";
             }
         } catch(Exception e){throw new IllegalStateException("Cannot load stage state",e);}
+    }
+
+    public static void assertStageEditable(Connection conn, String id, int stage) throws java.sql.SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT status, stage1_status FROM tournaments WITH (UPDLOCK, HOLDLOCK) WHERE id = ?")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw new IllegalStateException("Không tìm thấy giải đấu.");
+                String status = rs.getString(1);
+                String stage1 = rs.getString(2);
+                if ("COMPLETED".equalsIgnoreCase(status) || "FINISHED".equalsIgnoreCase(status)) {
+                    throw new IllegalStateException("Giải đã khóa. Cần mở khóa trước khi sửa kết quả.");
+                }
+                if (stage == 1 && ("LOCKED".equalsIgnoreCase(stage1) || "COMPLETED".equalsIgnoreCase(stage1))) {
+                    throw new IllegalStateException("Stage 1 đã khóa. Cần mở khóa trước khi sửa kết quả.");
+                }
+            }
+        }
+        assertStage2Ready(conn, id, stage);
     }
 
     public static void assertStage2Ready(Connection conn, String id, int stage) throws java.sql.SQLException {

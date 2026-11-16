@@ -1,7 +1,8 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
-<%@page import="dao.TournamentDAO, model.Tournament, java.util.List, java.util.ArrayList" %>
+<%@page import="dao.TournamentDAO, model.Tournament" %>
 <%
+    boolean embeddedFormat = Boolean.TRUE.equals(request.getAttribute("standaloneFormatEmbedded"));
     String tournamentId = request.getParameter("id");
     String currentFormat = request.getParameter("format");
     String currentType = request.getParameter("type"); // SINGLE_STAGE or MULTI_STAGE
@@ -11,12 +12,14 @@
     String copiedSourceTourneyNameParam = request.getParameter("copiedSourceTourneyName");
     Tournament currentTournament = null;
     String currentTierVal = "S";
-    List<Tournament> availableTournaments = new ArrayList<>();
 
     TournamentDAO tDao = new TournamentDAO();
     if (tournamentId != null && !tournamentId.trim().isEmpty()) {
         try {
-            currentTournament = tDao.getTournamentById(tournamentId, false);
+            currentTournament = (Tournament) request.getAttribute("setupTournament");
+            if (currentTournament == null || !tournamentId.equals(currentTournament.getId())) {
+                currentTournament = tDao.getTournamentById(tournamentId, false);
+            }
             if (currentTournament != null) {
                 if ((currentFormat == null || currentFormat.trim().isEmpty()) && currentTournament.getFormat() != null) {
                     currentFormat = currentTournament.getFormat();
@@ -42,31 +45,6 @@
         response.sendError(400, "Nguồn sao chép không hợp lệ. Giải con chỉ được sao chép trong cùng Series.");
         return;
     }
-    try {
-        List<Tournament> allTourneys = seriesIdParam != null && !seriesIdParam.trim().isEmpty()
-                ? tDao.getTournamentsBySeriesId(seriesIdParam.trim()) : tDao.getAllTournaments();
-        if (allTourneys != null) {
-            for (Tournament t : allTourneys) {
-                if (tournamentId == null || !tournamentId.trim().equalsIgnoreCase(t.getId())) {
-                    availableTournaments.add(t);
-                }
-            }
-        }
-    } catch (Exception ignore) {}
-    if (seriesIdParam != null && !seriesIdParam.trim().isEmpty()) {
-        availableTournaments.sort((a, b) -> {
-            int order = Integer.compare(b.getTournamentIndexInSeries(), a.getTournamentIndexInSeries());
-            if (order != 0) return order;
-            if (a.getCreatedAt() == null && b.getCreatedAt() != null) return 1;
-            if (a.getCreatedAt() != null && b.getCreatedAt() == null) return -1;
-            if (a.getCreatedAt() != null) {
-                int created = b.getCreatedAt().compareTo(a.getCreatedAt());
-                if (created != 0) return created;
-            }
-            return a.getId().compareTo(b.getId());
-        });
-    }
-
     if (copiedFromParam != null && !copiedFromParam.trim().isEmpty() && (copiedSourceTourneyNameParam == null || copiedSourceTourneyNameParam.trim().isEmpty())) {
         try {
             Tournament srcT = tDao.getTournamentById(copiedFromParam.trim());
@@ -90,10 +68,16 @@
 
     boolean isRollingSubTournament = (seriesIdParam != null && !seriesIdParam.trim().isEmpty());
 
+    if (!embeddedFormat) {
+        String query = request.getQueryString();
+        response.sendRedirect(request.getContextPath() + (isRollingSubTournament ? "/rolling/tournament-teams" : "/common/configure-tournament-teams.jsp") + (query == null ? "" : "?" + query));
+        return;
+    }
     String formActionUrl = isRollingSubTournament
         ? (request.getContextPath() + "/rolling/tournament-teams")
         : (request.getContextPath() + "/common/configure-tournament-teams.jsp");
 %>
+                    <% if (!embeddedFormat) { %>
                     <!DOCTYPE html>
                     <html lang="vi" data-theme="light">
 
@@ -153,6 +137,9 @@
                         <main class="format-main">
                             <header class="format-page-heading"><h1>Cấu hình thể thức</h1><% if (currentTournament != null) { request.setAttribute("formatTournamentName", currentTournament.getName()); %><p><c:out value="${formatTournamentName}" /></p><% } %></header>
 
+                    <% } else { %>
+                        <section class="format-page standalone-format-panel" aria-label="Thể thức và cấu hình">
+                    <% } %>
                             <!-- Top Stage Model Toggle Bar (Single Stage ↔ Multi-Stage) & Copy Config Button -->
                             <div
                                 class="format-toolbar" data-ui-style="configure-tournament-format-jsp-001" style="display: flex;">
@@ -170,7 +157,7 @@
                                 <!-- Copy Configuration from Existing Tournament Button -->
                                 <button type="button" class="btn btn-secondary" onclick="openCopyConfigModal()"
                                     data-ui-style="configure-tournament-format-jsp-003" style="display: inline-flex;">
-                                    <i class="fa-solid fa-copy"></i> Sao chép cấu hình
+                                    <i class="fa-solid fa-copy"></i> <%= isRollingSubTournament ? "Sao chép điểm &amp; cấu hình" : "Sao chép cấu hình" %>
                                 </button>
                             </div>
 
@@ -180,18 +167,13 @@
                                 <!-- Active Copied Config Banner (Shown when a config is cloned / copied) -->
                                 <div id="copiedConfigBanner"
                                     data-ui-style="configure-tournament-format-jsp-005" style="display: none;">
-                                    <div
-                                        data-ui-style="configure-tournament-format-jsp-006" style="display: flex;">
-                                        <i class="fa-solid fa-circle-check text-mint" data-ui-style="configure-tournament-format-jsp-007"></i>
-                                        <span>Đang áp dụng cấu hình từ: <strong
-                                                id="copiedTourneyNameDisplay">...</strong> (Ràng buộc bắt buộc: <strong
-                                                id="copiedTourneyTeamCountDisplay" data-ui-style="configure-tournament-format-jsp-008">...</strong>
-                                            đội)</span>
+                                    <div class="setup-copy-source">
+                                        <span class="setup-copy-label"><i class="fa-solid fa-copy" aria-hidden="true"></i> Sao chép từ</span>
+                                        <strong id="copiedTourneyNameDisplay">...</strong>
                                     </div>
-                                    <button type="button" onclick="clearCopiedConfig()" class="btn btn-secondary"
-                                        data-ui-style="configure-tournament-format-jsp-009">
-                                        <i class="fa-solid fa-xmark"></i> Bỏ Áp Dụng
-                                    </button>
+                                    <span class="setup-copy-requirement">Yêu cầu <strong id="copiedTourneyTeamCountDisplay">...</strong> đội</span>
+                                    <span id="setupCopyProgress" class="setup-copy-progress" role="status"></span>
+                                    <button type="button" onclick="clearCopiedConfig()" class="setup-copy-unlink" title="Bỏ liên kết nguồn và ràng buộc số đội; giữ các giá trị cấu hình hiện tại">Bỏ liên kết</button>
                                 </div>
 
                                 <!-- Top Controls Row: Stage Badge & Tier Switcher (Tier only for Rolling Series child tournaments) -->
@@ -240,8 +222,12 @@
                                 <!-- Main Card Title -->
                                 <h2 class="form-header-title" data-ui-style="configure-tournament-format-jsp-014">Thể thức thi đấu</h2>
 
+                                <% if (embeddedFormat) { %>
+                                <div id="configureFormatForm">
+                                <% } else { %>
                                 <form id="configureFormatForm" action="<%= formActionUrl %>" method="GET"
                                     onsubmit="return validateAndSubmitFormat(event)">
+                                <% } %>
                                     <input type="hidden" name="id"
                                         value="<%= (tournamentId != null) ? tournamentId : "" %>">
                                     <input type="hidden" name="seriesId"
@@ -342,6 +328,7 @@
                                             <!-- 2. MULTI-STAGE PANEL                                             -->
                                             <!-- ════════════════════════════════════════════════════════════════ -->
                                             <div id="multiStagePanel" style="display: none;">
+                                                <% if (embeddedFormat) { %><div class="standalone-stage-columns"><% } %>
 
                                                 <!-- STAGE 1 -->
                                                 <div
@@ -688,8 +675,10 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <% if (embeddedFormat) { %></div><% } %>
                                             </div>
 
+                                            <% if (!embeddedFormat) { %>
                                             <!-- SUBMIT BUTTONS -->
                                             <div
                                                 class="format-submit-row" data-ui-style="configure-tournament-format-jsp-093" style="display: flex;">
@@ -699,10 +688,13 @@
                                                     Tiếp tục <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                                                 </button>
                                             </div>
-                                </form>
+                                            <% } %>
+                                <% if (embeddedFormat) { %></div><% } else { %></form><% } %>
                             </div>
+                        <% if (!embeddedFormat) { %>
                         </main>
                         </div>
+                        <% } %>
 
                         <!-- ONGOING TOURNAMENT CANNOT CHANGE FORMAT WARNING MODAL -->
                         <div id="formatLockedModalBackdrop" class="tourma-modal-backdrop"
@@ -833,55 +825,7 @@
                                     <!-- TOURNAMENT LIST -->
                                     <div id="copyTourneyListContainer"
                                         data-ui-style="configure-tournament-format-jsp-122" style="display: flex;">
-                                        <% if (!availableTournaments.isEmpty()) { for (Tournament at :
-                                            availableTournaments) { String tType=(at.getTournamentType() !=null) ?
-                                            at.getTournamentType() : "SINGLE_STAGE" ; boolean isMulti="MULTI_STAGE"
-                                            .equalsIgnoreCase(tType); String fmt=(at.getFormat() !=null) ?
-                                            at.getFormat() : "SINGLE_ELIMINATION" ; int tCount=at.getTeamCount(); String
-                                            tTier=at.getTierName() !=null ? at.getTierName().toUpperCase() : "" ; %>
-                                            <div class="copy-tourney-item-card" data-tourney-id="<%= at.getId() %>"
-                                                data-tourney-name="<%= at.getName() != null ? at.getName().toLowerCase() : "" %>"
-                                                data-ui-style="configure-tournament-format-jsp-123" style="display: flex;">
-                                                <div class="copy-tourney-info" data-ui-style="configure-tournament-format-jsp-124">
-                                                    <div
-                                                        class="copy-tourney-name" data-ui-style="configure-tournament-format-jsp-125">
-                                                        <%= at.getName() %>
-                                                    </div>
-                                                    <div
-                                                        class="copy-tourney-meta" data-ui-style="configure-tournament-format-jsp-126" style="display: flex;">
-                                                        <span class="stage-badge"
-                                                            data-ui-style="configure-tournament-format-jsp-127">
-                                                            <%= isMulti ? "MULTI STAGE" : "SINGLE STAGE" %>
-                                                        </span>
-                                                        <span class="stage-badge"
-                                                            data-ui-style="configure-tournament-format-jsp-128">
-                                                            <%= fmt.replace("_", " " ) %>
-                                                        </span>
-                                                        <% if (!tTier.isEmpty()) { %>
-                                                            <span class="tier-tag tier-<%= tTier.toLowerCase() %>"
-                                                                data-ui-style="configure-tournament-format-jsp-129">
-                                                                Tier <%= tTier %>
-                                                            </span>
-                                                            <% } %>
-                                                                <span class="stage-badge"
-                                                                    data-ui-style="configure-tournament-format-jsp-130">
-                                                                    <i class="fa-solid fa-users"></i>
-                                                                    <%= tCount %> Đội
-                                                                </span>
-                                                    </div>
-                                                </div>
-                                                <button type="button" class="btn btn-mint"
-                                                    onclick="applyTournamentConfig('<%= at.getId() %>')"
-                                                    data-ui-style="configure-tournament-format-jsp-131">
-                                                    <i class="fa-solid fa-arrow-down-to-bracket"></i> Áp Dụng
-                                                </button>
-                                            </div>
-                                            <% } } else { %>
-                                                <div
-                                                    data-ui-style="configure-tournament-format-jsp-132">
-                                                    <%= isRollingSubTournament ? "Chưa có giải con khác trong Series để sao chép cấu hình." : "Chưa có giải đấu nào khác để sao chép cấu hình." %>
-                                                </div>
-                                                <% } %>
+                                        <p id="copyTourneyStatus" role="status"></p>
                                     </div>
                                     <div id="noCopyTourneyMatchMsg"
                                         data-ui-style="configure-tournament-format-jsp-133" style="display: none;">
@@ -898,35 +842,7 @@
                         </div>
 
                         <script>
-                            window.availableTournamentsToCopy = [
-                        <%
-                        for (int i = 0; i < availableTournaments.size(); i++) {
-                            Tournament at = availableTournaments.get(i);
-                            String safeId = (at.getId() != null) ? at.getId() : "";
-                            String safeName = (at.getName() != null) ? at.getName().replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'").replace("\n", " ") : "";
-                            String tType = (at.getTournamentType() != null) ? at.getTournamentType() : "SINGLE_STAGE";
-                            String fmt = (at.getFormat() != null) ? at.getFormat() : "SINGLE_ELIMINATION";
-                            String tTier = (at.getTierName() != null) ? at.getTierName().toUpperCase() : "S";
-                            int tCount = at.getTeamCount();
-                            int advCount = at.getAdvancingSeatsCount();
-                            String rawMCfg = at.getMultiStageConfig();
-                            String mCfgJson = (rawMCfg != null && rawMCfg.trim().startsWith("{") && rawMCfg.trim().endsWith("}")) ? rawMCfg.trim() : "null";
-                            String rawPtsCfg = at.getSeriesPointsConfig();
-                            String ptsCfgJson = (rawPtsCfg != null && rawPtsCfg.trim().startsWith("{") && rawPtsCfg.trim().endsWith("}")) ? rawPtsCfg.trim() : "null";
-                        %>
-                                    {
-                                        id: "<%= safeId %>",
-                                        name: "<%= safeName %>",
-                                        tournamentType: "<%= tType %>",
-                                        format: "<%= fmt %>",
-                                        tierName: "<%= tTier %>",
-                                        teamCount: <%= tCount %>,
-                                    advancingSeatsCount: <%= advCount %>,
-                                        multiStageConfig: <%= mCfgJson %>,
-                                            pointsConfig: <%= ptsCfgJson %>
-                        }<%= (i < availableTournaments.size() - 1) ? "," : "" %>
-                        <% } %>
-                    ];
+                            var copySourcesRequest;
 
                             var isRollingSubTournament = <%= isRollingSubTournament %>;
                             var tournamentId = "<%= (tournamentId != null) ? tournamentId : "" %>";
@@ -935,10 +851,45 @@
                             var originalType = "<%= currentType %>";
                             var currentTier = "<%= currentTierVal %>";
                             var hasOngoingMatches = false;
-                            var bypassWarning = false;
+                            var formatBypassWarning = false;
                             var initialLegsCount = 1;
 
+                            function loadCopySources() {
+                                if (copySourcesRequest) return;
+                                var list = document.getElementById('copyTourneyListContainer');
+                                var status = document.getElementById('copyTourneyStatus');
+                                status.textContent = 'Đang tải danh sách giải…';
+                                var url = '${pageContext.request.contextPath}/setup/copy-sources?id=' + encodeURIComponent(tournamentId);
+                                copySourcesRequest = fetch(url).then(function (response) {
+                                    if (!response.ok) throw new Error('Không tải được danh sách giải');
+                                    return response.text();
+                                }).then(function (html) {
+                                    var fragment = document.createElement('template');
+                                    fragment.innerHTML = html;
+                                    var data = fragment.content.querySelector('#copySourcesData');
+                                    var sources = JSON.parse(data.textContent);
+                                    sources.forEach(function (source) {
+                                        ['multiStageConfig', 'pointsConfig'].forEach(function (key) {
+                                            try { source[key] = JSON.parse(source[key]); }
+                                            catch (error) { source[key] = null; }
+                                        });
+                                    });
+                                    data.remove();
+                                    fragment.content.querySelectorAll('[data-copy-apply]').forEach(function (button) {
+                                        var id = button.closest('.copy-tourney-item-card').dataset.tourneyId;
+                                        button.addEventListener('click', function () { applyTournamentConfig(id); });
+                                    });
+                                    window.availableTournamentsToCopy = sources;
+                                    list.replaceChildren(fragment.content);
+                                    filterCopyTournaments(document.getElementById('copyTourneySearchInput').value);
+                                }).catch(function () {
+                                    copySourcesRequest = null;
+                                    status.textContent = 'Không tải được danh sách giải. Đóng và mở lại để thử lại.';
+                                });
+                            }
+
                             function openCopyConfigModal() {
+                                loadCopySources();
                                 var modal = document.getElementById('copyConfigModalBackdrop');
                                 if (modal) {
                                     modal.style.display = 'flex';
@@ -981,11 +932,18 @@
                                 }
                             }
 
-                            function applyTournamentConfig(sourceTourneyId) {
+                            async function applyTournamentConfig(sourceTourneyId) {
                                 if (!sourceTourneyId) return;
                                 var tourney = (window.availableTournamentsToCopy || []).find(function (t) { return t.id === sourceTourneyId; });
                                 if (!tourney) return;
 
+                                var copyCard = Array.from(document.querySelectorAll('.copy-tourney-item-card')).find(function (card) {
+                                    return card.dataset.tourneyId === sourceTourneyId;
+                                });
+                                var copyButton = copyCard && copyCard.querySelector('button');
+                                if (copyButton && copyButton.disabled) return;
+                                if (copyButton) copyButton.disabled = true;
+                                try {
                                 // 1. Apply Type (SINGLE_STAGE vs MULTI_STAGE)
                                 var type = tourney.tournamentType || 'SINGLE_STAGE';
                                 selectStageType(type, false);
@@ -1061,7 +1019,7 @@
                                 }
 
                                 // 3. Apply Tier if Rolling sub-tourney
-                                if (isRollingSubTournament && tourney.tierName) {
+                                if (!isRollingSubTournament && tourney.tierName) {
                                     changeTournamentTier(tourney.tierName);
                                 }
 
@@ -1074,6 +1032,22 @@
                                             localStorage.setItem('tourma_series_points_' + tournamentId, ptsStr);
                                         } catch (e) { }
                                     }
+                                }
+
+                                // Persist the Series copy now; a later roster submit must not be required.
+                                persistFormatSelection();
+                                if (isRollingSubTournament) {
+                                    var copyResponse = await fetch("${pageContext.request.contextPath}/rolling/tournament-teams", {
+                                        method: 'POST',
+                                        headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                                        body: new URLSearchParams({action: 'copyConfiguration', tournamentId: tournamentId,
+                                            sourceTournamentId: tourney.id, multiConfig: document.getElementById('detailConfig').value}).toString()
+                                    });
+                                    var copyResult = await copyResponse.json();
+                                    if (!copyResponse.ok || copyResult.status !== 'success') {
+                                        throw new Error(copyResult.message || 'Không lưu được điểm và cấu hình.');
+                                    }
+                                    if (tourney.tierName) changeTournamentTier(tourney.tierName);
                                 }
 
                                 // 4. Capture Target Team Count & Source Name constraint
@@ -1096,6 +1070,11 @@
 
                                 // 6. Close modal
                                 closeCopyConfigModal();
+                                } catch (error) {
+                                    alert(error.message || "Không lưu được điểm và cấu hình.");
+                                } finally {
+                                    if (copyButton) copyButton.disabled = false;
+                                }
                             }
 
                             function updateCopiedConfigBanner(sourceName, teamCount) {
@@ -1544,13 +1523,14 @@
                                     } catch (e) { }
                                 }
                                 persistFormatSelection();
-                                bypassWarning = true;
+                                formatBypassWarning = true;
                                 var modal = document.getElementById('legsChangeModalBackdrop');
                                 if (modal) {
                                     modal.classList.remove('show');
                                     document.body.style.overflow = '';
                                 }
-                                document.getElementById('configureFormatForm').submit();
+                                if (window.submitStandaloneSetup) window.submitStandaloneSetup();
+                                else document.getElementById('configureFormatForm').submit();
                             }
 
                             function getTotalTeamsCount() {
@@ -1660,7 +1640,7 @@
                             }
 
                             function validateAndSubmitFormat(e) {
-                                if (bypassWarning) return true;
+                                if (formatBypassWarning) return true;
 
                                 var currentType = document.getElementById('selectedTournamentType').value;
                                 var currentSelected = document.getElementById('selectedFormat').value;
@@ -1744,7 +1724,7 @@
                                 selectFormat(originalFormat);
 
                                 // Restore Multi Stage config if exists
-                                if (tournamentId && localStorage.getItem('tourma_multi_config_' + tournamentId)) {
+                                if (originalType === 'MULTI_STAGE' && tournamentId && localStorage.getItem('tourma_multi_config_' + tournamentId)) {
                                     try {
                                         var mCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tournamentId));
                                         if (mCfg) {
@@ -1883,6 +1863,8 @@
                     });
                         </script>
                         <script src="${pageContext.request.contextPath}/js/format-presentation.js?v=2"></script>
+                        <% if (embeddedFormat) { %></section><% } else { %>
                     </body>
 
                     </html>
+                    <% } %>

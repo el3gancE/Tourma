@@ -35,11 +35,16 @@
 
             if (!tid) return false;
 
+            var dbStatus = window.TourmaDbTournamentStatus && window.TourmaDbTournamentStatus[tid];
+            if (dbStatus === 'COMPLETED' || dbStatus === 'FINISHED') return true;
+
             var stageParam = null;
             try {
                 stageParam = new URLSearchParams(window.location.search).get('stage');
             } catch(e) {}
             var isStage2 = (stageParam === '2');
+            var dbStage1Status = window.TourmaDbStage1Status && window.TourmaDbStage1Status[tid];
+            if (!isStage2 && (dbStage1Status === 'LOCKED' || dbStage1Status === 'COMPLETED')) return true;
 
             // Check if this is a Multi-Stage tournament
             var isMultiStage = false;
@@ -65,7 +70,8 @@
             }
 
             // Otherwise (Single Stage or Stage 2): Check Final Champion Lock
-            if (window.FinalStagePopup) {
+            if (dbStatus) return false;
+            if (window.FinalStagePopup && window.FinalStagePopup.tournamentId === tid) {
                 return window.FinalStagePopup.isLocked === true;
             }
             try {
@@ -92,6 +98,7 @@
             }
 
             this.activeMatchId = matchData.matchId || matchData.id || '1';
+            this.activeTournamentId = matchData.tournamentId;
             this.onSaveCallback = callback || null;
             this.allowDraw = matchData.allowDraw === true || matchData.allowDraw === 'true';
 
@@ -242,7 +249,7 @@
          * Randomize match result, immediately save and exit popup
          */
         randomizeAndSave: function () {
-            if (!this.activeMatchId) return;
+            if (!this.activeMatchId || this.isLocked(this.activeTournamentId)) return;
 
             var winScoreInput = document.getElementById('modalRandomWinScore');
             var rawVal = winScoreInput ? winScoreInput.value : '';
@@ -278,7 +285,7 @@
          * Save Match Result Algorithm (Automatically marks match as COMPLETED)
          */
         save: function () {
-            if (!this.activeMatchId) return;
+            if (!this.activeMatchId || this.isLocked(this.activeTournamentId)) return;
 
             // In elimination / knockout matches (no draw allowed), must specify a winner
             if (!this.allowDraw) {
@@ -338,6 +345,73 @@
             this.close();
         }
     };
+
+    var editControls = [
+        '.btn-quick-mode-toggle', '#btnSwissQuickMode', '.btn-reset-bracket-action',
+        '.round-random-input', '.pool-random-input', '.gsl-group-random-input',
+        '.btn-round-random', '.btn-round-reset', '.btn-random-round', '.btn-reset-round',
+        '.btn-pool-random', '.btn-gsl-group-action', '.btn-random-scores',
+        '.btn-random-group', '.btn-auto-score', '#gslBtnRandomAll', '.btn-random-all',
+        '.match-score-input', '.score-input', '.group-score-input',
+        '#tourmaScoreModalBackdrop input', '.btn-modal-save', '#btnModalRandomScore',
+        '[onclick*="confirmReset"]'
+    ].join(',');
+    var matchCards = '.bracket-node-card, .match-card-item';
+    var lockedControls = new Set();
+    var lockedCards = new Map();
+
+    function syncStageEditing() {
+        var locked = window.TourmaScoreModal.isLocked();
+        document.body.classList.toggle('tourma-edit-locked', locked);
+        if (locked) {
+            lockedControls.forEach(function (control) { if (!control.isConnected) lockedControls.delete(control); });
+            lockedCards.forEach(function (index, card) { if (!card.isConnected) lockedCards.delete(card); });
+            if (window.TourmaScoreModal.activeMatchId) window.TourmaScoreModal.close();
+            document.querySelectorAll(editControls).forEach(function (control) {
+                if (!control.disabled) {
+                    lockedControls.add(control);
+                    control.disabled = true;
+                }
+            });
+            document.querySelectorAll(':is(' + matchCards + ')[tabindex]').forEach(function (card) {
+                if (!card.hasAttribute('tabindex')) return;
+                if (!lockedCards.has(card)) {
+                    lockedCards.set(card, {tabIndex: card.getAttribute('tabindex'), role: card.getAttribute('role')});
+                }
+                card.removeAttribute('tabindex');
+                if (card.getAttribute('role') === 'button') card.removeAttribute('role');
+            });
+        } else {
+            lockedControls.forEach(function (control) { control.disabled = false; });
+            lockedCards.forEach(function (state, card) {
+                card.setAttribute('tabindex', state.tabIndex);
+                if (state.role) card.setAttribute('role', state.role);
+            });
+            lockedControls.clear();
+            lockedCards.clear();
+        }
+    }
+
+    window.TourmaScoreModal.syncStageEditing = syncStageEditing;
+    document.addEventListener('DOMContentLoaded', function () {
+        syncStageEditing();
+        new MutationObserver(function () {
+            if (window.TourmaScoreModal.isLocked() || lockedControls.size || lockedCards.size) syncStageEditing();
+        }).observe(document.body, {childList: true, subtree: true});
+    });
+    window.addEventListener('pageshow', syncStageEditing);
+    function blockLockedEdit(event) {
+        if (!window.TourmaScoreModal.isLocked() || !event.target.closest) return;
+        if (event.target.closest('.h2h-trigger')) return;
+        if (event.target.closest(editControls + ',' + matchCards)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    }
+    document.addEventListener('click', blockLockedEdit, true);
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') blockLockedEdit(event);
+    }, true);
 
     // Keyboard Listener for ESC key
     document.addEventListener('keydown', function (e) {

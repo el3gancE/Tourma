@@ -441,6 +441,34 @@
   window.filterHofChampions = window.filterRightTable;
 
   // =========================================================================
+
+  window.reignCurrentPage = 1;
+  window.filterReignTable = function (resetPage) {
+    if (resetPage) window.reignCurrentPage = 1;
+    var input = document.getElementById('reignSearch');
+    var query = input ? input.value.trim().toLowerCase() : '';
+    var rows = Array.from(document.querySelectorAll('#hofReignTable tbody tr'));
+    var entries = rows.filter(function (row) { return row.querySelector('a.hof-team-link'); });
+    var matching = entries.filter(function (row) { return row.textContent.toLowerCase().indexOf(query) !== -1; });
+    var size = window.HOF_PAGE_SIZE || 15;
+    var pages = Math.max(1, Math.ceil(matching.length / size));
+    window.reignCurrentPage = Math.max(1, Math.min(window.reignCurrentPage, pages));
+    var start = (window.reignCurrentPage - 1) * size;
+    rows.forEach(function (row) { row.style.display = 'none'; });
+    matching.slice(start, start + size).forEach(function (row) { row.style.display = ''; });
+    var empty = document.getElementById('reignEmptyRow');
+    if (!empty) {
+      empty = document.createElement('tr'); empty.id = 'reignEmptyRow';
+      var cell = document.createElement('td'); cell.colSpan = 3; cell.className = 'hof-leader-empty';
+      cell.textContent = 'Không có đợt giữ #1 phù hợp.'; empty.appendChild(cell);
+      var body = document.querySelector('#hofReignTable tbody'); if (body) body.appendChild(empty);
+    }
+    empty.style.display = matching.length ? 'none' : '';
+    renderPagination('reignPageInfo', 'reignPageBtns', window.reignCurrentPage, pages, matching.length, 'đợt', 'goToReignPage');
+  };
+  window.goToReignPage = function (page) { window.reignCurrentPage = page; window.filterReignTable(false); };
+  document.addEventListener('DOMContentLoaded', function () { window.filterReignTable(true); });
+
   // MAIN CALCULATION & LOCALSTORAGE SYNCHRONIZATION
   // =========================================================================
   function calculateAndSyncHallOfFame() {

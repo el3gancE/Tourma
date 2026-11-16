@@ -1,23 +1,31 @@
 -- ============================================================================
 -- TOURMA - COMPLETE DATABASE SCHEMA (MICROSOFT SQL SERVER / T-SQL)
 -- Quản lý Giải đấu (Single/Multi-Stage) & Series (Phase-based Rolling / FIFA Elo)
+-- Database chính: tourma
+--
+-- CẢNH BÁO QUAN TRỌNG VỀ DỮ LIỆU:
+-- Script này là kịch bản khởi tạo từ đầu (Fresh Setup), có lệnh DROP DATABASE [tourma].
+-- NẾU BẠN ĐÃ CÓ DATABASE 'tourma' VÀ ĐANG CHỨA DỮ LIỆU CŨ, KHÔNG CHẠY FILE NÀY!
+-- Thay vào đó, hãy chạy script migration bảo toàn dữ liệu:
+--     web/database/migration_db_persistence.sql
+-- hoặc khởi động ứng dụng web (DBContext sẽ tự động cập nhật an toàn).
 -- ============================================================================
 
--- Bắt buộc chuyển về database master trước khi Drop & Create database tourma_db
+-- Bắt buộc chuyển về database master trước khi Drop & Create database tourma
 USE master;
 GO
 
-IF EXISTS (SELECT * FROM sys.databases WHERE name = 'tourma_db')
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'tourma')
 BEGIN
-    ALTER DATABASE tourma_db SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE tourma_db;
+    ALTER DATABASE tourma SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE tourma;
 END
 GO
 
-CREATE DATABASE tourma_db;
+CREATE DATABASE tourma;
 GO
 
-USE tourma_db;
+USE tourma;
 GO
 
 -- 1. BẢNG SERIES (MÙA GIẢI / CHUỖI GIẢI ĐẤU)
@@ -223,3 +231,22 @@ CREATE INDEX idx_matches_tournament_stage ON matches(tournament_id, stage_id);
 CREATE INDEX idx_matches_status ON matches(status);
 CREATE INDEX idx_standings_series_phase ON series_standings(series_id, phase_number);
 CREATE INDEX idx_history_series_team ON series_tournament_history(series_id, normalized_team_name);
+CREATE NONCLUSTERED INDEX idx_matches_tourney_perf ON matches(tournament_id, is_bye) INCLUDE (status, winner_id, loser_id, score1, score2, penalty1, penalty2, team1_id, team2_id, stage_id);
+CREATE NONCLUSTERED INDEX idx_series_history_tourney ON series_tournament_history(tournament_id);
+CREATE NONCLUSTERED INDEX idx_tournaments_linked ON tournaments(linked_qualifier_tournament_id) WHERE linked_qualifier_tournament_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_stage_participants_tourney ON stage_participants(tournament_id);
+CREATE NONCLUSTERED INDEX idx_matches_team2 ON matches(team2_id) WHERE team2_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_matches_winner ON matches(winner_id) WHERE winner_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_matches_loser ON matches(loser_id) WHERE loser_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_matches_group ON matches(group_id) WHERE group_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_matches_stage ON matches(stage_id) WHERE stage_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_teams_stage ON teams(current_stage_id) WHERE current_stage_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_teams_tourney_seed ON teams(tournament_id, original_seed);
+CREATE NONCLUSTERED INDEX idx_group_teams_perf ON group_teams(group_id) INCLUDE (team_id, rank_in_group);
+CREATE NONCLUSTERED INDEX idx_matches_next_match ON matches(next_match_id) WHERE next_match_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_matches_loser_next_match ON matches(loser_next_match_id) WHERE loser_next_match_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_group_teams_team ON group_teams(team_id);
+CREATE NONCLUSTERED INDEX idx_partner_participants_series ON partner_participants(series_id, created_at);
+CREATE NONCLUSTERED INDEX idx_teams_partner_participant ON teams(partner_participant_id) WHERE partner_participant_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX idx_series_standings_partner ON series_standings(partner_participant_id);
+CREATE NONCLUSTERED INDEX idx_stage_participants_team ON stage_participants(team_id);

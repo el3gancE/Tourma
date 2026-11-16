@@ -167,12 +167,15 @@ public class TeamProfileServlet extends HttpServlet {
         List<PartnerParticipant> partners = null;
         List<Tournament> tourneys = null;
         Map<String, List<String>> stageFormatsMap = new HashMap<>();
+        long profStart = System.currentTimeMillis();
+        long tPreloadEnd = 0, tPerfEnd = 0, tProgEnd = 0;
 
         if (series != null) {
             RollingWindowPointService.getInstance().preloadSeriesData(series.getId());
             partners = seriesDAO.getPartnerParticipantsBySeriesId(series.getId());
             tourneys = seriesDAO.getTournamentsBySeriesId(series.getId());
             stageFormatsMap = tournamentDAO.getStageFormatsBySeriesId(series.getId());
+            tPreloadEnd = System.currentTimeMillis();
 
             if (partners != null) {
                 for (PartnerParticipant p : partners) {
@@ -228,7 +231,7 @@ public class TeamProfileServlet extends HttpServlet {
             if (tourneys != null) {
                 DBContext db = new DBContext();
                 try (Connection conn = db.getConnection()) {
-                    Map<String, int[]> matchStats = loadMatchStats(conn, series.getId());
+                    Map<String, int[]> matchStats = dao.MatchStatisticsDAO.get(conn, series.getId());
 
                     RollingWindowPointService rwps = RollingWindowPointService.getInstance();
                     for (int tIdx = 0; tIdx < tourneys.size(); tIdx++) {
@@ -444,6 +447,7 @@ public class TeamProfileServlet extends HttpServlet {
                 }
             }
 
+            tPerfEnd = System.currentTimeMillis();
             // Calculate Rank Progression and track highest rank in a single fast pass
             List<RankProgressionDTO> rankProgressionList = new ArrayList<>();
             List<PartnerParticipant> allPartners = (partners != null) ? partners : new ArrayList<>();
@@ -637,7 +641,15 @@ public class TeamProfileServlet extends HttpServlet {
         request.setAttribute("serverTourneyPoints", serverTourneyPoints);
         request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
 
+        long tBeforeFwd = System.currentTimeMillis();
         request.getRequestDispatcher("/common/team-profile.jsp").forward(request, response);
+        long tAfterFwd = System.currentTimeMillis();
+        java.util.logging.Logger.getLogger(TeamProfileServlet.class.getName()).warning(
+            "[TIMING TeamProfile: " + teamName + "] preload=" + (tPreloadEnd - profStart)
+            + "ms, performances=" + (tPerfEnd - tPreloadEnd)
+            + "ms, prog=" + (tBeforeFwd - tPerfEnd)
+            + "ms, forwardJsp=" + (tAfterFwd - tBeforeFwd)
+            + "ms, total=" + (tAfterFwd - profStart) + "ms");
     }
 
     public static String getTournamentFinalStageUrl(String contextPath, String tournamentId, String seriesId, boolean isMultiStage, String s1Format, String s2Format) {
@@ -688,31 +700,7 @@ public class TeamProfileServlet extends HttpServlet {
 
     /** Aggregate persisted results across all stages; draws count as neither wins nor losses. */
     static Map<String, int[]> loadMatchStats(Connection conn, String seriesId) throws java.sql.SQLException {
-        String sql = "WITH results AS ("
-                + "SELECT m.team1_id, m.team2_id, CASE "
-                + "WHEN m.winner_id IN (m.team1_id, m.team2_id) THEN m.winner_id "
-                + "WHEN m.winner_id IS NULL THEN CASE "
-                + "WHEN m.score1 > m.score2 THEN m.team1_id WHEN m.score2 > m.score1 THEN m.team2_id "
-                + "WHEN m.penalty1 >= 0 AND m.penalty2 >= 0 AND m.penalty1 > m.penalty2 THEN m.team1_id "
-                + "WHEN m.penalty1 >= 0 AND m.penalty2 >= 0 AND m.penalty2 > m.penalty1 THEN m.team2_id END "
-                + "END AS winner_id FROM matches m JOIN tournaments t ON t.id = m.tournament_id "
-                + "JOIN teams a ON a.id = m.team1_id AND a.tournament_id = m.tournament_id "
-                + "JOIN teams b ON b.id = m.team2_id AND b.tournament_id = m.tournament_id "
-                + "WHERE t.series_id = ? AND ISNULL(m.is_bye, 0) = 0 AND m.team1_id <> m.team2_id "
-                + "AND UPPER(m.status) IN ('FINISHED', 'COMPLETED', 'DONE') "
-                + "AND m.score1 >= 0 AND m.score2 >= 0), appearances AS ("
-                + "SELECT team1_id AS team_id, winner_id FROM results UNION ALL "
-                + "SELECT team2_id, winner_id FROM results) "
-                + "SELECT team_id, SUM(CASE WHEN winner_id = team_id THEN 1 ELSE 0 END) AS wins, "
-                + "SUM(CASE WHEN winner_id IS NOT NULL AND winner_id <> team_id THEN 1 ELSE 0 END) AS losses "
-                + "FROM appearances GROUP BY team_id";
-        Map<String, int[]> stats = new HashMap<>();
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, seriesId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) stats.put(rs.getString("team_id"), new int[]{rs.getInt("wins"), rs.getInt("losses")});
-            }
-        }
-        return stats;
+        return dao.MatchStatisticsDAO.load(conn, seriesId);
     }
+
 }

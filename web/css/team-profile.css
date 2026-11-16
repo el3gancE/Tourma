@@ -29,7 +29,17 @@
 .team-profile-page :is(.rank-chart-dot-gold,.rank-chart-dot-mint,.rank-chart-dot-muted) { width:6px; height:6px; border-radius:50%; background:var(--ui-muted); }
 .team-profile-page .rank-chart-dot-gold { background:var(--ui-tier-s); }
 .team-profile-page .rank-chart-dot-mint { background:var(--ui-accent-fill,var(--ui-accent)); }
-.team-profile-page .team-performance-card:has(.team-performance-table) { overflow-x:auto; }
+.team-profile-page .profile-history-scroll { overflow:auto; max-height:var(--profile-history-height, 960px); scrollbar-gutter:stable; }
+.team-profile-page .profile-history-scroll:focus-visible { outline:2px solid var(--ui-accent); outline-offset:-2px; }
+.team-profile-page .profile-history-scroll th { position:sticky; top:0; z-index:1; }
+.team-profile-page .profile-history-scroll [hidden] { display:none; }
+.team-profile-page .profile-history-filters { display:flex; align-items:end; flex-wrap:wrap; gap:12px; padding:16px 18px; border-bottom:1px solid var(--ui-line); }
+.team-profile-page .profile-history-filters label { display:flex; flex:1 1 160px; min-width:0; flex-direction:column; gap:7px; font-size:11px; color:var(--ui-muted); }
+.team-profile-page .profile-history-filters select { width:100%; min-height:36px; padding:7px 10px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); color:var(--ui-text); font:inherit; }
+.team-profile-page .profile-history-filters select:focus-visible { outline:2px solid var(--ui-accent); outline-offset:2px; }
+.team-profile-page #profileHistoryCount { font-size:11px; color:var(--ui-muted); padding-bottom:10px; }
+.team-profile-page .profile-history-empty { padding:20px; color:var(--ui-muted); font-size:12px; }
+.team-profile-page .profile-history-filters select[aria-invalid="true"] { border-color:var(--ui-danger); }
 .team-profile-page .team-performance-table { width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; }
 .team-profile-page .team-performance-table :is(th,td) { padding:13px 16px; border-bottom:1px solid var(--ui-line); text-align:left; }
 .team-profile-page .team-performance-table th { font-size:10px; font-weight:600; background:var(--ui-surface-alt); color:var(--ui-muted); white-space:nowrap; }

@@ -23,7 +23,7 @@
 .series-standings-page .rank-wrap { display:flex; align-items:center; justify-content:center; gap:10px; }
 .series-standings-page .rank-badge { font-weight:600; min-width:20px; }
 .series-standings-page .rank-change { font-size:10px; color:var(--ui-muted); min-width:24px; }
-.series-standings-page .rank-change.up { color:var(--ui-tier-b); }
+.series-standings-page .rank-change.up { color:var(--ui-success); }
 .series-standings-page .rank-change.down { color:var(--ui-danger); }
 @media(max-width:600px) {
     .series-standings-page .tournament-shell { padding-right:20px; }

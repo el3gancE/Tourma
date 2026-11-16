@@ -103,7 +103,8 @@ public class TournamentPlacementService {
                 + "JSON_VALUE(" + config + ", '$.stage2Config.winPoints') AS w2, "
                 + "JSON_VALUE(" + config + ", '$.stage2Config.drawPoints') AS d2, "
                 + "JSON_VALUE(" + config + ", '$.stage2Config.lossPoints') AS l2 "
-                + "FROM tournaments t LEFT JOIN tournament_stages s ON s.tournament_id=t.id WHERE " + filter;
+                + "FROM tournaments t LEFT JOIN tournament_stages s ON s.tournament_id=t.id WHERE " + filter
+                + " OPTION (LOOP JOIN, MAXDOP 1)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, scopeId);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -123,7 +124,7 @@ public class TournamentPlacementService {
                     }
                 }
             }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT tm.tournament_id, tm.id, tm.raw_name, tm.normalized_name, tm.original_seed FROM teams tm JOIN tournaments t ON t.id=tm.tournament_id WHERE " + filter + " ORDER BY tm.tournament_id,tm.original_seed,tm.id")) {
+            try (PreparedStatement ps = conn.prepareStatement("SELECT tm.tournament_id, tm.id, tm.raw_name, tm.normalized_name, tm.original_seed FROM teams tm JOIN tournaments t ON t.id=tm.tournament_id WHERE " + filter + " ORDER BY tm.tournament_id,tm.original_seed,tm.id OPTION (LOOP JOIN, MAXDOP 1)")) {
                 ps.setString(1, scopeId);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -135,7 +136,7 @@ public class TournamentPlacementService {
                     }
                 }
             }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT m.id,m.tournament_id,m.group_id,m.round_number,m.bracket_type,m.status,m.team1_id,m.team2_id,m.winner_id,m.loser_id,m.score1,m.score2,m.is_bye, ISNULL(s.stage_order,1) AS stage_order FROM matches m JOIN tournaments t ON t.id=m.tournament_id LEFT JOIN tournament_stages s ON s.id=m.stage_id WHERE " + filter + " ORDER BY m.tournament_id,s.stage_order,m.round_number,m.match_order,m.id")) {
+            try (PreparedStatement ps = conn.prepareStatement("SELECT m.id,m.tournament_id,m.group_id,m.round_number,m.bracket_type,m.status,m.team1_id,m.team2_id,m.winner_id,m.loser_id,m.score1,m.score2,m.is_bye, ISNULL(s.stage_order,1) AS stage_order FROM matches m JOIN tournaments t ON t.id=m.tournament_id LEFT JOIN tournament_stages s ON s.id=m.stage_id WHERE " + filter + " ORDER BY m.tournament_id,s.stage_order,m.round_number,m.match_order,m.id OPTION (LOOP JOIN, MAXDOP 1)")) {
                 ps.setString(1, scopeId);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -171,7 +172,7 @@ public class TournamentPlacementService {
                     }
                 }
             }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT t.id AS tournament_id,g.id AS group_id,gt.team_id,gt.rank_in_group FROM tournaments t JOIN tournament_stages s ON s.tournament_id=t.id AND s.stage_order=1 JOIN groups g ON g.stage_id=s.id JOIN group_teams gt ON gt.group_id=g.id WHERE " + filter)) {
+            try (PreparedStatement ps = conn.prepareStatement("SELECT t.id AS tournament_id,g.id AS group_id,gt.team_id,gt.rank_in_group FROM tournaments t JOIN tournament_stages s ON s.tournament_id=t.id AND s.stage_order=1 JOIN groups g ON g.stage_id=s.id JOIN group_teams gt ON gt.group_id=g.id WHERE " + filter + " OPTION (LOOP JOIN, MAXDOP 1)")) {
                 ps.setString(1, scopeId);
                 try (ResultSet rs=ps.executeQuery()) {
                     while(rs.next()) contexts.get(rs.getString("tournament_id")).groupRanks

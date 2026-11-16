@@ -1,0 +1,15 @@
+const fs=require('fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const callbacks=[];
+const banner={hidden:false,getAttribute:()=> '#milestoneSelect'};
+const select={value:'LATEST',addEventListener:(name,fn)=>callbacks.push(fn)};
+const document={readyState:'complete',querySelectorAll:()=>[banner],querySelector:selector=>selector==='#milestoneSelect'?select:banner};
+const window={};
+vm.runInNewContext(fs.readFileSync('web/js/components/new-number-one.js','utf8'),{window,document,WeakSet});
+assert.equal(banner.hidden,false);
+assert.equal(callbacks.length,1);
+window.TourmaNewNumberOne.mount();assert.equal(callbacks.length,1,'Repeated mounting must not duplicate listeners');
+select.value='0';callbacks[0]();assert.equal(banner.hidden,true,'Historical milestone must hide the announcement');
+select.value='LATEST';callbacks[0]();assert.equal(banner.hidden,false,'Latest milestone restores eligible announcement');
+window.TourmaNewNumberOne.hide();assert.equal(banner.hidden,true);
+window.TourmaNewNumberOne.show();assert.equal(banner.hidden,false);
+console.log('PASS: inline visibility, milestone switching and idempotent mounting without dialog/focus/storage APIs');

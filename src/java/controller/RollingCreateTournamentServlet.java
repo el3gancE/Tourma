@@ -107,8 +107,8 @@ public class RollingCreateTournamentServlet extends HttpServlet {
             }
 
             if (created) {
-                // Proceed to Step 2: Configure Format
-                response.sendRedirect(request.getContextPath() + "/common/configure-tournament-format.jsp?id=" + tournamentId + "&seriesId=" + seriesId);
+                // Configure format and teams together.
+                response.sendRedirect(request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + seriesId);
             } else {
                 request.setAttribute("errorMessage", "Không thể khởi tạo giải đấu con. Vui lòng kiểm tra lại thông tin.");
                 doGet(request, response);

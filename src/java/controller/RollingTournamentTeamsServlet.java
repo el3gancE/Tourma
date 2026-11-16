@@ -36,6 +36,11 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             tournamentId = request.getParameter("tournamentId");
         }
 
+        if ("partner-picker".equals(request.getParameter("view"))) {
+            renderPartnerPicker(request, response, tournamentId);
+            return;
+        }
+
         String copiedFromParam = request.getParameter("copiedFrom");
         if (copiedFromParam != null && !copiedFromParam.trim().isEmpty()
                 && !new TournamentDAO().canCopyTournamentConfig(copiedFromParam, tournamentId)) {
@@ -61,6 +66,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         if (fmt == null || fmt.trim().isEmpty()) fmt = request.getParameter("selectedFormat");
         String tType = request.getParameter("tournamentType");
         if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("selectedTournamentType");
+        if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("tournamentType");
         if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("type");
 
         String s1F = request.getParameter("stage1Format");
@@ -94,7 +100,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
 
         Tournament tournament = null;
         if (tournamentId != null && !tournamentId.trim().isEmpty()) {
-            tournament = getTournamentByIdSafe(tournamentId.trim());
+            tournament = new TournamentDAO().getTournamentById(tournamentId.trim(), false);
         }
 
         if (tournament == null) {
@@ -109,29 +115,32 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         }
 
         List<Team> currentTeams = participantDAO.getTeamsByTournamentId(tournament.getId());
-        List<PartnerParticipant> partnerList = new ArrayList<>();
-        List<model.SeriesStanding> standingsList = new ArrayList<>();
-        List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = new ArrayList<>();
-        List<Tournament> tournamentsList = new ArrayList<>();
-        List<java.util.Map<String, Integer>> serverTourneyPoints = null;
-        List<java.util.Map<String, Boolean>> serverTourneyParticipation = null;
-        if (seriesId != null && !seriesId.trim().isEmpty()) {
-            standingsList = seriesDAO.getStandingsBySeriesId(seriesId.trim());
-            if (standingsList == null || standingsList.isEmpty()) {
-                try {
-                    service.RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
-                    standingsList = seriesDAO.getStandingsBySeriesId(seriesId.trim());
-                } catch (Exception ignore) {}
-            }
-            partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId.trim());
-            standingsDTOList = service.RollingWindowPointService.getInstance().calculateSeriesStandingsWithExpiry(seriesId.trim());
-            tournamentsList = new TournamentDAO().getTournamentsBySeriesId(seriesId.trim());
-            try {
-                serverTourneyPoints = service.RollingWindowPointService.getInstance().getTourneyPointsPerTournament(seriesId.trim());
-                serverTourneyParticipation = service.RollingWindowPointService.getInstance().getTourneyParticipationPerTournament(seriesId.trim());
-            } catch (Exception ignore) {}
-        }
+        request.setAttribute("tournament", tournament);
+        request.setAttribute("setupTournament", tournament);
+        request.setAttribute("series", series);
+        request.setAttribute("setupSeries", series);
+        request.setAttribute("currentTeams", currentTeams);
+        request.getRequestDispatcher("/common/rolling/rolling-tournament-teams.jsp").forward(request, response);
+    }
 
+    private void renderPartnerPicker(HttpServletRequest request, HttpServletResponse response, String tournamentId)
+            throws ServletException, IOException {
+        Tournament tournament = getTournamentByIdSafe(tournamentId);
+        if (tournament == null || tournament.getSeriesId() == null || tournament.getSeriesId().isBlank()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        String seriesId = tournament.getSeriesId();
+        SeriesDAO seriesDAO = new SeriesDAO();
+        Series series = seriesDAO.getSeriesById(seriesId);
+        ParticipantDAO participantDAO = new ParticipantDAO();
+        List<Team> currentTeams = participantDAO.getTeamsByTournamentId(tournament.getId());
+        service.RollingWindowPointService standings = service.RollingWindowPointService.getInstance();
+        List<PartnerParticipant> partnerList = seriesDAO.getPartnerParticipantsBySeriesId(seriesId);
+        List<service.RollingWindowPointService.RollingStandingDTO> standingsDTOList = partnerList.isEmpty()
+                ? java.util.Collections.emptyList() : standings.calculateSeriesStandingsWithExpiry(seriesId);
+        List<model.SeriesStanding> standingsList = !partnerList.isEmpty() && standingsDTOList.isEmpty()
+                ? seriesDAO.getStandingsBySeriesId(seriesId) : java.util.Collections.emptyList();
         request.setAttribute("seriesTournamentTeams", participantDAO.getTeamsBySeriesId(seriesId));
         request.setAttribute("tournament", tournament);
         request.setAttribute("series", series);
@@ -139,21 +148,73 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         request.setAttribute("partnerList", partnerList);
         request.setAttribute("standingsList", standingsList);
         request.setAttribute("standingsDTOList", standingsDTOList);
-        request.setAttribute("tournamentsList", tournamentsList);
-        request.setAttribute("serverTourneyPoints", serverTourneyPoints);
-        request.setAttribute("serverTourneyParticipation", serverTourneyParticipation);
+        request.setAttribute("tournamentsList", new TournamentDAO().getTournamentsBySeriesId(seriesId));
+        request.setAttribute("serverTourneyPoints", partnerList.isEmpty()
+                ? java.util.Collections.emptyList() : standings.getTourneyPointsPerTournament(seriesId));
+        request.setAttribute("serverTourneyParticipation", partnerList.isEmpty()
+                ? java.util.Collections.emptyList() : standings.getTourneyParticipationPerTournament(seriesId));
 
-        request.getRequestDispatcher("/common/rolling/rolling-tournament-teams.jsp").forward(request, response);
+        response.setHeader("Cache-Control", "no-store");
+        request.getRequestDispatcher("/WEB-INF/rolling-partner-picker.jsp").forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
         String tournamentId = request.getParameter("tournamentId");
         String seriesId = request.getParameter("seriesId");
         ParticipantDAO participantDAO = new ParticipantDAO();
+        Tournament destination = new TournamentDAO().getTournamentById(tournamentId, false);
+        if (destination == null || destination.getSeriesId() == null || destination.getSeriesId().trim().isEmpty()) {
+            response.sendError(400, "Không tìm thấy giải con.");
+            return;
+        }
+        seriesId = destination.getSeriesId();
+        if ("copyConfiguration".equals(action)) {
+            response.setContentType("application/json;charset=UTF-8");
+            TournamentDAO configDAO = new TournamentDAO();
+            String sourceId = request.getParameter("sourceTournamentId");
+            boolean copied = false;
+            try {
+                if (configDAO.canCopyTournamentConfig(sourceId, tournamentId)) {
+                    Tournament source = configDAO.getTournamentById(sourceId, false);
+                    List<String> formats = configDAO.getStageFormats(sourceId);
+                    String first = formats.isEmpty() ? source.getFormat() : formats.get(0);
+                    String second = formats.size() > 1 ? formats.get(1) : null;
+                    String config = source.getMultiStageConfig();
+                    if (config == null || config.trim().isEmpty()) config = request.getParameter("multiConfig");
+                    copied = configDAO.updateTournamentFormatAndType(tournamentId, first,
+                            source.getTournamentType(), first, second, source.getAdvancingSeatsCount(), config)
+                            && configDAO.copyPointsConfigFromTournament(sourceId, tournamentId, false)
+                            && configDAO.updateTournamentTier(tournamentId, source.getTierName());
+                }
+            } catch (Exception error) {
+                getServletContext().log("Cannot copy Series tournament configuration", error);
+            }
+            if (!copied) response.setStatus(409);
+            response.getWriter().write(copied ? "{\"status\":\"success\"}"
+                    : "{\"status\":\"error\",\"message\":\"Không lưu được điểm và cấu hình. Kiểm tra giải nguồn cùng Series và khóa lịch thi đấu.\"}");
+            return;
+        }
+        String copySource = request.getParameter("copiedFrom");
+        TournamentDAO setupDAO = new TournamentDAO();
+        if (copySource != null && !copySource.trim().isEmpty()
+                && !setupDAO.canCopyTournamentConfig(copySource, tournamentId)) {
+            response.sendError(400, "Chỉ được sao chép cấu hình trong cùng Series.");
+            return;
+        }
+        if ("saveTeamsOrder".equalsIgnoreCase(action)) {
+            String names = request.getParameter("orderedTeamNames");
+            int count = names == null || names.trim().isEmpty() ? 0 : names.trim().split("\\r?\\n").length;
+            Tournament source = copySource == null || copySource.trim().isEmpty() ? null : setupDAO.getTournamentById(copySource, false);
+            if (count < 2 || (source != null && source.getTeamCount() > 0 && count != source.getTeamCount())) {
+                response.sendError(400, "Số đội tham gia không hợp lệ hoặc chưa khớp giải nguồn.");
+                return;
+            }
+        }
         if ("addPartnerTeams".equalsIgnoreCase(action)) {
             try {
                 validatePartnerExclusions(tournamentId, request.getParameterValues("excludedTournamentIds"),
@@ -186,7 +247,12 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         if (tType == null || tType.trim().isEmpty()) tType = request.getParameter("type");
 
         if (tournamentId != null && ((fmt != null && !fmt.trim().isEmpty()) || advSeats > 0)) {
-            updateTournamentFormatAndTypeSafe(tournamentId, fmt, tType, null, null, advSeats);
+            if (!setupDAO.updateTournamentFormatAndType(tournamentId, fmt, tType,
+                    request.getParameter("stage1Format"), request.getParameter("stage2Format"), advSeats,
+                    request.getParameter("multiConfig"))) {
+                response.sendError(409, "Không lưu được cấu hình. Stage đã có lịch không thể đổi cấu trúc.");
+                return;
+            }
         }
 
         if ("addPartnerTeams".equalsIgnoreCase(action)) {
@@ -235,14 +301,14 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                     }
                 }
                 if (!teamList.isEmpty()) {
-                    participantDAO.saveTournamentTeams(tournamentId, teamList);
+                    List<String> currentNames = new ArrayList<>();
+                    for (Team team : participantDAO.getTeamsByTournamentId(tournamentId)) currentNames.add(team.getRawName());
+                    if (!currentNames.equals(teamList) && !participantDAO.saveTournamentTeams(tournamentId, teamList)) {
+                        response.sendError(409, "Không lưu được thứ tự đội. Hãy kiểm tra lịch thi đấu hiện có.");
+                        return;
+                    }
                     refreshTeamsJson(tournamentId, participantDAO);
                 }
-            }
-            String nextUrl = request.getParameter("nextUrl");
-            if (nextUrl != null && !nextUrl.trim().isEmpty()) {
-                response.sendRedirect(nextUrl);
-                return;
             }
             String nextFormat = new dao.TournamentDAO().getStage1Format(tournamentId);
             String nextPath = "GSL".equalsIgnoreCase(nextFormat) || "GROUP_STAGE".equalsIgnoreCase(nextFormat)
@@ -334,10 +400,6 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             e.printStackTrace();
         }
         return null;
-    }
-
-    private boolean updateTournamentFormatAndTypeSafe(String tournamentId, String format, String tournamentType, String stage1Format, String stage2Format, int advancingSeatsCount) {
-        return new TournamentDAO().updateTournamentFormatAndType(tournamentId, format, tournamentType, stage1Format, stage2Format, advancingSeatsCount);
     }
 
     /**

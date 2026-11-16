@@ -68,9 +68,20 @@
     </ul>
     <% if ("true".equals(request.getParameter("themeToggle"))) { %>
     <div class="appearance-switches" role="group" aria-label="Giao diện">
-        <button type="button" class="theme-toggle appearance-switch" role="switch" title="Đổi màu Đỏ / Xanh" aria-label="Màu xanh" aria-checked="false" data-accent-switch>
-            <i class="fa-solid fa-palette" aria-hidden="true"></i><span class="theme-switch" aria-hidden="true"></span>
-        </button>
+        <div class="accent-checkboxes" role="radiogroup" aria-label="Chọn màu chủ đạo">
+            <button type="button" class="accent-checkbox accent-checkbox--wine" data-accent-val="wine" role="radio" aria-checked="false" title="Màu Đỏ" aria-label="Màu Đỏ">
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="accent-checkbox accent-checkbox--blue" data-accent-val="blue" role="radio" aria-checked="false" title="Màu Xanh dương" aria-label="Màu Xanh dương">
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="accent-checkbox accent-checkbox--green" data-accent-val="green" role="radio" aria-checked="false" title="Màu Xanh lá" aria-label="Màu Xanh lá">
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="accent-checkbox accent-checkbox--orange" data-accent-val="orange" role="radio" aria-checked="false" title="Màu Cam" aria-label="Màu Cam">
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+            </button>
+        </div>
         <button type="button" class="theme-toggle appearance-switch" role="switch" title="Đổi chế độ Sáng / Tối" aria-label="Chế độ tối" aria-checked="false" data-mode-switch>
             <i class="fa-solid fa-sun mode-icon-light" aria-hidden="true"></i><i class="fa-solid fa-moon mode-icon-dark" aria-hidden="true"></i><span class="theme-switch" aria-hidden="true"></span>
         </button>
