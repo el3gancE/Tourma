@@ -36,6 +36,7 @@ public class DeleteTournamentServlet extends HttpServlet {
         }
         String seriesId = request.getParameter("seriesId");
 
+        boolean success = false;
         if (id != null && !id.trim().isEmpty()) {
             String tid = id.trim();
             TournamentDAO dao = new TournamentDAO();
@@ -46,9 +47,9 @@ public class DeleteTournamentServlet extends HttpServlet {
                 }
             }
 
-            dao.deleteTournament(tid);
+            success = dao.deleteTournament(tid);
 
-            if (seriesId != null && !seriesId.trim().isEmpty()) {
+            if (success && seriesId != null && !seriesId.trim().isEmpty()) {
                 try {
                     RollingWindowPointService.getInstance().recalculateAndPersistStandings(seriesId.trim());
                 } catch (Exception ignore) {}
@@ -60,7 +61,12 @@ public class DeleteTournamentServlet extends HttpServlet {
         if ((accept != null && accept.contains("application/json")) || "XMLHttpRequest".equalsIgnoreCase(xRequestedWith)) {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
-            response.getWriter().write("{\"success\":true,\"message\":\"Tournament deleted successfully\"}");
+            if (success) {
+                response.getWriter().write("{\"success\":true,\"message\":\"Tournament deleted successfully\"}");
+            } else {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.getWriter().write("{\"success\":false,\"message\":\"Xóa giải đấu không thành công.\"}");
+            }
             return;
         }
 

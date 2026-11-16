@@ -1217,7 +1217,9 @@ public class TournamentDAO {
 
         String sqlUpdateTourneys = "UPDATE tournaments SET linked_qualifier_tournament_id = NULL WHERE linked_qualifier_tournament_id = ?";
         String sqlHistory = "DELETE FROM series_tournament_history WHERE tournament_id = ?";
-        String sqlUpdateMatches = "UPDATE matches SET next_match_id = NULL WHERE tournament_id = ?";
+        String sqlPlacementPoints = "DELETE FROM tournament_placement_points WHERE tournament_id = ?";
+        String sqlStageParticipants = "DELETE FROM stage_participants WHERE tournament_id = ?";
+        String sqlUpdateMatches = "UPDATE matches SET next_match_id = NULL, loser_next_match_id = NULL, team1_id = NULL, team2_id = NULL, winner_id = NULL, loser_id = NULL WHERE tournament_id = ?";
         String sqlMatches = "DELETE FROM matches WHERE tournament_id = ?";
         String sqlGroupTeams1 = "DELETE FROM group_teams WHERE group_id IN (SELECT g.id FROM groups g JOIN tournament_stages s ON g.stage_id = s.id WHERE s.tournament_id = ?)";
         String sqlGroupTeams2 = "DELETE FROM group_teams WHERE team_id IN (SELECT id FROM teams WHERE tournament_id = ?)";
@@ -1239,6 +1241,16 @@ public class TournamentDAO {
                 } catch (Exception ignore) {}
 
                 try (PreparedStatement ps = conn.prepareStatement(sqlHistory)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlPlacementPoints)) {
+                    ps.setString(1, tid);
+                    ps.executeUpdate();
+                } catch (Exception ignore) {}
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlStageParticipants)) {
                     ps.setString(1, tid);
                     ps.executeUpdate();
                 } catch (Exception ignore) {}

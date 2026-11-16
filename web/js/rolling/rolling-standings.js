@@ -112,9 +112,9 @@
         changeColor = 'var(--ui-danger)';
       }
 
-      var rankColor = (rank === 1) ? 'var(--ui-tier-s)' : (isTop10 ? 'var(--ui-text)' : 'var(--ui-muted)');
-      var nameColor = 'var(--ui-text)';
-      var nameHover = 'var(--ui-accent)';
+      var rankColor = (rank === 1) ? 'var(--ui-tier-s)' : (isTop10 ? 'var(--ui-accent)' : 'var(--ui-muted)');
+      var nameColor = isTop10 ? 'var(--ui-accent)' : 'var(--ui-text)';
+      var nameHover = isTop10 ? 'var(--ui-accent-hover)' : 'var(--ui-accent)';
       var badgeClass = 'rank-badge' + (isTop10 ? ' top-10' : '') + ' rank-' + rank;
 
       row.innerHTML = 

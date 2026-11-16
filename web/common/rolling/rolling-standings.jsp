@@ -78,11 +78,11 @@
         <!-- Design System CSS, Shared Team List CSS & Dedicated Rolling Standings CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=20261110-performance">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css?v=20261110-performance">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css?v=20261116-v6">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css?v=20261117-v13">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css?v=20261110-performance">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261116-v6"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261116-v6">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=20261116-v6">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261117-v13"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261117-v13">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=20261117-v13">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 </head>
     <body class="ui-page tournament-workspace series-standings-page">
@@ -176,9 +176,9 @@
                                     changeColor = "var(--ui-danger)";
                                 }
                                 boolean isTop10 = (rank <= 10);
-                                String rankColor = (rank == 1) ? "var(--ui-tier-s)" : "var(--ui-text)";
-                                String nameColor = "var(--ui-text)";
-                                String nameHover = "var(--ui-accent)";
+                                String rankColor = (rank == 1) ? "var(--ui-tier-s)" : (isTop10 ? "var(--ui-accent)" : "var(--ui-text)");
+                                String nameColor = isTop10 ? "var(--ui-accent)" : "var(--ui-text)";
+                                String nameHover = isTop10 ? "var(--ui-accent-hover)" : "var(--ui-accent)";
                         %>
                             <tr class="<%= isTop10 ? "top-10" : "" %>">
                                 <td data-ui-style="rolling-standings-jsp-024" style="color: <%= rankColor %>;">
@@ -221,9 +221,9 @@
                                 SeriesStanding st = standingsList.get(i);
                                 int rank = i + 1;
                                 boolean isTop10 = (rank <= 10);
-                                String rankColor = (rank == 1) ? "var(--ui-tier-s)" : "var(--ui-text)";
-                                String nameColor = "var(--ui-text)";
-                                String nameHover = "var(--ui-accent)";
+                                String rankColor = (rank == 1) ? "var(--ui-tier-s)" : (isTop10 ? "var(--ui-accent)" : "var(--ui-text)");
+                                String nameColor = isTop10 ? "var(--ui-accent)" : "var(--ui-text)";
+                                String nameHover = isTop10 ? "var(--ui-accent-hover)" : "var(--ui-accent)";
                         %>
                             <tr class="<%= isTop10 ? "top-10" : "" %>">
                                 <td data-ui-style="rolling-standings-jsp-031" style="color: <%= rankColor %>;">
@@ -378,6 +378,6 @@
         <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js?v=20261110-performance"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js?v=20261110-performance"></script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=20261110-performance"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings.js?v=20261116-v6"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings.js?v=20261117-v13"></script>
     </body>
 </html>

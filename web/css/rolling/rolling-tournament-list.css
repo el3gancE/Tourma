@@ -61,3 +61,91 @@
 /* Status sits above the track without moving the percentage or controls. */
 .tourney-progress { position:relative; }
 .tourney-progress-status { position:absolute; left:0; bottom:calc(50% + 7px); color:var(--ui-muted); font:500 9px var(--ui-font); line-height:1.2; white-space:nowrap; }
+
+/* Modals in rolling tournament list */
+.rolling-tournament-list-page .tourma-modal-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9999 !important;
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px !important;
+    background: rgba(0, 0, 0, 0.65) !important;
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity 180ms ease;
+}
+.rolling-tournament-list-page .tourma-modal-backdrop.show {
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+.rolling-tournament-list-page .tourma-modal-card {
+    box-sizing: border-box;
+    width: min(100%, 520px);
+    max-height: calc(100dvh - 40px);
+    overflow: auto;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-line);
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    padding: 0;
+    color: var(--ui-text);
+    font: 500 14px/1.6 var(--ui-font);
+}
+.rolling-tournament-list-page .modal-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--ui-line);
+    font-size: 18px;
+    font-weight: 600;
+}
+.rolling-tournament-list-page .modal-header-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.rolling-tournament-list-page .modal-close-btn {
+    border: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: var(--ui-muted);
+    background: var(--ui-surface-alt);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.rolling-tournament-list-page .modal-close-btn:hover {
+    color: var(--ui-text);
+}
+.rolling-tournament-list-page .modal-body-content {
+    padding: 22px;
+}
+.rolling-tournament-list-page .modal-body-content > div {
+    padding: 13px;
+    background: var(--ui-surface-alt);
+    border-radius: 7px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.rolling-tournament-list-page .modal-body-content p {
+    margin-top: 14px;
+    line-height: 1.6;
+    color: var(--ui-text);
+}
+.rolling-tournament-list-page .modal-footer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 22px;
+    border-top: 1px solid var(--ui-line);
+    background: var(--ui-surface);
+}

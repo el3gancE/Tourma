@@ -1,18 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap');
-/* Celebration surfaces (New #1 announcement banner). */
-:root {
-    --ui-celebration-bg: #1a1215;
+/* Celebration surfaces (New #1 announcement banner: 4 distinct colors, dynamic animated mesh, soft white light streaks). */
+:root, :root[data-accent="wine"] {
+    --ui-celebration-bg: #180505;
     --ui-celebration-ink: #ffffff;
-    --ui-celebration-glow-a: #be123c;
-    --ui-celebration-glow-b: #facc15;
-    --ui-celebration-glow-c: #7c3aed;
+    --ui-celebration-glow-a: #ef4444; /* Pure Bright Red - Hue 0 */
+    --ui-celebration-glow-b: #dc2626; /* Pure Vivid Red - Hue 0 */
+    --ui-celebration-glow-c: #b91c1c; /* Pure Dark Red - Hue 0 */
+    --ui-celebration-glow-d: #7f1d1d; /* Pure Deep Burgundy Red - Hue 0, 0% blue/violet */
     --ui-celebration-backdrop: rgb(0 0 0 / 65%);
 }
 :root[data-accent="blue"] {
-    --ui-celebration-bg: #0f172a;
-    --ui-celebration-glow-a: #2563eb;
-    --ui-celebration-glow-b: #facc15;
-    --ui-celebration-glow-c: #0284c7;
+    --ui-celebration-bg: #060d1a;
+    --ui-celebration-glow-a: #2563eb; /* Royal Blue */
+    --ui-celebration-glow-b: #0ea5e9; /* Sky Blue */
+    --ui-celebration-glow-c: #7c3aed; /* Electric Violet */
+    --ui-celebration-glow-d: #0f172a; /* Deep Navy Midnight */
 }
 /* Shared palette. Opt in by loading this sheet; blank pages remain unaffected. */
 :root {

@@ -286,7 +286,10 @@
                 document.getElementById('deleteTourneyTargetName').innerText = name;
                 var modal = document.getElementById('deleteTourneyModalBackdrop');
                 if (modal) {
+                    modal.classList.add('show');
                     modal.style.display = 'flex';
+                    modal.style.opacity = '1';
+                    modal.style.pointerEvents = 'auto';
                     document.body.style.overflow = 'hidden';
                 }
             }
@@ -295,7 +298,10 @@
                 pendingDeleteId = null;
                 var modal = document.getElementById('deleteTourneyModalBackdrop');
                 if (modal) {
+                    modal.classList.remove('show');
                     modal.style.display = 'none';
+                    modal.style.opacity = '';
+                    modal.style.pointerEvents = '';
                     document.body.style.overflow = '';
                 }
             }
@@ -317,27 +323,46 @@
                     localStorage.removeItem("tourma_final_locked_" + tid);
                 } catch(e) {}
 
-                // 2. Remove card from DOM instantly with smooth fade-out animation
-                var card = document.querySelector('.tourney-card[data-id="' + tid + '"]');
-                if (card) {
-                    card.style.transition = 'all 0.3s ease';
-                    card.style.opacity = '0';
-                    card.style.transform = 'scale(0.9)';
-                    setTimeout(function() {
-                        if (card.parentNode) card.parentNode.removeChild(card);
-                        var remaining = document.querySelectorAll('.tourney-card');
-                        if (remaining.length === 0) {
-                            window.location.reload();
-                        }
-                    }, 300);
-                }
-
                 closeDeleteTourneyModal();
 
-                // 3. Send async delete request to backend in background
-                fetch('${pageContext.request.contextPath}/delete-tournament?id=' + tid, { method: 'GET' })
-                    .then(function() { console.log('Tournament ' + tid + ' deleted on backend.'); })
-                    .catch(function(err) { console.warn('Backend delete fetch note:', err); });
+                var card = document.querySelector('.tourney-card[data-id="' + tid + '"]');
+
+                fetch('${pageContext.request.contextPath}/delete-tournament?id=' + encodeURIComponent(tid), {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function(res) {
+                    return res.json().catch(function() {
+                        return { success: res.ok };
+                    });
+                })
+                .then(function(data) {
+                    if (data && data.success) {
+                        if (card) {
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.9)';
+                            setTimeout(function() {
+                                if (card.parentNode) card.parentNode.removeChild(card);
+                                var remaining = document.querySelectorAll('.tourney-card');
+                                if (remaining.length === 0) {
+                                    window.location.reload();
+                                }
+                            }, 300);
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert(data && data.message ? data.message : 'Không thể xóa giải đấu.');
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Delete tournament error:', err);
+                    alert('Lỗi kết nối khi xóa giải đấu. Vui lòng thử lại.');
+                });
             }
 
             function openCloneTourneyModal(id, currentName) {

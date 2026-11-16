@@ -136,6 +136,10 @@ Cài đặt hiển thị trên header có công tắc Màu phân biệt nhánh/n
 
 Màn Thể thức & đội tham gia của giải đơn và giải con Series dùng một stylesheet riêng: `web/css/tournament-setup.css`. Token, nền tảng, navigation và popup tiếp tục dùng stylesheet chung. Không nạp thêm CSS riêng cho phần format hoặc thêm đội ở hai màn này.
 
+## Màn Bảng xếp hạng Series (Rolling Standings)
+
+Ở màn Bảng Xếp Hạng Series: Hạng 1 nhận màu Vàng Tier S (`--ui-tier-s`). Tên của toàn bộ các đội trong Top 10 (Rank 1–10) và số thứ tự Hạng 2–10 mang màu accent (`--ui-accent`) để làm nổi bật nhóm tinh anh dẫn đầu; các đội từ Rank 11 trở đi dùng màu chữ chuẩn (`--ui-text`). Điểm cộng và tăng hạng luôn giữ màu Xanh lá (`--ui-success`).
+
 ## Bảng vàng dạng dashboard
 
 Bảng vàng đặt số liệu tổng quan, biểu đồ số mốc giữ #1 và các kỷ lục ở đầu trang; bảng danh hiệu, bộ lọc Tier và lịch sử chi tiết nằm phía dưới. Dùng `web/css/rolling/rolling-hof.css` và token/theme chung. Một mốc #1 là BXH tích lũy sau một giải đã hoàn tất.
@@ -144,6 +148,6 @@ Ba bảng nhà vô địch, các giải và lịch sử #1 nằm trên một hà
 
 ## Component New #1
 
-`web/common/component/new-number-one.jsp` nhận hai request attribute `newNumberOneEligible` và `newNumberOneName`. Màn BXH chỉ include component; giao diện và hành vi nằm ở `web/css/components/new-number-one.css` và `web/js/components/new-number-one.js`. Màu nền công bố dùng token `--ui-celebration-*` chung, phối theo màu Đỏ/Xanh hiện tại. Không có icon vương miện.
+`web/common/component/new-number-one.jsp` nhận hai request attribute `newNumberOneEligible` và `newNumberOneName`. Màn BXH chỉ include component; giao diện và hành vi nằm ở `web/css/components/new-number-one.css` và `web/js/components/new-number-one.js`. Màu nền công bố dùng token `--ui-celebration-*` gồm 4 màu gradient động có độ tương phản cao, chuyển động rõ nét (chu kỳ 8-11s, biên độ lớn), điểm xuyết các đường vệt sáng trắng mảnh (white light streaks) lướt chéo qua banner, không dùng màu vàng, bỏ chữ phụ "BẢNG XẾP HẠNG SERIES". Phối 4 màu theo theme: Bộ Đỏ 100% thuần sắc đỏ, triệt tiêu toàn bộ xanh/tím (`#BE123C` Crimson Velvet, `#DC2626` Scarlet Red, `#991B1B` Deep Blood Red, `#4C0519` Deep Wine Maroon); Bộ Xanh (`#2563EB` Royal Blue, `#06B6D4` Aqua Cyan, `#A855F7` Electric Violet, `#0F172A` Deep Navy). Không có icon vương miện.
 
 Popup hiện mỗi lần mở BXH sau khi đổi người giữ #1, đến khi giải tiếp theo hoàn tất. Giữ nguyên #1 ở giải tiếp theo thì hết popup; đổi chủ thì hiện tên mới. Người dẫn đầu đầu tiên khi chưa từng đổi ngôi không tạo popup. Không lưu trạng thái đã xem trong browser storage; chuyển mốc lịch sử không kích hoạt popup. Quay lại BXH qua back/forward cache tải lại điều kiện từ server. Component hiển thị như banner stage trong luồng nội dung, ngay trên bảng BXH; không có dialog, backdrop, khóa cuộn hay tự chiếm focus. Khi chọn mốc lịch sử, banner ẩn; quay về mốc mới nhất sẽ hiện lại nếu còn đủ điều kiện. Hỗ trợ giảm chuyển động.
