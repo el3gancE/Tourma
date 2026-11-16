@@ -6,9 +6,9 @@
     var preference, accent;
     var colorsKey = 'tourma-ui-special-colors';
     var specialColors = 'on';
-    try { if (localStorage.getItem(colorsKey) === 'off') specialColors = 'off'; } catch (e) { }
+    try { if (localStorage.getItem(colorsKey) === 'off') specialColors = 'off'; } catch (e) {}
     root.dataset.specialColors = specialColors;
-    try { preference = localStorage.getItem(key); accent = localStorage.getItem(accentKey); } catch (e) { }
+    try { preference = localStorage.getItem(key); accent = localStorage.getItem(accentKey); } catch (e) {}
     var system = window.matchMedia('(prefers-color-scheme: dark)');
     var hasPreference = preference === 'dark' || preference === 'light';
     root.dataset.theme = hasPreference ? preference : (system.matches ? 'dark' : 'light');
@@ -56,7 +56,7 @@
         root.dataset.theme = theme;
         root.dataset.accent = color;
         hasPreference = true;
-        try { localStorage.setItem(key, theme); localStorage.setItem(accentKey, color); } catch (e) { }
+        try { localStorage.setItem(key, theme); localStorage.setItem(accentKey, color); } catch (e) {}
         updateControls();
     }
     document.addEventListener('DOMContentLoaded', function () {
@@ -64,7 +64,7 @@
         document.querySelectorAll('[data-special-colors-toggle]').forEach(function (button) {
             button.addEventListener('click', function () {
                 root.dataset.specialColors = root.dataset.specialColors === 'off' ? 'on' : 'off';
-                try { localStorage.setItem(colorsKey, root.dataset.specialColors); } catch (e) { }
+                try { localStorage.setItem(colorsKey, root.dataset.specialColors); } catch (e) {}
                 updateControls();
             });
         });
