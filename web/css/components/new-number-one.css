@@ -1,4 +1,4 @@
-@import url('../design-tokens.css?v=20261117-v13');
+@import url('../design-tokens.css?v=20261117-v10');
 
 /* Inline stage-style announcement. It stays in the page flow above the standings. */
 .new-number-one {
@@ -22,6 +22,7 @@
     background-size: 280% 280%;
     animation: new-number-one-enter .45s ease-out both, new-number-one-mesh-flow 9s ease-in-out infinite alternate;
     font-family: var(--ui-font);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 .new-number-one[hidden] { display: none; }
 .new-number-one__art {
@@ -126,6 +127,7 @@
     font-weight: 700;
     letter-spacing: -2px;
     line-height: 1.05;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.65);
 }
 .new-number-one .new-number-one__name {
     margin: 0;
@@ -136,6 +138,7 @@
     font-weight: 600;
     line-height: 1.4;
     overflow-wrap: anywhere;
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
 }
 
 @keyframes new-number-one-enter {

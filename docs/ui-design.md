@@ -15,7 +15,7 @@ có thể có bố cục khác nhau theo công việc, nhưng phải dùng chung
 
 - Trang chủ hiện tại là bản thử; người dùng dự định làm lại. Không sao chép bố cục
   hoặc các chi tiết minh họa ở đó như một thiết kế đã được duyệt.
-- Có hai lựa chọn màu nhấn dùng chung token: Bộ Đỏ (Crimson Rose) và Bộ Xanh (Royal Blue), mỗi bộ dùng đúng 1 mã màu duy nhất trên cả Light và Dark mode. Chọn bằng hai switch Đỏ/Xanh và Sáng/Tối trên header.
+- Có bốn lựa chọn màu nhấn dùng chung token: Bộ Đỏ (Crimson Velvet), Bộ Xanh dương (Royal Blue), Bộ Xanh lá (Emerald Green) và Bộ Cam (Vibrant Orange), mỗi bộ dùng đúng 1 mã màu duy nhất trên cả Light và Dark mode. Chọn bằng nút switch 4 mode trên header (Đỏ ➔ Xanh dương ➔ Xanh lá ➔ Cam) kết hợp switch Sáng/Tối.
 - Sắc độ nền/card vẫn đang thử nghiệm, chưa được người dùng chốt về mặt thẩm mỹ.
   Dùng bộ token hiện tại để giữ đồng bộ; không tự pha một bảng màu mới cho mỗi màn.
 - Nội dung header (nhãn, thứ tự và URL) được giữ nguyên. Có thể đổi hình thức khi
@@ -108,10 +108,12 @@ Font Readex Pro dùng weight 500 cho nội dung, 600 cho tên đội/menu và 70
 
 ## Bộ màu mở rộng
 
-Theme lưu bằng tourma-ui-theme (light/dark), màu nhấn lưu bằng tourma-ui-accent (wine/blue). theme.js áp dụng data-theme và data-accent trước khi render. Không tạo stylesheet theme riêng theo màn.
+Theme lưu bằng tourma-ui-theme (light/dark), màu nhấn lưu bằng tourma-ui-accent (wine/blue/green/orange). Header dùng 4 ô checkbox có màu tương ứng (Đỏ, Xanh dương, Xanh lá, Cam) để chuyển đổi nhanh màu chủ đạo. theme.js áp dụng data-theme và data-accent trước khi render. Không tạo stylesheet theme riêng theo màn.
 Mỗi bộ nhấn dùng đúng 1 mã màu duy nhất cho cả Light và Dark mode:
 - Bộ Xanh (Blue): Royal Blue `#2563EB` cho cả Light và Dark (hover `#1D4ED8` sáng / `#3B82F6` tối, chữ trên nút màu trắng `#FFFFFF`).
 - Bộ Đỏ (Wine): Crimson Velvet `#BE123C` cho cả Light và Dark (hover `#9F1239` sáng / `#E11D48` tối, chữ trên nút màu trắng `#FFFFFF`).
+- Bộ Xanh lá (Green): Emerald Green `#059669` cho cả Light và Dark (hover `#047857` sáng / `#10B981` tối, chữ trên nút màu trắng `#FFFFFF`).
+- Bộ Cam (Orange): Vibrant Orange `#EA580C` cho cả Light và Dark (hover `#C2410C` sáng / `#F97316` tối, chữ trên nút màu trắng `#FFFFFF`).
 
 Hệ màu phụ và ngữ nghĩa dùng thống nhất 1 bộ duy nhất cho cả Light và Dark mode:
 - Tier S: Bù trừ quang học theo nền — Vàng tươi `#FACC15` cho Dark mode (sáng rực rỡ trên nền tối), Vàng kim tươi `#D49500` cho Light mode (đậm đà, tương phản chuẩn WCAG 4.7:1 trên nền trắng).
@@ -122,7 +124,7 @@ Hệ màu phụ và ngữ nghĩa dùng thống nhất 1 bộ duy nhất cho cả
 - Trận chung kết / Vô địch: `#FACC15` cho Dark mode, `#D49500` cho Light mode.
 - Điểm cộng (+), tăng hạng (▲), thành tích tốt (`--ui-success`): Xanh lá `#16A34A` mặc định (không đổi theo theme accent).
 - Giảm điểm (-), giảm hạng (▼), nguy hiểm (`--ui-danger`): Đỏ `#BE123C`.
-- Nhánh thua (LB): Cam đất `#EA580C` (ở bộ Xanh) và Royal Blue `#2563EB` (ở bộ Đỏ) cho cả Light và Dark.
+- Nhánh thua (LB): Cam đất `#EA580C` (ở bộ Xanh và bộ Xanh lá), Royal Blue `#2563EB` (ở bộ Đỏ), và Emerald Green `#059669` (ở bộ Cam).
 - 32 bảng GSL: A theo UB (`var(--ui-accent)`), B theo LB (`var(--ui-bracket-lower-accent)`); C–AF dùng dải quang phổ 30 màu cố định, dùng chung 1 bộ duy nhất cho cả Light và Dark.
 
 Nền trang, header/sidebar, workspace và canvas dùng chung --ui-bg: sáng #FFFFFF, tối #121212. Card dùng token surface riêng để giữ phân lớp.

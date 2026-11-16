@@ -1,21 +1,61 @@
 @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap');
+
 /* Celebration surfaces (New #1 announcement banner: 4 distinct colors, dynamic animated mesh, soft white light streaks). */
-:root, :root[data-accent="wine"] {
+:root,
+:root[data-accent="wine"] {
     --ui-celebration-bg: #180505;
     --ui-celebration-ink: #ffffff;
-    --ui-celebration-glow-a: #ef4444; /* Pure Bright Red - Hue 0 */
-    --ui-celebration-glow-b: #dc2626; /* Pure Vivid Red - Hue 0 */
-    --ui-celebration-glow-c: #b91c1c; /* Pure Dark Red - Hue 0 */
-    --ui-celebration-glow-d: #7f1d1d; /* Pure Deep Burgundy Red - Hue 0, 0% blue/violet */
+    --ui-celebration-glow-a: #ef4444;
+    /* Pure Bright Red - Hue 0 */
+    --ui-celebration-glow-b: #dc2626;
+    /* Pure Vivid Red - Hue 0 */
+    --ui-celebration-glow-c: #b91c1c;
+    /* Pure Dark Red - Hue 0 */
+    --ui-celebration-glow-d: #7f1d1d;
+    /* Pure Deep Burgundy Red - Hue 0, 0% blue/violet */
     --ui-celebration-backdrop: rgb(0 0 0 / 65%);
 }
+
 :root[data-accent="blue"] {
     --ui-celebration-bg: #060d1a;
-    --ui-celebration-glow-a: #2563eb; /* Royal Blue */
-    --ui-celebration-glow-b: #0ea5e9; /* Sky Blue */
-    --ui-celebration-glow-c: #7c3aed; /* Electric Violet */
-    --ui-celebration-glow-d: #0f172a; /* Deep Navy Midnight */
+    --ui-celebration-glow-a: #2563eb;
+    /* Royal Blue */
+    --ui-celebration-glow-b: #0ea5e9;
+    /* Sky Blue */
+    --ui-celebration-glow-c: #7c3aed;
+    /* Electric Violet */
+    --ui-celebration-glow-d: #0f172a;
+    /* Deep Navy Midnight */
 }
+
+:root[data-accent="green"] {
+    --ui-celebration-bg: #021a10;
+    --ui-celebration-ink: #ffffff;
+    --ui-celebration-glow-a: #34d399;
+    /* Mint Green */
+    --ui-celebration-glow-b: #10b981;
+    /* Vivid Emerald */
+    --ui-celebration-glow-c: #059669;
+    /* Deep Forest Emerald */
+    --ui-celebration-glow-d: #064e3b;
+    /* Pine Midnight */
+    --ui-celebration-backdrop: rgb(0 0 0 / 65%);
+}
+
+:root[data-accent="orange"] {
+    --ui-celebration-bg: #1c0a02;
+    --ui-celebration-ink: #ffffff;
+    --ui-celebration-glow-a: #fb923c;
+    /* Bright Amber */
+    --ui-celebration-glow-b: #ea580c;
+    /* Vivid Orange */
+    --ui-celebration-glow-c: #c2410c;
+    /* Rust Orange */
+    --ui-celebration-glow-d: #7c2d12;
+    /* Deep Burnt Sienna */
+    --ui-celebration-backdrop: rgb(0 0 0 / 65%);
+}
+
 /* Shared palette. Opt in by loading this sheet; blank pages remain unaffected. */
 :root {
     color-scheme: light;
@@ -55,6 +95,7 @@
     --ui-bracket-gap: 12px;
     --ui-font: 'Readex Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
+
 :root[data-theme="dark"] {
     color-scheme: dark;
     --ui-bracket-final-accent: #facc15;
@@ -124,7 +165,8 @@
 }
 
 /* Tournament tier identity, shared across all themes. */
-:root, :root[data-theme="light"] {
+:root,
+:root[data-theme="light"] {
     --ui-tier-s: #d49500;
     --ui-tier-a: #7c3aed;
     --ui-tier-b: #059669;
@@ -143,18 +185,34 @@
     --ui-on-accent: #ffffff;
     --ui-bracket-lower-accent: #ea580c;
 }
+
 :root[data-theme="light"][data-accent="blue"] {
-    --ui-bg: #ffffff; --ui-navigation-bg: #ffffff; --ui-workspace-bg: #ffffff;
-    --ui-workspace-canvas: #ffffff; --ui-canvas: #ffffff; --ui-workspace-card: #f8fafc;
-    --ui-surface: #f8fafc; --ui-surface-alt: #e5e9ee; --ui-match-surface: #f8fafc;
-    --ui-match-row: #f8fafc; --ui-match-border: #d4dae1; --ui-match-score: #e5e9ee;
-    --ui-text: #202124; --ui-muted: #71717a; --ui-line: #d4dae1; --ui-line-strong: #b8c1cc;
-    --ui-accent-hover: #1d4ed8; --ui-accent-soft: rgba(37, 99, 235, 0.08);
+    --ui-bg: #ffffff;
+    --ui-navigation-bg: #ffffff;
+    --ui-workspace-bg: #ffffff;
+    --ui-workspace-canvas: #ffffff;
+    --ui-canvas: #ffffff;
+    --ui-workspace-card: #f8fafc;
+    --ui-surface: #f8fafc;
+    --ui-surface-alt: #e5e9ee;
+    --ui-match-surface: #f8fafc;
+    --ui-match-row: #f8fafc;
+    --ui-match-border: #d4dae1;
+    --ui-match-score: #e5e9ee;
+    --ui-text: #202124;
+    --ui-muted: #71717a;
+    --ui-line: #d4dae1;
+    --ui-line-strong: #b8c1cc;
+    --ui-accent-hover: #1d4ed8;
+    --ui-accent-soft: rgba(37, 99, 235, 0.08);
     --ui-bracket-lower-soft: #fff7ed;
-    --ui-pending-bg: #e5e9ee; --ui-pending-text: #475569; --ui-connector: #8a8a8a;
+    --ui-pending-bg: #e5e9ee;
+    --ui-pending-text: #475569;
+    --ui-connector: #8a8a8a;
     --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
     --ui-card-shadow: 0 2px 6px rgb(15 23 42 / 8%), 0 1px 2px rgb(15 23 42 / 4%);
 }
+
 :root[data-theme="dark"][data-accent="blue"] {
     --ui-accent-hover: #3b82f6;
     --ui-accent-soft: rgba(37, 99, 235, 0.10);
@@ -167,64 +225,160 @@
     --ui-accent-fill: #be123c;
     --ui-bracket-lower-accent: #2563eb;
 }
+
 :root[data-theme="light"][data-accent="wine"] {
     --ui-accent-hover: #9f1239;
     --ui-accent-soft: rgba(190, 18, 60, 0.08);
     --ui-bracket-lower-soft: #eff6ff;
 }
+
 :root[data-theme="dark"][data-accent="wine"] {
     --ui-accent-hover: #e11d48;
     --ui-accent-soft: rgba(190, 18, 60, 0.10);
     --ui-bracket-lower-soft: rgba(37, 99, 235, 0.12);
 }
-:root[data-accent] { --ui-gsl-0: var(--ui-accent); }
-:root { --ui-gsl-1: var(--ui-bracket-lower-accent); }
+
+:root[data-accent="green"] {
+    --ui-accent: #059669;
+    --ui-on-accent: #ffffff;
+    --ui-accent-fill: #059669;
+    --ui-bracket-lower-accent: #ea580c;
+}
+
+:root[data-theme="light"][data-accent="green"] {
+    --ui-bg: #ffffff;
+    --ui-navigation-bg: #ffffff;
+    --ui-workspace-bg: #ffffff;
+    --ui-workspace-canvas: #ffffff;
+    --ui-canvas: #ffffff;
+    --ui-workspace-card: #f8fafc;
+    --ui-surface: #f8fafc;
+    --ui-surface-alt: #e5e9ee;
+    --ui-match-surface: #f8fafc;
+    --ui-match-row: #f8fafc;
+    --ui-match-border: #d4dae1;
+    --ui-match-score: #e5e9ee;
+    --ui-text: #202124;
+    --ui-muted: #71717a;
+    --ui-line: #d4dae1;
+    --ui-line-strong: #b8c1cc;
+    --ui-accent-hover: #047857;
+    --ui-accent-soft: rgba(5, 150, 105, 0.08);
+    --ui-bracket-lower-soft: #fff7ed;
+    --ui-pending-bg: #e5e9ee;
+    --ui-pending-text: #475569;
+    --ui-connector: #8a8a8a;
+    --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
+    --ui-card-shadow: 0 2px 6px rgb(15 23 42 / 8%), 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+:root[data-theme="dark"][data-accent="green"] {
+    --ui-accent-hover: #10b981;
+    --ui-accent-soft: rgba(16, 185, 129, 0.12);
+    --ui-bracket-lower-soft: rgba(234, 88, 12, 0.12);
+}
+
+:root[data-accent="orange"] {
+    --ui-accent: #ea580c;
+    --ui-on-accent: #ffffff;
+    --ui-accent-fill: #ea580c;
+    --ui-bracket-lower-accent: #059669;
+}
+
+:root[data-theme="light"][data-accent="orange"] {
+    --ui-bg: #ffffff;
+    --ui-navigation-bg: #ffffff;
+    --ui-workspace-bg: #ffffff;
+    --ui-workspace-canvas: #ffffff;
+    --ui-canvas: #ffffff;
+    --ui-workspace-card: #f8fafc;
+    --ui-surface: #f8fafc;
+    --ui-surface-alt: #e5e9ee;
+    --ui-match-surface: #f8fafc;
+    --ui-match-row: #f8fafc;
+    --ui-match-border: #d4dae1;
+    --ui-match-score: #e5e9ee;
+    --ui-text: #202124;
+    --ui-muted: #71717a;
+    --ui-line: #d4dae1;
+    --ui-line-strong: #b8c1cc;
+    --ui-accent-hover: #c2410c;
+    --ui-accent-soft: rgba(234, 88, 12, 0.08);
+    --ui-bracket-lower-soft: #ecfdf5;
+    --ui-pending-bg: #e5e9ee;
+    --ui-pending-text: #475569;
+    --ui-connector: #8a8a8a;
+    --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
+    --ui-card-shadow: 0 2px 6px rgb(15 23 42 / 8%), 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+:root[data-theme="dark"][data-accent="orange"] {
+    --ui-accent-hover: #f97316;
+    --ui-accent-soft: rgba(249, 115, 22, 0.12);
+    --ui-bracket-lower-soft: rgba(5, 150, 105, 0.12);
+}
+
+:root[data-accent] {
+    --ui-gsl-0: var(--ui-accent);
+}
+
+:root {
+    --ui-gsl-1: var(--ui-bracket-lower-accent);
+}
 
 /* A continuous page backdrop across navigation, workspaces and bracket canvases. */
 :root,
 :root[data-theme="dark"],
-:root[data-theme="light"][data-accent="blue"] {
- --ui-navigation-bg:var(--ui-bg);
- --ui-workspace-bg:var(--ui-bg);
- --ui-workspace-canvas:var(--ui-bg);
- --ui-canvas:var(--ui-bg);
+:root[data-theme="light"][data-accent="blue"],
+:root[data-theme="light"][data-accent="green"],
+:root[data-theme="light"][data-accent="orange"] {
+    --ui-navigation-bg: var(--ui-bg);
+    --ui-workspace-bg: var(--ui-bg);
+    --ui-workspace-canvas: var(--ui-bg);
+    --ui-canvas: var(--ui-bg);
 }
 
 /* Optional branch/group colors, independent of theme and badge/tier identities. */
-:root { --ui-default-accent:var(--ui-accent); --ui-default-accent-soft:var(--ui-accent-soft); }
+:root {
+    --ui-default-accent: var(--ui-accent);
+    --ui-default-accent-soft: var(--ui-accent-soft);
+}
+
 :root[data-theme][data-accent][data-special-colors="off"] {
- --ui-bracket-lower-accent:var(--ui-default-accent); --ui-bracket-lower-soft:var(--ui-default-accent-soft);
- --ui-bracket-final-accent:var(--ui-default-accent); --ui-swiss-upper-accent:var(--ui-default-accent);
- --ui-gsl-0:var(--ui-default-accent);
- --ui-gsl-1:var(--ui-default-accent);
- --ui-gsl-2:var(--ui-default-accent);
- --ui-gsl-3:var(--ui-default-accent);
- --ui-gsl-4:var(--ui-default-accent);
- --ui-gsl-5:var(--ui-default-accent);
- --ui-gsl-6:var(--ui-default-accent);
- --ui-gsl-7:var(--ui-default-accent);
- --ui-gsl-8:var(--ui-default-accent);
- --ui-gsl-9:var(--ui-default-accent);
- --ui-gsl-10:var(--ui-default-accent);
- --ui-gsl-11:var(--ui-default-accent);
- --ui-gsl-12:var(--ui-default-accent);
- --ui-gsl-13:var(--ui-default-accent);
- --ui-gsl-14:var(--ui-default-accent);
- --ui-gsl-15:var(--ui-default-accent);
- --ui-gsl-16:var(--ui-default-accent);
- --ui-gsl-17:var(--ui-default-accent);
- --ui-gsl-18:var(--ui-default-accent);
- --ui-gsl-19:var(--ui-default-accent);
- --ui-gsl-20:var(--ui-default-accent);
- --ui-gsl-21:var(--ui-default-accent);
- --ui-gsl-22:var(--ui-default-accent);
- --ui-gsl-23:var(--ui-default-accent);
- --ui-gsl-24:var(--ui-default-accent);
- --ui-gsl-25:var(--ui-default-accent);
- --ui-gsl-26:var(--ui-default-accent);
- --ui-gsl-27:var(--ui-default-accent);
- --ui-gsl-28:var(--ui-default-accent);
- --ui-gsl-29:var(--ui-default-accent);
- --ui-gsl-30:var(--ui-default-accent);
- --ui-gsl-31:var(--ui-default-accent);
+    --ui-bracket-lower-accent: var(--ui-default-accent);
+    --ui-bracket-lower-soft: var(--ui-default-accent-soft);
+    --ui-bracket-final-accent: var(--ui-default-accent);
+    --ui-swiss-upper-accent: var(--ui-default-accent);
+    --ui-gsl-0: var(--ui-default-accent);
+    --ui-gsl-1: var(--ui-default-accent);
+    --ui-gsl-2: var(--ui-default-accent);
+    --ui-gsl-3: var(--ui-default-accent);
+    --ui-gsl-4: var(--ui-default-accent);
+    --ui-gsl-5: var(--ui-default-accent);
+    --ui-gsl-6: var(--ui-default-accent);
+    --ui-gsl-7: var(--ui-default-accent);
+    --ui-gsl-8: var(--ui-default-accent);
+    --ui-gsl-9: var(--ui-default-accent);
+    --ui-gsl-10: var(--ui-default-accent);
+    --ui-gsl-11: var(--ui-default-accent);
+    --ui-gsl-12: var(--ui-default-accent);
+    --ui-gsl-13: var(--ui-default-accent);
+    --ui-gsl-14: var(--ui-default-accent);
+    --ui-gsl-15: var(--ui-default-accent);
+    --ui-gsl-16: var(--ui-default-accent);
+    --ui-gsl-17: var(--ui-default-accent);
+    --ui-gsl-18: var(--ui-default-accent);
+    --ui-gsl-19: var(--ui-default-accent);
+    --ui-gsl-20: var(--ui-default-accent);
+    --ui-gsl-21: var(--ui-default-accent);
+    --ui-gsl-22: var(--ui-default-accent);
+    --ui-gsl-23: var(--ui-default-accent);
+    --ui-gsl-24: var(--ui-default-accent);
+    --ui-gsl-25: var(--ui-default-accent);
+    --ui-gsl-26: var(--ui-default-accent);
+    --ui-gsl-27: var(--ui-default-accent);
+    --ui-gsl-28: var(--ui-default-accent);
+    --ui-gsl-29: var(--ui-default-accent);
+    --ui-gsl-30: var(--ui-default-accent);
+    --ui-gsl-31: var(--ui-default-accent);
 }
