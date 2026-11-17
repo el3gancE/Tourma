@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="model.Series, model.Tournament, model.PartnerParticipant, controller.TeamProfileServlet.TourneyPerformanceDTO, controller.TeamProfileServlet.ChampionTournamentDTO, java.util.List, java.util.Map, java.text.SimpleDateFormat"%>
+<%@page import="model.Series, model.Tournament, model.PartnerParticipant, controller.TeamProfileServlet.TourneyPerformanceDTO, controller.TeamProfileServlet.ChampionTournamentDTO, service.TeamMatchHistoryService, service.TeamMatchHistoryService.MatchRecordDTO, java.util.List, java.util.Map, java.text.SimpleDateFormat"%>
 <%
     Series series = (Series) request.getAttribute("series");
     PartnerParticipant partner = (PartnerParticipant) request.getAttribute("partner");
@@ -27,6 +27,7 @@
 
     List<ChampionTournamentDTO> championTourneys = (List<ChampionTournamentDTO>) request.getAttribute("championTourneys");
     List<TourneyPerformanceDTO> performanceList = (List<TourneyPerformanceDTO>) request.getAttribute("performanceList");
+    List<MatchRecordDTO> matchHistoryList = TeamMatchHistoryService.getMatchHistory(seriesIdVal, partner, teamName, performanceList);
 
     String joinDateStr = "-";
     if (partner != null && partner.getCreatedAt() != null) {
@@ -55,13 +56,14 @@
         <!-- Main Design System CSS, Sidebar CSS, Dedicated Team Profile CSS & Badges CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=20261110-profile-latency-v4">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css?v=20261117-v2">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=20261117-v4">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=20261110-profile-latency-v4">
 
         <!-- Chart.js for Rank Progression Chart -->
         <script id="profile-chart-library" async src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261117-v4">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
@@ -332,6 +334,89 @@
                 <p id="profileHistoryEmpty" class="profile-history-empty" hidden>Không có giải phù hợp với bộ lọc.</p>
             </div>
 
+            <!-- Match History Card -->
+            <div class="team-performance-card" id="teamMatchHistoryCard">
+                <div class="team-performance-header">
+                    <h3 class="team-performance-title">
+                        <i class="fa-solid fa-gamepad text-mint"></i> Lịch sử các trận đấu
+                    </h3>
+                    <span class="profile-match-total-badge" id="profileMatchCount" role="status" aria-live="polite"><%= (matchHistoryList != null ? matchHistoryList.size() : 0) %> Trận</span>
+                </div>
+
+                <form id="profileMatchFilters" class="profile-history-filters" onsubmit="return false">
+                    <label>Kết quả<select id="profileMatchResult">
+                        <option value="">Tất cả kết quả</option>
+                        <option value="W">Thắng</option>
+                        <option value="L">Thua</option>
+                    </select></label>
+                    <label>Tier<select id="profileMatchTier"><option value="">Tất cả tier</option></select></label>
+                    <label>Giải đấu<select id="profileMatchTourney"><option value="">Tất cả giải đấu</option></select></label>
+                    <label>Đối thủ<input type="search" id="profileMatchOpponent" placeholder="Tìm tên đối thủ..."></label>
+                    <button type="button" id="profileMatchReset" class="btn btn-secondary">Xóa lọc</button>
+                </form>
+
+                <div class="profile-history-scroll profile-match-list-scroll" id="profileMatchScroll" tabindex="0" role="region" aria-label="Lịch sử các trận đấu">
+                    <div class="profile-match-groups-container" id="profMatchHistoryContainer">
+                        <% if (matchHistoryList != null && !matchHistoryList.isEmpty()) {
+                            java.util.Map<String, java.util.List<MatchRecordDTO>> groupedByTourney = new java.util.LinkedHashMap<>();
+                            for (MatchRecordDTO mhItem : matchHistoryList) {
+                                String tKey = mhItem.getTournamentId() != null ? mhItem.getTournamentId() : mhItem.getTournamentName();
+                                groupedByTourney.computeIfAbsent(tKey, k -> new java.util.ArrayList<>()).add(mhItem);
+                            }
+                            for (java.util.List<MatchRecordDTO> gMatches : groupedByTourney.values()) {
+                                MatchRecordDTO firstM = gMatches.get(0);
+                                String gTourneyId = firstM.getTournamentId() != null ? firstM.getTournamentId() : "";
+                                String gTourneyName = firstM.getTournamentName() != null ? firstM.getTournamentName() : "";
+                                String gTier = (firstM.getTierName() != null && !firstM.getTierName().isEmpty()) ? firstM.getTierName().toUpperCase() : "A";
+                                String gTourneyUrl = (firstM.getFinalStageUrl() != null && !firstM.getFinalStageUrl().isEmpty()) ? firstM.getFinalStageUrl() : "#";
+                        %>
+                            <section class="profile-match-group" data-tournament-id="<%= gTourneyId %>" data-tier="<%= gTier %>">
+                                <div class="profile-match-group-header">
+                                    <div class="profile-match-group-title">
+                                        <i class="fa-solid fa-trophy color-gold"></i>
+                                        <a href="<%= gTourneyUrl %>" class="tourney-name-link"><%= gTourneyName %></a>
+                                        <span class="tier-tag tier-<%= gTier.toLowerCase() %>">[<%= gTier %>]</span>
+                                    </div>
+                                    <span class="profile-match-group-count"><span data-group-count><%= gMatches.size() %></span> trận</span>
+                                </div>
+                                <div class="profile-match-group-items">
+                                    <% for (MatchRecordDTO mh : gMatches) {
+                                        String resCode = (mh.getResult() != null) ? mh.getResult().toUpperCase() : "D";
+                                        boolean selfWin = "W".equals(resCode);
+                                        boolean oppWin = "L".equals(resCode);
+                                        String oppName = (mh.getOpponentName() != null) ? mh.getOpponentName() : "";
+                                        String oppUrl = request.getContextPath() + "/team-profile?seriesId=" + java.net.URLEncoder.encode(seriesIdVal, "UTF-8") + "&teamName=" + java.net.URLEncoder.encode(oppName, "UTF-8");
+                                    %>
+                                    <div class="match-card-item profile-match-card disabled-unconfirmed" data-tournament-id="<%= gTourneyId %>" data-tier="<%= gTier %>" data-result="<%= resCode %>" data-opponent="<%= oppName.toLowerCase().replace("\"", "&quot;") %>">
+                                        <div class="match-card-meta">
+                                            <span class="match-card-id"><%= mh.getRoundLabel() %></span>
+                                        </div>
+                                        <div class="match-card-versus">
+                                            <div class="match-team-side team-left <%= selfWin ? "winner" : "loser" %>">
+                                                <span class="match-list-name" title="<%= teamName %>"><%= teamName %></span>
+                                            </div>
+                                            <div class="match-score-container">
+                                                <span class="match-score-single-box"><%= mh.getTeamScore() %></span>
+                                                <span class="match-score-dash">-</span>
+                                                <span class="match-score-single-box"><%= mh.getOpponentScore() %></span>
+                                            </div>
+                                            <div class="match-team-side team-right <%= oppWin ? "winner" : "loser" %>">
+                                                <a href="<%= oppUrl %>" class="match-list-name opponent-name-link" title="<%= oppName %>"><%= oppName %></a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <% } %>
+                                </div>
+                            </section>
+                        <% }
+                        } else { %>
+                            <p class="profile-history-empty">Chưa có dữ liệu trận đấu nào trong Series này.</p>
+                        <% } %>
+                    </div>
+                </div>
+                <p id="profileMatchEmpty" class="profile-history-empty" hidden>Không có trận đấu phù hợp với bộ lọc.</p>
+            </div>
+
         </main></div>
 
         <script>
@@ -499,6 +584,6 @@
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=20261110-profile-latency-v4"></script>
         <script src="${pageContext.request.contextPath}/js/team-badge-engine.js?v=20261110-profile-latency-v4"></script>
         <script src="${pageContext.request.contextPath}/js/team-profile.js?v=20261110-profile-latency-v4"></script>
-        <script src="${pageContext.request.contextPath}/js/team-profile-history.js?v=2"></script>
+        <script src="${pageContext.request.contextPath}/js/team-profile-history.js?v=20261117-match-history"></script>
     </body>
 </html>

@@ -125,6 +125,58 @@ public class TeamProfileServlet extends HttpServlet {
         public void setParticipated(boolean participated) { this.participated = participated; }
     }
 
+    public static class MatchHistoryDTO {
+        private int stt;
+        private String tournamentId;
+        private String tournamentName;
+        private String tierName;
+        private int tournamentIndex;
+        private String finalStageUrl;
+        private int stageOrder;
+        private int roundNumber;
+        private int matchOrder;
+        private String roundLabel;
+        private String result;
+        private int teamScore;
+        private int opponentScore;
+        private Integer teamPenalty;
+        private Integer opponentPenalty;
+        private String opponentName;
+
+        public int getStt() { return stt; }
+        public void setStt(int stt) { this.stt = stt; }
+        public String getTournamentId() { return tournamentId; }
+        public void setTournamentId(String tournamentId) { this.tournamentId = tournamentId; }
+        public String getTournamentName() { return tournamentName; }
+        public void setTournamentName(String tournamentName) { this.tournamentName = tournamentName; }
+        public String getTierName() { return tierName; }
+        public void setTierName(String tierName) { this.tierName = tierName; }
+        public int getTournamentIndex() { return tournamentIndex; }
+        public void setTournamentIndex(int tournamentIndex) { this.tournamentIndex = tournamentIndex; }
+        public String getFinalStageUrl() { return finalStageUrl; }
+        public void setFinalStageUrl(String finalStageUrl) { this.finalStageUrl = finalStageUrl; }
+        public int getStageOrder() { return stageOrder; }
+        public void setStageOrder(int stageOrder) { this.stageOrder = stageOrder; }
+        public int getRoundNumber() { return roundNumber; }
+        public void setRoundNumber(int roundNumber) { this.roundNumber = roundNumber; }
+        public int getMatchOrder() { return matchOrder; }
+        public void setMatchOrder(int matchOrder) { this.matchOrder = matchOrder; }
+        public String getRoundLabel() { return roundLabel; }
+        public void setRoundLabel(String roundLabel) { this.roundLabel = roundLabel; }
+        public String getResult() { return result; }
+        public void setResult(String result) { this.result = result; }
+        public int getTeamScore() { return teamScore; }
+        public void setTeamScore(int teamScore) { this.teamScore = teamScore; }
+        public int getOpponentScore() { return opponentScore; }
+        public void setOpponentScore(int opponentScore) { this.opponentScore = opponentScore; }
+        public Integer getTeamPenalty() { return teamPenalty; }
+        public void setTeamPenalty(Integer teamPenalty) { this.teamPenalty = teamPenalty; }
+        public Integer getOpponentPenalty() { return opponentPenalty; }
+        public void setOpponentPenalty(Integer opponentPenalty) { this.opponentPenalty = opponentPenalty; }
+        public String getOpponentName() { return opponentName; }
+        public void setOpponentName(String opponentName) { this.opponentName = opponentName; }
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -214,6 +266,9 @@ public class TeamProfileServlet extends HttpServlet {
 
         List<ChampionTournamentDTO> championTourneys = new ArrayList<>();
         List<TourneyPerformanceDTO> performanceList = new ArrayList<>();
+        List<MatchHistoryDTO> matchHistoryList = new ArrayList<>();
+        Map<String, TourneyPerformanceDTO> perfByTeamId = new HashMap<>();
+        Map<String, Integer> tourneyOrderByTeamId = new HashMap<>();
 
         if (series != null && !teamName.isEmpty()) {
             // Standings for current rank & active points
@@ -440,6 +495,11 @@ public class TeamProfileServlet extends HttpServlet {
                             perf.setFinalStageUrl(finalUrl);
 
                             performanceList.add(perf);
+                            if (teamInTourney != null && teamInTourney.getId() != null) {
+                                perfByTeamId.put(teamInTourney.getId(), perf);
+                                int tOrder = t.getTournamentIndexInSeries() > 0 ? t.getTournamentIndexInSeries() : (tIdx + 1);
+                                tourneyOrderByTeamId.put(teamInTourney.getId(), tOrder);
+                            }
                         }
                     }
                 } catch (Exception e) {
@@ -447,6 +507,9 @@ public class TeamProfileServlet extends HttpServlet {
                 }
             }
 
+            if (!perfByTeamId.isEmpty()) {
+                matchHistoryList = loadTeamMatchHistory(series.getId(), partner, teamName, perfByTeamId, tourneyOrderByTeamId);
+            }
             tPerfEnd = System.currentTimeMillis();
             // Calculate Rank Progression and track highest rank in a single fast pass
             List<RankProgressionDTO> rankProgressionList = new ArrayList<>();
@@ -628,6 +691,7 @@ public class TeamProfileServlet extends HttpServlet {
 
         request.setAttribute("championTourneys", championTourneys);
         request.setAttribute("performanceList", performanceList);
+        request.setAttribute("matchHistoryList", matchHistoryList);
 
         List<Tournament> tournamentsList = (tourneys != null) ? tourneys : ((series != null) ? seriesDAO.getTournamentsBySeriesId(series.getId()) : new ArrayList<>());
         List<PartnerParticipant> partnersList = (partners != null) ? partners : ((series != null) ? seriesDAO.getPartnerParticipantsBySeriesId(series.getId()) : new ArrayList<>());
@@ -699,6 +763,144 @@ public class TeamProfileServlet extends HttpServlet {
     }
 
     /** Aggregate persisted results across all stages; draws count as neither wins nor losses. */
+    private static List<MatchHistoryDTO> loadTeamMatchHistory(
+            String seriesId,
+            PartnerParticipant partner,
+            String teamName,
+            Map<String, TourneyPerformanceDTO> perfByTeamId,
+            Map<String, Integer> tourneyOrderByTeamId) {
+        List<MatchHistoryDTO> list = new ArrayList<>();
+        if (seriesId == null || seriesId.trim().isEmpty() || perfByTeamId == null || perfByTeamId.isEmpty()) {
+            return list;
+        }
+        String pIdVal = (partner != null && partner.getId() != null) ? partner.getId().trim() : "";
+        String sql = "SELECT m.tournament_id, m.round_number, COALESCE(m.match_order, 0) AS match_order, "
+                + "m.bracket_type, COALESCE(s.stage_order, 1) AS stage_order, s.format AS stage_format, "
+                + "CASE WHEN s.format = 'SINGLE_ELIMINATION' OR s.format IS NULL THEN ("
+                + "  SELECT COUNT(*) FROM matches slot "
+                + "  WHERE slot.tournament_id = m.tournament_id "
+                + "    AND ISNULL(slot.stage_id, '') = ISNULL(m.stage_id, '') "
+                + "    AND slot.round_number = m.round_number"
+                + ") ELSE 0 END AS round_slots, "
+                + "m.team1_id, m.team2_id, a.raw_name AS team1_name, b.raw_name AS team2_name, "
+                + "m.score1, m.score2, m.penalty1, m.penalty2, m.winner_id "
+                + "FROM tournaments t "
+                + "JOIN matches m ON m.tournament_id = t.id "
+                + "JOIN teams a ON a.id = m.team1_id AND a.tournament_id = t.id "
+                + "JOIN teams b ON b.id = m.team2_id AND b.tournament_id = t.id "
+                + "LEFT JOIN tournament_stages s ON s.id = m.stage_id AND s.tournament_id = t.id "
+                + "WHERE t.series_id = ? AND ISNULL(m.is_bye, 0) = 0 AND m.team1_id <> m.team2_id "
+                + "AND UPPER(m.status) IN ('FINISHED', 'COMPLETED', 'DONE') "
+                + "AND m.score1 >= 0 AND m.score2 >= 0 "
+                + "AND ((? <> '' AND (a.partner_participant_id = ? OR b.partner_participant_id = ?)) "
+                + "  OR LTRIM(RTRIM(a.raw_name)) COLLATE Latin1_General_100_CI_AS = ? "
+                + "  OR LTRIM(RTRIM(b.raw_name)) COLLATE Latin1_General_100_CI_AS = ?) "
+                + "OPTION (LOOP JOIN, MAXDOP 1)";
+        DBContext db = new DBContext();
+        try (Connection conn = db.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, seriesId.trim());
+            ps.setString(2, pIdVal);
+            ps.setString(3, pIdVal);
+            ps.setString(4, pIdVal);
+            ps.setNString(5, teamName != null ? teamName.trim() : "");
+            ps.setNString(6, teamName != null ? teamName.trim() : "");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String t1Id = rs.getString("team1_id");
+                    String t2Id = rs.getString("team2_id");
+                    boolean firstIsSelf = perfByTeamId.containsKey(t1Id);
+                    boolean secondIsSelf = perfByTeamId.containsKey(t2Id);
+                    if (!firstIsSelf && !secondIsSelf) continue;
+                    String selfTeamId = firstIsSelf ? t1Id : t2Id;
+                    TourneyPerformanceDTO tPerf = perfByTeamId.get(selfTeamId);
+                    int tOrder = tourneyOrderByTeamId.getOrDefault(selfTeamId, 0);
+
+                    int s1 = rs.getInt("score1");
+                    int s2 = rs.getInt("score2");
+                    int pen1Raw = rs.getInt("penalty1");
+                    Integer pen1 = rs.wasNull() || pen1Raw < 0 ? null : pen1Raw;
+                    int pen2Raw = rs.getInt("penalty2");
+                    Integer pen2 = rs.wasNull() || pen2Raw < 0 ? null : pen2Raw;
+                    String wId = rs.getString("winner_id");
+
+                    int winnerSide = 0;
+                    if (wId != null) {
+                        if (wId.equals(t1Id)) winnerSide = 1;
+                        else if (wId.equals(t2Id)) winnerSide = 2;
+                    } else {
+                        if (s1 > s2) winnerSide = 1;
+                        else if (s2 > s1) winnerSide = 2;
+                        else if (pen1 != null && pen2 != null) {
+                            if (pen1 > pen2) winnerSide = 1;
+                            else if (pen2 > pen1) winnerSide = 2;
+                        }
+                    }
+
+                    String resCode = (winnerSide == 0) ? "D" : ((firstIsSelf ? winnerSide == 1 : winnerSide == 2) ? "W" : "L");
+                    String oppName = firstIsSelf ? rs.getString("team2_name") : rs.getString("team1_name");
+                    if (oppName != null) oppName = oppName.trim();
+
+                    MatchHistoryDTO mh = new MatchHistoryDTO();
+                    mh.setTournamentId(tPerf.getTournamentId());
+                    mh.setTournamentName(tPerf.getTournamentName());
+                    mh.setTierName(tPerf.getTierName());
+                    mh.setTournamentIndex(tOrder);
+                    mh.setFinalStageUrl(tPerf.getFinalStageUrl());
+                    mh.setStageOrder(rs.getInt("stage_order"));
+                    mh.setRoundNumber(rs.getInt("round_number"));
+                    mh.setMatchOrder(rs.getInt("match_order"));
+                    mh.setRoundLabel(formatProfileRoundLabel(
+                            rs.getString("stage_format"),
+                            rs.getString("bracket_type"),
+                            mh.getRoundNumber(),
+                            rs.getInt("round_slots")));
+                    mh.setResult(resCode);
+                    mh.setTeamScore(firstIsSelf ? s1 : s2);
+                    mh.setOpponentScore(firstIsSelf ? s2 : s1);
+                    mh.setTeamPenalty(firstIsSelf ? pen1 : pen2);
+                    mh.setOpponentPenalty(firstIsSelf ? pen2 : pen1);
+                    mh.setOpponentName(oppName != null ? oppName : "");
+                    list.add(mh);
+                }
+            }
+            list.sort((a, b) -> {
+                if (b.getTournamentIndex() != a.getTournamentIndex()) return Integer.compare(b.getTournamentIndex(), a.getTournamentIndex());
+                if (b.getStageOrder() != a.getStageOrder()) return Integer.compare(b.getStageOrder(), a.getStageOrder());
+                if (b.getRoundNumber() != a.getRoundNumber()) return Integer.compare(b.getRoundNumber(), a.getRoundNumber());
+                return Integer.compare(b.getMatchOrder(), a.getMatchOrder());
+            });
+            for (int i = 0; i < list.size(); i++) {
+                list.get(i).setStt(list.size() - i);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    static String formatProfileRoundLabel(String format, String bracket, int round, int slots) {
+        if ("THIRD_PLACE".equalsIgnoreCase(bracket)) return "THIRD PLACE";
+        if ("SINGLE_ELIMINATION".equalsIgnoreCase(format) && slots > 0) {
+            return switch (slots) {
+                case 1 -> "FINAL";
+                case 2 -> "SEMI-FINAL";
+                case 4 -> "QUARTER-FINAL";
+                default -> "ROUND OF " + (slots * 2);
+            };
+        }
+        if (bracket != null && !bracket.isBlank()) {
+            return switch (bracket.toUpperCase(java.util.Locale.ROOT)) {
+                case "UPPER", "WINNER_BRACKET" -> "UB ROUND " + round;
+                case "LOWER", "LOSER_BRACKET" -> "LB ROUND " + round;
+                case "GRAND_FINAL" -> "GRAND FINAL";
+                case "GRAND_FINAL_RESET" -> "GRAND FINAL 2";
+                default -> "ROUND " + round;
+            };
+        }
+        return "ROUND " + round;
+    }
+
     static Map<String, int[]> loadMatchStats(Connection conn, String seriesId) throws java.sql.SQLException {
         return dao.MatchStatisticsDAO.load(conn, seriesId);
     }
