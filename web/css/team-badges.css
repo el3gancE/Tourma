@@ -1748,16 +1748,860 @@
   }
 }
 
+/* ============================================================================
+   10F. PHASE 6 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 6)
+   Băng Hà Vĩnh Cửu (Arctic Glacial Frost) - Tinh thể băng tuyết Bắc Cực,
+   sóng lạnh tuyệt đối, bão tuyết lốc xoáy pha lê & bông tuyết xoay bung nở cực quang
+   ============================================================================ */
+
+.tourma-badge-phase-6 {
+  position: relative;
+  background: rgba(56, 189, 248, 0.18);
+  border: 1.25px solid #38bdf8;
+  color: #7dd3fc;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.42), inset 0 0 6px rgba(224, 242, 254, 0.2);
+  animation: phase6GlacialPulse 3.2s infinite ease-in-out;
+}
+
+.tourma-badge-phase-6:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #e0f2fe;
+  background: rgba(56, 189, 248, 0.32);
+  box-shadow: 0 0 22px rgba(56, 189, 248, 0.9), 0 0 35px rgba(224, 242, 254, 0.5), inset 0 0 10px rgba(224, 242, 254, 0.35);
+}
+
+.phase6-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase6-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -140%;
+  width: 75%;
+  height: 200%;
+  background: linear-gradient(
+    115deg,
+    transparent 10%,
+    rgba(255, 255, 255, 0.25) 30%,
+    rgba(255, 255, 255, 0.95) 48%,
+    rgba(186, 230, 253, 0.8) 60%,
+    rgba(56, 189, 248, 0.4) 75%,
+    transparent 90%
+  );
+  transform: rotate(-15deg);
+  animation: phase6BlizzardSweep 3.2s infinite cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+.phase6-shine-fx::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow: inset 0 0 8px rgba(186, 230, 253, 0.6);
+  opacity: 0.4;
+  animation: phase6FrostSparkle 2.8s infinite alternate ease-in-out;
+}
+
+.tourma-badge-phase-6 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.86rem;
+  color: #7dd3fc;
+  flex-shrink: 0;
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #0284c7) drop-shadow(0 0 8px rgba(56, 189, 248, 0.85));
+  animation: phase6SnowflakeSpin 4s infinite cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+.tourma-badge-phase-6 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.25px;
+  color: #7dd3fc;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+}
+
+.tourma-badge-phase-6 .tourma-badge-tooltip {
+  border-color: rgba(56, 189, 248, 0.8) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 24px rgba(56, 189, 248, 0.5) !important;
+}
+.tourma-badge-phase-6 .tourma-badge-tooltip-title {
+  color: #7dd3fc;
+}
+.tourma-badge-phase-6 .tourma-badge-tooltip-rarity {
+  background: rgba(56, 189, 248, 0.22);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.6);
+}
+
+@keyframes phase6GlacialPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.4), inset 0 0 4px rgba(224, 242, 254, 0.2);
+    border-color: #38bdf8;
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.85), 0 0 32px rgba(224, 242, 254, 0.4), inset 0 0 8px rgba(224, 242, 254, 0.35);
+    border-color: #e0f2fe;
+  }
+}
+
+@keyframes phase6BlizzardSweep {
+  0%, 20% {
+    left: -140%;
+    opacity: 0;
+  }
+  26% {
+    opacity: 0.95;
+  }
+  58% {
+    left: 140%;
+    opacity: 1;
+  }
+  65%, 100% {
+    left: 140%;
+    opacity: 0;
+  }
+}
+
+@keyframes phase6FrostSparkle {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes phase6SnowflakeSpin {
+  0% {
+    transform: rotate(0deg) scale(1);
+    color: #7dd3fc;
+    filter: drop-shadow(0 0 4px #0284c7) drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+  }
+  40% {
+    transform: rotate(90deg) scale(1.1);
+    color: #bae6fd;
+    filter: drop-shadow(0 0 8px #7dd3fc);
+  }
+  55% {
+    transform: rotate(180deg) scale(1.3);
+    color: #ffffff;
+    filter: drop-shadow(0 0 12px #ffffff) drop-shadow(0 0 20px #38bdf8) drop-shadow(0 0 28px #0284c7);
+  }
+  75% {
+    transform: rotate(270deg) scale(1.12);
+    color: #bae6fd;
+    filter: drop-shadow(0 0 8px #7dd3fc);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    color: #7dd3fc;
+    filter: drop-shadow(0 0 4px #0284c7) drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+  }
+}
+
+/* ============================================================================
+   10G. PHASE 7 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 7)
+   Nham Thạch Hỏa Diệm Sơn (Volcanic Magma / Molten Core) - Nền dung nham sôi trào,
+   áp suất địa tầng bốc hỏa, vệt dung nham trào dâng & núi lửa phun trào rực lửa
+   ============================================================================ */
+
+.tourma-badge-phase-7 {
+  position: relative;
+  background: rgba(234, 88, 12, 0.2);
+  border: 1.25px solid #ea580c;
+  color: #fb923c;
+  box-shadow: 0 0 12px rgba(234, 88, 12, 0.45), inset 0 0 6px rgba(251, 146, 60, 0.2);
+  animation: phase7MagmaBoilPulse 2.9s infinite ease-in-out;
+}
+
+.tourma-badge-phase-7:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #fdba74;
+  background: rgba(234, 88, 12, 0.35);
+  box-shadow: 0 0 24px rgba(234, 88, 12, 0.9), 0 0 38px rgba(249, 115, 22, 0.6), inset 0 0 10px rgba(254, 215, 170, 0.35);
+}
+
+.phase7-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase7-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -140%;
+  width: 80%;
+  height: 220%;
+  background: linear-gradient(
+    110deg,
+    transparent 12%,
+    rgba(255, 255, 255, 0.22) 30%,
+    rgba(255, 255, 255, 0.95) 48%,
+    rgba(253, 186, 116, 0.8) 60%,
+    rgba(234, 88, 12, 0.5) 75%,
+    transparent 90%
+  );
+  transform: rotate(-20deg);
+  animation: phase7LavaSurgeSweep 3.1s infinite cubic-bezier(0.35, 0, 0.25, 1);
+}
+
+.phase7-shine-fx::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow: inset 0 0 8px rgba(249, 115, 22, 0.55);
+  opacity: 0.5;
+  animation: phase7MagmaBubbleBurst 2.5s infinite alternate ease-in-out;
+}
+
+.tourma-badge-phase-7 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.86rem;
+  color: #fb923c;
+  flex-shrink: 0;
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #ea580c) drop-shadow(0 0 9px rgba(249, 115, 22, 0.85));
+  animation: phase7VolcanoEruption 3s infinite cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.tourma-badge-phase-7 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.25px;
+  color: #fb923c;
+  text-shadow: 0 0 8px rgba(234, 88, 12, 0.6);
+}
+
+.tourma-badge-phase-7 .tourma-badge-tooltip {
+  border-color: rgba(234, 88, 12, 0.8) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 26px rgba(234, 88, 12, 0.5) !important;
+}
+.tourma-badge-phase-7 .tourma-badge-tooltip-title {
+  color: #fb923c;
+}
+.tourma-badge-phase-7 .tourma-badge-tooltip-rarity {
+  background: rgba(234, 88, 12, 0.22);
+  color: #fb923c;
+  border: 1px solid rgba(234, 88, 12, 0.6);
+}
+
+@keyframes phase7MagmaBoilPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(234, 88, 12, 0.4), inset 0 0 6px rgba(251, 146, 60, 0.2);
+    border-color: #ea580c;
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(249, 115, 22, 0.85), 0 0 35px rgba(234, 88, 12, 0.4), inset 0 0 10px rgba(254, 215, 170, 0.35);
+    border-color: #fdba74;
+  }
+}
+
+@keyframes phase7LavaSurgeSweep {
+  0%, 20% {
+    left: -140%;
+    opacity: 0;
+  }
+  26% {
+    opacity: 0.95;
+  }
+  58% {
+    left: 140%;
+    opacity: 1;
+  }
+  65%, 100% {
+    left: 140%;
+    opacity: 0;
+  }
+}
+
+@keyframes phase7MagmaBubbleBurst {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes phase7VolcanoEruption {
+  0%, 45% {
+    transform: translateY(0) scale(1);
+    color: #fb923c;
+    filter: drop-shadow(0 0 4px #ea580c);
+  }
+  48% {
+    transform: translateY(-1px) scale(1.06) rotate(-3deg);
+    color: #fdba74;
+    filter: drop-shadow(0 0 8px #f97316);
+  }
+  52% {
+    transform: translateY(1px) scale(0.95) rotate(3deg);
+  }
+  56% {
+    transform: translateY(-4px) scale(1.3) rotate(0deg);
+    color: #ffffff;
+    filter: drop-shadow(0 0 12px #ffffff) drop-shadow(0 0 20px #f97316) drop-shadow(0 0 30px #ea580c);
+  }
+  64% {
+    transform: translateY(-2px) scale(1.15);
+    color: #fed7aa;
+  }
+  75%, 100% {
+    transform: translateY(0) scale(1);
+    color: #fb923c;
+    filter: drop-shadow(0 0 4px #ea580c);
+  }
+}
+
+/* ============================================================================
+   10H. PHASE 8 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 8)
+   Rừng Già Nguyên Sinh (Primal Gaia / Neon Jade) - Nhịp thở phát quang sinh học,
+   làn gió bào tử rừng thiêng & chiếc lá thần tiên nở rộ vươn mình bừng sáng
+   ============================================================================ */
+
+.tourma-badge-phase-8 {
+  position: relative;
+  background: rgba(132, 204, 22, 0.18);
+  border: 1.25px solid #84cc16;
+  color: #a3e635;
+  box-shadow: 0 0 10px rgba(132, 204, 22, 0.42), inset 0 0 6px rgba(163, 230, 53, 0.2);
+  animation: phase8GaiaBreathPulse 3.5s infinite ease-in-out;
+}
+
+.tourma-badge-phase-8:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #d9f99d;
+  background: rgba(132, 204, 22, 0.32);
+  box-shadow: 0 0 22px rgba(132, 204, 22, 0.85), 0 0 35px rgba(190, 242, 100, 0.5), inset 0 0 10px rgba(217, 249, 157, 0.3);
+}
+
+.phase8-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase8-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -140%;
+  width: 80%;
+  height: 200%;
+  background: linear-gradient(
+    115deg,
+    transparent 12%,
+    rgba(255, 255, 255, 0.25) 30%,
+    rgba(255, 255, 255, 0.92) 48%,
+    rgba(190, 242, 100, 0.8) 60%,
+    rgba(132, 204, 22, 0.45) 75%,
+    transparent 90%
+  );
+  transform: rotate(-18deg);
+  animation: phase8GaiaBreezeSweep 3.4s infinite cubic-bezier(0.35, 0, 0.25, 1);
+}
+
+.phase8-shine-fx::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow: inset 0 0 8px rgba(190, 242, 100, 0.5);
+  opacity: 0.45;
+  animation: phase8FireflyGlow 2.8s infinite alternate ease-in-out;
+}
+
+.tourma-badge-phase-8 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.85rem;
+  color: #a3e635;
+  flex-shrink: 0;
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #65a30d) drop-shadow(0 0 8px rgba(132, 204, 22, 0.8));
+  animation: phase8LeafFlutter 3.2s infinite ease-in-out;
+}
+
+.tourma-badge-phase-8 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.25px;
+  color: #a3e635;
+  text-shadow: 0 0 8px rgba(132, 204, 22, 0.6);
+}
+
+.tourma-badge-phase-8 .tourma-badge-tooltip {
+  border-color: rgba(132, 204, 22, 0.8) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 24px rgba(132, 204, 22, 0.45) !important;
+}
+.tourma-badge-phase-8 .tourma-badge-tooltip-title {
+  color: #a3e635;
+}
+.tourma-badge-phase-8 .tourma-badge-tooltip-rarity {
+  background: rgba(132, 204, 22, 0.22);
+  color: #a3e635;
+  border: 1px solid rgba(132, 204, 22, 0.6);
+}
+
+@keyframes phase8GaiaBreathPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(132, 204, 22, 0.4), inset 0 0 6px rgba(163, 230, 53, 0.2);
+    border-color: #84cc16;
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(163, 230, 53, 0.8), 0 0 35px rgba(132, 204, 22, 0.35), inset 0 0 10px rgba(217, 249, 157, 0.3);
+    border-color: #bef264;
+  }
+}
+
+@keyframes phase8GaiaBreezeSweep {
+  0%, 20% {
+    left: -140%;
+    opacity: 0;
+  }
+  26% {
+    opacity: 0.92;
+  }
+  58% {
+    left: 140%;
+    opacity: 1;
+  }
+  65%, 100% {
+    left: 140%;
+    opacity: 0;
+  }
+}
+
+@keyframes phase8FireflyGlow {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes phase8LeafFlutter {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+    color: #a3e635;
+    filter: drop-shadow(0 0 4px #65a30d);
+  }
+  25% {
+    transform: rotate(-15deg) scale(1.08);
+    color: #bef264;
+    filter: drop-shadow(0 0 8px #a3e635);
+  }
+  50% {
+    transform: rotate(0deg) scale(1.24);
+    color: #ffffff;
+    filter: drop-shadow(0 0 12px #ffffff) drop-shadow(0 0 18px #bef264) drop-shadow(0 0 26px #84cc16);
+  }
+  75% {
+    transform: rotate(15deg) scale(1.1);
+    color: #bef264;
+    filter: drop-shadow(0 0 8px #a3e635);
+  }
+}
+
+/* ============================================================================
+   10I. PHASE 9 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 9)
+   Vực Sâu Đại Dương (Abyssal Ocean / Tidal Wave) - Sóng triều đáy biển sâu,
+   sóng thần quét chéo hình sin bọt bạc & ngọn sóng đại dương cuộn trào dâng cực đại
+   ============================================================================ */
+
+.tourma-badge-phase-9 {
+  position: relative;
+  background: rgba(37, 99, 235, 0.18);
+  border: 1.25px solid #2563eb;
+  color: #60a5fa;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.42), inset 0 0 6px rgba(96, 165, 250, 0.2);
+  animation: phase9OceanTidePulse 3.3s infinite ease-in-out;
+}
+
+.tourma-badge-phase-9:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #93c5fd;
+  background: rgba(37, 99, 235, 0.32);
+  box-shadow: 0 0 22px rgba(37, 99, 235, 0.88), 0 0 36px rgba(96, 165, 250, 0.55), inset 0 0 10px rgba(147, 197, 253, 0.35);
+}
+
+.phase9-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase9-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -140%;
+  width: 80%;
+  height: 200%;
+  background: linear-gradient(
+    115deg,
+    transparent 12%,
+    rgba(255, 255, 255, 0.25) 30%,
+    rgba(255, 255, 255, 0.95) 48%,
+    rgba(147, 197, 253, 0.8) 60%,
+    rgba(37, 99, 235, 0.45) 75%,
+    transparent 90%
+  );
+  transform: rotate(-16deg);
+  animation: phase9TsunamiSweep 3.3s infinite cubic-bezier(0.35, 0, 0.25, 1);
+}
+
+.phase9-shine-fx::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow: inset 0 0 8px rgba(96, 165, 250, 0.5);
+  opacity: 0.45;
+  animation: phase9WhirlpoolRipples 2.7s infinite alternate ease-in-out;
+}
+
+.tourma-badge-phase-9 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.86rem;
+  color: #60a5fa;
+  flex-shrink: 0;
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #1d4ed8) drop-shadow(0 0 8px rgba(59, 130, 246, 0.85));
+  animation: phase9WaveSurge 3.4s infinite ease-in-out;
+}
+
+.tourma-badge-phase-9 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.25px;
+  color: #60a5fa;
+  text-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
+}
+
+.tourma-badge-phase-9 .tourma-badge-tooltip {
+  border-color: rgba(37, 99, 235, 0.8) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 24px rgba(37, 99, 235, 0.45) !important;
+}
+.tourma-badge-phase-9 .tourma-badge-tooltip-title {
+  color: #60a5fa;
+}
+.tourma-badge-phase-9 .tourma-badge-tooltip-rarity {
+  background: rgba(37, 99, 235, 0.22);
+  color: #60a5fa;
+  border: 1px solid rgba(37, 99, 235, 0.6);
+}
+
+@keyframes phase9OceanTidePulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.4), inset 0 0 6px rgba(96, 165, 250, 0.2);
+    border-color: #2563eb;
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(96, 165, 250, 0.85), 0 0 35px rgba(37, 99, 235, 0.35), inset 0 0 10px rgba(147, 197, 253, 0.35);
+    border-color: #93c5fd;
+  }
+}
+
+@keyframes phase9TsunamiSweep {
+  0%, 20% {
+    left: -140%;
+    opacity: 0;
+  }
+  26% {
+    opacity: 0.95;
+  }
+  58% {
+    left: 140%;
+    opacity: 1;
+  }
+  65%, 100% {
+    left: 140%;
+    opacity: 0;
+  }
+}
+
+@keyframes phase9WhirlpoolRipples {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes phase9WaveSurge {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    color: #60a5fa;
+    filter: drop-shadow(0 0 4px #1d4ed8);
+  }
+  30% {
+    transform: translateY(2px) scale(0.95);
+    color: #93c5fd;
+  }
+  60% {
+    transform: translateY(-3px) scale(1.28);
+    color: #ffffff;
+    filter: drop-shadow(0 0 12px #ffffff) drop-shadow(0 0 20px #60a5fa) drop-shadow(0 0 28px #1d4ed8);
+  }
+  80% {
+    transform: translateY(-1px) scale(1.1);
+    color: #93c5fd;
+  }
+}
+
+/* ============================================================================
+   10J. PHASE 10 LEADER DYNAMIC BADGE (Đứng đầu BXH khi kết thúc Phase 10)
+   Tối Thượng Vô Cực / Quang Phổ Tinh Cầu (Cosmic Infinity / Prismatic Zenith)
+   Đỉnh cao tột đỉnh thập kỷ: Nền đa sắc quang phổ chuyển động liên tục,
+   vệt sáng lăng kính cầu vồng 7 màu & biểu tượng Vô Cực uốn lượn 3D thăng hoa
+   ============================================================================ */
+
+.tourma-badge-phase-10 {
+  position: relative;
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.18), rgba(139, 92, 246, 0.22), rgba(6, 182, 212, 0.2), rgba(245, 158, 11, 0.18));
+  border: 1.25px solid #e2e8f0;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.6), 0 0 24px rgba(139, 92, 246, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.3);
+  animation: phase10PrismaticShiftPulse 3.6s infinite ease-in-out;
+}
+
+.tourma-badge-phase-10:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #ffffff;
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.32), rgba(139, 92, 246, 0.38), rgba(6, 182, 212, 0.32), rgba(245, 158, 11, 0.3));
+  box-shadow: 0 0 28px rgba(255, 255, 255, 0.95), 0 0 45px rgba(168, 85, 247, 0.7), 0 0 60px rgba(56, 189, 248, 0.5), inset 0 0 14px rgba(255, 255, 255, 0.5);
+}
+
+.phase10-shine-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.phase10-shine-fx::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -150%;
+  width: 85%;
+  height: 220%;
+  background: linear-gradient(
+    110deg,
+    transparent 10%,
+    rgba(255, 255, 255, 0.3) 25%,
+    rgba(255, 255, 255, 0.98) 45%,
+    rgba(251, 113, 133, 0.7) 55%,
+    rgba(192, 132, 252, 0.7) 65%,
+    rgba(56, 189, 248, 0.7) 75%,
+    rgba(251, 191, 36, 0.7) 85%,
+    transparent 95%
+  );
+  transform: rotate(-22deg);
+  animation: phase10PrismRainbowSweep 3.6s infinite cubic-bezier(0.35, 0, 0.25, 1);
+}
+
+.phase10-shine-fx::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.6);
+  opacity: 0.5;
+  animation: phase10ZenithStarFlare 3s infinite alternate ease-in-out;
+}
+
+.tourma-badge-phase-10 .badge-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 0.9rem;
+  color: #ffffff;
+  flex-shrink: 0;
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #ffffff) drop-shadow(0 0 10px #c084fc) drop-shadow(0 0 16px #38bdf8);
+  animation: phase10InfinityMorph 3.8s infinite ease-in-out;
+}
+
+.tourma-badge-phase-10 .tourma-badge-name {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.25px;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.9), 0 0 18px rgba(168, 85, 247, 0.7);
+}
+
+.tourma-badge-phase-10 .tourma-badge-tooltip {
+  border-color: rgba(226, 232, 240, 0.85) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 30px rgba(168, 85, 247, 0.6), 0 0 45px rgba(56, 189, 248, 0.4) !important;
+}
+.tourma-badge-phase-10 .tourma-badge-tooltip-title {
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.8);
+}
+.tourma-badge-phase-10 .tourma-badge-tooltip-rarity {
+  background: linear-gradient(90deg, rgba(244, 63, 94, 0.35), rgba(139, 92, 246, 0.35), rgba(6, 182, 212, 0.35));
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+@keyframes phase10PrismaticShiftPulse {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.6), 0 0 24px rgba(139, 92, 246, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.3);
+    border-color: #e2e8f0;
+  }
+  33% {
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.85), 0 0 32px rgba(6, 182, 212, 0.5), inset 0 0 10px rgba(56, 189, 248, 0.4);
+    border-color: #38bdf8;
+  }
+  66% {
+    box-shadow: 0 0 22px rgba(244, 63, 94, 0.85), 0 0 35px rgba(245, 158, 11, 0.5), inset 0 0 10px rgba(251, 113, 133, 0.4);
+    border-color: #fb7185;
+  }
+}
+
+@keyframes phase10PrismRainbowSweep {
+  0%, 20% {
+    left: -150%;
+    opacity: 0;
+  }
+  26% {
+    opacity: 0.98;
+  }
+  58% {
+    left: 140%;
+    opacity: 1;
+  }
+  65%, 100% {
+    left: 140%;
+    opacity: 0;
+  }
+}
+
+@keyframes phase10ZenithStarFlare {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes phase10InfinityMorph {
+  0% {
+    transform: rotate(0deg) scale(1);
+    color: #ffffff;
+    filter: drop-shadow(0 0 4px #ffffff) drop-shadow(0 0 8px #c084fc);
+  }
+  25% {
+    transform: rotate(-10deg) scale(1.15);
+    color: #38bdf8;
+    filter: drop-shadow(0 0 8px #38bdf8) drop-shadow(0 0 14px #06b6d4);
+  }
+  50% {
+    transform: rotate(0deg) scale(1.32);
+    color: #ffffff;
+    filter: drop-shadow(0 0 14px #ffffff) drop-shadow(0 0 22px #f43f5e) drop-shadow(0 0 32px #fbbf24);
+  }
+  75% {
+    transform: rotate(10deg) scale(1.15);
+    color: #fb7185;
+    filter: drop-shadow(0 0 8px #fb7185) drop-shadow(0 0 14px #f43f5e);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    color: #ffffff;
+    filter: drop-shadow(0 0 4px #ffffff) drop-shadow(0 0 8px #c084fc);
+  }
+}
+
 
 
 
 /* Light mode preserves motion while giving lettering enough contrast. */
 :root:not([data-theme="dark"]) .tourma-badge-pill { --badge-tone:var(--ui-tier-d); }
-:root:not([data-theme="dark"]) :is(.tourma-badge-gold,.tourma-badge-defending,.tourma-badge-bright-gold,.tourma-badge-tier-s,.tourma-badge-podium,.tourma-badge-phase-5) { --badge-tone:var(--ui-tier-s); }
-:root:not([data-theme="dark"]) :is(.tourma-badge-tier-a,.tourma-badge-veteran,.tourma-badge-phase-4) { --badge-tone:var(--ui-tier-a); }
-:root:not([data-theme="dark"]) :is(.tourma-badge-tier-b,.tourma-badge-phase-1) { --badge-tone:var(--ui-tier-b); }
-:root:not([data-theme="dark"]) :is(.tourma-badge-tier-c,.tourma-badge-phase-3) { --badge-tone:var(--ui-tier-c); }
-:root:not([data-theme="dark"]) :is(.tourma-badge-streak,.tourma-badge-streak-fire,.tourma-badge-phase-2) { --badge-tone:var(--ui-danger); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-gold,.tourma-badge-defending,.tourma-badge-bright-gold,.tourma-badge-tier-s,.tourma-badge-podium,.tourma-badge-phase-5,.tourma-badge-phase-10) { --badge-tone:var(--ui-tier-s); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-tier-a,.tourma-badge-veteran,.tourma-badge-phase-4,.tourma-badge-phase-9) { --badge-tone:var(--ui-tier-a); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-tier-b,.tourma-badge-phase-1,.tourma-badge-phase-8) { --badge-tone:var(--ui-tier-b); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-tier-c,.tourma-badge-phase-3,.tourma-badge-phase-6) { --badge-tone:var(--ui-tier-c); }
+:root:not([data-theme="dark"]) :is(.tourma-badge-streak,.tourma-badge-streak-fire,.tourma-badge-phase-2,.tourma-badge-phase-7) { --badge-tone:var(--ui-danger); }
 :root:not([data-theme="dark"]) .tourma-badge-pill { color:var(--badge-tone); background:color-mix(in srgb,var(--badge-tone) 9%,var(--ui-bg)); border-color:color-mix(in srgb,var(--badge-tone) 55%,var(--ui-line)); }
 :root:not([data-theme="dark"]) .tourma-badge-pill > :is(.badge-icon,.tourma-badge-name) { color:var(--badge-tone)!important; -webkit-text-fill-color:var(--badge-tone); text-shadow:none!important; }
 :root:not([data-theme="dark"]) .tourma-badge-pill > .tourma-badge-name { background:none; }
