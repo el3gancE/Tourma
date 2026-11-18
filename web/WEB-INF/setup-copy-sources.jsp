@@ -45,6 +45,13 @@
                                                                     <i class="fa-solid fa-users"></i>
                                                                     <%= tCount %> Đội
                                                                 </span>
+                                                                <% if (isMulti && at.getAdvancingSeatsCount() > 0) { %>
+                                                                    <span class="stage-badge"
+                                                                        data-ui-style="configure-tournament-format-jsp-130">
+                                                                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                                                        <%= at.getAdvancingSeatsCount() %> Đi tiếp
+                                                                    </span>
+                                                                <% } %>
                                                     </div>
                                                 </div>
                                                 <button type="button" class="btn btn-mint"
@@ -68,6 +75,7 @@
         source.put("name", tournament.getName());
         source.put("tournamentType", tournament.getTournamentType() == null ? "SINGLE_STAGE" : tournament.getTournamentType());
         source.put("format", tournament.getFormat() == null ? "SINGLE_ELIMINATION" : tournament.getFormat());
+        source.put("stage2Format", tournament.getStage2Format() == null ? "SINGLE_ELIMINATION" : tournament.getStage2Format());
         source.put("tierName", tournament.getTierName() == null ? "S" : tournament.getTierName().toUpperCase(java.util.Locale.ROOT));
         source.put("teamCount", tournament.getTeamCount());
         source.put("advancingSeatsCount", tournament.getAdvancingSeatsCount());
