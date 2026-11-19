@@ -90,6 +90,89 @@
     }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () {update(false);});
     update(false);
+    initMatchHistory(tournaments, tierOrder, option);
+  }
+
+  function initMatchHistory(tournaments, tierOrder, option) {
+    var mForm = document.getElementById('profileMatchFilters');
+    var mContainer = document.getElementById('profMatchHistoryContainer');
+    if (!mForm || !mContainer) return;
+
+    var resSelect = document.getElementById('profileMatchResult');
+    var tierSelect = document.getElementById('profileMatchTier');
+    var tourneySelect = document.getElementById('profileMatchTourney');
+    var oppInput = document.getElementById('profileMatchOpponent');
+    var resetBtn = document.getElementById('profileMatchReset');
+    var mScroll = document.getElementById('profileMatchScroll');
+    var mEmpty = document.getElementById('profileMatchEmpty');
+    var mCount = document.getElementById('profileMatchCount');
+
+    var groups = Array.from(mContainer.querySelectorAll('.profile-match-group'));
+    var allCards = Array.from(mContainer.querySelectorAll('.profile-match-card'));
+    var playedTourneyIds = new Set(groups.map(function (g) { return g.dataset.tournamentId; }));
+    var mTiers = Array.from(new Set(groups.map(function (g) { return String(g.dataset.tier || 'A').toUpperCase(); })));
+    mTiers.sort(function (a, b) {
+      var ai = tierOrder.indexOf(a), bi = tierOrder.indexOf(b);
+      return (ai < 0 ? tierOrder.length : ai) - (bi < 0 ? tierOrder.length : bi) || a.localeCompare(b);
+    }).forEach(function (tName) { option(tierSelect, tName, 'Tier ' + tName); });
+
+    tournaments.slice().reverse().forEach(function (t) {
+      if (playedTourneyIds.has(String(t.id))) {
+        option(tourneySelect, t.id, '#' + t.index + ' · ' + t.name);
+      }
+    });
+
+    function updateMatches(resetScroll) {
+      var fRes = (resSelect.value || '').toUpperCase();
+      var fTier = (tierSelect.value || '').toUpperCase();
+      var fTourney = tourneySelect.value || '';
+      var fOpp = (oppInput.value || '').trim().toLowerCase();
+      var hasFilter = Boolean(fRes || fTier || fTourney || fOpp);
+
+      var totalVisible = 0;
+
+      groups.forEach(function (group) {
+        var gTier = (group.dataset.tier || 'A').toUpperCase();
+        var gTourney = group.dataset.tournamentId || '';
+        var groupMatch = (!fTier || gTier === fTier) && (!fTourney || gTourney === fTourney);
+        var cards = Array.from(group.querySelectorAll('.profile-match-card'));
+        var groupVisible = 0;
+
+        cards.forEach(function (card) {
+          var cRes = (card.dataset.result || '').toUpperCase();
+          var cOpp = (card.dataset.opponent || '').toLowerCase();
+          var show = groupMatch && (!fRes || cRes === fRes) && (!fOpp || cOpp.indexOf(fOpp) !== -1);
+          card.hidden = !show;
+          if (show) {
+            groupVisible++;
+            totalVisible++;
+          }
+        });
+
+        var countSpan = group.querySelector('[data-group-count]');
+        if (countSpan) countSpan.textContent = String(groupVisible);
+        group.hidden = groupVisible === 0;
+      });
+
+      if (mCount) {
+        mCount.textContent = hasFilter
+          ? (totalVisible + '/' + allCards.length + ' Trận')
+          : (allCards.length + ' Trận');
+      }
+      if (mEmpty) mEmpty.hidden = totalVisible > 0 || allCards.length === 0;
+      if (resetScroll && mScroll) mScroll.scrollTop = 0;
+    }
+
+    mForm.addEventListener('change', function () { updateMatches(true); });
+    if (oppInput) oppInput.addEventListener('input', function () { updateMatches(true); });
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        resSelect.value = tierSelect.value = tourneySelect.value = '';
+        if (oppInput) oppInput.value = '';
+        updateMatches(true);
+      });
+    }
+    updateMatches(false);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

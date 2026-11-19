@@ -1125,6 +1125,77 @@
   });
 
   /**
+   * 10F - 10J. PHASE 6 TO 10 LEADER DYNAMIC BADGES
+   * Hệ thống vinh danh Phase 6 đến Phase 10 với bộ nhận diện và hiệu ứng động độc quyền:
+   * Phase 6: Băng Hà Vĩnh Cửu (fa-solid fa-snowflake)
+   * Phase 7: Nham Thạch Hỏa Diệm (fa-solid fa-volcano)
+   * Phase 8: Rừng Già Nguyên Sinh (fa-solid fa-leaf)
+   * Phase 9: Vực Sâu Đại Dương (fa-solid fa-water)
+   * Phase 10: Tối Thượng Vô Cực (fa-solid fa-infinity)
+   */
+  var extraPhaseConfigs = [
+    { phase: 6, icon: 'fa-solid fa-snowflake' },
+    { phase: 7, icon: 'fa-solid fa-volcano' },
+    { phase: 8, icon: 'fa-solid fa-leaf' },
+    { phase: 9, icon: 'fa-solid fa-water' },
+    { phase: 10, icon: 'fa-solid fa-infinity' }
+  ];
+
+  extraPhaseConfigs.forEach(function (cfg) {
+    var pNum = cfg.phase;
+    registry.push({
+      id: 'PHASE_' + pNum + '_LEADER',
+      name: 'Phase ' + pNum + ' #1',
+      category: 'PHASE_CHAMPION',
+      rarity: 'Phase ' + pNum + ' #1',
+      themeClass: 'tourma-badge-phase-' + pNum,
+      iconClass: cfg.icon,
+      evaluate: function (teamName, context) {
+        if (!teamName) return null;
+        var badges = (context && Array.isArray(context.phaseBadges)) ? context.phaseBadges : null;
+        if (!badges && typeof TourmaRollingStandingsEngine !== 'undefined' && TourmaRollingStandingsEngine.getPhaseWinners) {
+          var pWinners = TourmaRollingStandingsEngine.getPhaseWinners(context || {});
+          badges = [];
+          pWinners.forEach(function (pw) {
+            if (isTeamSelf(pw.teamName, teamName)) {
+              badges.push(pw);
+            }
+          });
+        }
+        if (badges && badges.length > 0) {
+          var phaseBadge = null;
+          for (var i = 0; i < badges.length; i++) {
+            if (badges[i].phase === pNum) {
+              phaseBadge = badges[i];
+              break;
+            }
+          }
+          if (phaseBadge) {
+            var tName = phaseBadge.tourneyName || ('Giải #' + (phaseBadge.tourneyIndex || pNum));
+            var pts = phaseBadge.totalPts || 0;
+            return {
+              id: 'PHASE_' + pNum + '_LEADER',
+              name: 'Phase ' + pNum + ' #1',
+              title: 'Phase ' + pNum + ' #1',
+              category: 'PHASE_CHAMPION',
+              rarity: 'Phase ' + pNum + ' #1',
+              themeClass: 'tourma-badge-phase-' + pNum,
+              iconClass: cfg.icon,
+              description: 'Đứng đầu bảng xếp hạng khi kết thúc Phase ' + pNum + ' (' + tName + ')' + (pts > 0 ? (' với ' + pts + ' điểm.') : '.'),
+              meta: {
+                phase: pNum,
+                tourneyName: tName,
+                totalPts: pts
+              }
+            };
+          }
+        }
+        return null;
+      }
+    });
+  });
+
+  /**
    * 11. RUNNER_UP (Vua Về Nhì / Runner-Up)
    * Điều kiện: Vào tối thiểu 5 trận chung kết, và số lần về nhì nhiều hơn số lần vô địch
    * finalsCount >= 5 && runnerUpCount > champCount (Badge tĩnh)

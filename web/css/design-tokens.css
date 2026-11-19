@@ -1,37 +1,46 @@
 @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap');
-/* Celebration surfaces (New #1 announcement banner: 4 distinct colors, dynamic animated mesh, soft white light streaks). */
+/* Celebration surfaces (New #1 announcement banner: 4 distinct colors, 3 main shades + 1 complementary contrast color, dynamic animated mesh, soft light streaks). */
 :root, :root[data-accent="wine"] {
-    --ui-celebration-bg: #180505;
+    --ui-celebration-bg: #120206;
     --ui-celebration-ink: #ffffff;
-    --ui-celebration-glow-a: #ef4444; /* Pure Bright Red - Hue 0 */
-    --ui-celebration-glow-b: #dc2626; /* Pure Vivid Red - Hue 0 */
-    --ui-celebration-glow-c: #b91c1c; /* Pure Dark Red - Hue 0 */
-    --ui-celebration-glow-d: #7f1d1d; /* Pure Deep Burgundy Red - Hue 0, 0% blue/violet */
+    --ui-celebration-glow-a: #e11d48; /* Main 1: Vivid Crimson Rose */
+    --ui-celebration-glow-b: #ff1744; /* Main 2: Hot Ruby Scarlet Highlight */
+    --ui-celebration-glow-c: #2563eb; /* Complementary Mixed (Đỏ pha Xanh): Electric Royal Blue */
+    --ui-celebration-glow-d: #4c0519; /* Main 3: Deep Burgundy Midnight Shadow */
+    --ui-celebration-contrast: #2563eb;
+    --ui-celebration-contrast-rgb: 37, 99, 235;
     --ui-celebration-backdrop: rgb(0 0 0 / 65%);
 }
 :root[data-accent="blue"] {
-    --ui-celebration-bg: #060d1a;
-    --ui-celebration-glow-a: #2563eb; /* Royal Blue */
-    --ui-celebration-glow-b: #0ea5e9; /* Sky Blue */
-    --ui-celebration-glow-c: #7c3aed; /* Electric Violet */
-    --ui-celebration-glow-d: #0f172a; /* Deep Navy Midnight */
+    --ui-celebration-bg: #050b18;
+    --ui-celebration-ink: #ffffff;
+    --ui-celebration-glow-a: #1d4ed8; /* Main 1: Royal Blue */
+    --ui-celebration-glow-b: #0ea5e9; /* Main 2: Sky Blue Highlight */
+    --ui-celebration-glow-c: #ef4444; /* Complementary Mixed (Xanh pha Đỏ): Vivid Hot Crimson Red */
+    --ui-celebration-glow-d: #091326; /* Main 3: Deep Navy Midnight Shadow */
+    --ui-celebration-contrast: #ef4444;
+    --ui-celebration-contrast-rgb: 239, 68, 68;
 }
 :root[data-accent="green"] {
-    --ui-celebration-bg: #021a10;
+    --ui-celebration-bg: #02140d;
     --ui-celebration-ink: #ffffff;
-    --ui-celebration-glow-a: #34d399; /* Mint Green */
-    --ui-celebration-glow-b: #10b981; /* Vivid Emerald */
-    --ui-celebration-glow-c: #059669; /* Deep Forest Emerald */
-    --ui-celebration-glow-d: #064e3b; /* Pine Midnight */
+    --ui-celebration-glow-a: #059669; /* Main 1: Deep Emerald */
+    --ui-celebration-glow-b: #10b981; /* Main 2: Vivid Mint Jade Highlight */
+    --ui-celebration-glow-c: #f97316; /* Complementary Mixed (Lục pha Cam): Vivid Blaze Orange */
+    --ui-celebration-glow-d: #022c22; /* Main 3: Deep Pine Forest Shadow */
+    --ui-celebration-contrast: #f97316;
+    --ui-celebration-contrast-rgb: 249, 115, 22;
     --ui-celebration-backdrop: rgb(0 0 0 / 65%);
 }
 :root[data-accent="orange"] {
-    --ui-celebration-bg: #1c0a02;
+    --ui-celebration-bg: #120400;
     --ui-celebration-ink: #ffffff;
-    --ui-celebration-glow-a: #fb923c; /* Bright Amber */
-    --ui-celebration-glow-b: #ea580c; /* Vivid Orange */
-    --ui-celebration-glow-c: #c2410c; /* Rust Orange */
-    --ui-celebration-glow-d: #7c2d12; /* Deep Burnt Sienna */
+    --ui-celebration-glow-a: #ea580c; /* Main 1: Blaze Orange */
+    --ui-celebration-glow-b: #fbbf24; /* Main 2: Sunburst Gold Highlight */
+    --ui-celebration-glow-c: #10b981; /* Complementary Mixed (Cam pha Lục): Vivid Emerald Green */
+    --ui-celebration-glow-d: #380d03; /* Main 3: Deep Volcanic Obsidian Shadow */
+    --ui-celebration-contrast: #10b981;
+    --ui-celebration-contrast-rgb: 16, 185, 129;
     --ui-celebration-backdrop: rgb(0 0 0 / 65%);
 }
 /* Shared palette. Opt in by loading this sheet; blank pages remain unaffected. */

@@ -1775,7 +1775,7 @@
       if (phaseSize > 0 && (mStep + 1) % phaseSize === 0 && mScores.length > 0 && mScores[0].pts > 0) {
         var phaseNum = Math.floor((mStep + 1) / phaseSize);
 
-        if (phaseNum >= 1 && phaseNum <= 5) {
+        if (phaseNum >= 1 && phaseNum <= 10) {
           var phaseChampK = mScores[0].key;
           var pTourney = subTourneys[mStep];
           var pTourneyName = (pTourney && pTourney.name) ? pTourney.name : ('Giải #' + (mStep + 1));
@@ -1786,7 +1786,12 @@
             2: 'fa-solid fa-meteor',
             3: 'fa-solid fa-bolt-lightning',
             4: 'fa-solid fa-atom',
-            5: 'fa-solid fa-sun'
+            5: 'fa-solid fa-sun',
+            6: 'fa-solid fa-snowflake',
+            7: 'fa-solid fa-volcano',
+            8: 'fa-solid fa-leaf',
+            9: 'fa-solid fa-water',
+            10: 'fa-solid fa-infinity'
           };
 
           var phaseColors = {
@@ -1794,7 +1799,12 @@
             2: 'crimson',
             3: 'cyan',
             4: 'purple',
-            5: 'gold'
+            5: 'gold',
+            6: 'ice',
+            7: 'orange',
+            8: 'lime',
+            9: 'blue',
+            10: 'rainbow'
           };
 
           var pBadgeObj = {

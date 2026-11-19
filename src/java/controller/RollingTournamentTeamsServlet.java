@@ -185,9 +185,19 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                     String first = formats.isEmpty() ? source.getFormat() : formats.get(0);
                     String second = formats.size() > 1 ? formats.get(1) : null;
                     String config = source.getMultiStageConfig();
-                    if (config == null || config.trim().isEmpty()) config = request.getParameter("multiConfig");
+                    String clientConfig = request.getParameter("multiConfig");
+                    if (config == null || config.trim().isEmpty()) {
+                        config = clientConfig;
+                    } else if (clientConfig != null && !clientConfig.trim().isEmpty()
+                            && !config.contains("advanceCount") && !config.contains("totalAdvanceCount")) {
+                        config = clientConfig;
+                    }
+                    int advSeats = source.getAdvancingSeatsCount();
+                    if (advSeats <= 0) {
+                        try { advSeats = Integer.parseInt(request.getParameter("advancingSeatsCount")); } catch (Exception ignore) {}
+                    }
                     copied = configDAO.updateTournamentFormatAndType(tournamentId, first,
-                            source.getTournamentType(), first, second, source.getAdvancingSeatsCount(), config)
+                            source.getTournamentType(), first, second, advSeats, config)
                             && configDAO.copyPointsConfigFromTournament(sourceId, tournamentId, false)
                             && configDAO.updateTournamentTier(tournamentId, source.getTierName());
                 }

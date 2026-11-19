@@ -951,43 +951,55 @@
                                 // 2. Apply Formats & Configurations
                                 if (type === 'MULTI_STAGE') {
                                     var mCfg = tourney.multiStageConfig || {};
+                                    if (typeof mCfg === 'string') {
+                                        try { mCfg = JSON.parse(mCfg) || {}; } catch (e) { mCfg = {}; }
+                                    }
                                     var s1F = mCfg.stage1Format || tourney.format || 'ROUND_ROBIN';
-                                    var s2F = mCfg.stage2Format || 'SINGLE_ELIMINATION';
+                                    var s2F = mCfg.stage2Format || tourney.stage2Format || 'SINGLE_ELIMINATION';
 
                                     selectStage1Format(s1F, false);
                                     selectStage2Format(s2F, false);
 
-                                    if (mCfg.stage1Config) {
-                                        var s1C = mCfg.stage1Config;
-                                        if (s1F === 'ROUND_ROBIN') {
-                                            var advRR = document.getElementById('stage1AdvanceRR');
-                                            var winRR = document.getElementById('stage1WinPointsRR');
-                                            var drawRR = document.getElementById('stage1DrawPointsRR');
-                                            var lossRR = document.getElementById('stage1LossPointsRR');
-                                            var legsRR = document.getElementById('stage1LegsCountRR');
-                                            if (advRR && s1C.advanceCount !== undefined) advRR.value = s1C.advanceCount;
-                                            if (winRR && s1C.winPoints !== undefined) winRR.value = s1C.winPoints;
-                                            if (drawRR && s1C.drawPoints !== undefined) drawRR.value = s1C.drawPoints;
-                                            if (lossRR && s1C.lossPoints !== undefined) lossRR.value = s1C.lossPoints;
-                                            if (legsRR && s1C.legsCount !== undefined) legsRR.value = s1C.legsCount;
-                                        } else if (s1F === 'GROUP_STAGE') {
-                                            var advGR = document.getElementById('stage1AdvanceGR');
-                                            var winGR = document.getElementById('stage1WinPointsGR');
-                                            var drawGR = document.getElementById('stage1DrawPointsGR');
-                                            var lossGR = document.getElementById('stage1LossPointsGR');
-                                            var legsGR = document.getElementById('stage1LegsCountGR');
-                                            if (advGR && s1C.totalAdvanceCount !== undefined) advGR.value = s1C.totalAdvanceCount;
-                                            if (winGR && s1C.winPoints !== undefined) winGR.value = s1C.winPoints;
-                                            if (drawGR && s1C.drawPoints !== undefined) drawGR.value = s1C.drawPoints;
-                                            if (lossGR && s1C.lossPoints !== undefined) lossGR.value = s1C.lossPoints;
-                                            if (legsGR && s1C.legsCount !== undefined) legsGR.value = s1C.legsCount;
-                                        } else if (s1F === 'SINGLE_ELIMINATION') {
-                                            var advSE = document.getElementById('stage1AdvanceSE');
-                                            if (advSE && s1C.advanceCount !== undefined) advSE.value = s1C.advanceCount;
-                                        } else if (s1F === 'DOUBLE_ELIMINATION') {
-                                            var advDE = document.getElementById('stage1AdvanceDE');
-                                            if (advDE && s1C.advanceCount !== undefined) advDE.value = s1C.advanceCount;
-                                        }
+                                    var s1C = mCfg.stage1Config || {};
+                                    var advVal = s1C.totalAdvanceCount || s1C.advanceCount || s1C.cutTarget || tourney.advancingSeatsCount || 0;
+                                    if (s1F === 'ROUND_ROBIN') {
+                                        var advRR = document.getElementById('stage1AdvanceRR');
+                                        var winRR = document.getElementById('stage1WinPointsRR');
+                                        var drawRR = document.getElementById('stage1DrawPointsRR');
+                                        var lossRR = document.getElementById('stage1LossPointsRR');
+                                        var legsRR = document.getElementById('stage1LegsCountRR');
+                                        if (advRR && advVal > 0) advRR.value = advVal;
+                                        if (winRR && s1C.winPoints !== undefined) winRR.value = s1C.winPoints;
+                                        if (drawRR && s1C.drawPoints !== undefined) drawRR.value = s1C.drawPoints;
+                                        if (lossRR && s1C.lossPoints !== undefined) lossRR.value = s1C.lossPoints;
+                                        if (legsRR && s1C.legsCount !== undefined) legsRR.value = s1C.legsCount;
+                                    } else if (s1F === 'GROUP_STAGE') {
+                                        var advGR = document.getElementById('stage1AdvanceGR');
+                                        var winGR = document.getElementById('stage1WinPointsGR');
+                                        var drawGR = document.getElementById('stage1DrawPointsGR');
+                                        var lossGR = document.getElementById('stage1LossPointsGR');
+                                        var legsGR = document.getElementById('stage1LegsCountGR');
+                                        if (advGR && advVal > 0) advGR.value = advVal;
+                                        if (winGR && s1C.winPoints !== undefined) winGR.value = s1C.winPoints;
+                                        if (drawGR && s1C.drawPoints !== undefined) drawGR.value = s1C.drawPoints;
+                                        if (lossGR && s1C.lossPoints !== undefined) lossGR.value = s1C.lossPoints;
+                                        if (legsGR && s1C.legsCount !== undefined) legsGR.value = s1C.legsCount;
+                                    } else if (s1F === 'SINGLE_ELIMINATION') {
+                                        var advSE = document.getElementById('stage1AdvanceSE');
+                                        if (advSE && advVal > 0) advSE.value = advVal;
+                                    } else if (s1F === 'DOUBLE_ELIMINATION') {
+                                        var advDE = document.getElementById('stage1AdvanceDE');
+                                        if (advDE && advVal > 0) advDE.value = advVal;
+                                    } else if (s1F === 'GSL') {
+                                        var advGSL = document.getElementById('stage1AdvanceGSL');
+                                        if (advGSL && advVal > 0) advGSL.value = advVal;
+                                    }
+                                    var advHidden = document.getElementById('advancingSeatsCount');
+                                    if (advHidden && advVal > 0) advHidden.value = advVal;
+                                    if (tournamentId && advVal > 0) {
+                                        localStorage.setItem('tourma_advance_count_' + tournamentId, String(advVal));
+                                        localStorage.setItem('tourma_cut_target_' + tournamentId, String(advVal));
+                                        if (s1F === 'GSL') localStorage.setItem('tourma_gsl_advance_count_' + tournamentId, String(advVal));
                                     }
                                     if (mCfg.stage2Config && s2F === 'ROUND_ROBIN') {
                                         var s2C = mCfg.stage2Config;
@@ -1041,7 +1053,9 @@
                                         method: 'POST',
                                         headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
                                         body: new URLSearchParams({action: 'copyConfiguration', tournamentId: tournamentId,
-                                            sourceTournamentId: tourney.id, multiConfig: document.getElementById('detailConfig').value}).toString()
+                                            sourceTournamentId: tourney.id,
+                                            advancingSeatsCount: document.getElementById('advancingSeatsCount').value,
+                                            multiConfig: document.getElementById('detailConfig').value}).toString()
                                     });
                                     var copyResult = await copyResponse.json();
                                     if (!copyResponse.ok || copyResult.status !== 'success') {
@@ -1733,14 +1747,16 @@
 
                                             var restoreStage = function (stageNum, sFormat, cfg) {
                                                 var prefix = 'stage' + stageNum;
-                                                if (!cfg) return;
+                                                cfg = cfg || {};
+                                                var fallbackAdv = stageNum === 1 ? parseInt(localStorage.getItem('tourma_advance_count_' + tournamentId) || '0', 10) : 0;
                                                 if (sFormat === 'ROUND_ROBIN') {
                                                     var el = document.getElementById(prefix + 'AdvanceRR');
                                                     var win = document.getElementById(prefix + 'WinPointsRR');
                                                     var draw = document.getElementById(prefix + 'DrawPointsRR');
                                                     var loss = document.getElementById(prefix + 'LossPointsRR');
                                                     var legs = document.getElementById(prefix + 'LegsCountRR');
-                                                    if (el && cfg.advanceCount) el.value = cfg.advanceCount;
+                                                    var rrAdv = cfg.advanceCount || fallbackAdv;
+                                                    if (el && rrAdv > 0) el.value = rrAdv;
                                                     if (win && cfg.winPoints !== undefined) win.value = cfg.winPoints;
                                                     if (draw && cfg.drawPoints !== undefined) draw.value = cfg.drawPoints;
                                                     if (loss && cfg.lossPoints !== undefined) loss.value = cfg.lossPoints;
@@ -1751,22 +1767,23 @@
                                                     var drawEl = document.getElementById(prefix + 'DrawPointsGR');
                                                     var lossEl = document.getElementById(prefix + 'LossPointsGR');
                                                     var legsEl = document.getElementById(prefix + 'LegsCountGR');
-                                                    if (advEl && cfg.totalAdvanceCount) advEl.value = cfg.totalAdvanceCount;
+                                                    var grAdv = cfg.totalAdvanceCount || cfg.advanceCount || fallbackAdv;
+                                                    if (advEl && grAdv > 0) advEl.value = grAdv;
                                                     if (winEl && cfg.winPoints !== undefined) winEl.value = cfg.winPoints;
                                                     if (drawEl && cfg.drawPoints !== undefined) drawEl.value = cfg.drawPoints;
                                                     if (lossEl && cfg.lossPoints !== undefined) lossEl.value = cfg.lossPoints;
                                                     if (legsEl && cfg.legsCount !== undefined) legsEl.value = cfg.legsCount;
                                                 } else if (sFormat === 'SINGLE_ELIMINATION') {
                                                     var el = document.getElementById(prefix + 'AdvanceSE');
-                                                    var cnt = (cfg && cfg.advanceCount) ? cfg.advanceCount : parseInt(localStorage.getItem('tourma_advance_count_' + tournamentId) || '0', 10);
+                                                    var cnt = cfg.advanceCount || fallbackAdv;
                                                     if (el && cnt > 0) el.value = cnt;
                                                 } else if (sFormat === 'DOUBLE_ELIMINATION') {
                                                     var el = document.getElementById(prefix + 'AdvanceDE');
-                                                    var cnt = (cfg && cfg.advanceCount) ? cfg.advanceCount : parseInt(localStorage.getItem('tourma_advance_count_' + tournamentId) || '0', 10);
+                                                    var cnt = cfg.advanceCount || fallbackAdv;
                                                     if (el && cnt > 0) el.value = cnt;
                                                 } else if (sFormat === 'GSL') {
                                                     var el = document.getElementById(prefix + 'AdvanceGSL');
-                                                    var cnt = (cfg && cfg.advanceCount) ? cfg.advanceCount : parseInt(localStorage.getItem('tourma_gsl_advance_count_' + tournamentId) || '0', 10);
+                                                    var cnt = cfg.advanceCount || parseInt(localStorage.getItem('tourma_gsl_advance_count_' + tournamentId) || '0', 10) || fallbackAdv;
                                                     if (el && cnt > 0) el.value = cnt;
                                                 }
                                             };

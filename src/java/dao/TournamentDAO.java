@@ -1064,9 +1064,12 @@ public class TournamentDAO {
                 ? "ORDER BY t.tournament_index_in_series DESC, t.created_at DESC "
                 : "ORDER BY t.created_at DESC ";
         String sql = "SELECT t.id, t.name, t.tournament_type, t.tier_name, t.tournament_index_in_series, t.created_at, "
-                + "ts.stage_format, ISNULL(tc.team_count, 0) AS team_count "
+                + "ISNULL(NULLIF(t.advancing_seats_count, 0), CASE WHEN ISJSON(t.stage2_teams) = 1 THEN (SELECT COUNT(*) FROM OPENJSON(t.stage2_teams)) ELSE 0 END) AS advancing_seats_count, "
+                + "t.multi_stage_config, t.series_points_config, "
+                + "ts.stage_format, ts2.stage2_format, ISNULL(tc.team_count, 0) AS team_count "
                 + "FROM tournaments t WITH (NOLOCK) "
                 + "OUTER APPLY (SELECT TOP 1 format AS stage_format FROM tournament_stages WITH (NOLOCK) WHERE tournament_id = t.id ORDER BY stage_order ASC) ts "
+                + "OUTER APPLY (SELECT TOP 1 format AS stage2_format FROM tournament_stages WITH (NOLOCK) WHERE tournament_id = t.id AND stage_order = 2) ts2 "
                 + "LEFT JOIN (SELECT tournament_id, COUNT(*) AS team_count FROM teams WITH (NOLOCK) GROUP BY tournament_id) tc ON tc.tournament_id = t.id "
                 + where + order + "OPTION (MAXDOP 1)";
         try (Connection conn = new DBContext().getConnection();
@@ -1084,7 +1087,11 @@ public class TournamentDAO {
                     t.setTournamentIndexInSeries(rs.getInt("tournament_index_in_series"));
                     t.setCreatedAt(rs.getTimestamp("created_at"));
                     t.setFormat(rs.getString("stage_format"));
+                    t.setStage2Format(rs.getString("stage2_format"));
                     t.setTeamCount(rs.getInt("team_count"));
+                    t.setAdvancingSeatsCount(rs.getInt("advancing_seats_count"));
+                    t.setMultiStageConfig(rs.getString("multi_stage_config"));
+                    t.setSeriesPointsConfig(rs.getString("series_points_config"));
                     list.add(t);
                 }
             }
