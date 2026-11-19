@@ -10,7 +10,7 @@
   - Accents & Branches: `var(--ui-accent)`, `var(--ui-accent-hover)`, `var(--ui-accent-soft)`, `var(--ui-on-accent)`, `var(--ui-bracket-lower-accent)`, `var(--ui-bracket-lower-soft)`, `var(--ui-bracket-final-accent)`.
   - Tiers & Semantics: `var(--ui-tier-s)`, `var(--ui-tier-a)`, `var(--ui-tier-b)`, `var(--ui-tier-c)`, `var(--ui-tier-d)`, `var(--ui-success)` (`#16a34a`), `var(--ui-danger)` (`#be123c`).
 - **Flat & Clean Aesthetic**: Keep surfaces flat and crisp (`box-shadow: none` on banners/text where specified), using `1px` (`--ui-line`) borders and `--ui-surface` / `--ui-surface-alt` layering.
-- **Text Rule (MANDATORY)**: Keep copy concise; never include redundant explanation text in parentheses `(...)` on labels, titles, buttons, or views.
+- **Text Rule (MANDATORY)**: Keep copy concise; never include redundant explanation text in parentheses `(...)` on labels, titles, buttons, or views. Never prefix rank numbers, seeds, or sub-tournament indices with `#` (e.g., write `1`, `3-4`, `Seed 1`, not `#1`, `#3-4`, `Seed #1`).
 - **Scale & Navbar Layout**: Keep UI components compact; center-align desktop header menu links (`64px` height, `grid-template-columns: 1fr auto 1fr`) with appearance switches on the right.
 - **Views Location**: Place all view JSP files directly inside `web/common/`. Never create duplicate wrapper JSP files in root `web/`.
 

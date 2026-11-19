@@ -1,4 +1,4 @@
-﻿<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="model.Series, model.Tournament, dao.SeriesDAO, dao.TournamentDAO, dao.ParticipantDAO, model.Team, java.util.List, java.util.Map, java.util.HashMap"%>
 <%
@@ -195,6 +195,9 @@
                                 </a>
                                 <a href="${pageContext.request.contextPath}/rolling/point-config?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Set điểm thưởng">
                                     <i class="fa-solid fa-star text-gold"></i> Set Điểm
+                                </a>
+                                <a href="${pageContext.request.contextPath}/rolling/tournament-summary?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Tổng kết giải đấu">
+                                    <i class="fa-solid fa-medal text-gold"></i> Tổng Kết
                                 </a>
                                 <a href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=<%= t.getId() %>" class="btn-view-bracket-card">
                                     Trận Đấu ➔
