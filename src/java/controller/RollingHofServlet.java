@@ -80,6 +80,62 @@ public class RollingHofServlet extends HttpServlet {
         public List<String> getTournamentNames() { return tournamentNames; }
     }
 
+    public static class MatrixTourneyColDTO {
+        private String id;
+        private String name;
+        private String tier;
+        private String summaryUrl;
+
+        public MatrixTourneyColDTO(String id, String name, String tier, String summaryUrl) {
+            this.id = id;
+            this.name = name;
+            this.tier = tier;
+            this.summaryUrl = summaryUrl;
+        }
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public String getTier() { return tier; }
+        public String getSummaryUrl() { return summaryUrl; }
+    }
+
+    public static class MatrixCellDTO {
+        private String code;
+        private boolean bold;
+        private boolean winner;
+        private boolean finalist;
+        private boolean participated;
+
+        public MatrixCellDTO(String code, boolean bold, boolean winner, boolean finalist, boolean participated) {
+            this.code = code;
+            this.bold = bold;
+            this.winner = winner;
+            this.finalist = finalist;
+            this.participated = participated;
+        }
+        public String getCode() { return code; }
+        public boolean isBold() { return bold; }
+        public boolean isWinner() { return winner; }
+        public boolean isFinalist() { return finalist; }
+        public boolean isParticipated() { return participated; }
+    }
+
+    public static class MatrixRowDTO {
+        private int bxhRank;
+        private String partnerId;
+        private String teamName;
+        private List<MatrixCellDTO> cells = new ArrayList<>();
+
+        public MatrixRowDTO(int bxhRank, String partnerId, String teamName) {
+            this.bxhRank = bxhRank;
+            this.partnerId = partnerId;
+            this.teamName = teamName;
+        }
+        public int getBxhRank() { return bxhRank; }
+        public String getPartnerId() { return partnerId; }
+        public String getTeamName() { return teamName; }
+        public List<MatrixCellDTO> getCells() { return cells; }
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -112,6 +168,8 @@ public class RollingHofServlet extends HttpServlet {
         List<PartnerParticipant> partnerList = null;
         List<TournamentChampionDTO> tourneyChampList = new ArrayList<>();
         List<TeamChampionStatsDTO> topChampionsList = new ArrayList<>();
+        List<MatrixTourneyColDTO> performanceMatrixCols = new ArrayList<>();
+        List<MatrixRowDTO> performanceMatrixRows = new ArrayList<>();
 
         if (series != null) {
             seriesId = series.getId();
@@ -132,6 +190,7 @@ public class RollingHofServlet extends HttpServlet {
             }
             Map<String, TeamChampionStatsDTO> statsMap = new HashMap<>();
             Map<String, Integer> teamCumulativeChamps = new HashMap<>();
+            Map<String, List<String>> stageFormatsMap = new TournamentDAO().getStageFormatsBySeriesId(seriesId);
 
             if (tournamentsList != null) {
                 for (Tournament t : tournamentsList) {
@@ -158,20 +217,7 @@ public class RollingHofServlet extends HttpServlet {
                         }
                     }
 
-                    // Build Final Stage Url
-                    String isMulti = t.getTournamentType();
-                    boolean multi = "MULTI_STAGE".equalsIgnoreCase(isMulti);
-                    String s1 = (t.getFormat() != null) ? t.getFormat().toUpperCase() : "SINGLE_ELIMINATION";
-                    String s2 = "SINGLE_ELIMINATION";
-                    String targetPage = "single-elimination.jsp";
-
-                    String finalFmt = multi ? s2 : s1;
-                    if (finalFmt.contains("DOUBLE") || "DE".equals(finalFmt)) targetPage = "double-elimination.jsp";
-                    else if (finalFmt.contains("ROUND") || "RR".equals(finalFmt)) targetPage = "round-robin.jsp";
-                    else if (finalFmt.contains("GROUP") || "GS".equals(finalFmt)) targetPage = "group-stage.jsp";
-                    else if (finalFmt.contains("SWISS") || "SW".equals(finalFmt)) targetPage = "swiss-stage.jsp";
-
-                    String finalStageUrl = request.getContextPath() + "/common/" + targetPage + "?id=" + t.getId() + (multi ? "&stage=2" : "") + "&seriesId=" + seriesId;
+                    String finalStageUrl = buildLatestActiveStageUrl(request.getContextPath(), t, stageFormatsMap.get(t.getId()), seriesId, champName != null);
                     String status = (champName != null) ? "COMPLETED" : "ONGOING";
 
                     int champOrdinal = 0;
@@ -223,6 +269,81 @@ public class RollingHofServlet extends HttpServlet {
                 }
                 return Integer.compare(b.getTierCCount(), a.getTierCCount());
             });
+
+            if (tournamentsList != null) {
+                List<Map<String, Team>> tourneyTeamLookupList = new ArrayList<>();
+                List<Map<String, service.TournamentPlacementService.PlacementResult>> tourneyResultsList = new ArrayList<>();
+
+                for (Tournament t : tournamentsList) {
+                    String tier = (t.getTierName() != null && !t.getTierName().trim().isEmpty())
+                            ? t.getTierName().trim().toUpperCase(java.util.Locale.ROOT) : "A";
+                    Map<String, Integer> tPlacements = rwps.getCachedTournamentPlacements(t.getId());
+                    boolean hasChamp = tPlacements != null && tPlacements.containsValue(1);
+                    String latestStageUrl = buildLatestActiveStageUrl(request.getContextPath(), t, stageFormatsMap.get(t.getId()), seriesId, hasChamp);
+                    performanceMatrixCols.add(new MatrixTourneyColDTO(t.getId(), t.getName(), tier, latestStageUrl));
+
+                    List<Team> tTeams = rwps.getCachedTeamsByTournamentId(t.getId());
+                    Map<String, Team> lookup = new HashMap<>();
+                    if (tTeams != null) {
+                        for (Team tm : tTeams) {
+                            if (tm.getPartnerParticipantId() != null && !tm.getPartnerParticipantId().trim().isEmpty()) {
+                                lookup.put("P:" + tm.getPartnerParticipantId().trim().toLowerCase(java.util.Locale.ROOT), tm);
+                            }
+                            if (tm.getRawName() != null && !tm.getRawName().trim().isEmpty()) {
+                                lookup.put("N:" + tm.getRawName().trim().toLowerCase(java.util.Locale.ROOT), tm);
+                            }
+                            if (tm.getNormalizedName() != null && !tm.getNormalizedName().trim().isEmpty()) {
+                                lookup.put("N:" + tm.getNormalizedName().trim().toLowerCase(java.util.Locale.ROOT), tm);
+                            }
+                        }
+                    }
+                    tourneyTeamLookupList.add(lookup);
+                    tourneyResultsList.add(service.TournamentPlacementService.getInstance().getTournamentResults(t.getId()));
+                }
+
+                List<service.RollingWindowPointService.RollingStandingDTO> currentStandings = rwps.calculateSeriesStandingsWithExpiry(seriesId);
+                if (currentStandings != null) {
+                    for (int rIdx = 0; rIdx < currentStandings.size(); rIdx++) {
+                        service.RollingWindowPointService.RollingStandingDTO st = currentStandings.get(rIdx);
+                        int rank = st.getRank() > 0 ? st.getRank() : (rIdx + 1);
+                        String pId = st.getPartnerParticipantId();
+                        String tName = st.getTeamName() != null ? st.getTeamName().trim() : "";
+                        MatrixRowDTO row = new MatrixRowDTO(rank, pId, tName);
+
+                        String pKey = (pId != null && !pId.trim().isEmpty()) ? ("P:" + pId.trim().toLowerCase(java.util.Locale.ROOT)) : null;
+                        String nKey = !tName.isEmpty() ? ("N:" + tName.toLowerCase(java.util.Locale.ROOT)) : null;
+
+                        for (int cIdx = 0; cIdx < tournamentsList.size(); cIdx++) {
+                            Tournament t = tournamentsList.get(cIdx);
+                            String tier = performanceMatrixCols.get(cIdx).getTier();
+                            Map<String, Team> lookup = tourneyTeamLookupList.get(cIdx);
+                            Team matchedTeam = null;
+                            if (pKey != null) matchedTeam = lookup.get(pKey);
+                            if (matchedTeam == null && nKey != null) matchedTeam = lookup.get(nKey);
+
+                            if (matchedTeam == null) {
+                                row.getCells().add(new MatrixCellDTO("-", false, false, false, false));
+                            } else {
+                                Map<String, service.TournamentPlacementService.PlacementResult> resMap = tourneyResultsList.get(cIdx);
+                                service.TournamentPlacementService.PlacementResult pr = resMap != null ? resMap.get(matchedTeam.getId()) : null;
+                                if (pr == null && resMap != null && !tName.isEmpty()) {
+                                    pr = resMap.get(tName.toLowerCase(java.util.Locale.ROOT));
+                                }
+                                if (pr == null) {
+                                    row.getCells().add(new MatrixCellDTO("-", false, false, false, true));
+                                } else {
+                                    String code = formatShortPlacementCode(pr);
+                                    boolean bold = isBoldPlacement(pr, tier);
+                                    boolean isWin = "W".equals(code);
+                                    boolean isFin = "F".equals(code);
+                                    row.getCells().add(new MatrixCellDTO(code, bold, isWin, isFin, true));
+                                }
+                            }
+                        }
+                        performanceMatrixRows.add(row);
+                    }
+                }
+            }
         }
 
         request.setAttribute("series", series);
@@ -230,8 +351,73 @@ public class RollingHofServlet extends HttpServlet {
         request.setAttribute("partnerList", partnerList);
         request.setAttribute("tourneyChampList", tourneyChampList);
         request.setAttribute("topChampionsList", topChampionsList);
+        request.setAttribute("performanceMatrixCols", performanceMatrixCols);
+        request.setAttribute("performanceMatrixRows", performanceMatrixRows);
 
         request.getRequestDispatcher("/common/rolling/rolling-hof.jsp").forward(request, response);
+    }
+
+    private static String buildLatestActiveStageUrl(
+            String contextPath,
+            Tournament t,
+            List<String> stageFormats,
+            String seriesId,
+            boolean hasChampion) {
+        boolean multi = "MULTI_STAGE".equalsIgnoreCase(t.getTournamentType());
+        String s1 = (stageFormats != null && !stageFormats.isEmpty() && stageFormats.get(0) != null)
+                ? stageFormats.get(0).toUpperCase(java.util.Locale.ROOT)
+                : (t.getFormat() != null ? t.getFormat().toUpperCase(java.util.Locale.ROOT) : "SINGLE_ELIMINATION");
+        String s2 = (stageFormats != null && stageFormats.size() > 1 && stageFormats.get(1) != null)
+                ? stageFormats.get(1).toUpperCase(java.util.Locale.ROOT)
+                : (t.getStage2Format() != null ? t.getStage2Format().toUpperCase(java.util.Locale.ROOT) : "SINGLE_ELIMINATION");
+
+        boolean stage2Active = multi && (hasChampion
+                || "COMPLETED".equalsIgnoreCase(t.getStatus())
+                || "FINISHED".equalsIgnoreCase(t.getStatus())
+                || "LOCKED".equalsIgnoreCase(t.getStage1Status())
+                || "COMPLETED".equalsIgnoreCase(t.getStage1Status())
+                || (t.getStage2Teams() != null && t.getStage2Teams().trim().length() > 2));
+        String activeFmt = multi ? (stage2Active ? s2 : s1) : s1;
+        String targetPage = "single-elimination.jsp";
+        if (activeFmt.contains("DOUBLE") || "DE".equals(activeFmt)) targetPage = "double-elimination.jsp";
+        else if (activeFmt.contains("ROUND") || "RR".equals(activeFmt)) targetPage = "round-robin.jsp";
+        else if (activeFmt.contains("GROUP") || "GS".equals(activeFmt)) targetPage = "group-stage.jsp";
+        else if ("GSL".equals(activeFmt)) targetPage = "gsl.jsp";
+        else if (activeFmt.contains("SWISS") || "SW".equals(activeFmt)) targetPage = "swiss-stage.jsp";
+
+        String stageQuery = multi ? ("&stage=" + (stage2Active ? "2" : "1")) : ("&format=" + activeFmt);
+        return contextPath + "/common/" + targetPage + "?id=" + t.getId() + stageQuery + "&seriesId=" + seriesId;
+    }
+
+    private static String formatShortPlacementCode(service.TournamentPlacementService.PlacementResult pr) {
+        if (pr == null) return "-";
+        String key = pr.pointKey != null ? pr.pointKey : "";
+        String ach = pr.getAchievement() != null ? pr.getAchievement() : "";
+        if (key.startsWith("swiss_")) return key.substring(6);
+        if ("stage1_eliminated".equals(key)) return "GS";
+        if ("Loser's Qualification".equalsIgnoreCase(ach) || "Group Qualification".equalsIgnoreCase(ach)) return "LQ";
+        if (ach.startsWith("Loser's Round ")) {
+            return "LR" + ach.substring("Loser's Round ".length()).trim();
+        }
+        if (pr.rank == 1) return "W";
+        if (pr.rank == 2) return "F";
+        if (pr.rank <= 4) return "SF";
+        if (pr.rank <= 8) return "QF";
+        int size = 16;
+        while (size < pr.rank) size *= 2;
+        return "RO" + size;
+    }
+
+    private static boolean isBoldPlacement(service.TournamentPlacementService.PlacementResult pr, String tier) {
+        if (pr == null || pr.rank <= 0) return false;
+        String key = pr.pointKey != null ? pr.pointKey : "";
+        if (key.startsWith("s1_") || key.startsWith("swiss_") || "stage1_eliminated".equals(key)) {
+            return false;
+        }
+        String t = tier != null ? tier.trim().toUpperCase(java.util.Locale.ROOT) : "A";
+        if ("S".equals(t) || "A".equals(t)) return pr.rank <= 16;
+        if ("B".equals(t)) return pr.rank <= 8;
+        return pr.rank <= 4;
     }
 
     @Override

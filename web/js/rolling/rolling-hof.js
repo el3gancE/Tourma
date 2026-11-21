@@ -720,7 +720,334 @@
     window.filterRightTable(true);
   }
 
-  document.addEventListener('DOMContentLoaded', calculateAndSyncHallOfFame);
+  // =========================================================================
+  // PERFORMANCE MATRIX TABLE: CLICK-HEADER SORT (BXH / A-Z / Z-A),
+  // TIER/PHASE/WINDOW COLUMN FILTERS, SEARCH, DUAL SCROLLBAR,
+  // HIGH-SPEED SMOOTH DRAG-TO-SCROLL, AND STICKY FLOATING HEADER
+  // =========================================================================
+  window.currentHofMatrixSort = 'bxh';
+
+  window.toggleHofMatrixNameSort = function () {
+    var next = window.currentHofMatrixSort === 'bxh' ? 'az'
+      : (window.currentHofMatrixSort === 'az' ? 'za' : 'bxh');
+    window.setHofMatrixSort(next);
+  };
+
+  window.setHofMatrixSort = function (mode) {
+    window.currentHofMatrixSort = mode || 'bxh';
+    var thName = document.getElementById('hofMatrixThName');
+    var ind = document.getElementById('hofMatrixNameSortInd');
+    if (thName && ind) {
+      var isNameSorted = (window.currentHofMatrixSort === 'az' || window.currentHofMatrixSort === 'za');
+      thName.classList.toggle('is-sorted', isNameSorted);
+      ind.textContent = window.currentHofMatrixSort === 'az' ? '↑'
+        : (window.currentHofMatrixSort === 'za' ? '↓' : '↕');
+    }
+    var fixedTbody = document.querySelector('#hofMatrixFixedTable tbody');
+    var dataTbody = document.querySelector('#hofMatrixTable tbody');
+    if (!fixedTbody || !dataTbody) return;
+    var fixedRows = Array.from(fixedTbody.querySelectorAll('tr[data-row-idx]'));
+    var dataByIdx = new Map();
+    dataTbody.querySelectorAll('tr[data-row-idx]').forEach(function (r) {
+      dataByIdx.set(r.getAttribute('data-row-idx'), r);
+    });
+    fixedRows.sort(function (a, b) {
+      if (window.currentHofMatrixSort === 'az' || window.currentHofMatrixSort === 'za') {
+        var nameA = (a.getAttribute('data-team-name') || '').trim();
+        var nameB = (b.getAttribute('data-team-name') || '').trim();
+        var cmp = nameA.localeCompare(nameB, 'vi', { sensitivity: 'base' });
+        return window.currentHofMatrixSort === 'az' ? cmp : -cmp;
+      }
+      var rankA = parseInt(a.getAttribute('data-bxh-rank') || '9999', 10);
+      var rankB = parseInt(b.getAttribute('data-bxh-rank') || '9999', 10);
+      return rankA - rankB;
+    });
+    var fixedFrag = document.createDocumentFragment();
+    var dataFrag = document.createDocumentFragment();
+    fixedRows.forEach(function (r) {
+      fixedFrag.appendChild(r);
+      var dr = dataByIdx.get(r.getAttribute('data-row-idx'));
+      if (dr) dataFrag.appendChild(dr);
+    });
+    fixedTbody.appendChild(fixedFrag);
+    dataTbody.appendChild(dataFrag);
+    window.filterHofMatrixTable();
+  };
+
+  window.filterHofMatrixTable = function () {
+    var input = document.getElementById('hofMatrixSearch');
+    var q = input ? input.value.trim().toLowerCase() : '';
+    var fixedRows = document.querySelectorAll('#hofMatrixFixedTable tbody tr[data-row-idx]');
+    var dataRows = document.querySelectorAll('#hofMatrixTable tbody tr[data-row-idx]');
+    var visibleCount = 0;
+    for (var i = 0; i < fixedRows.length; i++) {
+      var row = fixedRows[i];
+      var name = (row.getAttribute('data-team-name') || '').toLowerCase();
+      var show = !q || name.indexOf(q) !== -1;
+      row.style.display = show ? '' : 'none';
+      if (dataRows[i]) dataRows[i].style.display = show ? '' : 'none';
+      if (show) visibleCount++;
+    }
+    var badge = document.getElementById('hofMatrixTeamCount');
+    if (badge) badge.textContent = visibleCount;
+  };
+
+  function matchesMatrixCol(index, size, filters, tier) {
+    if (filters.tier && String(tier || 'A').toUpperCase() !== filters.tier.toUpperCase()) return false;
+    if (filters.phase && Math.ceil(index / size) !== Number(filters.phase)) return false;
+    if (filters.window && (index > Number(filters.window) || index < Math.max(1, Number(filters.window) - size + 1))) return false;
+    return (!filters.from || index >= Number(filters.from)) && (!filters.to || index <= Number(filters.to));
+  }
+
+  function initHofPerformanceMatrix() {
+    var fixedTable = document.getElementById('hofMatrixFixedTable');
+    var fixedThead = fixedTable ? fixedTable.querySelector('thead') : null;
+    var table = document.getElementById('hofMatrixTable');
+    var thead = table ? table.querySelector('thead') : null;
+    var scrollWrap = document.getElementById('hofMatrixScroll');
+    var topScroll = document.getElementById('hofMatrixTopScroll');
+    var topDummy = document.getElementById('hofMatrixTopDummy');
+    if (!table || !thead || !scrollWrap || !topScroll || !topDummy) return;
+
+    function syncTopScrollbarWidth() {
+      topDummy.style.width = table.scrollWidth + 'px';
+    }
+
+    // Column filters (Tier, Phase, Window, From, To) matching Team Profile
+    var filterForm = document.getElementById('hofMatrixFilters');
+    if (filterForm) {
+      var size = Number(window.seriesPhaseSize) || 3;
+      var colThs = Array.from(thead.querySelectorAll('th.hof-matrix-col-tourney'));
+      var tournaments = colThs.map(function (th, i) {
+        return {
+          colPos: i + 1,
+          nthChild: i + 1,
+          index: i + 1,
+          name: th.textContent.trim(),
+          tier: String(th.getAttribute('data-tier') || 'A').toUpperCase()
+        };
+      });
+
+      var tierSel = document.getElementById('hofMatrixTier');
+      var phaseSel = document.getElementById('hofMatrixPhase');
+      var winSel = document.getElementById('hofMatrixWindow');
+      var fromSel = document.getElementById('hofMatrixFrom');
+      var toSel = document.getElementById('hofMatrixTo');
+      var resetBtn = document.getElementById('hofMatrixReset');
+      var countEl = document.getElementById('hofMatrixTourneyCount');
+
+      var addOpt = function (sel, val, label) {
+        if (!sel) return;
+        var o = document.createElement('option');
+        o.value = String(val);
+        o.textContent = label;
+        sel.appendChild(o);
+      };
+
+      var tierOrder = ['S', 'A', 'B', 'C', 'D'];
+      var tiers = Array.from(new Set(tournaments.map(function (t) { return t.tier; })));
+      tiers.sort(function (a, b) {
+        var ai = tierOrder.indexOf(a), bi = tierOrder.indexOf(b);
+        return (ai < 0 ? tierOrder.length : ai) - (bi < 0 ? tierOrder.length : bi) || a.localeCompare(b);
+      }).forEach(function (tName) { addOpt(tierSel, tName, 'Tier ' + tName); });
+
+      var phases = new Set();
+      tournaments.forEach(function (t) {
+        var p = Math.ceil(t.index / size);
+        if (!phases.has(p)) {
+          phases.add(p);
+          addOpt(phaseSel, p, 'Phase ' + p + ' · ' + ((p - 1) * size + 1) + '–' + (p * size));
+        }
+        var label = t.index + ' · ' + t.name;
+        addOpt(fromSel, t.index, label);
+        addOpt(toSel, t.index, label);
+      });
+
+      tournaments.slice().reverse().forEach(function (t) {
+        addOpt(winSel, t.index, Math.max(1, t.index - size + 1) + '–' + t.index + ' · ' + t.name);
+      });
+
+      var styleEl = document.getElementById('hofMatrixColFilterStyle');
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'hofMatrixColFilterStyle';
+        document.head.appendChild(styleEl);
+      }
+
+      var applyColFilters = function (resetScroll) {
+        var invalid = Boolean(fromSel.value && toSel.value && Number(fromSel.value) > Number(toSel.value));
+        fromSel.setAttribute('aria-invalid', String(invalid));
+        toSel.setAttribute('aria-invalid', String(invalid));
+        var filters = {
+          tier: tierSel.value,
+          phase: phaseSel.value,
+          window: winSel.value,
+          from: fromSel.value,
+          to: toSel.value
+        };
+        var hiddenNth = [];
+        var visibleCols = 0;
+        tournaments.forEach(function (t) {
+          var show = !invalid && matchesMatrixCol(t.index, size, filters, t.tier);
+          if (show) {
+            visibleCols++;
+          } else {
+            hiddenNth.push(':nth-child(' + t.nthChild + ')');
+          }
+        });
+        styleEl.textContent = hiddenNth.length
+          ? ('#hofMatrixTable :is(th,td):is(' + hiddenNth.join(',') + '){display:none;}')
+          : '';
+        if (countEl) {
+          countEl.textContent = invalid
+            ? 'Giải bắt đầu phải trước hoặc bằng giải kết thúc.'
+            : (visibleCols + '/' + tournaments.length + ' giải');
+        }
+        syncTopScrollbarWidth();
+        if (resetScroll) {
+          scrollWrap.scrollLeft = 0;
+          topScroll.scrollLeft = 0;
+        }
+      };
+
+      filterForm.addEventListener('change', function () { applyColFilters(true); });
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+          tierSel.value = phaseSel.value = winSel.value = fromSel.value = toSel.value = '';
+          applyColFilters(true);
+        });
+      }
+      applyColFilters(false);
+    }
+
+    var syncingScroll = false;
+    var isDown = false;
+    var hasDragged = false;
+    var lastX = 0;
+    var velocity = 0;
+    var momentumRaf = 0;
+    var DRAG_MULT = 1.9;
+
+    topScroll.addEventListener('scroll', function () {
+      if (syncingScroll || isDown) return;
+      syncingScroll = true;
+      scrollWrap.scrollLeft = topScroll.scrollLeft;
+      syncingScroll = false;
+    }, { passive: true });
+
+    scrollWrap.addEventListener('scroll', function () {
+      if (syncingScroll || isDown) return;
+      syncingScroll = true;
+      topScroll.scrollLeft = scrollWrap.scrollLeft;
+      syncingScroll = false;
+    }, { passive: true });
+
+    function stopMomentum() {
+      if (momentumRaf) {
+        window.cancelAnimationFrame(momentumRaf);
+        momentumRaf = 0;
+      }
+    }
+
+    function stepMomentum() {
+      if (Math.abs(velocity) < 0.5 || isDown) {
+        momentumRaf = 0;
+        topScroll.scrollLeft = scrollWrap.scrollLeft;
+        return;
+      }
+      scrollWrap.scrollLeft -= velocity;
+      velocity *= 0.92;
+      momentumRaf = window.requestAnimationFrame(stepMomentum);
+    }
+
+    scrollWrap.addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
+      stopMomentum();
+      isDown = true;
+      hasDragged = false;
+      lastX = e.clientX;
+      velocity = 0;
+    });
+
+    window.addEventListener('mousemove', function (e) {
+      if (!isDown) return;
+      var dx = e.clientX - lastX;
+      if (!hasDragged && Math.abs(dx) > 2) {
+        hasDragged = true;
+        scrollWrap.classList.add('is-dragging');
+      }
+      if (hasDragged) {
+        lastX = e.clientX;
+        var step = dx * DRAG_MULT;
+        velocity = velocity * 0.4 + step * 0.6;
+        scrollWrap.scrollLeft -= step;
+      }
+    }, { passive: true });
+
+    window.addEventListener('mouseup', function () {
+      if (!isDown) return;
+      isDown = false;
+      scrollWrap.classList.remove('is-dragging');
+      topScroll.scrollLeft = scrollWrap.scrollLeft;
+      if (hasDragged) {
+        if (Math.abs(velocity) > 1.5) {
+          momentumRaf = window.requestAnimationFrame(stepMomentum);
+        }
+        setTimeout(function () { hasDragged = false; }, 0);
+      }
+    });
+
+    scrollWrap.addEventListener('click', function (e) {
+      if (hasDragged) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+
+    var stickyRafId = 0;
+    function updateStickyTheadPosition() {
+      stickyRafId = 0;
+      var nav = document.querySelector('.navbar');
+      var navBottom = nav ? Math.max(0, nav.getBoundingClientRect().bottom) : 0;
+      var tableRect = table.getBoundingClientRect();
+      var theadHeight = thead.offsetHeight || 30;
+      var maxOffset = Math.max(0, tableRect.height - theadHeight - 30);
+      if (tableRect.top < navBottom && tableRect.bottom > (navBottom + theadHeight + 20)) {
+        var offset = Math.round(Math.min(maxOffset, navBottom - tableRect.top));
+        var tStr = 'translate3d(0,' + offset + 'px,0)';
+        thead.style.transform = tStr;
+        if (fixedThead) fixedThead.style.transform = tStr;
+      } else {
+        thead.style.transform = '';
+        if (fixedThead) fixedThead.style.transform = '';
+      }
+    }
+
+    function scheduleStickyThead() {
+      if (!stickyRafId) {
+        stickyRafId = window.requestAnimationFrame(updateStickyTheadPosition);
+      }
+    }
+
+    syncTopScrollbarWidth();
+    updateStickyTheadPosition();
+    window.addEventListener('resize', function () {
+      syncTopScrollbarWidth();
+      scheduleStickyThead();
+    });
+    window.addEventListener('scroll', scheduleStickyThead, { passive: true });
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(function () {
+        syncTopScrollbarWidth();
+        scheduleStickyThead();
+      }).observe(table);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    calculateAndSyncHallOfFame();
+    initHofPerformanceMatrix();
+  });
   setTimeout(calculateAndSyncHallOfFame, 50);
   setTimeout(calculateAndSyncHallOfFame, 200);
 })();

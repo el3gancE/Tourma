@@ -112,9 +112,6 @@
                 <% if (!isCompleted) { %>
                 <section class="summary-incomplete-alert" role="alert">
                     <div class="summary-alert-body">
-                        <span class="summary-alert-icon" aria-hidden="true">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                        </span>
                         <div>
                             <h2 class="summary-alert-title">Giải đấu chưa hoàn tất</h2>
                             <p class="summary-alert-desc">
@@ -123,43 +120,30 @@
                             </p>
                         </div>
                     </div>
-                    <a href="<%= esc(activeBracketUrl) %>" class="summary-alert-action">
-                        <span>Đi Tới Trận Đấu</span>
-                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                    </a>
+                    <a href="<%= esc(activeBracketUrl) %>" class="summary-alert-action">Đi Tới Trận Đấu</a>
                 </section>
                 <% } else { %>
-                <section class="summary-rounds-card" aria-labelledby="summaryRoundsHeading">
-                    <div class="summary-rounds-top">
-                        <h2 class="summary-rounds-heading" id="summaryRoundsHeading">
-                            <i class="fa-solid fa-medal" aria-hidden="true"></i>
-                            <span>Kết Quả Theo Vòng</span>
-                        </h2>
-                        <span class="summary-rounds-count"><%= teamCount %> đội</span>
-                    </div>
-
+                <section aria-label="Kết quả theo vòng">
                     <div class="summary-rounds-stack">
                         <% if (roundGroups != null && !roundGroups.isEmpty()) {
                             for (RoundGroupDTO group : roundGroups) {
                                 List<TeamSummaryDTO> gTeams = group.getTeams();
-                                boolean isChampGroup = group.getMinRank() == 1;
                         %>
                         <div class="summary-round-group" data-min-rank="<%= group.getMinRank() %>">
                             <div class="summary-round-header">
-                                <span class="summary-round-title">
-                                    <i class="fa-solid <%= isChampGroup ? "fa-crown" : "fa-layer-group" %>" aria-hidden="true"></i>
-                                    <span><%= esc(group.getGroupTitle()) %></span>
-                                </span>
+                                <span class="summary-round-title"><%= esc(group.getGroupTitle()) %></span>
                                 <span class="summary-round-meta"><%= gTeams.size() %> đội</span>
                             </div>
 
                             <div class="summary-round-items">
                                 <% for (TeamSummaryDTO tm : gTeams) {
                                     String profileUrl = "";
-                                    if (tm.getPartnerParticipantId() != null && !tm.getPartnerParticipantId().trim().isEmpty()) {
-                                        profileUrl = request.getContextPath() + "/team-profile?id=" + esc(tm.getPartnerParticipantId()) + "&seriesId=" + esc(seriesIdVal);
-                                    } else if (!seriesIdVal.isEmpty() && tm.getTeamName() != null && !tm.getTeamName().isEmpty()) {
-                                        profileUrl = request.getContextPath() + "/team-profile?teamName=" + java.net.URLEncoder.encode(tm.getTeamName(), "UTF-8") + "&seriesId=" + esc(seriesIdVal);
+                                    if (!seriesIdVal.isEmpty() && tm.getTeamName() != null && !tm.getTeamName().isEmpty()) {
+                                        profileUrl = request.getContextPath() + "/team-profile?seriesId=" + esc(seriesIdVal)
+                                                + "&teamName=" + java.net.URLEncoder.encode(tm.getTeamName(), "UTF-8");
+                                        if (tm.getPartnerParticipantId() != null && !tm.getPartnerParticipantId().trim().isEmpty()) {
+                                            profileUrl += "&partnerId=" + esc(tm.getPartnerParticipantId());
+                                        }
                                     }
                                     String wlText = tm.getWins() + "W - " + tm.getLosses() + "L" + (tm.getDraws() > 0 ? (" - " + tm.getDraws() + "D") : "");
                                 %>
@@ -186,7 +170,6 @@
                                         <% if (tm.getPointsEarned() > 0) { %>
                                         <span class="summary-team-pts">+<%= tm.getPointsEarned() %> pts</span>
                                         <% } %>
-                                        <span class="summary-team-path-hint">Hành trình <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>
                                     </span>
                                 </button>
                                 <% } %>
@@ -242,7 +225,6 @@
                         <div class="modal-header-bar">
                             <div>
                                 <div class="modal-header-title">
-                                    <i class="fa-solid fa-route" aria-hidden="true"></i>
                                     <span id="teamPathModalTitle">Hành Trình Đội</span>
                                 </div>
                                 <div class="path-modal-sub" id="teamPathModalSub"></div>
@@ -254,10 +236,7 @@
                         </div>
                         <div class="modal-footer-bar">
                             <button type="button" onclick="closeTeamPathModal()">Đóng</button>
-                            <a id="teamPathProfileBtn" href="#" class="btn-direct-profile">
-                                <i class="fa-solid fa-id-card" aria-hidden="true"></i>
-                                <span>Xem Hồ Sơ Đội</span>
-                            </a>
+                            <a id="teamPathProfileBtn" href="#" class="btn-direct-profile">Xem Hồ Sơ Đội</a>
                         </div>
                     </div>
                 </div>
