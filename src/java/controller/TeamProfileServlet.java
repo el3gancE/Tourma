@@ -182,11 +182,16 @@ public class TeamProfileServlet extends HttpServlet {
             throws ServletException, IOException {
 
         String seriesId = request.getParameter("seriesId");
-        if (seriesId == null || seriesId.trim().isEmpty()) {
-            seriesId = request.getParameter("id");
-        }
+        String idParam = request.getParameter("id");
         String teamNameParam = request.getParameter("teamName");
         String partnerIdParam = request.getParameter("partnerId");
+        if (seriesId == null || seriesId.trim().isEmpty()) {
+            seriesId = idParam;
+        } else if ((partnerIdParam == null || partnerIdParam.trim().isEmpty())
+                && idParam != null && !idParam.trim().isEmpty()
+                && !idParam.trim().equalsIgnoreCase(seriesId.trim())) {
+            partnerIdParam = idParam.trim();
+        }
 
         SeriesDAO seriesDAO = new SeriesDAO();
         TournamentDAO tournamentDAO = new TournamentDAO();

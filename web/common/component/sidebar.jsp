@@ -17,6 +17,7 @@
     else if ("/rolling/point-config".equals(sidebarRoute) || "/common/rolling/rolling-point-config.jsp".equals(sidebarRoute)) activeStep = "point-config";
     else if ("/common/round-robin-standings.jsp".equals(sidebarRoute)) activeStep = "2".equals(request.getParameter("stage")) ? "standings2" : "standings1";
     else if ("/common/group-standing.jsp".equals(sidebarRoute)) activeStep = "group-standing";
+    else if ("/rolling/tournament-summary".equals(sidebarRoute) || "/common/rolling/rolling-tournament-summary.jsp".equals(sidebarRoute)) activeStep = "summary";
     else if (java.util.Arrays.asList("/common/single-elimination.jsp", "/common/double-elimination.jsp", "/common/swiss-stage.jsp", "/common/gsl.jsp", "/common/group-stage.jsp", "/common/round-robin.jsp").contains(sidebarRoute)) activeStep = "bracket";
     String tournamentId = request.getParameter("id");
     if (tournamentId == null) tournamentId = "";
@@ -288,6 +289,17 @@
                 <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu & Tỉ Số" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "Vòng Bảng & Tỉ Số" : ("GSL".equalsIgnoreCase(format) ? "Bảng Đấu GSL & Tỉ Số" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "Vòng Swiss & Tỉ Số" : "Sơ Đồ Nhánh & Tỉ Số"))) %></span>
             </a>
         </li>
+
+        <% if (hasSeries) { %>
+        <!-- TỔNG KẾT GIẢI ĐẤU -->
+        <li class="sidebar-menu-item" id="sidebarMenuSummary">
+            <a href="${pageContext.request.contextPath}/rolling/tournament-summary?id=<%= tournamentId %>&seriesId=<%= seriesId %>"
+               class="sidebar-menu-link <%= "summary".equals(activeStep) ? "active" : "" %>">
+                <i class="fa-solid fa-medal menu-icon text-gold"></i>
+                <span>Tổng Kết Giải Đấu</span>
+            </a>
+        </li>
+        <% } %>
     </ul>
     </nav>
     <% } %>

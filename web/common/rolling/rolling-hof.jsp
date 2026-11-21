@@ -1,7 +1,7 @@
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="service.NumberOneHistory.Leader, service.NumberOneHistory.Reign"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="model.Series, model.Tournament, controller.RollingHofServlet.TournamentChampionDTO, controller.RollingHofServlet.TeamChampionStatsDTO, java.util.List"%>
+<%@page import="model.Series, model.Tournament, controller.RollingHofServlet.TournamentChampionDTO, controller.RollingHofServlet.TeamChampionStatsDTO, controller.RollingHofServlet.MatrixTourneyColDTO, controller.RollingHofServlet.MatrixRowDTO, controller.RollingHofServlet.MatrixCellDTO, java.util.List"%>
 <%
     String seriesIdVal = request.getParameter("id");
     if (seriesIdVal == null || seriesIdVal.trim().isEmpty()) {
@@ -17,6 +17,8 @@
     List<Tournament> tournamentsList = (List<Tournament>) request.getAttribute("tournamentsList");
     List<TournamentChampionDTO> tourneyChampList = (List<TournamentChampionDTO>) request.getAttribute("tourneyChampList");
     List<TeamChampionStatsDTO> topChampionsList = (List<TeamChampionStatsDTO>) request.getAttribute("topChampionsList");
+    List<MatrixTourneyColDTO> performanceMatrixCols = (List<MatrixTourneyColDTO>) request.getAttribute("performanceMatrixCols");
+    List<MatrixRowDTO> performanceMatrixRows = (List<MatrixRowDTO>) request.getAttribute("performanceMatrixRows");
 
 
     List<Leader> numberOneLeaders = (List<Leader>) request.getAttribute("numberOneHistory");
@@ -67,7 +69,7 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-hof.css?v=20261110-hof-equal-tables">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-hof.css?v=20261120-matrix4">
 <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
@@ -348,12 +350,127 @@
 
         </div>
 
+        <section class="hof-card-panel hof-matrix-panel" aria-labelledby="hofMatrixTitle">
+            <div class="hof-panel-header hof-matrix-header">
+                <div class="hof-panel-title-wrap">
+                    <h2 class="hof-panel-title" id="hofMatrixTitle">Thành tích qua từng giải</h2>
+                    <span class="hof-panel-badge" id="hofMatrixTeamCount"><%= performanceMatrixRows != null ? performanceMatrixRows.size() : 0 %></span>
+                </div>
+                <div class="hof-matrix-controls">
+                    <div class="hof-search-box">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <input type="search" id="hofMatrixSearch" class="form-control hof-search-input" aria-label="Tìm đội trong bảng thành tích" placeholder="Tìm đội..." oninput="filterHofMatrixTable()">
+                    </div>
+                </div>
+            </div>
+
+            <form id="hofMatrixFilters" class="hof-matrix-filters" onsubmit="return false">
+                <label>Tier<select id="hofMatrixTier"><option value="">Tất cả tier</option></select></label>
+                <label>Phase<select id="hofMatrixPhase"><option value="">Tất cả phase</option></select></label>
+                <label>Window<select id="hofMatrixWindow"><option value="">Tất cả window</option></select></label>
+                <label>Từ giải<select id="hofMatrixFrom"><option value="">Từ đầu</option></select></label>
+                <label>Đến giải<select id="hofMatrixTo"><option value="">Đến cuối</option></select></label>
+                <button type="button" id="hofMatrixReset" class="btn btn-secondary">Xóa lọc</button>
+                <span id="hofMatrixTourneyCount" role="status" aria-live="polite"></span>
+            </form>
+
+            <div class="hof-matrix-split-wrap">
+                <div class="hof-matrix-fixed-pane">
+                    <div class="hof-matrix-top-spacer" aria-hidden="true"></div>
+                    <table class="hof-table hof-matrix-table hof-matrix-fixed-table" id="hofMatrixFixedTable">
+                        <thead>
+                            <tr>
+                                <th class="hof-matrix-col-rank is-sortable" id="hofMatrixThRank" onclick="setHofMatrixSort('bxh')" title="Sắp xếp theo BXH hiện tại">Hạng</th>
+                                <th class="hof-matrix-col-name text-left is-sortable" id="hofMatrixThName" onclick="toggleHofMatrixNameSort()" title="Bấm để sắp xếp tên A-Z / Z-A / BXH">
+                                    <span class="hof-matrix-th-name-wrap"><span>Tên</span><span class="hof-matrix-sort-ind" id="hofMatrixNameSortInd">↕</span></span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (performanceMatrixRows != null && !performanceMatrixRows.isEmpty()) {
+                                for (int ri = 0; ri < performanceMatrixRows.size(); ri++) {
+                                    MatrixRowDTO row = performanceMatrixRows.get(ri);
+                                    String pUrl = request.getContextPath() + "/team-profile?seriesId=" + java.net.URLEncoder.encode(seriesIdVal != null ? seriesIdVal : "", "UTF-8")
+                                            + "&teamName=" + java.net.URLEncoder.encode(row.getTeamName(), "UTF-8");
+                                    if (row.getPartnerId() != null && !row.getPartnerId().trim().isEmpty()) {
+                                        pUrl += "&partnerId=" + java.net.URLEncoder.encode(row.getPartnerId(), "UTF-8");
+                                    }
+                            %>
+                            <tr data-row-idx="<%= ri %>" data-bxh-rank="<%= row.getBxhRank() %>" data-team-name="<c:out value='<%= row.getTeamName() %>'/>">
+                                <td class="hof-matrix-col-rank"><%= row.getBxhRank() %></td>
+                                <td class="hof-matrix-col-name text-left">
+                                    <a href="<%= pUrl %>" class="hof-team-link"><c:out value="<%= row.getTeamName() %>"/></a>
+                                </td>
+                            </tr>
+                            <%  }
+                               } else { %>
+                            <tr>
+                                <td colspan="2" class="hof-leader-empty">Chưa có dữ liệu.</td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="hof-matrix-scroll-pane">
+                    <div class="hof-matrix-top-scroll" id="hofMatrixTopScroll" aria-label="Thanh cuộn ngang phía trên">
+                        <div class="hof-matrix-top-dummy" id="hofMatrixTopDummy"></div>
+                    </div>
+
+                    <div class="hof-matrix-scroll" id="hofMatrixScroll" tabindex="0" role="region" aria-label="Bảng thành tích qua từng giải">
+                        <table class="hof-table hof-matrix-table hof-matrix-data-table" id="hofMatrixTable">
+                            <thead>
+                                <tr>
+                                    <% if (performanceMatrixCols != null) {
+                                        for (int ci = 0; ci < performanceMatrixCols.size(); ci++) {
+                                            MatrixTourneyColDTO col = performanceMatrixCols.get(ci);
+                                            String cTier = col.getTier() != null ? col.getTier().toLowerCase() : "a";
+                                    %>
+                                    <th class="hof-matrix-col-tourney" data-col-idx="<%= ci + 1 %>" data-tier="<%= col.getTier() %>">
+                                        <a href="<%= col.getSummaryUrl() %>" class="hof-matrix-tourney-link tier-<%= cTier %>"><c:out value="<%= col.getName() %>"/></a>
+                                    </th>
+                                    <%  }
+                                       } %>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (performanceMatrixRows != null && !performanceMatrixRows.isEmpty()) {
+                                    for (int ri = 0; ri < performanceMatrixRows.size(); ri++) {
+                                        MatrixRowDTO row = performanceMatrixRows.get(ri);
+                                %>
+                                <tr data-row-idx="<%= ri %>" data-bxh-rank="<%= row.getBxhRank() %>" data-team-name="<c:out value='<%= row.getTeamName() %>'/>">
+                                    <% List<MatrixCellDTO> cells = row.getCells();
+                                       for (int ci = 0; ci < cells.size(); ci++) {
+                                           MatrixCellDTO cell = cells.get(ci);
+                                           String cellCls = "hof-matrix-cell";
+                                           if (!cell.isParticipated() || "-".equals(cell.getCode())) cellCls += " is-empty";
+                                           if (cell.isBold()) cellCls += " is-bold";
+                                           if (cell.isWinner()) cellCls += " is-winner";
+                                           else if (cell.isFinalist()) cellCls += " is-finalist";
+                                    %>
+                                    <td class="<%= cellCls %>"><%= cell.getCode() %></td>
+                                    <% } %>
+                                </tr>
+                                <%  }
+                                   } else { %>
+                                <tr>
+                                    <td colspan="<%= Math.max(1, performanceMatrixCols != null ? performanceMatrixCols.size() : 1) %>" class="hof-leader-empty">Chưa có dữ liệu thành tích.</td>
+                                </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main></div>
 
     <!-- Global App Context & Sub-Tournaments Data for Live Sync -->
     <script>
         window.appContextPath = "${pageContext.request.contextPath}";
         window.seriesIdVal = "<%= seriesIdVal %>";
+        window.seriesPhaseSize = <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %>;
         window.seriesSubTournaments = [
             <% if (tournamentsList != null) {
                 for (int i = 0; i < tournamentsList.size(); i++) {
@@ -379,6 +496,6 @@
         ];
     </script>
     <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
-    <script src="${pageContext.request.contextPath}/js/rolling/rolling-hof.js?v=20261110-reign-pagination"></script>
+    <script src="${pageContext.request.contextPath}/js/rolling/rolling-hof.js?v=20261120-matrix4"></script>
 </body>
 </html>

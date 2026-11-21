@@ -98,3 +98,48 @@
 .rolling-hof-page .hof-pagination-btns button.active { color:var(--ui-accent); background:var(--ui-accent-soft); }
 @media(max-width:1050px) { .rolling-hof-page .hof-split-grid { grid-template-columns:repeat(3,minmax(290px,1fr)); overflow-x:auto; padding-bottom:8px; } }
 @media(max-width:700px) { .rolling-hof-page .hof-split-grid { grid-template-columns:minmax(0,1fr); overflow:visible; } }
+.rolling-hof-page .hof-matrix-panel { margin-top:24px; }
+.rolling-hof-page .hof-matrix-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+.rolling-hof-page .hof-matrix-controls { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+.rolling-hof-page .hof-matrix-filters { display:flex; align-items:end; flex-wrap:wrap; gap:12px; padding:14px 18px; border-bottom:1px solid var(--ui-line); }
+.rolling-hof-page .hof-matrix-filters label { display:flex; flex:1 1 150px; min-width:0; flex-direction:column; gap:6px; font-size:11px; color:var(--ui-muted); }
+.rolling-hof-page .hof-matrix-filters select { width:100%; min-height:36px; padding:6px 10px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-surface); color:var(--ui-text); font:inherit; }
+.rolling-hof-page .hof-matrix-filters select:focus-visible { outline:2px solid var(--ui-accent); outline-offset:2px; }
+.rolling-hof-page .hof-matrix-filters select[aria-invalid="true"] { border-color:var(--ui-danger); }
+.rolling-hof-page #hofMatrixTourneyCount { padding-bottom:9px; font-size:11px; color:var(--ui-muted); font-variant-numeric:tabular-nums; }
+.rolling-hof-page .hof-matrix-split-wrap { display:grid; grid-template-columns:198px minmax(0,1fr); align-items:start; }
+.rolling-hof-page .hof-matrix-fixed-pane { min-width:0; border-right:1px solid var(--ui-line); background:var(--ui-surface); z-index:4; }
+.rolling-hof-page .hof-matrix-top-spacer { height:13px; background:var(--ui-surface); border-bottom:1px solid var(--ui-line); box-sizing:border-box; }
+.rolling-hof-page .hof-matrix-scroll-pane { min-width:0; }
+.rolling-hof-page .hof-matrix-top-scroll { overflow-x:auto; overflow-y:hidden; height:13px; background:var(--ui-surface); border-bottom:1px solid var(--ui-line); box-sizing:border-box; }
+.rolling-hof-page .hof-matrix-top-dummy { height:1px; }
+.rolling-hof-page .hof-matrix-scroll { overflow-x:auto; cursor:grab; }
+.rolling-hof-page .hof-matrix-scroll.is-dragging { cursor:grabbing; user-select:none; }
+.rolling-hof-page .hof-matrix-scroll.is-dragging .hof-matrix-table { pointer-events:none; }
+.rolling-hof-page .hof-matrix-table { border-collapse:collapse; font-size:11px; font-variant-numeric:tabular-nums; }
+.rolling-hof-page .hof-matrix-fixed-table { width:198px; table-layout:fixed; }
+.rolling-hof-page .hof-matrix-data-table { width:max-content; min-width:100%; }
+.rolling-hof-page .hof-matrix-table thead { position:relative; z-index:12; will-change:transform; }
+.rolling-hof-page .hof-matrix-table :is(th,td) { padding:0 6px; height:30px; line-height:29px; border-bottom:1px solid var(--ui-line); border-right:1px solid var(--ui-line); text-align:center; white-space:nowrap; box-sizing:border-box; }
+.rolling-hof-page .hof-matrix-fixed-table :is(th,td):last-child { border-right:0; }
+.rolling-hof-page .hof-matrix-table th { background:var(--ui-surface-alt); color:var(--ui-muted); font-size:11px; font-weight:700; }
+.rolling-hof-page .hof-matrix-table th.is-sortable { cursor:pointer; user-select:none; }
+.rolling-hof-page .hof-matrix-table th.is-sortable:hover { color:var(--ui-accent); }
+.rolling-hof-page .hof-matrix-th-name-wrap { display:inline-flex; align-items:center; justify-content:space-between; width:100%; gap:6px; }
+.rolling-hof-page .hof-matrix-sort-ind { font-size:11px; color:var(--ui-muted); }
+.rolling-hof-page .hof-matrix-table th.is-sorted .hof-matrix-sort-ind { color:var(--ui-accent); }
+.rolling-hof-page .hof-matrix-col-rank { width:42px; min-width:42px; max-width:42px; }
+.rolling-hof-page .hof-matrix-col-name { width:156px; min-width:156px; max-width:156px; padding-inline:10px; overflow:hidden; text-overflow:ellipsis; }
+.rolling-hof-page .hof-matrix-col-name .hof-team-link { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rolling-hof-page .hof-matrix-col-tourney { min-width:44px; }
+.rolling-hof-page .hof-matrix-tourney-link { display:inline-block; font-weight:700; text-decoration:none; }
+.rolling-hof-page .hof-matrix-tourney-link.tier-s { color:var(--ui-tier-s); }
+.rolling-hof-page .hof-matrix-tourney-link.tier-a { color:var(--ui-tier-a); }
+.rolling-hof-page .hof-matrix-tourney-link.tier-b { color:var(--ui-tier-b); }
+.rolling-hof-page .hof-matrix-tourney-link.tier-c { color:var(--ui-tier-c); }
+.rolling-hof-page .hof-matrix-tourney-link.tier-d { color:var(--ui-tier-d); }
+.rolling-hof-page .hof-matrix-cell { color:var(--ui-muted); font-weight:400; }
+.rolling-hof-page .hof-matrix-cell.is-empty { color:var(--ui-muted); opacity:.55; }
+.rolling-hof-page .hof-matrix-cell.is-bold { color:var(--ui-text); font-weight:700; }
+.rolling-hof-page .hof-matrix-cell.is-winner { color:var(--ui-tier-s); font-weight:700; }
+.rolling-hof-page .hof-matrix-cell.is-finalist { color:var(--ui-accent); }
