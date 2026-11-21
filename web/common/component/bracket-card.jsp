@@ -4,7 +4,6 @@
     Description: Compact high-density dark node component for rendering match cards inside bracket trees.
 --%>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css">
 
 <%
     String matchNum = request.getParameter("matchNumber");
@@ -55,7 +54,7 @@
                 <% if (!isT1Bye) { %>
                     <span class="bracket-seed-badge <%= (request.getParameter("team1Seed") == null || request.getParameter("team1Seed").trim().isEmpty()) ? "unseeded" : "" %>">${param.team1Seed != null && !param.team1Seed.trim().isEmpty() ? param.team1Seed : "-"}</span>
                 <% } else { %>
-                    <span class="bracket-seed-badge" style="visibility: hidden;"></span>
+                    <span class="bracket-seed-badge"></span>
                 <% } %>
                 <span class="bracket-team-name <%= isT1Placeholder ? "placeholder" : "" %>" title="<%= t1Name %>">
                     <%= t1Name %>
@@ -69,7 +68,7 @@
                 <% if (!isT2Bye) { %>
                     <span class="bracket-seed-badge <%= (request.getParameter("team2Seed") == null || request.getParameter("team2Seed").trim().isEmpty()) ? "unseeded" : "" %>">${param.team2Seed != null && !param.team2Seed.trim().isEmpty() ? param.team2Seed : "-"}</span>
                 <% } else { %>
-                    <span class="bracket-seed-badge" style="visibility: hidden;"></span>
+                    <span class="bracket-seed-badge"></span>
                 <% } %>
                 <span class="bracket-team-name <%= isT2Placeholder ? "placeholder" : "" %>" title="<%= t2Name %>">
                     <%= t2Name %>

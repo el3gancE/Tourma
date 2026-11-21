@@ -1,5 +1,9 @@
 # Tourma — Quy chuẩn giao diện
 
+Trên nhánh `frontend-remake`, CSS và design token của giao diện JSP đã được gỡ
+để chuẩn bị dựng lại frontend. Các quy chuẩn về stylesheet bên dưới mô tả giao
+diện cũ và được giữ làm tài liệu đối chiếu.
+
 ## Luồng thiết lập giải
 
 Giải đơn dùng luồng Lập giải → Thể thức & đội tham gia → Chia bảng nếu cần → Thi đấu.

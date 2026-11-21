@@ -4,7 +4,6 @@
     Description: Reusable modal dialog for editing match scores and declaring winners.
 --%>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=stage-edit-ui">
 
 <div id="tourmaScoreModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) window.TourmaScoreModal.close();">
     <div class="tourma-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalMatchTitle" onclick="event.stopPropagation();">
@@ -50,7 +49,7 @@
                     <button type="button" id="btnWinnerT1" class="segmented-btn" onclick="window.TourmaScoreModal.selectWinner('team1')">
                         Team 1
                     </button>
-                    <button type="button" id="btnWinnerDraw" class="segmented-btn" style="display: none;" onclick="window.TourmaScoreModal.selectWinner('draw')">
+                    <button type="button" id="btnWinnerDraw" class="segmented-btn" onclick="window.TourmaScoreModal.selectWinner('draw')">
                         Hòa
                     </button>
                     <button type="button" id="btnWinnerT2" class="segmented-btn" onclick="window.TourmaScoreModal.selectWinner('team2')">
@@ -58,7 +57,7 @@
                     </button>
                 </div>
                 <!-- Error message banner when winner is not determined -->
-                <div id="modalScoreError" data-ui-style="popup-jsp-001" style="display: none;">
+                <div id="modalScoreError">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     <span>Phải xác định 1 đội thắng</span>
                 </div>

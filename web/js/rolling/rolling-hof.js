@@ -403,19 +403,19 @@
         var html = '';
         pageSlice.forEach(function (c) {
           html += '<tr>' +
-            '<td class="text-left" data-ui-style="rolling-hof-js-001">' +
+            '<td class="text-left">' +
               '<a href="' + ctx + '/team-profile?seriesId=' + encodeURIComponent(seriesId) + '&teamName=' + encodeURIComponent(c.teamName) + '" class="hof-team-link" title="Xem hồ sơ đội ' + c.teamName + '">' +
                 c.teamName +
               '</a>' +
             '</td>' +
-            '<td class="text-right" data-ui-style="rolling-hof-js-002">' +
+            '<td class="text-right">' +
               '<span class="hof-win-count-text">' + c.filteredChamps + '</span>' +
             '</td>' +
             '</tr>';
         });
         champTbody.innerHTML = html;
       } else {
-        champTbody.innerHTML = '<tr><td colspan="2" data-ui-style="rolling-hof-js-003">Chưa có đội bóng nào vô địch cho phân hạng đã chọn.</td></tr>';
+        champTbody.innerHTML = '<tr><td colspan="2">Chưa có đội bóng nào vô địch cho phân hạng đã chọn.</td></tr>';
       }
     }
 
@@ -867,13 +867,6 @@
         addOpt(winSel, t.index, Math.max(1, t.index - size + 1) + '–' + t.index + ' · ' + t.name);
       });
 
-      var styleEl = document.getElementById('hofMatrixColFilterStyle');
-      if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = 'hofMatrixColFilterStyle';
-        document.head.appendChild(styleEl);
-      }
-
       var applyColFilters = function (resetScroll) {
         var invalid = Boolean(fromSel.value && toSel.value && Number(fromSel.value) > Number(toSel.value));
         fromSel.setAttribute('aria-invalid', String(invalid));
@@ -885,19 +878,22 @@
           from: fromSel.value,
           to: toSel.value
         };
-        var hiddenNth = [];
+        var hiddenColumns = [];
         var visibleCols = 0;
         tournaments.forEach(function (t) {
           var show = !invalid && matchesMatrixCol(t.index, size, filters, t.tier);
           if (show) {
             visibleCols++;
           } else {
-            hiddenNth.push(':nth-child(' + t.nthChild + ')');
+            hiddenColumns.push(t.nthChild - 1);
           }
         });
-        styleEl.textContent = hiddenNth.length
-          ? ('#hofMatrixTable :is(th,td):is(' + hiddenNth.join(',') + '){display:none;}')
-          : '';
+        var hiddenIndexes = new Set(hiddenColumns);
+        Array.from(table.rows).forEach(function (row) {
+          Array.from(row.cells).forEach(function (cell, index) {
+            cell.hidden = hiddenIndexes.has(index);
+          });
+        });
         if (countEl) {
           countEl.textContent = invalid
             ? 'Giải bắt đầu phải trước hoặc bằng giải kết thúc.'

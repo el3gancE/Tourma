@@ -81,7 +81,6 @@
     if (view2Label == null || view2Label.trim().isEmpty()) view2Label = "Danh Sách Trận";
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css?v=20261101-meta">
 
 <!-- Top Control Bar (Tournament Title, Format Badge, Team Count Badge & View Mode Toggle) -->
 <div class="tournament-navbar-control-bar single-elimination-control-bar <%= showLiveStatus ? "has-live-status" : "" %>">
@@ -93,7 +92,7 @@
         <span class="<%= formatBadgeClass %>" title="<%= formatName %>"><%= compactFormatName %></span>
         <span id="tournamentTeamCountBadge" class="team-count-badge">0 Đội</span>
         <span id="tournamentAdvancingBadge" class="advancing-count-badge"
-            style="<%= (cutTarget > 0) ? "" : "display: none;" %>">
+>
             <i class="fa-solid fa-arrow-right-to-bracket"></i>
             <%= cutTarget %> Đội đi tiếp
         </span>
@@ -149,11 +148,11 @@
 <!-- RESET BRACKET CONFIRMATION MODAL -->
 <div id="seResetModalBackdrop" class="tourma-modal-backdrop"
     onclick="if(event.target === this) window.TourmaNavbar && window.TourmaNavbar.closeResetModal();">
-    <div class="tourma-modal-card" data-ui-style="tournament-navbar-jsp-001"
+    <div class="tourma-modal-card"
         onclick="event.stopPropagation();">
-        <div class="modal-header-bar" data-ui-style="tournament-navbar-jsp-002">
+        <div class="modal-header-bar">
             <div class="modal-header-title"
-                data-ui-style="tournament-navbar-jsp-003" style="display: flex;">
+>
                 <i class="fa-solid fa-rotate-right"></i>
                 <span><%= resetModalTitle %></span>
             </div>
@@ -163,23 +162,23 @@
             </button>
         </div>
 
-        <div class="modal-body-content" data-ui-style="tournament-navbar-jsp-004">
+        <div class="modal-body-content">
             <div
-                data-ui-style="tournament-navbar-jsp-005">
-                <strong data-ui-style="tournament-navbar-jsp-006">⚠️ Cảnh báo quan trọng:</strong><br>
+>
+                <strong>⚠️ Cảnh báo quan trọng:</strong><br>
                 <%= resetWarningText %>
             </div>
-            <p data-ui-style="tournament-navbar-jsp-007">
+            <p>
                 Bạn có chắc chắn muốn thiết lập lại toàn bộ không?
             </p>
         </div>
 
-        <div class="modal-footer-bar" data-ui-style="tournament-navbar-jsp-008" style="display: flex;">
+        <div class="modal-footer-bar">
             <button type="button" class="btn btn-secondary"
                 onclick="window.TourmaNavbar && window.TourmaNavbar.closeResetModal()"
-                data-ui-style="tournament-navbar-jsp-009">Hủy Bỏ</button>
+>Hủy Bỏ</button>
             <button type="button" class="btn"
-                data-ui-style="tournament-navbar-jsp-010"
+
                 onclick="window.TourmaNavbar && window.TourmaNavbar.confirmReset()">
                 <i class="fa-solid fa-rotate-right"></i> Xác Nhận Reset
             </button>

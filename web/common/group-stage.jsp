@@ -50,30 +50,11 @@
     <title><%= tourneyName %> - Group Stage - Tourma</title>
 
     <!-- Google Font Readex Pro -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Global Styling & Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-stage.css?v=20261105-compact-rounds">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/group-standing.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
 <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=20261101-gs-light-contrast">
 </head>
-<body class="ui-page tournament-workspace league-page" data-ui-style="group-stage-jsp-001">
+<body class="ui-page tournament-workspace league-page">
 
     <!-- Stage Finish Alert Component (Locked Stage 2) -->
 
@@ -105,8 +86,8 @@
                 </h1>
                 <span class="format-badge-rr" title="Group Stage">GS</span>
                 <span id="gsTeamCountBadge" class="team-count-badge">0 Đội</span>
-                <span id="gsAdvanceBadge" class="team-count-badge" data-ui-style="group-stage-jsp-002" style="display: inline-flex;">
-                    <i class="fa-solid fa-circle-check" data-ui-style="group-stage-jsp-003"></i>
+                <span id="gsAdvanceBadge" class="team-count-badge">
+                    <i class="fa-solid fa-circle-check"></i>
                     <span id="gsAdvanceText">0 Đội đi tiếp</span>
                 </span>
             </div>
@@ -117,10 +98,10 @@
                 </button>
 
                 <div class="view-mode-toggle-group">
-                    <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle active" data-ui-style="group-stage-jsp-004">
+                    <a href="${pageContext.request.contextPath}/common/group-stage.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle active">
                         <i class="fa-solid fa-calendar-days"></i> Lịch
                     </a>
-                    <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle" data-ui-style="group-stage-jsp-005">
+                    <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE" class="btn-view-toggle">
                         <i class="fa-solid fa-ranking-star"></i> BXH
                     </a>
                 </div>
@@ -129,7 +110,7 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
         <!-- CONTAINER FOR EMPTY TEAM ALERT -->
-        <div id="gsEmptyAlertContainer" data-ui-style="group-stage-jsp-006" style="display: none;"></div>
+        <div id="gsEmptyAlertContainer"></div>
 
         <!-- MAIN WORKSPACE CONTENT -->
         <div id="gsMainContent">
@@ -145,8 +126,8 @@
             </div>
 
             <!-- STANDINGS VIEW (Dynamically toggled) -->
-            <div id="gsStandingsView" style="display: none;">
-                <div id="gsStandingsContainer" class="gst-container" data-ui-style="group-stage-jsp-007"></div>
+            <div id="gsStandingsView">
+                <div id="gsStandingsContainer" class="gst-container"></div>
             </div>
 
         </div>

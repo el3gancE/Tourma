@@ -86,21 +86,9 @@
         <title>Danh Sách Giải Con - <%= seriesName %></title>
 
         <!-- Google Fonts & FontAwesome -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Design System CSS & Dedicated CSS -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-list.css">
     <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
 </head>
     <body class="ui-page workspace-page tournament-workspace series-page rolling-tournament-list-page">
         <!-- Shared Navigation Header Component -->
@@ -114,23 +102,23 @@
             <jsp:param name="activeStep" value="tournament-list"/>
         </jsp:include></details>
 
-        <main class="series-main" data-ui-style="rolling-tournament-list-jsp-001">
+        <main class="series-main">
 
 
 
             <!-- Series Header Banner Card -->
-            <div class="team-list-header-card" data-ui-style="rolling-tournament-list-jsp-004">
-                <div data-ui-style="rolling-tournament-list-jsp-005" style="display: flex;">
+            <div class="team-list-header-card">
+                <div>
                     <div>
-                        <h1 class="rolling-series-name" data-ui-style="rolling-tournament-list-jsp-006">
+                        <h1 class="rolling-series-name">
                             <i class="fa-solid fa-trophy text-gold"></i> Danh Sách Giải Con
                         </h1>
-                        <p class="text-muted" data-ui-style="rolling-tournament-list-jsp-007">
+                        <p class="text-muted">
                             Các giải đấu thuộc <strong><%= seriesName %></strong>, từ mới nhất đến cũ nhất.
                         </p>
                     </div>
                     <div>
-                        <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" data-ui-style="rolling-tournament-list-jsp-008">
+                        <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint">
                             <i class="fa-solid fa-plus-circle"></i> Tạo giải con
                         </a>
                     </div>
@@ -207,18 +195,18 @@
                                 <span class="tourney-progress-status"><%= statusStr %></span>
                                 <div class="tourney-progress-label"><strong><%= t.getProgressPercent() %>%</strong></div>
                                 <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= t.getProgressPercent() %>">
-                                    <span class="tourney-progress-fill" style="width: <%= t.getProgressPercent() %>%"></span>
+                                    <span class="tourney-progress-fill"></span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 <% }
                 } else { %>
-                        <div data-ui-style="rolling-tournament-list-jsp-014">
-                            <i class="fa-solid fa-trophy" data-ui-style="rolling-tournament-list-jsp-015"></i>
-                            <h4 data-ui-style="rolling-tournament-list-jsp-016">${not empty pageInfo.query ? 'Không có giải con phù hợp' : 'Chưa có giải con nào trong Series này'}</h4>
-                            <p data-ui-style="rolling-tournament-list-jsp-017">${not empty pageInfo.query ? 'Thử tìm kiếm bằng từ khóa khác.' : 'Hãy bấm nút bên dưới để tạo giải đấu con đầu tiên cho Series.'}</p>
-                            <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint" data-ui-style="rolling-tournament-list-jsp-018">
+                        <div>
+                            <i class="fa-solid fa-trophy"></i>
+                            <h4>${not empty pageInfo.query ? 'Không có giải con phù hợp' : 'Chưa có giải con nào trong Series này'}</h4>
+                            <p>${not empty pageInfo.query ? 'Thử tìm kiếm bằng từ khóa khác.' : 'Hãy bấm nút bên dưới để tạo giải đấu con đầu tiên cho Series.'}</p>
+                            <a href="${pageContext.request.contextPath}/rolling/create-tournament?seriesId=<%= seriesIdVal %>" class="btn btn-mint">
                                 <i class="fa-solid fa-plus-circle"></i> + Tạo Giải Con Đầu Tiên
                             </a>
                         </div>
@@ -314,15 +302,15 @@
                             Hệ thống sẽ tạo một giải đấu con mới trong Series này ở trạng thái <strong>DRAFT</strong> với toàn bộ cấu hình thể thức, phân bảng, multi-stage từ giải gốc.
                         </div>
 
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 7px; font-weight: 500;">
+                        <div>
+                            <label>
                                 Tên giải đấu mới:
                             </label>
                             <input type="text" id="cloneNewTourneyName" name="newName" class="form-control" required placeholder="Nhập tên giải mới...">
                         </div>
 
-                        <div style="display: flex; gap: 10px; align-items: flex-start;">
-                             <i class="fa-solid fa-users" style="margin-top: 2px;"></i>
+                        <div>
+                             <i class="fa-solid fa-users"></i>
                              <div>
                                  <strong>Ràng buộc số lượng:</strong> Danh sách đội sẽ để trống để bạn nhập hoặc chọn từ Partner ở bước tiếp theo, và <strong>bắt buộc phải khớp đúng số lượng đội</strong> của giải gốc.
                              </div>

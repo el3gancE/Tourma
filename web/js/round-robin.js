@@ -325,7 +325,7 @@
             });
 
             if (visibleRounds.length === 0) {
-                container.innerHTML = '<div data-ui-style="round-robin-js-001">Chưa có trận đấu nào trong vòng này.</div>';
+                container.innerHTML = '<div>Chưa có trận đấu nào trong vòng này.</div>';
                 return;
             }
 

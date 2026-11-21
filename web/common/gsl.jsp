@@ -122,32 +122,25 @@
         <link rel="alternate icon" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
 
         <!-- Google Fonts: Readex Pro -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- Font Awesome -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Core Design System CSS -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/double-elimination.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/gsl.css?v=<%= System.currentTimeMillis() %>">
+">
+">
+">
+">
+">
+">
+">
+">
+">
+">
+">
+">
+">
+">
         <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
     </head>
     <body class="ui-page tournament-workspace gsl-page gsl-page-container">
 
@@ -200,7 +193,7 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
-            <div id="gslEmptyAlertContainer" data-ui-style="gsl-jsp-001" style="display: none;"></div>
+            <div id="gslEmptyAlertContainer"></div>
 
             <!-- 1. MULTI-GROUP VIEWPORTS WORKSPACE -->
             <div id="gslGroupsWorkspace" class="gsl-groups-workspace"></div>

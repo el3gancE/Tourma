@@ -48,25 +48,12 @@
         <title><%= teamName %> - Hồ Sơ Đội Bóng - TOURMA</title>
 
         <!-- Google Fonts & FontAwesome -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Main Design System CSS, Sidebar CSS, Dedicated Team Profile CSS & Badges CSS -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css?v=20261117-v2">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-profile.css?v=20261117-v4">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=20261110-profile-latency-v4">
 
         <!-- Chart.js for Rank Progression Chart -->
         <script id="profile-chart-library" async src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261117-v4">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 </head>
     <body class="ui-page workspace-page tournament-workspace series-page team-profile-page">
         <!-- Shared Navigation Header Component -->
@@ -80,7 +67,7 @@
             <jsp:param name="activeStep" value="standings"/>
         </jsp:include></details>
 
-        <main class="series-main" data-ui-style="team-profile-jsp-001">
+        <main class="series-main">
 
             <!-- Breadcrumb Back Navigation -->
             <a href="${pageContext.request.contextPath}/rolling/standings?id=<%= seriesIdVal %>" class="team-profile-back-link">
@@ -122,7 +109,7 @@
                             <i class="fa-solid fa-crown text-gold"></i> HẠNG CAO NHẤT
                         </div>
                         <div class="team-stat-val <%= (highestRank == 1 && currentPoints > 0) ? "color-gold" : "" %>" id="profHighestRank">
-                            <%= (highestRank > 0) ? ("#" + highestRank) : "-" %><% if (highestRank > 0 && highestRankTourneyName != null && !highestRankTourneyName.isEmpty()) { %><span class="rank-tourney-name">(<a href="<%= (highestRankTourneyUrl != null && !highestRankTourneyUrl.isEmpty()) ? highestRankTourneyUrl : "#" %>" class="rank-tourney-link" data-ui-style="team-profile-jsp-002" title="Xem giai đoạn cuối giải <%= highestRankTourneyName %>"><%= highestRankTourneyName %></a>)</span><% } %>
+                            <%= (highestRank > 0) ? ("#" + highestRank) : "-" %><% if (highestRank > 0 && highestRankTourneyName != null && !highestRankTourneyName.isEmpty()) { %><span class="rank-tourney-name">(<a href="<%= (highestRankTourneyUrl != null && !highestRankTourneyUrl.isEmpty()) ? highestRankTourneyUrl : "#" %>" class="rank-tourney-link" title="Xem giai đoạn cuối giải <%= highestRankTourneyName %>"><%= highestRankTourneyName %></a>)</span><% } %>
                         </div>
                     </div>
 
@@ -162,7 +149,7 @@
                             <i class="fa-solid fa-trophy text-gold"></i> SỐ GIẢI ĐÃ ĐẤU
                         </div>
                         <div class="team-stat-val" id="profTourneysPlayed">
-                            <%= totalTourneysPlayed %><span class="pts-unit" data-ui-style="team-profile-jsp-003">Giải</span>
+                            <%= totalTourneysPlayed %><span class="pts-unit">Giải</span>
                         </div>
                     </div>
                 </div>
@@ -175,27 +162,27 @@
                             <i class="fa-solid fa-trophy text-gold"></i> SỐ LẦN VÔ ĐỊCH
                         </div>
                         <div class="team-stat-val color-gold" id="profChampCount">
-                            <%= champCount %><span class="pts-unit" data-ui-style="team-profile-jsp-004">Lần</span>
+                            <%= champCount %><span class="pts-unit">Lần</span>
                         </div>
                     </div>
 
                     <!-- 2. Số Lần Á Quân -->
                     <div class="team-stat-box">
                         <div class="team-stat-label">
-                            <i class="fa-solid fa-award" data-ui-style="team-profile-jsp-005"></i> SỐ LẦN Á QUÂN
+                            <i class="fa-solid fa-award"></i> SỐ LẦN Á QUÂN
                         </div>
-                        <div class="team-stat-val" id="profRunnerUpCount" data-ui-style="team-profile-jsp-006">
-                            <%= runnerUpCount %><span class="pts-unit" data-ui-style="team-profile-jsp-007">Lần</span>
+                        <div class="team-stat-val" id="profRunnerUpCount">
+                            <%= runnerUpCount %><span class="pts-unit">Lần</span>
                         </div>
                     </div>
 
                     <!-- 3. Số Lần Vào Bán Kết -->
                     <div class="team-stat-box">
                         <div class="team-stat-label">
-                            <i class="fa-solid fa-medal" data-ui-style="team-profile-jsp-008"></i> SỐ LẦN VÀO BÁN KẾT
+                            <i class="fa-solid fa-medal"></i> SỐ LẦN VÀO BÁN KẾT
                         </div>
-                        <div class="team-stat-val" id="profSemiCount" data-ui-style="team-profile-jsp-009">
-                            <%= semiCount %><span class="pts-unit" data-ui-style="team-profile-jsp-010">Lần</span>
+                        <div class="team-stat-val" id="profSemiCount">
+                            <%= semiCount %><span class="pts-unit">Lần</span>
                         </div>
                     </div>
 
@@ -205,13 +192,13 @@
                             <i class="fa-solid fa-shield-halved text-mint"></i> SỐ LẦN VÀO TỨ KẾT
                         </div>
                         <div class="team-stat-val color-mint" id="profQuarterCount">
-                            <%= quarterCount %><span class="pts-unit" data-ui-style="team-profile-jsp-011">Lần</span>
+                            <%= quarterCount %><span class="pts-unit">Lần</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Champion Badges (Only show if team has won at least 1 championship) -->
-                <div class="team-champion-section" id="profChampionSection" style="<%= (champCount > 0) ? "" : "display: none;" %>">
+                <div class="team-champion-section" id="profChampionSection">
                     <div class="team-champion-title">
                         <i class="fa-solid fa-trophy"></i> CÁC GIẢI ĐẤU ĐÃ VÔ ĐỊCH
                     </div>
@@ -220,7 +207,7 @@
                             for (ChampionTournamentDTO ct : championTourneys) {
                                 String badgeUrl = (ct.getFinalStageUrl() != null && !ct.getFinalStageUrl().isEmpty()) ? ct.getFinalStageUrl() : "#";
                         %>
-                            <a href="<%= badgeUrl %>" class="champion-badge-pill" data-tournament-id="<%= ct.getTournamentId() %>" data-tier="<%= ct.getTierName() != null ? ct.getTierName() : "A" %>" data-ui-style="team-profile-jsp-012" title="Xem giai đoạn cuối giải <%= ct.getTournamentName() %>">
+                            <a href="<%= badgeUrl %>" class="champion-badge-pill" data-tournament-id="<%= ct.getTournamentId() %>" data-tier="<%= ct.getTierName() != null ? ct.getTierName() : "A" %>" title="Xem giai đoạn cuối giải <%= ct.getTournamentName() %>">
                                 <i class="fa-solid fa-crown"></i> <%= ct.getTournamentName() %>
                             </a>
                         <% }
@@ -232,12 +219,12 @@
 
             <!-- Rank Progression Chart Card -->
             <div class="team-performance-card rank-chart-card" id="rankProgressionCard">
-                <div class="team-performance-header" data-ui-style="team-profile-jsp-013" style="display: flex;">
+                <div class="team-performance-header">
                     <div>
-                        <h3 class="team-performance-title" data-ui-style="team-profile-jsp-014" style="display: flex;">
+                        <h3 class="team-performance-title">
                             <i class="fa-solid fa-chart-line text-mint"></i> Biến động thứ hạng
                         </h3>
-                        <p data-ui-style="team-profile-jsp-015">
+                        <p>
                             Thứ hạng sau từng giải · Window <%= (series != null && series.getPhaseSize() > 0) ? series.getPhaseSize() : 3 %> giải.
                         </p>
                     </div>
@@ -280,11 +267,11 @@
                 <table class="team-performance-table">
                     <thead>
                         <tr>
-                            <th data-ui-style="team-profile-jsp-016">STT</th>
+                            <th>STT</th>
                             <th>Tên Giải Đấu</th>
                             <th>Thể Thức</th>
                             <th>Thành Tích</th>
-                            <th data-ui-style="team-profile-jsp-017">Điểm Nhận Được</th>
+                            <th>Điểm Nhận Được</th>
                         </tr>
                     </thead>
                     <tbody id="profPerformanceTbody">
@@ -301,14 +288,14 @@
                                 String pTier = (perf.getTierName() != null && !perf.getTierName().isEmpty()) ? perf.getTierName().toUpperCase() : "A";
                         %>
                             <tr data-tournament-id="<%= perf.getTournamentId() %>">
-                                <td data-ui-style="team-profile-jsp-018"><%= (perf.getStt() > 0) ? perf.getStt() : (performanceList.size() - idx) %></td>
-                                <td data-ui-style="team-profile-jsp-019">
-                                    <a href="<%= (perf.getFinalStageUrl() != null && !perf.getFinalStageUrl().isEmpty()) ? perf.getFinalStageUrl() : "#" %>" class="tourney-name-link" data-ui-style="team-profile-jsp-020" onmouseover="this.style.color='var(--ui-accent)'" onmouseout="this.style.color='var(--ui-text)'" title="Xem giai đoạn cuối giải <%= perf.getTournamentName() %>">
+                                <td><%= (perf.getStt() > 0) ? perf.getStt() : (performanceList.size() - idx) %></td>
+                                <td>
+                                    <a href="<%= (perf.getFinalStageUrl() != null && !perf.getFinalStageUrl().isEmpty()) ? perf.getFinalStageUrl() : "#" %>" class="tourney-name-link" title="Xem giai đoạn cuối giải <%= perf.getTournamentName() %>">
                                         <%= perf.getTournamentName() %>
                                     </a>
-                                    <span class="tier-tag tier-<%= pTier.toLowerCase() %>" data-ui-style="team-profile-jsp-021">[<%= pTier %>]</span>
+                                    <span class="tier-tag tier-<%= pTier.toLowerCase() %>">[<%= pTier %>]</span>
                                 </td>
-                                <td data-ui-style="team-profile-jsp-022">
+                                <td>
                                     <%= perf.getFormatLabel() %>
                                 </td>
                                 <td>
@@ -316,14 +303,14 @@
                                         <%= perf.getAchievement() %>
                                     </span>
                                 </td>
-                                <td data-ui-style="team-profile-jsp-023">
+                                <td>
                                     +<%= perf.getPointsEarned() %> pts
                                 </td>
                             </tr>
                         <% }
                         } else { %>
                             <tr>
-                                <td colspan="5" data-ui-style="team-profile-jsp-024">
+                                <td colspan="5">
                                     Chưa có dữ liệu thành tích thi đấu giải con nào trong Series này.
                                 </td>
                             </tr>

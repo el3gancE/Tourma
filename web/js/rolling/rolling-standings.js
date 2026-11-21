@@ -99,7 +99,7 @@
         row.classList.add('top-10');
       }
 
-      var lastPtsText = data.lastPts > 0 ? ('<span style="color: var(--ui-success); font-weight: 600;">+' + data.lastPts + ' pts</span>') : '<span style="color: var(--ui-muted);">0 pts</span>';
+      var lastPtsText = data.lastPts > 0 ? ('<span>+' + data.lastPts + ' pts</span>') : '<span>0 pts</span>';
 
       var netChange = data.lastPts - (data.droppedPts || 0);
       var changeText = '0 pts';
@@ -118,27 +118,27 @@
       var badgeClass = 'rank-badge' + (isTop10 ? ' top-10' : '') + ' rank-' + rank;
 
       row.innerHTML = 
-        '<td data-ui-style="rolling-standings-js-003" style="color: ' + rankColor + ';">' +
+        '<td>' +
           '<div class="rank-wrap">' +
             '<span class="' + badgeClass + '">' + rank + '</span>' +
             rankChangeHtml +
           '</div>' +
         '</td>' +
-        '<td data-ui-style="rolling-standings-js-004" style="color: ' + nameColor + ';">' +
-          '<a href="' + ctx + '/team-profile?seriesId=' + encodeURIComponent(seriesId) + '&teamName=' + encodeURIComponent(data.name) + '" class="team-link" data-ui-style="rolling-standings-js-005" style="color: ' + nameColor + ';" onmouseover="this.style.color=\'' + nameHover + '\'" onmouseout="this.style.color=\'' + nameColor + '\'">' +
+        '<td>' +
+          '<a href="' + ctx + '/team-profile?seriesId=' + encodeURIComponent(seriesId) + '&teamName=' + encodeURIComponent(data.name) + '" class="team-link">' +
             data.name +
           '</a>' +
         '</td>' +
-        '<td data-ui-style="rolling-standings-js-006">' +
+        '<td>' +
           data.activeTourneys +
         '</td>' +
-        '<td data-ui-style="rolling-standings-js-007">' +
+        '<td>' +
           data.totalPts + ' pts' +
         '</td>' +
-        '<td data-ui-style="rolling-standings-js-008">' +
+        '<td>' +
           lastPtsText +
         '</td>' +
-        '<td data-ui-style="rolling-standings-js-009" style="color: ' + changeColor + ';">' +
+        '<td>' +
           changeText +
         '</td>';
 

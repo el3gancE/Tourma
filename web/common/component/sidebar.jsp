@@ -113,8 +113,6 @@
     boolean hasTournament = (currentTournament != null);
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=20261031-tabs">
 
 <aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">
     <div class="sidebar-workspace-heading"><span class="sidebar-workspace-mark" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span><span>Không gian giải đấu</span></div>
@@ -124,16 +122,16 @@
     <!-- ========================================================= -->
     <!-- MỤC 1: QUẢN LÝ CHUỖI GIẢI (SERIES SECTION)                -->
     <!-- ========================================================= -->
-    <div class="sidebar-section-header" data-ui-style="sidebar-jsp-001">
+    <div class="sidebar-section-header">
         <i class="fa-solid fa-layer-group"></i> CHUỖI GIẢI (SERIES)
     </div>
 
-    <div class="sidebar-subtourney-badge" data-ui-style="sidebar-jsp-002">
+    <div class="sidebar-subtourney-badge">
         <i class="fa-solid fa-chart-line text-gold"></i>
         <span><%= currentSeries.getName() %></span>
     </div>
 
-    <ul class="sidebar-menu-list" data-ui-style="sidebar-jsp-003">
+    <ul class="sidebar-menu-list">
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "dashboard".equals(activeStep) ? "active" : "" %>">
@@ -193,7 +191,7 @@
              String tTier = (currentTournament != null && currentTournament.getTierName() != null && !currentTournament.getTierName().trim().isEmpty())
                  ? currentTournament.getTierName().toUpperCase() : "S";
         %>
-            <span class="tier-tag tier-<%= tTier.toLowerCase() %>" data-ui-style="sidebar-jsp-004">[<%= tTier %>]</span>
+            <span class="tier-tag tier-<%= tTier.toLowerCase() %>">[<%= tTier %>]</span>
         <% } %>
     </div>
 
@@ -208,7 +206,7 @@
         </li>
 
         <!-- MỤC RIÊNG CHO GROUP STAGE & GSL: QUẢN LÝ BẢNG ĐẤU -->
-        <li class="sidebar-menu-item" id="sidebarMenuManageGroup" style="<%= ("GROUP_STAGE".equalsIgnoreCase(format) || "GSL".equalsIgnoreCase(format)) ? "" : "display: none;" %>">
+        <li class="sidebar-menu-item" id="sidebarMenuManageGroup">
             <a href="${pageContext.request.contextPath}/common/manage-group.jsp?id=<%= tournamentId %>&seriesId=<%= seriesId %>&format=<%= format %>"
                class="sidebar-menu-link <%= "manage-group".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid fa-pen-to-square menu-icon text-mint"></i>
@@ -228,7 +226,7 @@
         <% } %>
 
         <!-- MỤC RIÊNG CHO ROUND ROBIN: BẢNG XẾP HẠNG (Single Stage) -->
-        <li class="sidebar-menu-item" id="sidebarMenuRRStandings" style="<%= ("ROUND_ROBIN".equalsIgnoreCase(format) && !isMultiStage) ? "" : "display: none;" %>">
+        <li class="sidebar-menu-item" id="sidebarMenuRRStandings">
             <a id="sidebarLinkRRStandings" href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=<%= format %>"
                class="sidebar-menu-link <%= ("standings".equals(activeStep) || "standings1".equals(activeStep)) && !isMultiStage ? "active" : "" %>">
                 <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
@@ -237,7 +235,7 @@
         </li>
 
         <!-- MULTI-STAGE: BXH VÒNG 1 (Khi Vòng 1 là Round Robin) -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings1" style="display: none;">
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings1">
             <a id="sidebarLinkRRStandings1" href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=ROUND_ROBIN&stage=1"
                class="sidebar-menu-link <%= "standings1".equals(activeStep) || ("standings".equals(activeStep) && !"2".equals(request.getParameter("stage"))) ? "active" : "" %>">
                 <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
@@ -246,7 +244,7 @@
         </li>
 
         <!-- MULTI-STAGE: BXH VÒNG 2 (Khi Vòng 2 là Round Robin) -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings2" style="display: none;">
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings2">
             <a id="sidebarLinkRRStandings2" href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=ROUND_ROBIN&stage=2"
                class="sidebar-menu-link <%= "standings2".equals(activeStep) || ("standings".equals(activeStep) && "2".equals(request.getParameter("stage"))) ? "active" : "" %>">
                 <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
@@ -255,7 +253,7 @@
         </li>
 
         <!-- MỤC RIÊNG CHO GROUP STAGE: BẢNG XẾP HẠNG VÒNG BẢNG -->
-        <li class="sidebar-menu-item" id="sidebarMenuGroupStandings" style="<%= "GROUP_STAGE".equalsIgnoreCase(format) ? "" : "display: none;" %>">
+        <li class="sidebar-menu-item" id="sidebarMenuGroupStandings">
             <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE"
                class="sidebar-menu-link <%= "group-standing".equals(activeStep) ? "active" : "" %>">
                 <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
@@ -264,7 +262,7 @@
         </li>
 
         <!-- MULTI-STAGE: VÒNG 1 (Stage 1 - SƠ ĐỒ / LỊCH ĐẤU & TỈ SỐ) -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1" style="<%= isMultiStage ? "" : "display: none;" %>">
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1">
             <a id="sidebarLinkStage1" href="${pageContext.request.contextPath}/common/<%= targetBracketUrlStage1 %>?id=<%= tournamentId %>&stage=1<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
                class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && "1".equals(request.getParameter("stage"))) || ("bracket".equals(activeStep) && request.getParameter("stage") == null && isMultiStage) ? "active" : "" %>">
                 <i class="fa-solid fa-diagram-project menu-icon text-mint"></i>
@@ -273,7 +271,7 @@
         </li>
 
         <!-- MULTI-STAGE: VÒNG 2 (Stage 2 - SƠ ĐỒ / LỊCH ĐẤU & TỈ SỐ) -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2" style="<%= isMultiStage ? "" : "display: none;" %>">
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2">
             <a id="sidebarLinkStage2" href="${pageContext.request.contextPath}/common/<%= targetBracketUrlStage2 %>?id=<%= tournamentId %>&stage=2<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
                class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && "2".equals(request.getParameter("stage"))) ? "active" : "" %>">
                 <i class="fa-solid fa-trophy menu-icon text-gold"></i>
@@ -282,7 +280,7 @@
         </li>
 
         <!-- SINGLE-STAGE: SƠ ĐỒ NHÁNH / LỊCH ĐẤU & TỈ SỐ -->
-        <li class="sidebar-menu-item" id="sidebarMenuSingleStage" style="<%= isMultiStage ? "display: none;" : "" %>">
+        <li class="sidebar-menu-item" id="sidebarMenuSingleStage">
             <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %><%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
                class="sidebar-menu-link <%= ("bracket".equals(activeStep) || "step3".equals(activeStep) || "gsl".equals(activeStep)) && !isMultiStage ? "active" : "" %>">
                 <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : (("GROUP_STAGE".equalsIgnoreCase(format) || "GSL".equalsIgnoreCase(format)) ? "fa-layer-group" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "fa-diagram-project" : "fa-diagram-project")) %> menu-icon"></i>

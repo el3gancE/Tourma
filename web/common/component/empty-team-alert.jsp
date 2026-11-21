@@ -1,6 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!-- TOURMA - Reusable Empty Team Alert Component -->
-<div id="emptyTeamAlertContainer" class="empty-team-alert-wrapper" style="display: none;">
+<div id="emptyTeamAlertContainer" class="empty-team-alert-wrapper">
     <div class="empty-team-alert-card">
         <div class="empty-team-alert-icon-box">
             <i class="fa-solid fa-users-slash empty-team-alert-icon"></i>

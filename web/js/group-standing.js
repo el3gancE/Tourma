@@ -316,7 +316,7 @@
                 if (window.TourmaEmptyTeamAlert && typeof window.TourmaEmptyTeamAlert.checkAndRender === 'function') {
                     window.TourmaEmptyTeamAlert.checkAndRender(tid, [], container);
                 } else {
-                    container.innerHTML = '<div data-ui-style="group-standing-js-001">Chưa có bảng đấu. Vui lòng thêm đội và chia bảng để xem bảng xếp hạng.</div>';
+                    container.innerHTML = '<div>Chưa có bảng đấu. Vui lòng thêm đội và chia bảng để xem bảng xếp hạng.</div>';
                 }
                 return;
             }
@@ -344,7 +344,7 @@
                 block.className = 'gst-group-block';
                 block.style.marginBottom = '2.25rem';
 
-                var headerHtml = '<div data-ui-style="group-standing-js-002" style="display: flex;">' +
+                var headerHtml = '<div>' +
                     '<div>BẢNG ' + gKey + '</div>' +
                     '</div>';
 
@@ -352,15 +352,15 @@
                     '<table class="rr-table">' +
                     '<thead>' +
                     '<tr>' +
-                    '<th data-ui-style="group-standing-js-003">#</th>' +
-                    '<th data-ui-style="group-standing-js-004">Đội bóng</th>' +
-                    '<th data-ui-style="group-standing-js-005">Trận</th>' +
-                    '<th data-ui-style="group-standing-js-006">T</th>' +
-                    '<th data-ui-style="group-standing-js-007">H</th>' +
-                    '<th data-ui-style="group-standing-js-008">B</th>' +
-                    '<th data-ui-style="group-standing-js-009">BT/BB</th>' +
-                    '<th data-ui-style="group-standing-js-010">HS</th>' +
-                    '<th data-ui-style="group-standing-js-011">Điểm</th>' +
+                    '<th>#</th>' +
+                    '<th>Đội bóng</th>' +
+                    '<th>Trận</th>' +
+                    '<th>T</th>' +
+                    '<th>H</th>' +
+                    '<th>B</th>' +
+                    '<th>BT/BB</th>' +
+                    '<th>HS</th>' +
+                    '<th>Điểm</th>' +
                     '</tr>' +
                     '</thead>' +
                     '<tbody>';
@@ -379,15 +379,15 @@
                     }
 
                     tableHtml += '<tr' + qClass + '>' +
-                        '<td data-ui-style="group-standing-js-012"><span class="rr-rank-badge">' + (rank + 1) + '</span></td>' +
-                        '<td data-ui-style="group-standing-js-013">' + row.name + '</td>' +
-                        '<td data-ui-style="group-standing-js-014" class="rr-stat-cell">' + row.mp + '</td>' +
-                        '<td data-ui-style="group-standing-js-015" class="rr-stat-green">' + row.w + '</td>' +
-                        '<td data-ui-style="group-standing-js-016" class="rr-stat-green">' + row.d + '</td>' +
-                        '<td data-ui-style="group-standing-js-017" class="rr-stat-green">' + row.l + '</td>' +
-                        '<td data-ui-style="group-standing-js-018" class="rr-stat-cell">' + row.gf + '/' + row.ga + '</td>' +
-                        '<td data-ui-style="group-standing-js-019" class="rr-stat-cell">' + (row.gd > 0 ? '+' + row.gd : row.gd) + '</td>' +
-                        '<td data-ui-style="group-standing-js-020">' + row.pts + '</td>' +
+                        '<td><span class="rr-rank-badge">' + (rank + 1) + '</span></td>' +
+                        '<td>' + row.name + '</td>' +
+                        '<td class="rr-stat-cell">' + row.mp + '</td>' +
+                        '<td class="rr-stat-green">' + row.w + '</td>' +
+                        '<td class="rr-stat-green">' + row.d + '</td>' +
+                        '<td class="rr-stat-green">' + row.l + '</td>' +
+                        '<td class="rr-stat-cell">' + row.gf + '/' + row.ga + '</td>' +
+                        '<td class="rr-stat-cell">' + (row.gd > 0 ? '+' + row.gd : row.gd) + '</td>' +
+                        '<td>' + row.pts + '</td>' +
                         '</tr>';
                 }
                 tableHtml += '</tbody></table></div>';
@@ -423,7 +423,7 @@
             block.style.marginBottom = '2.25rem';
 
             var targetRankNum = cfg.wildcardRankIndex + 1;
-            var headerHtml = '<div data-ui-style="group-standing-js-021" style="display: flex;">' +
+            var headerHtml = '<div>' +
                 '<div>BẢNG SO SÁNH CÁC ĐỘI HẠNG ' + targetRankNum + ' XUẤT SẮC</div>' +
                 '</div>';
 
@@ -431,16 +431,16 @@
                 '<table class="rr-table">' +
                 '<thead>' +
                 '<tr>' +
-                '<th data-ui-style="group-standing-js-022">#</th>' +
-                '<th data-ui-style="group-standing-js-023">Đội bóng</th>' +
-                '<th data-ui-style="group-standing-js-024">Bảng</th>' +
-                '<th data-ui-style="group-standing-js-025">Trận</th>' +
-                '<th data-ui-style="group-standing-js-026">T</th>' +
-                '<th data-ui-style="group-standing-js-027">H</th>' +
-                '<th data-ui-style="group-standing-js-028">B</th>' +
-                '<th data-ui-style="group-standing-js-029">BT/BB</th>' +
-                '<th data-ui-style="group-standing-js-030">HS</th>' +
-                '<th data-ui-style="group-standing-js-031">Điểm</th>' +
+                '<th>#</th>' +
+                '<th>Đội bóng</th>' +
+                '<th>Bảng</th>' +
+                '<th>Trận</th>' +
+                '<th>T</th>' +
+                '<th>H</th>' +
+                '<th>B</th>' +
+                '<th>BT/BB</th>' +
+                '<th>HS</th>' +
+                '<th>Điểm</th>' +
                 '</tr>' +
                 '</thead>' +
                 '<tbody>';
@@ -451,16 +451,16 @@
                 var qClass = isWildcardWinner ? ' class="qualified-wildcard"' : '';
 
                 tableHtml += '<tr' + qClass + '>' +
-                    '<td data-ui-style="group-standing-js-032"><span class="rr-rank-badge">' + (rank + 1) + '</span></td>' +
-                    '<td data-ui-style="group-standing-js-033">' + row.name + '</td>' +
-                    '<td data-ui-style="group-standing-js-034">Bảng ' + row.groupKey + '</td>' +
-                    '<td data-ui-style="group-standing-js-035" class="rr-stat-cell">' + row.mp + '</td>' +
-                    '<td data-ui-style="group-standing-js-036" class="rr-stat-green">' + row.w + '</td>' +
-                    '<td data-ui-style="group-standing-js-037" class="rr-stat-green">' + row.d + '</td>' +
-                    '<td data-ui-style="group-standing-js-038" class="rr-stat-green">' + row.l + '</td>' +
-                    '<td data-ui-style="group-standing-js-039" class="rr-stat-cell">' + row.gf + '/' + row.ga + '</td>' +
-                    '<td data-ui-style="group-standing-js-040" class="rr-stat-cell">' + (row.gd > 0 ? '+' + row.gd : row.gd) + '</td>' +
-                    '<td data-ui-style="group-standing-js-041">' + row.pts + '</td>' +
+                    '<td><span class="rr-rank-badge">' + (rank + 1) + '</span></td>' +
+                    '<td>' + row.name + '</td>' +
+                    '<td>Bảng ' + row.groupKey + '</td>' +
+                    '<td class="rr-stat-cell">' + row.mp + '</td>' +
+                    '<td class="rr-stat-green">' + row.w + '</td>' +
+                    '<td class="rr-stat-green">' + row.d + '</td>' +
+                    '<td class="rr-stat-green">' + row.l + '</td>' +
+                    '<td class="rr-stat-cell">' + row.gf + '/' + row.ga + '</td>' +
+                    '<td class="rr-stat-cell">' + (row.gd > 0 ? '+' + row.gd : row.gd) + '</td>' +
+                    '<td>' + row.pts + '</td>' +
                     '</tr>';
             }
 

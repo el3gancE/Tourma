@@ -314,10 +314,10 @@
                             '<button type="button" id="stageEndConfirmBtn" class="stage-end-confirm-btn" onclick="window.StageEndPopup.confirmStageEnd()">' +
                                 'Xác nhận' +
                             '</button>' +
-                            '<button type="button" id="stageEndNextBtn" class="stage-end-next-btn" style="display: none;" onclick="window.StageEndPopup.goToStage2()">' +
+                            '<button type="button" id="stageEndNextBtn" class="stage-end-next-btn" onclick="window.StageEndPopup.goToStage2()">' +
                                 '<i class="fa-solid fa-arrow-right"></i> Tiếp Tục Vòng 2' +
                             '</button>' +
-                            '<button type="button" id="stageEndUnlockBtn" class="stage-end-unlock-btn" style="display: none;" onclick="window.StageEndPopup.showUnlockConfirmModal()">' +
+                            '<button type="button" id="stageEndUnlockBtn" class="stage-end-unlock-btn" onclick="window.StageEndPopup.showUnlockConfirmModal()">' +
                                 'Mở khóa để sửa' +
                             '</button>' +
                         '</div>' +
@@ -414,10 +414,9 @@
             if (!loader) {
                 loader = document.createElement('div');
                 loader.id = 'stageEndTransitionOverlay';
-                loader.setAttribute('data-ui-style', 'stage-end-transition-overlay');
                 loader.style.display = 'flex';
-                loader.innerHTML = '<div data-ui-style="stage-end-popup-js-001"></div>' +
-                                   '<div id="stageEndTransitionMsg" data-ui-style="stage-end-popup-js-002">' + (msg || 'Đang chuyển sang Vòng 2...') + '</div>';
+                loader.innerHTML = '<div></div>' +
+                                   '<div id="stageEndTransitionMsg">' + (msg || 'Đang chuyển sang Vòng 2...') + '</div>';
                 document.body.appendChild(loader);
             } else {
                 var msgEl = document.getElementById('stageEndTransitionMsg');
@@ -662,7 +661,7 @@
                     '</div>' +
                     '<div class="stage-end-modal-body">' +
                         '<p>Mở khóa Vòng 1 sẽ cho phép chỉnh sửa lại tỉ số các trận đấu.</p>' +
-                        '<p data-ui-style="stage-end-popup-js-003">' +
+                        '<p>' +
                             '⚠️ Mở khóa sẽ xóa toàn bộ nhánh và kết quả Vòng 2. Xác nhận lại Vòng 1 sẽ tạo nhánh Vòng 2 mới.' +
                         '</p>' +
                     '</div>' +

@@ -38,20 +38,11 @@
         <title><%= seriesName %> - Dashboard</title>
 
         <!-- Google Fonts & FontAwesome -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Design System CSS, Team Badges CSS & Dedicated Rolling Dashboard CSS -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/team-badges.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-dashboard.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css">
+">
+">
             <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
     </head>
     <body class="ui-page tournament-workspace series-dashboard-page">
         <!-- Shared Navigation Header Component -->

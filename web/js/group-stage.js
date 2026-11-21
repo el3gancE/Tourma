@@ -404,11 +404,11 @@
 
         var groupKeys = Object.keys(groupsMap);
         if (groupKeys.length === 0) {
-            container.innerHTML = '<div data-ui-style="group-stage-js-001">' +
-                '<i class="fa-solid fa-layer-group" data-ui-style="group-stage-js-002"></i>' +
-                '<h3 data-ui-style="group-stage-js-003">Chưa thiết lập bảng đấu</h3>' +
-                '<p data-ui-style="group-stage-js-004">Giải đấu chưa được tạo bảng và phân bổ đội bóng. Vui lòng bấm vào nút bên dưới để tạo bảng và chia đội thi đấu.</p>' +
-                '<a href="manage-group.jsp?id=' + encodeURIComponent(tournamentId) + '&format=GROUP_STAGE" class="btn btn-mint" data-ui-style="group-stage-js-005" style="display: inline-flex;">' +
+            container.innerHTML = '<div>' +
+                '<i class="fa-solid fa-layer-group"></i>' +
+                '<h3>Chưa thiết lập bảng đấu</h3>' +
+                '<p>Giải đấu chưa được tạo bảng và phân bổ đội bóng. Vui lòng bấm vào nút bên dưới để tạo bảng và chia đội thi đấu.</p>' +
+                '<a href="manage-group.jsp?id=' + encodeURIComponent(tournamentId) + '&format=GROUP_STAGE" class="btn btn-mint">' +
                 '<i class="fa-solid fa-pen-to-square"></i> Quản Lý & Chia Bảng Đấu' +
                 '</a>' +
                 '</div>';
@@ -433,7 +433,7 @@
 
             var titleGroup = document.createElement('div');
             titleGroup.className = 'list-round-title-group';
-            titleGroup.innerHTML = '<h3 class="list-round-title"><i class="fa-solid fa-trophy" data-ui-style="group-stage-js-006"></i> Bảng ' + gKey + '</h3>'
+            titleGroup.innerHTML = '<h3 class="list-round-title"><i class="fa-solid fa-trophy"></i> Bảng ' + gKey + '</h3>'
                 + '<span class="list-round-badge">' + gTeams.length + ' Đội • ' + mList.length + ' Trận</span>';
             secHeader.appendChild(titleGroup);
 

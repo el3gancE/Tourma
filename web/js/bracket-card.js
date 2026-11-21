@@ -167,23 +167,23 @@
                 byeCard.setAttribute('data-match-id', String(matchId));
                 byeCard.innerHTML =
                     '<div class="bracket-node-header">' +
-                    '<span class="bracket-match-id" data-ui-style="bracket-card-js-001">AUTO</span>' +
-                    '<span class="bracket-status-badge" data-ui-style="bracket-card-js-002">BYE</span>' +
+                    '<span class="bracket-match-id">AUTO</span>' +
+                    '<span class="bracket-status-badge">BYE</span>' +
                     '</div>' +
                     '<div class="bracket-teams-box">' +
                     '<div class="bracket-team-row winner" data-team-name="' + t1Name + '">' +
                     '<div class="bracket-team-info">' +
-                    '<span class="bracket-seed-badge"' + (seed1 ? ' data-ui-style="bracket-card-js-003"' : '') + '>' + (seed1 || '') + '</span>' +
+                    '<span class="bracket-seed-badge"' + (seed1 ? '' : '') + '>' + (seed1 || '') + '</span>' +
                     '<span class="bracket-team-name" title="' + t1Name + '">' + t1Name + '</span>' +
                     '</div>' +
-                    '<span class="bracket-score-box" data-ui-style="bracket-card-js-004" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" data-ui-style="bracket-card-js-005"></i></span>' +
+                    '<span class="bracket-score-box" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast"></i></span>' +
                     '</div>' +
                     '<div class="bracket-team-row winner" data-team-name="' + t2Name + '">' +
                     '<div class="bracket-team-info">' +
-                    '<span class="bracket-seed-badge"' + (seed2 ? ' data-ui-style="bracket-card-js-006"' : '') + '>' + (seed2 || '') + '</span>' +
+                    '<span class="bracket-seed-badge"' + (seed2 ? '' : '') + '>' + (seed2 || '') + '</span>' +
                     '<span class="bracket-team-name" title="' + t2Name + '">' + t2Name + '</span>' +
                     '</div>' +
-                    '<span class="bracket-score-box" data-ui-style="bracket-card-js-007" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast" data-ui-style="bracket-card-js-008"></i></span>' +
+                    '<span class="bracket-score-box" title="Tự động đi tiếp"><i class="fa-solid fa-forward-fast"></i></span>' +
                     '</div>' +
                     '</div>';
                 return byeCard;
@@ -226,7 +226,7 @@
 
             var formatSeedBadge = function (seedVal, isPlaceholder, isBye) {
                 if (isBye) {
-                    return '<span class="bracket-seed-badge" style="visibility: hidden;"></span>';
+                    return '<span class="bracket-seed-badge"></span>';
                 }
                 if (isPlaceholder) {
                     return '<span class="bracket-seed-badge unseeded"></span>';
@@ -242,10 +242,10 @@
 
             var matchHeaderContent = matchHeaderLabel ?
                 ('<span class="bracket-match-id">' + matchHeaderLabel + '</span>') :
-                (hasBye ? '<span class="bracket-match-id" data-ui-style="bracket-card-js-009">BYE</span>' : '<span class="bracket-match-id">&nbsp;</span>');
+                (hasBye ? '<span class="bracket-match-id">BYE</span>' : '<span class="bracket-match-id">&nbsp;</span>');
 
             var statusBadgeContent = hasBye ?
-                '<span class="bracket-status-badge" style="visibility: hidden;">BYE</span>' :
+                '<span class="bracket-status-badge">BYE</span>' :
                 ('<span class="bracket-status-badge ' + statusClass + '">' + statusLabel + '</span>');
 
             card.innerHTML =

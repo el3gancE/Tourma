@@ -767,7 +767,7 @@
 
             var totalRounds = this.upperRounds.length;
             if (totalRounds === 0) {
-                container.innerHTML = '<div data-ui-style="double-elimination-js-001">Chưa có dữ liệu Upper Bracket.</div>';
+                container.innerHTML = '<div>Chưa có dữ liệu Upper Bracket.</div>';
                 return;
             }
 
@@ -886,7 +886,7 @@
 
             var totalRounds = this.lowerRounds.length;
             if (totalRounds === 0) {
-                container.innerHTML = '<div data-ui-style="double-elimination-js-002">Chưa có dữ liệu Lower Bracket.</div>';
+                container.innerHTML = '<div>Chưa có dữ liệu Lower Bracket.</div>';
                 return;
             }
 
@@ -971,7 +971,7 @@
             }
 
             if (listSections.length === 0) {
-                container.innerHTML = '<div data-ui-style="double-elimination-js-003">Chưa có trận đấu nào.</div>';
+                container.innerHTML = '<div>Chưa có trận đấu nào.</div>';
                 return;
             }
 

@@ -1,5 +1,4 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/h2h.css?v=6">
 <dialog id="tourmaH2h" class="h2h-dialog" aria-labelledby="h2hTitle"
         data-endpoint="${pageContext.request.contextPath}/api/h2h">
     <header class="h2h-header">

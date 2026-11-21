@@ -235,20 +235,9 @@
         <title><%= tourneyName %> - Thiết Lập Điểm Thưởng - TOURMA</title>
 
         <!-- Google Fonts & FontAwesome -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Main Design System CSS & Dedicated Form CSS -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-point-config.css">
 <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 </head>
     <body class="ui-page workspace-page tournament-workspace series-page series-points-page">
         <!-- Shared Navigation Header Component -->
@@ -263,25 +252,25 @@
             <jsp:param name="activeStep" value="point-config"/>
         </jsp:include></details>
 
-        <main class="series-main" data-ui-style="rolling-point-config-jsp-001">
+        <main class="series-main">
 
             <!-- Breadcrumb Navigation -->
-            <div data-ui-style="rolling-point-config-jsp-002">
-                <a href="<%= previousStepUrl %>" class="text-muted" data-ui-style="rolling-point-config-jsp-003">
+            <div>
+                <a href="<%= previousStepUrl %>" class="text-muted">
                     <i class="fa-solid fa-arrow-left"></i> Quay lại: <%= hasGroupStep ? "Chia Bảng" : "Quản Lý Đội" %>
                 </a>
             </div>
 
             <!-- Form Container Box -->
             <div class="form-container-box">
-                <h1 class="form-header-title" data-ui-style="rolling-point-config-jsp-004">
+                <h1 class="form-header-title">
                     <i class="fa-solid fa-star text-gold"></i> Thiết lập điểm thưởng
                 </h1>
-                <p class="text-muted" data-ui-style="rolling-point-config-jsp-005">Điểm thưởng theo vị trí cho <strong><%= nTeams %> đội</strong> · Tier <strong><%= tierName %></strong> · <strong id="fmtHeaderDisplay"><%= isMultiStage ? (s1Format + " → " + s2Format) : tourneyFormat %></strong>.</p>
+                <p class="text-muted">Điểm thưởng theo vị trí cho <strong><%= nTeams %> đội</strong> · Tier <strong><%= tierName %></strong> · <strong id="fmtHeaderDisplay"><%= isMultiStage ? (s1Format + " → " + s2Format) : tourneyFormat %></strong>.</p>
 
                 <!-- RULE NOTICE ALERT BOX -->
-                <div data-ui-style="rolling-point-config-jsp-006">
-                    <div data-ui-style="rolling-point-config-jsp-007" style="display: flex;">
+                <div>
+                    <div>
                         <i class="fa-solid fa-circle-info"></i> Lưu ý
                     </div>
                     Ô trống được tính là <strong>0 điểm</strong>.<br>
@@ -295,15 +284,15 @@
                     <input type="hidden" name="clientStage1Format" id="clientStage1FormatInput" value="<%= s1Format %>">
 
                     <!-- DYNAMICALLY GENERATED POSITION / ROUND POINT INPUTS -->
-                    <div data-ui-style="rolling-point-config-jsp-008">
-                        <h4 data-ui-style="rolling-point-config-jsp-009" style="display: flex;">
+                    <div>
+                        <h4>
                             <span><i class="fa-solid fa-pen-to-square text-mint"></i> Điểm theo vị trí</span>
-                            <span data-ui-style="rolling-point-config-jsp-010">
+                            <span>
                                 Tier <%= tierName %>
                             </span>
                         </h4>
 
-                        <div data-ui-style="rolling-point-config-jsp-011" style="display: flex;">
+                        <div>
                             <% for (int i = 0; i < posList.size(); i++) {
                                 PositionItem item = posList.get(i);
                                 if (item.stageHeader != null) {
@@ -314,8 +303,8 @@
                                     String icon = isS2 ? "fa-trophy" : "fa-diagram-project";
                                     String subText = isS2 ? "(Vòng Chung Cuộc)" : "(Vòng Loại / Phân Hạng)";
                             %>
-                                <div data-ui-style="rolling-point-config-jsp-012" style="margin-top: <%= isS2 ? "0.25rem" : "1.25rem" %>;">
-                                    <span data-ui-style="rolling-point-config-jsp-013" style="color: <%= badgeColor %>; background: <%= badgeBg %>; border: 1px solid <%= badgeBorder %>; display: inline-flex;">
+                                <div>
+                                    <span>
                                         <i class="fa-solid <%= icon %>"></i> <%= item.stageHeader %>
                                     </span>
                                 </div>
@@ -329,13 +318,13 @@
                                     }
                             %>
                                 <!-- 1st Place / Champion Champion Points -->
-                                <div data-ui-style="rolling-point-config-jsp-014" style="display: flex;">
-                                    <div data-ui-style="rolling-point-config-jsp-015">
-                                        <i class="fa-solid fa-trophy" data-ui-style="rolling-point-config-jsp-016"></i> <%= item.label %>
+                                <div>
+                                    <div>
+                                        <i class="fa-solid fa-trophy"></i> <%= item.label %>
                                     </div>
-                                    <div data-ui-style="rolling-point-config-jsp-017" style="display: flex;">
-                                        <input type="number" name="champPoints" aria-label="Điểm vô địch" value="<%= champVal %>" placeholder="0" min="0" onfocus="this.select()" class="form-control" data-ui-style="rolling-point-config-jsp-018">
-                                        <span data-ui-style="rolling-point-config-jsp-019">pts</span>
+                                    <div>
+                                        <input type="number" name="champPoints" aria-label="Điểm vô địch" value="<%= champVal %>" placeholder="0" min="0" onfocus="this.select()" class="form-control">
+                                        <span>pts</span>
                                     </div>
                                 </div>
                             <% } else {
@@ -345,13 +334,13 @@
                                 }
                             %>
                                 <!-- Sub Rounds / Finishing Positions -->
-                                <div data-ui-style="rolling-point-config-jsp-020" style="display: flex;">
-                                    <div data-ui-style="rolling-point-config-jsp-021">
+                                <div>
+                                    <div>
                                         <%= item.label %>
                                     </div>
-                                    <div data-ui-style="rolling-point-config-jsp-022" style="display: flex;">
-                                        <input type="number" name="point_pos_<%= item.key %>" aria-label="Điểm vị trí <%= item.key %>" value="<%= posVal %>" placeholder="0" min="0" onfocus="this.select()" class="form-control" data-ui-style="rolling-point-config-jsp-023">
-                                        <span data-ui-style="rolling-point-config-jsp-024">pts</span>
+                                    <div>
+                                        <input type="number" name="point_pos_<%= item.key %>" aria-label="Điểm vị trí <%= item.key %>" value="<%= posVal %>" placeholder="0" min="0" onfocus="this.select()" class="form-control">
+                                        <span>pts</span>
                                     </div>
                                 </div>
                             <% }
@@ -360,12 +349,12 @@
                     </div>
 
                     <!-- SUBMIT NAVIGATION BUTTONS -->
-                    <div data-ui-style="rolling-point-config-jsp-025" style="display: flex;">
-                        <a href="<%= previousStepUrl %>" class="btn btn-secondary" data-ui-style="rolling-point-config-jsp-026">
+                    <div>
+                        <a href="<%= previousStepUrl %>" class="btn btn-secondary">
                             <i class="fa-solid fa-arrow-left"></i> Quay lại: <%= hasGroupStep ? "Chia Bảng" : "Quản Lý Đội" %>
                         </a>
-                        <button type="submit" class="btn btn-mint" data-ui-style="rolling-point-config-jsp-027">
-                            Tiếp theo <i class="fa-solid fa-arrow-right" data-ui-style="rolling-point-config-jsp-028"></i>
+                        <button type="submit" class="btn btn-mint">
+                            Tiếp theo <i class="fa-solid fa-arrow-right"></i>
                         </button>
                     </div>
                 </form>

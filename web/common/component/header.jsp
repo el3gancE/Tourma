@@ -14,7 +14,6 @@
 %>
 <jsp:include page="/common/component/tournament-config-state.jsp" />
 <!-- Dedicated Header Component Stylesheet -->
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=20261101-settings">
 
 <!-- Header / Navigation Bar Component -->
 <nav class="navbar">

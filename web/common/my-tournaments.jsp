@@ -11,20 +11,11 @@
         <title>Giải Đấu Của Tôi - TOURMA</title>
 
         <!-- Google Font Readex Pro -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- FontAwesome Icons -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
         <!-- Main Design System CSS & Dedicated My Tournaments CSS -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css?v=20261107-combined-filters">
     </head>
     <body class="ui-page workspace-page tournaments-page">
         <!-- Include Shared Navigation Header Component -->
@@ -42,7 +33,7 @@
                     <h1 class="page-title">
                         <i class="fa-solid fa-sitemap text-mint"></i> Giải Đấu Của Tôi
                     </h1>
-                    <p class="text-muted" data-ui-style="my-tournaments-jsp-001">
+                    <p class="text-muted">
                         Tất cả cuộc đấu của bạn, trong cùng một không gian.
                     </p>
                 </div>
@@ -122,7 +113,7 @@
                                     <div class="tourney-progress" aria-label="Tiến độ giải đấu">
                                         <span class="tourney-progress-status">${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'in progress' : 'incoming')}</span>
                                         <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${t.progressPercent}">
-                                            <span class="tourney-progress-fill" style="width: ${t.progressPercent}%"></span>
+                                            <span class="tourney-progress-fill"></span>
                                         </div>
                                         <span class="tourney-progress-percent">${t.progressPercent}%</span>
                                     </div>
@@ -142,11 +133,11 @@
                 <c:otherwise>
                     <!-- Empty State Box when no tournament data exists -->
                     <div class="empty-state-box">
-                        <div data-ui-style="my-tournaments-jsp-004">
+                        <div>
                             <i class="fa-solid fa-folder-open"></i>
                         </div>
-                        <h3 data-ui-style="my-tournaments-jsp-005">${not empty pageInfo.query || (pageInfo.kind != 'ALL' || pageInfo.status != 'ALL' || not empty pageInfo.seriesId) ? 'Không có giải đấu phù hợp' : 'Chưa có giải đấu nào được tạo'}</h3>
-                        <p class="text-muted" data-ui-style="my-tournaments-jsp-006">
+                        <h3>${not empty pageInfo.query || (pageInfo.kind != 'ALL' || pageInfo.status != 'ALL' || not empty pageInfo.seriesId) ? 'Không có giải đấu phù hợp' : 'Chưa có giải đấu nào được tạo'}</h3>
+                        <p class="text-muted">
                             ${not empty pageInfo.query || (pageInfo.kind != 'ALL' || pageInfo.status != 'ALL' || not empty pageInfo.seriesId) ? 'Thử đổi từ khóa hoặc chọn bộ lọc khác.' : 'Hãy bắt đầu khởi tạo giải đấu đầu tiên.'}
                         </p>
                         <a href="${pageContext.request.contextPath}/common/create-tournament.jsp" class="btn btn-mint">
@@ -188,10 +179,10 @@
                 </nav>
             </c:if>
             <!-- DELETE TOURNAMENT CONFIRMATION MODAL -->
-            <div id="deleteTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeDeleteTourneyModal();">
-                <div class="tourma-modal-card" data-ui-style="my-tournaments-jsp-007" onclick="event.stopPropagation();">
-                    <div class="modal-header-bar" data-ui-style="my-tournaments-jsp-008">
-                        <div class="modal-header-title" data-ui-style="my-tournaments-jsp-009" style="display: flex;">
+            <div id="deleteTourneyModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) closeDeleteTourneyModal();">
+                <div class="tourma-modal-card" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar">
+                        <div class="modal-header-title">
                             <i class="fa-solid fa-trash-can"></i>
                             <span>Xác Nhận Xóa Giải Đấu</span>
                         </div>
@@ -200,19 +191,19 @@
                         </button>
                     </div>
 
-                    <div class="modal-body-content" data-ui-style="my-tournaments-jsp-010">
-                        <div data-ui-style="my-tournaments-jsp-011">
-                            <strong data-ui-style="my-tournaments-jsp-012">⚠️ Cảnh báo xóa vĩnh viễn:</strong><br>
-                            Hành động này sẽ <strong data-ui-style="my-tournaments-jsp-013">xóa hoàn toàn giải đấu</strong> cùng toàn bộ danh sách đội tuyển, cấu hình thể thức và kết quả các trận đấu liên quan.
+                    <div class="modal-body-content">
+                        <div>
+                            <strong>⚠️ Cảnh báo xóa vĩnh viễn:</strong><br>
+                            Hành động này sẽ <strong>xóa hoàn toàn giải đấu</strong> cùng toàn bộ danh sách đội tuyển, cấu hình thể thức và kết quả các trận đấu liên quan.
                         </div>
-                        <p data-ui-style="my-tournaments-jsp-014">
-                            Bạn có chắc chắn muốn xóa giải: <strong id="deleteTourneyTargetName" data-ui-style="my-tournaments-jsp-015"></strong> (ID: <span id="deleteTourneyTargetId" class="text-muted"></span>)?
+                        <p>
+                            Bạn có chắc chắn muốn xóa giải: <strong id="deleteTourneyTargetName"></strong> (ID: <span id="deleteTourneyTargetId" class="text-muted"></span>)?
                         </p>
                     </div>
 
-                    <div class="modal-footer-bar" data-ui-style="my-tournaments-jsp-016" style="display: flex;">
-                        <button type="button" class="btn btn-secondary" onclick="closeDeleteTourneyModal()" data-ui-style="my-tournaments-jsp-017">Hủy Bỏ</button>
-                        <button type="button" class="btn" data-ui-style="my-tournaments-jsp-018" onclick="confirmDeleteTourney()">
+                    <div class="modal-footer-bar">
+                        <button type="button" class="btn btn-secondary" onclick="closeDeleteTourneyModal()">Hủy Bỏ</button>
+                        <button type="button" class="btn" onclick="confirmDeleteTourney()">
                             <i class="fa-solid fa-trash-can"></i> Xác Nhận Xóa
                         </button>
                     </div>
@@ -220,10 +211,10 @@
             </div>
 
             <!-- CLONE TOURNAMENT CONFIRMATION MODAL -->
-            <div id="cloneTourneyModalBackdrop" class="tourma-modal-backdrop" style="display: none;" onclick="if(event.target === this) closeCloneTourneyModal();">
-                <div class="tourma-modal-card" data-ui-style="my-tournaments-jsp-019" onclick="event.stopPropagation();">
-                    <div class="modal-header-bar" data-ui-style="my-tournaments-jsp-020">
-                        <div class="modal-header-title" data-ui-style="my-tournaments-jsp-021" style="display: flex;">
+            <div id="cloneTourneyModalBackdrop" class="tourma-modal-backdrop" onclick="if(event.target === this) closeCloneTourneyModal();">
+                <div class="tourma-modal-card" onclick="event.stopPropagation();">
+                    <div class="modal-header-bar">
+                        <div class="modal-header-title">
                             <i class="fa-solid fa-copy"></i>
                             <span>Sao Chép Cấu Hình Giải Đấu</span>
                         </div>
@@ -236,30 +227,30 @@
                         <input type="hidden" name="sourceTournamentId" id="cloneSourceTournamentId" value="">
                         <input type="hidden" name="redirectContext" id="cloneRedirectContext" value="standalone">
 
-                        <div class="modal-body-content" data-ui-style="my-tournaments-jsp-022">
-                            <div data-ui-style="my-tournaments-jsp-023">
+                        <div class="modal-body-content">
+                            <div>
                                 <i class="fa-solid fa-circle-info text-mint"></i>
                                 Hệ thống sẽ tạo một giải đấu mới ở trạng thái <strong>DRAFT</strong> với toàn bộ cấu hình thể thức, phân bảng, multi-stage từ giải gốc.
                             </div>
 
-                            <div data-ui-style="my-tournaments-jsp-024">
-                                <label data-ui-style="my-tournaments-jsp-025" style="display: block;">
+                            <div>
+                                <label>
                                     Tên giải đấu mới:
                                 </label>
-                                <input type="text" id="cloneNewTourneyName" name="newName" class="form-control" required data-ui-style="my-tournaments-jsp-026" placeholder="Nhập tên giải mới...">
+                                <input type="text" id="cloneNewTourneyName" name="newName" class="form-control" required placeholder="Nhập tên giải mới...">
                             </div>
 
-                            <div data-ui-style="my-tournaments-jsp-027" style="display: flex;">
-                                <i class="fa-solid fa-users text-mint" data-ui-style="my-tournaments-jsp-028"></i>
-                                <div data-ui-style="my-tournaments-jsp-029">
+                            <div>
+                                <i class="fa-solid fa-users text-mint"></i>
+                                <div>
                                     <strong>Ràng buộc số lượng:</strong> Danh sách đội sẽ để trống để bạn nhập mới ở bước tiếp theo, và <strong>bắt buộc phải khớp đúng số lượng đội</strong> của giải gốc.
                                 </div>
                             </div>
                         </div>
 
-                        <div class="modal-footer-bar" data-ui-style="my-tournaments-jsp-030" style="display: flex;">
-                            <button type="button" class="btn btn-secondary" onclick="closeCloneTourneyModal()" data-ui-style="my-tournaments-jsp-031">Hủy Bỏ</button>
-                            <button type="submit" class="btn btn-mint" data-ui-style="my-tournaments-jsp-032" style="display: inline-flex;">
+                        <div class="modal-footer-bar">
+                            <button type="button" class="btn btn-secondary" onclick="closeCloneTourneyModal()">Hủy Bỏ</button>
+                            <button type="submit" class="btn btn-mint">
                                 <i class="fa-solid fa-copy"></i> Tạo Bản Sao
                             </button>
                         </div>

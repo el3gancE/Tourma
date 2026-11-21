@@ -4,7 +4,6 @@
     Description: Bounded drag-to-pan viewport frame with floating zoom toolbar for rendering bracket trees.
 --%>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css">
 
 <div id="bracketViewportContainer" class="bracket-viewport-container">
     

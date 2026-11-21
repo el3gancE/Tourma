@@ -15,14 +15,6 @@
     <title>Tạo giải đấu — TOURMA</title>
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
     <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css?v=3">
 </head>
 <body class="ui-page workspace-page create-page">
     <jsp:include page="/common/component/header.jsp"><jsp:param name="active" value="create-tournament"/><jsp:param name="themeToggle" value="true"/></jsp:include>

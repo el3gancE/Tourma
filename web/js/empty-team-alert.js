@@ -68,7 +68,7 @@
                     } else {
                         // Fallback HTML if JSP template wrapper not present
                         targetNode.innerHTML = 
-                            '<div class="empty-team-alert-wrapper" style="display: flex;">' +
+                            '<div class="empty-team-alert-wrapper">' +
                                 '<div class="empty-team-alert-card">' +
                                     '<div class="empty-team-alert-icon-box">' +
                                         '<i class="fa-solid fa-users-slash empty-team-alert-icon"></i>' +

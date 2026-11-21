@@ -2,7 +2,6 @@
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%-- Reusable announcement. Host supplies newNumberOneEligible and newNumberOneName. --%>
 <c:if test="${newNumberOneEligible and not empty newNumberOneName}">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/components/new-number-one.css?v=20261117-v13">
     <section class="new-number-one" data-new-number-one data-view-selector="<c:out value="${param.viewSelector}"/>" aria-labelledby="newNumberOneTitle" aria-describedby="newNumberOneName">
         <div class="new-number-one__art" aria-hidden="true">
             <span></span><span></span><span></span><span></span>

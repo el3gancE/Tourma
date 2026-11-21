@@ -10,23 +10,11 @@
         <title>Tạo Chuỗi Giải Mới - TOURMA</title>
 
         <!-- Google Font Readex Pro -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- FontAwesome Icons -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Main Design System CSS & Dedicated Creation CSS -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-series.css">
 <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
 </head>
     <body class="ui-page workspace-page tournament-workspace series-page series-form-page create-series-page">
         <!-- Include Shared Navigation Header Component -->
@@ -34,9 +22,9 @@
             <jsp:param name="active" value="create-series"/>
         <jsp:param name="themeToggle" value="true"/></jsp:include>
 
-        <main class="series-create-main" data-ui-style="create-series-jsp-001">
-            <div data-ui-style="create-series-jsp-002">
-                <a href="${pageContext.request.contextPath}/index.jsp" class="text-muted" data-ui-style="create-series-jsp-003">
+        <main class="series-create-main">
+            <div>
+                <a href="${pageContext.request.contextPath}/index.jsp" class="text-muted">
                     <i class="fa-solid fa-arrow-left"></i> Quay lại Trang chủ
                 </a>
             </div>
@@ -46,13 +34,13 @@
                 <h1 class="form-header-title">
                     <i class="fa-solid fa-folder-plus text-gold"></i> Tạo chuỗi giải
                 </h1>
-                <p class="text-muted" data-ui-style="create-series-jsp-004">
+                <p class="text-muted">
                     Đặt tên chuỗi giải và chọn cách tính điểm xếp hạng.
                 </p>
 
                 <!-- Error Alert Message -->
                 <% if (request.getAttribute("errorMessage") != null) { %>
-                    <div data-ui-style="create-series-jsp-005">
+                    <div>
                         <i class="fa-solid fa-triangle-exclamation"></i> <%= request.getAttribute("errorMessage") %>
                     </div>
                 <% } %>
@@ -70,7 +58,7 @@
                     <div class="form-group">
                         <label class="form-label" for="seriesDescription">Mô Tả Chuỗi Giải</label>
                         <textarea id="seriesDescription" name="description" class="form-control"
-                                  data-ui-style="create-series-jsp-006"
+
                                   placeholder="Mô tả về quy mô chuỗi giải đấu, giải thưởng tích lũy..."></textarea>
                     </div>
 
@@ -97,29 +85,29 @@
                     </div>
 
                     <!-- ROLLING OPTIONS PANEL -->
-                    <div id="rollingOptionsPanel" data-ui-style="create-series-jsp-007">
-                        <div class="form-group" data-ui-style="create-series-jsp-008">
+                    <div id="rollingOptionsPanel">
+                        <div class="form-group">
                             <label class="form-label" for="phaseSize">Số Giải Tích Lũy Trong 1 Phase (*)</label>
                             <input type="number" id="phaseSize" name="phaseSize" class="form-control" value="10" min="1" max="100">
-                            <p class="text-muted" data-ui-style="create-series-jsp-009">Ví dụ: Nhập 10 thì Giải 1-10 là Phase 1, 11-20 là Phase 2.</p>
+                            <p class="text-muted">Ví dụ: Nhập 10 thì Giải 1-10 là Phase 1, 11-20 là Phase 2.</p>
                         </div>
-                        <div class="form-group" data-ui-style="create-series-jsp-010">
+                        <div class="form-group">
                             <label class="form-label" for="initialPoints">Điểm Khởi Đầu (Initial Points)</label>
-                            <input type="number" id="initialPoints" name="initialPoints" class="form-control" value="0" readonly data-ui-style="create-series-jsp-011">
+                            <input type="number" id="initialPoints" name="initialPoints" class="form-control" value="0" readonly>
                         </div>
                     </div>
 
                     <!-- ELO OPTIONS PANEL -->
-                    <div id="eloOptionsPanel" data-ui-style="create-series-jsp-012" style="display: none;">
-                        <div class="form-group" data-ui-style="create-series-jsp-013">
+                    <div id="eloOptionsPanel">
+                        <div class="form-group">
                             <label class="form-label" for="initialElo">Điểm Elo Khởi Điểm (Initial Elo Rating)</label>
                             <input type="number" id="initialElo" name="initialElo" class="form-control" value="1000" step="10">
-                            <p class="text-muted" data-ui-style="create-series-jsp-014">Mặc định 1000 Elo cho tất cả các đội bóng tham gia.</p>
+                            <p class="text-muted">Mặc định 1000 Elo cho tất cả các đội bóng tham gia.</p>
                         </div>
                     </div>
 
                     <!-- SUBMIT BUTTONS -->
-                    <div data-ui-style="create-series-jsp-015" style="display: flex;">
+                    <div>
                         <a href="${pageContext.request.contextPath}/index.jsp" class="btn btn-secondary">Hủy Bỏ</a>
                         <button type="submit" class="btn btn-mint">
                             Tạo chuỗi giải →

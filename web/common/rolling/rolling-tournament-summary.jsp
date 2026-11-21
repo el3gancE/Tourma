@@ -62,18 +62,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><%= esc(tourneyName) %> - Tổng Kết Giải Đấu - TOURMA</title>
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-summary.css?v=1">
     </head>
     <body class="ui-page workspace-page tournament-workspace series-page tournament-summary-page">
         <jsp:include page="/common/component/header.jsp">

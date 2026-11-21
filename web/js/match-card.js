@@ -194,10 +194,10 @@
             var t1Class = 'match-team-side team-left ' + (isT1Winner ? 'winner ' : '') + (isT1Placeholder ? 'placeholder ' : '') + (isT1Bye ? 'bye-team ' : '');
             var t2Class = 'match-team-side team-right ' + (isT2Winner ? 'winner ' : '') + (isT2Placeholder ? 'placeholder ' : '') + (isT2Bye ? 'bye-team ' : '');
 
-            var seed1Html = isT1Placeholder ? '<span class="match-list-seed bye-seed" style="visibility:hidden"></span>' :
+            var seed1Html = isT1Placeholder ? '<span class="match-list-seed bye-seed"></span>' :
                 (isT1Bye ? '<span class="match-list-seed bye-seed"></span>' :
                     ('<span class="match-list-seed">' + (seed1 || '') + '</span>'));
-            var seed2Html = isT2Placeholder ? '<span class="match-list-seed bye-seed" style="visibility:hidden"></span>' :
+            var seed2Html = isT2Placeholder ? '<span class="match-list-seed bye-seed"></span>' :
                 (isT2Bye ? '<span class="match-list-seed bye-seed"></span>' :
                     ('<span class="match-list-seed">' + (seed2 || '') + '</span>'));
 
@@ -205,7 +205,7 @@
 
             card.innerHTML =
                 '<div class="match-card-meta">' +
-                '<div class="' + accentClass + '"' + (hasBye ? ' data-ui-style="match-card-js-001"' : '') + '></div>' +
+                '<div class="' + accentClass + '"' + (hasBye ? '' : '') + '></div>' +
                 '<span class="match-card-id">' + matchHeaderLabel + '</span>' +
                 '</div>' +
 

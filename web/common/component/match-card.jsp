@@ -4,7 +4,6 @@
     Description: High-density horizontal list component for displaying matches in round lists or fixtures.
 --%>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
 
 <%
     String matchNum = request.getParameter("matchNumber");

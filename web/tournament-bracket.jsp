@@ -72,11 +72,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Chuyển hướng sơ đồ thi đấu...</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-bracket.css">
 </head>
-<body data-ui-style="tournament-bracket-jsp-001" style="display: flex;">
-    <div data-ui-style="tournament-bracket-jsp-002">
-        <div data-ui-style="tournament-bracket-jsp-003">Đang tải sơ đồ giải đấu...</div>
+<body>
+    <div>
+        <div>Đang tải sơ đồ giải đấu...</div>
     </div>
     <script>
         (function() {

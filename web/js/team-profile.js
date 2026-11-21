@@ -69,7 +69,7 @@
       var hHtml = (prof.highestRank > 0) ? ('#' + prof.highestRank) : '-';
       if (prof.highestRank > 0 && prof.highestRankTourneyName) {
         var hUrl = prof.highestRankTourneyUrl || '#';
-        hHtml += '<span class="rank-tourney-name">(<a href="' + hUrl + '" class="rank-tourney-link" data-ui-style="team-profile-js-001" title="Xem giai đoạn cuối giải ' + prof.highestRankTourneyName + '">' + prof.highestRankTourneyName + '</a>)</span>';
+        hHtml += '<span class="rank-tourney-name">(<a href="' + hUrl + '" class="rank-tourney-link" title="Xem giai đoạn cuối giải ' + prof.highestRankTourneyName + '">' + prof.highestRankTourneyName + '</a>)</span>';
       }
       hEl.innerHTML = hHtml;
       if (prof.highestRank === 1 && prof.currentPoints > 0) {
@@ -113,21 +113,21 @@
     // 6. Tournaments Played
     var tpCountEl = document.getElementById('profTourneysPlayed');
     if (tpCountEl) {
-      tpCountEl.innerHTML = (prof.playedCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-002">Giải</span>';
+      tpCountEl.innerHTML = (prof.playedCount || 0) + '<span class="pts-unit">Giải</span>';
     }
 
     // 7. Achievement Cards
     var ccEl = document.getElementById('profChampCount');
-    if (ccEl) ccEl.innerHTML = (prof.champCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-003">Lần</span>';
+    if (ccEl) ccEl.innerHTML = (prof.champCount || 0) + '<span class="pts-unit">Lần</span>';
 
     var ruEl = document.getElementById('profRunnerUpCount');
-    if (ruEl) ruEl.innerHTML = (prof.runnerUpCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-004">Lần</span>';
+    if (ruEl) ruEl.innerHTML = (prof.runnerUpCount || 0) + '<span class="pts-unit">Lần</span>';
 
     var scEl = document.getElementById('profSemiCount');
-    if (scEl) scEl.innerHTML = (prof.semiCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-005">Lần</span>';
+    if (scEl) scEl.innerHTML = (prof.semiCount || 0) + '<span class="pts-unit">Lần</span>';
 
     var qcEl = document.getElementById('profQuarterCount');
-    if (qcEl) qcEl.innerHTML = (prof.quarterCount || 0) + '<span class="pts-unit" data-ui-style="team-profile-js-006">Lần</span>';
+    if (qcEl) qcEl.innerHTML = (prof.quarterCount || 0) + '<span class="pts-unit">Lần</span>';
 
     // 8. Champion Badges Section (Only if champCount > 0)
     var elChampSection = document.getElementById('profChampionSection');
@@ -140,7 +140,7 @@
           elChampBadges.innerHTML = reversedChampList.map(function (ct) {
             var bUrl = ct.finalStageUrl || '#';
             var tier = (ct.tier || ct.tierName || 'A').toUpperCase();
-            return '<a href="' + bUrl + '" class="champion-badge-pill" data-tournament-id="' + (ct.id || ct.tournamentId || '') + '" data-tier="' + tier + '" data-ui-style="team-profile-js-007" title="Xem giai đoạn cuối giải ' + ct.name + '">' +
+            return '<a href="' + bUrl + '" class="champion-badge-pill" data-tournament-id="' + (ct.id || ct.tournamentId || '') + '" data-tier="' + tier + '" title="Xem giai đoạn cuối giải ' + ct.name + '">' +
               '<i class="fa-solid fa-crown"></i> ' + ct.name +
             '</a>';
           }).join('');
@@ -185,21 +185,21 @@
           var pTier = (perf.tier || perf.tierName || 'A').toUpperCase();
 
           rowsHtml += '<tr data-tournament-id="' + String(perf.id || perf.tournamentId || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '">' +
-            '<td data-ui-style="team-profile-js-008">' + sttVal + '</td>' +
-            '<td data-ui-style="team-profile-js-009">' +
-              '<a href="' + tourneyUrl + '" class="tourney-name-link" data-ui-style="team-profile-js-010" onmouseover="this.style.color=\'var(--ui-accent)\'" onmouseout="this.style.color=\'var(--ui-text)\'" title="Xem giai đoạn cuối giải ' + perf.name + '">' +
+            '<td>' + sttVal + '</td>' +
+            '<td>' +
+              '<a href="' + tourneyUrl + '" class="tourney-name-link" title="Xem giai đoạn cuối giải ' + perf.name + '">' +
                 perf.name +
               '</a>' +
-              '<span class="tier-tag tier-' + pTier.toLowerCase() + '" data-ui-style="team-profile-js-011">[' + pTier + ']</span>' +
+              '<span class="tier-tag tier-' + pTier.toLowerCase() + '">[' + pTier + ']</span>' +
             '</td>' +
-            '<td data-ui-style="team-profile-js-012">' + perf.format + '</td>' +
+            '<td>' + perf.format + '</td>' +
             '<td><span class="achievement-text ' + achClass + '">' + perf.achievement + '</span></td>' +
-            '<td data-ui-style="team-profile-js-013">+' + (perf.pointsEarned || 0) + ' pts</td>' +
+            '<td>+' + (perf.pointsEarned || 0) + ' pts</td>' +
           '</tr>';
         });
         elTbody.innerHTML = rowsHtml;
       } else {
-        elTbody.innerHTML = '<tr><td colspan="5" data-ui-style="team-profile-js-014">Chưa có dữ liệu thành tích thi đấu giải con nào trong Series này.</td></tr>';
+        elTbody.innerHTML = '<tr><td colspan="5">Chưa có dữ liệu thành tích thi đấu giải con nào trong Series này.</td></tr>';
       }
     }
     // 11. Render Rank Progression Chart
@@ -228,7 +228,7 @@
       if (card) {
         var wrapper = card.querySelector('.rank-chart-wrapper');
         if (wrapper) {
-          wrapper.innerHTML = '<div data-ui-style="team-profile-js-015" style="display: flex;">Chưa có dữ liệu biến động thứ hạng cho đội này.</div>';
+          wrapper.innerHTML = '<div>Chưa có dữ liệu biến động thứ hạng cho đội này.</div>';
         }
       }
       return;

@@ -1007,11 +1007,11 @@
             if (groupKeys.length === 0) {
                 var cPath = this.getContextPath();
                 var manageUrl = (cPath ? cPath : '') + '/common/manage-group.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GSL';
-                workspace.innerHTML = '<div data-ui-style="gsl-js-001">' +
-                    '<i class="fa-solid fa-layer-group" data-ui-style="gsl-js-002"></i>' +
-                    '<h3 data-ui-style="gsl-js-003">Chưa thiết lập chia bảng GSL</h3>' +
-                    '<p data-ui-style="gsl-js-004">Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
-                    '<a href="' + manageUrl + '" class="btn btn-mint" data-ui-style="gsl-js-005" style="display: inline-flex;">' +
+                workspace.innerHTML = '<div>' +
+                    '<i class="fa-solid fa-layer-group"></i>' +
+                    '<h3>Chưa thiết lập chia bảng GSL</h3>' +
+                    '<p>Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
+                    '<a href="' + manageUrl + '" class="btn btn-mint">' +
                     '<i class="fa-solid fa-pen-to-square"></i> Quản Lý & Chia Bảng Đấu' +
                     '</a>' +
                     '</div>';
@@ -1352,11 +1352,11 @@
             if (groupKeys.length === 0) {
                 var cPath = this.getContextPath();
                 var manageUrl = (cPath ? cPath : '') + '/common/manage-group.jsp?id=' + encodeURIComponent(this.tournamentId) + '&format=GSL';
-                container.innerHTML = '<div data-ui-style="gsl-js-006">' +
-                    '<i class="fa-solid fa-layer-group" data-ui-style="gsl-js-007"></i>' +
-                    '<h3 data-ui-style="gsl-js-008">Chưa thiết lập chia bảng GSL</h3>' +
-                    '<p data-ui-style="gsl-js-009">Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
-                    '<a href="' + manageUrl + '" class="btn btn-mint" data-ui-style="gsl-js-010" style="display: inline-flex;">' +
+                container.innerHTML = '<div>' +
+                    '<i class="fa-solid fa-layer-group"></i>' +
+                    '<h3>Chưa thiết lập chia bảng GSL</h3>' +
+                    '<p>Giải đấu chưa được phân bổ các đội vào bảng đấu GSL. Vui lòng bấm vào nút bên dưới để tiến hành chia bảng và tạo nhánh thi đấu.</p>' +
+                    '<a href="' + manageUrl + '" class="btn btn-mint">' +
                     '<i class="fa-solid fa-pen-to-square"></i> Quản Lý & Chia Bảng Đấu' +
                     '</a>' +
                     '</div>';
@@ -2500,7 +2500,7 @@
         createFallbackCard: function (m) {
             var div = document.createElement('div');
             div.className = 'bracket-node-card';
-            div.innerHTML = '<div data-ui-style="gsl-js-011">' + (m.team1 ? m.team1.name : 'T1') + ' vs ' + (m.team2 ? m.team2.name : 'T2') + '</div>';
+            div.innerHTML = '<div>' + (m.team1 ? m.team1.name : 'T1') + ' vs ' + (m.team2 ? m.team2.name : 'T2') + '</div>';
             return div;
         }
     };

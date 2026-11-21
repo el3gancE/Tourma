@@ -138,30 +138,22 @@
         <title><%= tourneyName %> - Double Elimination - Tourma</title>
 
         <!-- Google Font Readex Pro -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- FontAwesome Icons -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css">
         <!-- Main Stylesheets -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/double-elimination.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css?v=<%= System.currentTimeMillis() %>">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css?v=<%= System.currentTimeMillis() %>">
+">
+">
+">
+">
+">
+">
+">
+">
+">
+">
+">
     </head>
     <body class="ui-page tournament-workspace de-page">
         <!-- Empty Team Alert Component -->
@@ -215,7 +207,7 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- DIRECT EMPTY ALERT CONTAINER (Shown when team count < 2) -->
-            <div id="deEmptyAlertContainer" data-ui-style="double-elimination-jsp-001" style="display: none;"></div>
+            <div id="deEmptyAlertContainer"></div>
 
             <!-- 1. DUAL VIEWPORTS WORKSPACE (Upper Bracket & Lower Bracket) -->
             <div id="deDualViewportWorkspace" class="de-dual-viewport-workspace">
@@ -252,8 +244,8 @@
 
                         </div>
                         <div id="upperViewportContainer" class="bracket-viewport-container de-viewport-container">
-                            <div id="upperViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas" data-group-color="#2dd4bf" data-ui-style="double-elimination-jsp-002">
-                                <div id="upperBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper" data-group-color="#2dd4bf" data-ui-style="double-elimination-jsp-003"></div>
+                            <div id="upperViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas" data-group-color="#2dd4bf">
+                                <div id="upperBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper" data-group-color="#2dd4bf"></div>
                             </div>
                         </div>
                     </div>
@@ -290,8 +282,8 @@
 
                         </div>
                         <div id="lowerViewportContainer" class="bracket-viewport-container de-viewport-container">
-                            <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas lower-canvas" data-group-color="#ff4655" data-ui-style="double-elimination-jsp-004">
-                                <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper lower-wrapper" data-bracket-type="LOWER" data-group-color="#ff4655" data-ui-style="double-elimination-jsp-005"></div>
+                            <div id="lowerViewportCanvas" class="bracket-viewport-canvas de-viewport-canvas lower-canvas" data-group-color="#ff4655">
+                                <div id="lowerBracketColumnsWrapper" class="single-bracket-columns-wrapper de-bracket-columns-wrapper lower-wrapper" data-bracket-type="LOWER" data-group-color="#ff4655"></div>
                             </div>
                         </div>
                     </div>

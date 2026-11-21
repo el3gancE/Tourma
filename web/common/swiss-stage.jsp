@@ -61,31 +61,11 @@
         <title><%= tourneyName %> - Swiss - Tourma</title>
 
         <!-- Google Font Readex Pro -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- FontAwesome Icons -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Shared System Stylesheets -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-viewport.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-end-popup.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/swiss-stage.css">
         <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=2">
     </head>
     <body class="ui-page tournament-workspace swiss-page">
         <!-- Empty Team Alert Component -->
@@ -138,17 +118,17 @@
             <jsp:include page="/common/component/stage-finish-alert.jsp" />
 
             <!-- SWISS TEAM COUNT ALERT BANNER (When team count != 16) -->
-            <div id="swissInvalidTeamAlert" data-ui-style="swiss-stage-jsp-001" style="display: none;">
-                <div data-ui-style="swiss-stage-jsp-002" style="display: flex;">
-                    <i class="fa-solid fa-users-slash" data-ui-style="swiss-stage-jsp-003"></i>
+            <div id="swissInvalidTeamAlert">
+                <div>
+                    <i class="fa-solid fa-users-slash"></i>
                 </div>
-                <h2 data-ui-style="swiss-stage-jsp-004">
+                <h2>
                     Yêu Cầu CHÍNH XÁC 16 Đội Cho Thể Thức Swiss System
                 </h2>
-                <p id="swissInvalidTeamDesc" data-ui-style="swiss-stage-jsp-005">
+                <p id="swissInvalidTeamDesc">
                     Thể thức Swiss System đòi hỏi bắt buộc phải có đủ <strong>đúng 16 đội bóng</strong> tham gia để ghép cặp theo từng nhóm tỷ số (Record Pool) qua 5 vòng thi đấu.
                 </p>
-                <a id="btnGoToConfigureTeams" href="${pageContext.request.contextPath}/common/configure-tournament-teams.jsp?id=${not empty tournament.id ? tournament.id : param.id}" class="btn btn-mint" data-ui-style="swiss-stage-jsp-006" style="display: inline-flex;">
+                <a id="btnGoToConfigureTeams" href="${pageContext.request.contextPath}/common/configure-tournament-teams.jsp?id=${not empty tournament.id ? tournament.id : param.id}" class="btn btn-mint">
                     <i class="fa-solid fa-user-plus"></i> Thêm / Điều Chỉnh Cho Đủ 16 Đội Ngay
                 </a>
             </div>
@@ -159,7 +139,7 @@
                 <!-- ════════════════════════════════════════════════════════════════ -->
                 <!-- VIEW MODE 1: DẠNG DANH SÁCH (LIST VIEW)                          -->
                 <!-- ════════════════════════════════════════════════════════════════ -->
-                <div id="swissListView" style="display: none;">
+                <div id="swissListView">
                     <!-- Round Pills Filter Bar -->
                     <div class="swiss-round-pills-bar" id="swissListRoundPillsContainer">
                         <!-- Injected by swiss-stage.js -->
@@ -174,7 +154,7 @@
                 <!-- ════════════════════════════════════════════════════════════════ -->
                 <!-- VIEW MODE 2: SƠ ĐỒ BRACKET (BRACKET VIEWPORT CANVAS - NO LINES)  -->
                 <!-- ════════════════════════════════════════════════════════════════ -->
-                <div id="swissBracketView" style="display: block;">
+                <div id="swissBracketView">
                     <div class="bracket-viewport-frame">
 
                         <!-- Floating Viewport Zoom Toolbar (Exact SE & DE Styling) -->
@@ -194,7 +174,7 @@
                         <!-- Drag/Pan Viewport Container Box -->
                         <div id="swissViewportContainer" class="bracket-viewport-container">
                             <!-- Viewport Canvas (No SVG connector lines) -->
-                            <div id="swissViewportCanvas" class="bracket-viewport-canvas" data-ui-style="swiss-stage-jsp-007">
+                            <div id="swissViewportCanvas" class="bracket-viewport-canvas">
                                 <!-- Injected Round Columns with Record Pool Cards -->
                             </div>
                         </div>

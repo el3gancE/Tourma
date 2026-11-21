@@ -258,7 +258,7 @@
                         '<span id="finalStagePopupText" class="final-stage-popup-text"></span>' +
                         '<div id="finalStagePopupActions" class="final-stage-popup-actions">' +
                             '<button type="button" id="finalStageConfirmBtn" class="final-stage-confirm-btn" onclick="window.FinalStagePopup.confirmConclusion()">Xác nhận</button>' +
-                            '<button type="button" id="finalStageUnlockBtn" class="final-stage-unlock-btn" style="display: none;" onclick="window.FinalStagePopup.unlockTournament()">Mở khóa</button>' +
+                            '<button type="button" id="finalStageUnlockBtn" class="final-stage-unlock-btn" onclick="window.FinalStagePopup.unlockTournament()">Mở khóa</button>' +
                         '</div>' +
                     '</div>';
 

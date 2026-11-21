@@ -105,18 +105,18 @@
     }
 %>
         <!-- MODAL: SELECT QUICKLY FROM PARTNER TEAMS ORDERED BY STANDINGS -->
-        <div id="partnerSelectModal" class="team-modal-overlay" style="display: none;">
+        <div id="partnerSelectModal" class="team-modal-overlay">
             <div class="team-modal-card partner-select-card">
-                <div data-ui-style="rolling-tournament-teams-jsp-046" style="display: flex;">
-                    <h3 data-ui-style="rolling-tournament-teams-jsp-047">
+                <div>
+                    <h3>
                         <i class="fa-solid fa-check-double text-mint"></i> Chọn Đội Partner Trong Series
                     </h3>
-                    <button type="button" onclick="closePartnerSelectModal()" data-ui-style="rolling-tournament-teams-jsp-048">
+                    <button type="button" onclick="closePartnerSelectModal()">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <p data-ui-style="rolling-tournament-teams-jsp-049">
+                <p>
                     Tích chọn các đội Partner chính thức của Series <strong><%= partnerAttr(seriesName) %></strong> để đưa vào giải con này:
                 </p>
 
@@ -129,29 +129,29 @@
                 <section class="partner-selection-teams" aria-labelledby="partnerSelectionTitle">
                     <h4 id="partnerSelectionTitle">Chọn đội Partner</h4>
                 <!-- QUICK SELECTION TOOLBAR -->
-                <div data-ui-style="rolling-tournament-teams-jsp-050">
-                    <div data-ui-style="rolling-tournament-teams-jsp-051" style="display: flex;">
-                        <div data-ui-style="rolling-tournament-teams-jsp-052" style="display: flex;">
-                            <span data-ui-style="rolling-tournament-teams-jsp-053">Số đội chọn:</span>
-                            <input type="number" id="quickSelectNum" value="<%= (targetTeamCountVal > 0) ? String.valueOf(targetTeamCountVal) : "" %>" min="2" max="<%= partnerCount %>" oninput="this.value = this.value.replace(/^0+(?=\d)/, '')" class="form-control" data-ui-style="rolling-tournament-teams-jsp-054">
+                <div>
+                    <div>
+                        <div>
+                            <span>Số đội chọn:</span>
+                            <input type="number" id="quickSelectNum" value="<%= (targetTeamCountVal > 0) ? String.valueOf(targetTeamCountVal) : "" %>" min="2" max="<%= partnerCount %>" oninput="this.value = this.value.replace(/^0+(?=\d)/, '')" class="form-control">
                         </div>
-                        <div data-ui-style="rolling-tournament-teams-jsp-055" style="display: flex;">
-                            <button type="button" onclick="quickSelectTeams('TOP')" class="btn btn-mint" data-ui-style="rolling-tournament-teams-jsp-056">
+                        <div>
+                            <button type="button" onclick="quickSelectTeams('TOP')" class="btn btn-mint">
                                 <i class="fa-solid fa-arrow-trend-up"></i> Top Đầu
                             </button>
-                            <button type="button" onclick="quickSelectTeams('BOTTOM')" class="btn" data-ui-style="rolling-tournament-teams-jsp-057">
+                            <button type="button" onclick="quickSelectTeams('BOTTOM')" class="btn">
                                 <i class="fa-solid fa-arrow-trend-down"></i> Top Cuối
                             </button>
-                            <button type="button" onclick="quickSelectTeams('RANDOM')" class="btn" data-ui-style="rolling-tournament-teams-jsp-058">
+                            <button type="button" onclick="quickSelectTeams('RANDOM')" class="btn">
                                 <i class="fa-solid fa-shuffle"></i> Ngẫu Nhiên
                             </button>
                         </div>
                     </div>
-                    <div data-ui-style="rolling-tournament-teams-jsp-059" style="display: flex;">
+                    <div>
                         <span>Chọn theo BXH hoặc tích thủ công (Tổng: <%= partnerCount %> đội)</span>
                         <div>
-                            <button type="button" onclick="selectAllPartnerCheckboxes(true)" data-ui-style="rolling-tournament-teams-jsp-060">Chọn tất cả</button>
-                            <button type="button" onclick="selectAllPartnerCheckboxes(false)" data-ui-style="rolling-tournament-teams-jsp-061">Bỏ chọn</button>
+                            <button type="button" onclick="selectAllPartnerCheckboxes(true)">Chọn tất cả</button>
+                            <button type="button" onclick="selectAllPartnerCheckboxes(false)">Bỏ chọn</button>
                         </div>
                     </div>
                 </div>
@@ -184,22 +184,22 @@
                                     }
                                 }
                         %>
-                            <label class="partner-checkbox-item" data-played-tournaments="<%= partnerAttr(String.join(" ", playedTournaments)) %>" data-already-in="<%= isAlreadyIn %>" data-index="<%= pIdx %>" data-team-name="<%= partnerAttr(p.getName()) %>" data-rank="<%= pRank %>" data-points="<%= pPts %>" data-ui-style="rolling-tournament-teams-jsp-062" style="display: flex;">
-                                <div data-ui-style="rolling-tournament-teams-jsp-063" style="display: flex;">
+                            <label class="partner-checkbox-item" data-played-tournaments="<%= partnerAttr(String.join(" ", playedTournaments)) %>" data-already-in="<%= isAlreadyIn %>" data-index="<%= pIdx %>" data-team-name="<%= partnerAttr(p.getName()) %>" data-rank="<%= pRank %>" data-points="<%= pPts %>">
+                                <div>
                                     <input type="checkbox" name="selectedTeamNames" value="<%= partnerAttr(p.getName()) %>" class="partner-cb-input" data-index="<%= pIdx %>" <%= isAlreadyIn ? "checked disabled" : "" %>>
-                                    <span class="rank-badge rank-<%= pRank %>" data-ui-style="rolling-tournament-teams-jsp-064" style="display: inline-flex; color: <%= (pRank == 1) ? "#fbbf24" : (pRank == 2 ? "#e2e8f0" : (pRank == 3 ? "#f97316" : "#cbd5e1")) %>; border: 1px solid <%= (pRank == 1) ? "rgba(251,191,36,0.3)" : (pRank == 2 ? "rgba(226,232,240,0.2)" : (pRank == 3 ? "rgba(249,115,22,0.3)" : "rgba(255,255,255,0.1)")) %>;">#<%= pRank %></span>
-                                    <span data-ui-style="rolling-tournament-teams-jsp-065" style="color: <%= isAlreadyIn ? "var(--ui-muted)" : "var(--ui-text)" %>;">
-                                        <%= partnerAttr(p.getName()) %> <%= isAlreadyIn ? "<span style='font-size: 0.75rem; font-weight: 500; color: var(--ui-muted); margin-left: 0.35rem;'>(Đã thêm)</span>" : "" %>
+                                    <span class="rank-badge rank-<%= pRank %>">#<%= pRank %></span>
+                                    <span>
+                                        <%= partnerAttr(p.getName()) %> <%= isAlreadyIn ? "<span>(Đã thêm)</span>" : "" %>
                                     </span>
                                     <small class="partner-excluded-label" hidden>Đã tham gia giải loại trừ</small>
                                 </div>
-                                <div data-ui-style="rolling-tournament-teams-jsp-066">
+                                <div>
                                     <%= pPts %> pts
                                 </div>
                             </label>
                         <% }
                         } else { %>
-                            <div data-ui-style="rolling-tournament-teams-jsp-067">
+                            <div>
                                 Chưa có đội Partner nào trong Series.
                             </div>
                         <% } %>
@@ -232,7 +232,7 @@
                 </div>
                     <div class="partner-selection-footer">
                         <button type="button" onclick="closePartnerSelectModal()" class="btn btn-secondary">Hủy Bỏ</button>
-                        <button type="submit" class="btn btn-mint" data-ui-style="rolling-tournament-teams-jsp-068">
+                        <button type="submit" class="btn btn-mint">
                             Thêm Đội Đã Chọn VÀO Giải Con
                         </button>
                     </div>

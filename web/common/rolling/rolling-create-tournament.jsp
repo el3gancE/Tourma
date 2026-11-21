@@ -24,26 +24,11 @@
                     <title>Tạo giải con · TOURMA</title>
 
                     <!-- Google Font Readex Pro -->
-                    <link rel="preconnect" href="https://fonts.googleapis.com">
-                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                    <link
-                        href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap"
-                        rel="stylesheet">
 
                     <!-- FontAwesome Icons -->
-                    <link rel="stylesheet"
-                        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
                     <!-- Main Design System CSS & Dedicated Create Tournament CSS -->
-                    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-                    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
-                    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-create-tournament.css">
 <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
 </head>
 
                 <body class="ui-page workspace-page tournament-workspace series-page series-form-page subtournament-create-page">
@@ -58,10 +43,10 @@
                         <jsp:param name="activeStep" value="create-subtourney" />
                     </jsp:include></details>
 
-                    <main class="series-main" data-ui-style="rolling-create-tournament-jsp-001">
-                        <div data-ui-style="rolling-create-tournament-jsp-002">
+                    <main class="series-main">
+                        <div>
                             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= selectedSeriesId %>"
-                                class="text-muted" data-ui-style="rolling-create-tournament-jsp-003">
+                                class="text-muted">
                                 <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard Series
                             </a>
                         </div>
@@ -71,7 +56,7 @@
                             <h1 class="form-header-title">
                                 <i class="fa-solid fa-trophy text-mint"></i> Tạo giải con · <%= seriesName %>
                             </h1>
-                            <p class="text-muted" data-ui-style="rolling-create-tournament-jsp-004">
+                            <p class="text-muted">
                                 Nhập tên và cấp độ giải đấu con thuộc Series <strong>
                                     <%= seriesName %>
                                 </strong>.
@@ -80,7 +65,7 @@
                             <!-- Error Alert Message -->
                             <% if (request.getAttribute("errorMessage") !=null) { %>
                                 <div
-                                    data-ui-style="rolling-create-tournament-jsp-005">
+>
                                     <i class="fa-solid fa-triangle-exclamation"></i>
                                     <%= request.getAttribute("errorMessage") %>
                                 </div>
@@ -102,22 +87,22 @@
                                         <!-- 2. CẤP ĐỘ GIẢI ĐẤU (TIER S, A, B, C, D) -->
                                         <div class="form-group">
                                             <label class="form-label" for="tierName">Cấp Độ Giải Đấu (Tier) (*)</label>
-                                            <select id="tierName" name="tierName" class="form-control" required data-ui-style="rolling-create-tournament-jsp-006">
-                                                <option value="" selected disabled data-ui-style="rolling-create-tournament-jsp-007">-- Chọn Cấp Độ Giải Đấu (Tier) --</option>
-                                                <option value="S" data-ui-style="rolling-create-tournament-jsp-008">Tier S</option>
-                                                <option value="A" data-ui-style="rolling-create-tournament-jsp-009">Tier A</option>
-                                                <option value="B" data-ui-style="rolling-create-tournament-jsp-010">Tier B</option>
-                                                <option value="C" data-ui-style="rolling-create-tournament-jsp-011">Tier C</option>
-                                                <option value="D" data-ui-style="rolling-create-tournament-jsp-012">Tier D</option>
+                                            <select id="tierName" name="tierName" class="form-control" required>
+                                                <option value="" selected disabled>-- Chọn Cấp Độ Giải Đấu (Tier) --</option>
+                                                <option value="S">Tier S</option>
+                                                <option value="A">Tier A</option>
+                                                <option value="B">Tier B</option>
+                                                <option value="C">Tier C</option>
+                                                <option value="D">Tier D</option>
                                             </select>
-                                            <div id="tierErrorMsg" data-ui-style="rolling-create-tournament-jsp-013" style="display: none;">
+                                            <div id="tierErrorMsg">
                                                 <i class="fa-solid fa-circle-exclamation"></i> Vui lòng chọn Tier cho giải đấu! Đây là thông tin bắt buộc.
                                             </div>
                                         </div>
 
                                         <!-- SUBMIT BUTTONS -->
                                         <div
-                                            data-ui-style="rolling-create-tournament-jsp-014" style="display: flex;">
+>
                                             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= selectedSeriesId %>"
                                                 class="btn btn-secondary">Hủy Bỏ</a>
                                             <button type="submit" class="btn btn-mint">

@@ -1,7 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!-- TOURMA - Reusable Stage Finish Alert Component (Locked Stage 2) -->
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
-<div id="stageFinishAlertContainer" class="stage-finish-alert-wrapper" style="display: none;">
+<div id="stageFinishAlertContainer" class="stage-finish-alert-wrapper">
     <div class="stage-finish-alert-card">
         <div class="stage-finish-alert-icon-box">
             <i class="fa-solid fa-lock stage-finish-alert-icon"></i>
