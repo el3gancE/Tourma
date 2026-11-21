@@ -1,7 +1,14 @@
 # Tourma — Quy chuẩn giao diện
 
-Trên nhánh `frontend-remake`, CSS và design token của giao diện JSP đã được gỡ
-để chuẩn bị dựng lại frontend. Các quy chuẩn về stylesheet bên dưới mô tả giao
+Trên nhánh `frontend-remake`, trang chủ và khung điều hướng dùng JSP, CSS và
+JavaScript. Header và sidebar đen ở cả hai chế độ giao diện. Dải lụa lăng kính
+xanh ngọc, tím và hồng nằm phía sau vùng làm việc. Hiệu ứng dùng nút Nền động và
+tôn trọng thiết lập giảm chuyển động.
+
+Màu, font và kích thước khung dùng chung nằm trong `web/css/design-tokens.css`.
+`web/css/tourma-shell.css` định kiểu header, sidebar và nền. `web/css/home.css`
+chỉ định kiểu nội dung trang chủ. `web/js/theme.js` tiếp tục quản lý giao diện
+sáng/tối và trạng thái nền động. Các quy chuẩn về stylesheet bên dưới mô tả giao
 diện cũ và được giữ làm tài liệu đối chiếu.
 
 ## Luồng thiết lập giải

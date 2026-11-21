@@ -13,15 +13,14 @@
     pageContext.setAttribute("headerActive", headerActive);
 %>
 <jsp:include page="/common/component/tournament-config-state.jsp" />
-<!-- Dedicated Header Component Stylesheet -->
-
-<!-- Header / Navigation Bar Component -->
-<nav class="navbar">
+<% if (!"home".equals(headerActive)) { %>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=mono-1">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tourma-shell.css?v=landing-1">
+<% } %>
+<div class="tourma-silk" aria-hidden="true"></div>
+<nav class="navbar" aria-label="Điều hướng Tourma">
     <a href="${pageContext.request.contextPath}/index.jsp" class="brand-logo">
-        <div class="brand-icon">
-            <i class="fa-solid fa-trophy"></i>
-        </div>
-        <span>TOUR<span class="highlight">MA</span></span>
+        <span>Tourma</span>
     </a>
 
     <ul class="nav-links">
@@ -67,25 +66,11 @@
     </ul>
     <% if ("true".equals(request.getParameter("themeToggle"))) { %>
     <div class="appearance-switches" role="group" aria-label="Giao diện">
-        <div class="accent-checkboxes" role="radiogroup" aria-label="Chọn màu chủ đạo">
-            <button type="button" class="accent-checkbox accent-checkbox--wine" data-accent-val="wine" role="radio" aria-checked="false" title="Màu Đỏ" aria-label="Màu Đỏ">
-                <i class="fa-solid fa-check" aria-hidden="true"></i>
-            </button>
-            <button type="button" class="accent-checkbox accent-checkbox--blue" data-accent-val="blue" role="radio" aria-checked="false" title="Màu Xanh dương" aria-label="Màu Xanh dương">
-                <i class="fa-solid fa-check" aria-hidden="true"></i>
-            </button>
-            <button type="button" class="accent-checkbox accent-checkbox--green" data-accent-val="green" role="radio" aria-checked="false" title="Màu Xanh lá" aria-label="Màu Xanh lá">
-                <i class="fa-solid fa-check" aria-hidden="true"></i>
-            </button>
-            <button type="button" class="accent-checkbox accent-checkbox--orange" data-accent-val="orange" role="radio" aria-checked="false" title="Màu Cam" aria-label="Màu Cam">
-                <i class="fa-solid fa-check" aria-hidden="true"></i>
-            </button>
-        </div>
-        <button type="button" class="theme-toggle appearance-switch" role="switch" title="Đổi chế độ Sáng / Tối" aria-label="Chế độ tối" aria-checked="false" data-mode-switch>
-            <i class="fa-solid fa-sun mode-icon-light" aria-hidden="true"></i><i class="fa-solid fa-moon mode-icon-dark" aria-hidden="true"></i><span class="theme-switch" aria-hidden="true"></span>
-        </button>
+        <button type="button" data-silk-toggle aria-pressed="true">Nền động</button>
+        <button type="button" class="theme-toggle" data-theme-toggle><span data-theme-label>Đổi giao diện</span></button>
+        <% if (!"home".equals(headerActive)) { %>
         <details class="display-settings">
-            <summary class="theme-toggle" aria-label="Cài đặt hiển thị" title="Cài đặt hiển thị"><i class="fa-solid fa-gear" aria-hidden="true"></i></summary>
+            <summary class="theme-toggle">Hiển thị</summary>
             <div class="display-settings-panel" role="group" aria-label="Cài đặt hiển thị">
                 <strong>Cài đặt hiển thị</strong>
                 <button type="button" class="special-colors-toggle" role="switch" aria-checked="true" data-special-colors-toggle>
@@ -94,6 +79,7 @@
                 <p>Áp dụng cho nhánh đấu, final, các nhóm Swiss và bảng GSL.</p>
             </div>
         </details>
+        <% } %>
     </div>
     <% } %>
 </nav>
@@ -102,6 +88,8 @@
 (function () {
     var header = document.querySelector('nav.navbar');
     if (!header) return;
+    var currentLink = header.querySelector('.nav-link.active');
+    if (currentLink) currentLink.setAttribute('aria-current', 'page');
     function updateHeaderHeight() {
         document.documentElement.style.setProperty('--tourma-header-height', Math.ceil(header.getBoundingClientRect().height) + 'px');
     }

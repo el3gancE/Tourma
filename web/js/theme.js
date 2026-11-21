@@ -59,7 +59,29 @@
         try { localStorage.setItem(key, theme); localStorage.setItem(accentKey, color); } catch (e) {}
         updateControls();
     }
+    var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var silkPlaying = !reducedMotion.matches;
+    function updateSilk() {
+        root.toggleAttribute('data-silk-paused', !silkPlaying);
+        root.toggleAttribute('data-silk-playing', silkPlaying);
+        document.querySelectorAll('[data-silk-toggle]').forEach(function (button) {
+            button.setAttribute('aria-pressed', String(silkPlaying));
+        });
+    }
+    updateSilk();
+    if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', function (event) {
+        silkPlaying = !event.matches;
+        updateSilk();
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
+        updateSilk();
+        document.querySelectorAll('[data-silk-toggle]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                silkPlaying = !silkPlaying;
+                updateSilk();
+            });
+        });
         updateControls();
         document.querySelectorAll('[data-special-colors-toggle]').forEach(function (button) {
             button.addEventListener('click', function () {

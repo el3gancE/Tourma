@@ -1,0 +1,152 @@
+.ui-page {
+    margin: 0;
+    min-height: 100vh;
+    padding-block-start: var(--tourma-header-height, var(--ui-header-height));
+    isolation: isolate;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    font: 400 14px/1.55 var(--ui-font);
+}
+
+.tourma-silk {
+    position: fixed;
+    inset: var(--tourma-header-height, var(--ui-header-height)) 0 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.tourma-silk::before,
+.tourma-silk::after {
+    content: "";
+    position: absolute;
+    width: 144%;
+    height: 76%;
+    border-radius: 50%;
+    opacity: var(--ui-silk-opacity);
+    background: linear-gradient(115deg, var(--ui-silk-teal) 20%, var(--ui-silk-violet) 53%, var(--ui-silk-pink) 84%);
+    mask-image:
+        radial-gradient(ellipse at center, transparent 56%, currentColor 58.5% 59.2%, transparent 62%),
+        linear-gradient(135deg, transparent 8%, currentColor 38% 67%, transparent 93%);
+    mask-composite: intersect;
+}
+
+.tourma-silk::before {
+    inset: -5% auto auto -32%;
+    animation: silk-fold 6s ease-in-out infinite alternate;
+}
+
+.tourma-silk::after {
+    inset: 28% auto auto -11%;
+    opacity: calc(var(--ui-silk-opacity) * .7);
+    animation: silk-cross 8s ease-in-out infinite alternate;
+}
+
+@keyframes silk-fold {
+    from { transform: translate3d(-3%, 4%, 0) rotate(-24deg) scaleY(.57); }
+    to { transform: translate3d(8%, -6%, 0) rotate(-11deg) scaleY(1); }
+}
+
+@keyframes silk-cross {
+    from { transform: translate3d(6%, -6%, 0) rotate(15deg) scaleY(.62); }
+    to { transform: translate3d(-10%, 8%, 0) rotate(29deg) scaleY(.93); }
+}
+
+[data-silk-paused] .tourma-silk::before,
+[data-silk-paused] .tourma-silk::after { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-silk-playing]) .tourma-silk::before,
+    :root:not([data-silk-playing]) .tourma-silk::after { animation-play-state: paused; }
+}
+
+.navbar, .tournament-navigation, .tournament-sidebar {
+    box-sizing: border-box;
+    background: var(--ui-chrome);
+    color: var(--ui-chrome-text);
+}
+
+.navbar {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 30;
+    min-height: var(--ui-header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem 1.25rem;
+    padding: .55rem clamp(.7rem, 2.5vw, 2rem);
+    border-bottom: 1px solid var(--ui-chrome-line);
+}
+.navbar a, .tournament-sidebar a { color: inherit; text-decoration: none; }
+.navbar .brand-logo { display: inline-flex; align-items: center; font-size: 1.45rem; font-weight: 700; letter-spacing: -.07em; }
+.navbar .nav-links, .tournament-sidebar .sidebar-menu-list { list-style: none; margin: 0; padding: 0; }
+.navbar .nav-links { display: flex; gap: .15rem; }
+.navbar .nav-link, .tournament-sidebar .sidebar-menu-link { display: block; padding: .52rem .65rem; font-size: .8rem; }
+.navbar .nav-link { white-space: nowrap; }
+.navbar .nav-link:hover, .tournament-sidebar .sidebar-menu-link:hover { background: var(--ui-chrome-hover); }
+.navbar .nav-link.active, .tournament-sidebar .sidebar-menu-link.active {
+    background: var(--ui-chrome-text);
+    color: var(--ui-chrome);
+    font-weight: 600;
+}
+.navbar .appearance-switches { display: flex; align-items: center; gap: .35rem; }
+.navbar .appearance-switches button, .navbar .appearance-switches summary {
+    cursor: pointer;
+    font: inherit;
+    font-size: .73rem;
+    white-space: nowrap;
+    border: 1px solid var(--ui-chrome-line);
+    background: var(--ui-chrome);
+    color: var(--ui-chrome-text);
+    padding: .36rem .48rem;
+}
+.navbar .appearance-switches button:hover, .navbar .appearance-switches summary:hover { background: var(--ui-chrome-hover); }
+.navbar [data-silk-toggle][aria-pressed="true"] { background: var(--ui-chrome-text); color: var(--ui-chrome); }
+.navbar .display-settings { position: relative; }
+.navbar .display-settings-panel {
+    position: absolute;
+    inset: calc(100% + .5rem) 0 auto auto;
+    width: min(17rem, 85vw);
+    box-sizing: border-box;
+    border: 1px solid var(--ui-chrome-line);
+    background: var(--ui-chrome);
+    padding: .75rem;
+}
+.navbar .display-settings-panel p { color: var(--ui-chrome-muted); font-size: .75rem; margin-bottom: 0; }
+.navbar .display-settings-panel button { display: block; margin-top: .5rem; white-space: normal; }
+.navbar .display-settings-panel button[aria-checked="true"] { color: var(--ui-chrome); background: var(--ui-chrome-text); }
+.navbar :focus-visible, .tournament-navigation :focus-visible { outline: 2px solid var(--ui-chrome-text); outline-offset: 2px; }
+
+.tournament-sidebar { padding: 1rem .75rem; overflow-wrap: anywhere; }
+.tournament-sidebar .sidebar-workspace-heading { padding: .35rem .65rem .85rem; font-weight: 700; }
+.tournament-sidebar .sidebar-section-header,
+.tournament-sidebar .sidebar-subtourney-badge,
+.tournament-sidebar .sidebar-tourney-badge { margin: .7rem 0 .25rem; padding-inline: .65rem; color: var(--ui-chrome-muted); font-size: .73rem; }
+.tournament-sidebar .sidebar-menu-list { display: grid; gap: .2rem; }
+.tournament-navigation > summary { cursor: pointer; padding: .55rem .75rem; }
+
+@media (min-width: 62rem) {
+    .navbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+    .navbar .brand-logo { justify-self: start; }
+    .navbar .appearance-switches { justify-self: end; }
+    .tournament-shell > .tournament-navigation {
+        position: fixed;
+        inset: var(--tourma-header-height, var(--ui-header-height)) auto 0 0;
+        width: var(--ui-sidebar-width);
+        box-sizing: border-box;
+        overflow: auto;
+        background: var(--ui-chrome);
+        border-right: 1px solid var(--ui-chrome-line);
+        z-index: 20;
+    }
+    .tournament-shell:has(> .tournament-navigation) { margin-inline-start: var(--ui-sidebar-width); }
+    .ui-page:has(.tournament-shell > .tournament-navigation) .tourma-silk { inset-inline-start: var(--ui-sidebar-width); }
+    .tournament-shell > .tournament-navigation > summary { display: none; }
+}
+
+@media (max-width: 61.999rem) {
+    .navbar { flex-wrap: wrap; }
+    .navbar .nav-links { order: 1; flex: 1 1 100%; min-width: 0; overflow-x: auto; padding-bottom: .2rem; }
+    .navbar .nav-link { padding: .4rem .55rem; }
+}
