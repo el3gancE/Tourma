@@ -10,7 +10,7 @@
         pageContext.setAttribute("headerActive", headerActive); %>
         <jsp:include page="/common/component/tournament-config-state.jsp" />
         <!-- Dedicated Header Component Stylesheet -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=gradient-bracket-palette-1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=gradient-workspaces-1">
 
         <!-- Header / Navigation Bar Component -->
         <div class="tourma-page-gradient" aria-hidden="true"><span></span><span></span><span></span><span></span></div>

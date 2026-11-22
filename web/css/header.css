@@ -383,8 +383,35 @@
     .tournament-navbar-control-bar,
     .bracket-viewport-frame,
     .bracket-viewport-container,
-    .bracket-zoom-toolbar
+    .bracket-zoom-toolbar,
+    .de-section-header,
+    .rr-control-bar,
+    .swiss-bracket-col-header
 ) {
     background-color: var(--gradient-bracket-surface);
     border-color: var(--gradient-bracket-line);
+}
+
+/* Match the other workspaces without changing the surfaces inside match cards. */
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(
+    .create-form-panel, .create-series-page .radio-card,
+    .create-series-page #rollingOptionsPanel, .create-series-page #eloOptionsPanel,
+    .subtournament-create-page form, .standalone-format-panel,
+    .format-page #wdlPointsPanel, .format-page #stage1ConfigContainer, .format-page #stage2ConfigContainer,
+    .team-panel-card .manage-toolbar, .mg-group-column, .mg-dropdown-menu,
+    .dashboard-metric, .dashboard-panel, .hof-metric, .hof-card-panel,
+    .team-stat-box, .team-performance-card, .summary-incomplete-alert,
+    .rr-standings-card, .gst-group-card, .gst-group-block
+) {
+    background-color: var(--gradient-component-surface);
+    border-color: var(--gradient-component-border);
+}
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(
+    .team-panel-card table thead, .team-performance-table thead th,
+    .rr-table thead th, .hof-table thead th, .hof-leader-table thead,
+    .rr-standings-header-bar, .gst-group-header, .profile-match-group-header,
+    .dashboard-panel .dashboard-button, .stage-toggle-bar
+) {
+    background-color: var(--gradient-component-control);
+    border-color: var(--gradient-component-border);
 }
