@@ -21,12 +21,6 @@ public class Tournament {
     private String status; // DRAFT, ONGOING, COMPLETED
     private Timestamp createdAt;
     private String championName;
-    private int divisionLevel = 1;
-    private int seasonNumber = 1;
-    private String divisionName;
-    private String seasonId;
-    private String divisionId;
-    private boolean isSpecialCup;
 
     public Tournament() {
         this.format = "SINGLE_ELIMINATION";
@@ -105,24 +99,6 @@ public class Tournament {
 
     public String getChampionName() { return championName; }
     public void setChampionName(String championName) { this.championName = championName; }
-
-    public int getDivisionLevel() { return divisionLevel; }
-    public void setDivisionLevel(int divisionLevel) { this.divisionLevel = divisionLevel; }
-
-    public int getSeasonNumber() { return seasonNumber; }
-    public void setSeasonNumber(int seasonNumber) { this.seasonNumber = seasonNumber; }
-
-    public String getDivisionName() { return divisionName; }
-    public void setDivisionName(String divisionName) { this.divisionName = divisionName; }
-
-    public String getSeasonId() { return seasonId; }
-    public void setSeasonId(String seasonId) { this.seasonId = seasonId; }
-
-    public String getDivisionId() { return divisionId; }
-    public void setDivisionId(String divisionId) { this.divisionId = divisionId; }
-
-    public boolean isSpecialCup() { return isSpecialCup; }
-    public void setSpecialCup(boolean specialCup) { isSpecialCup = specialCup; }
 
     private String stage1Status; // PENDING, LOCKED, COMPLETED
     private String groupAssignments;
