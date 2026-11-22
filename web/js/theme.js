@@ -5,13 +5,13 @@
     var accentKey = 'tourma-ui-accent';
     var preference, accent;
     var colorsKey = 'tourma-ui-special-colors';
-    var gradientKey = 'tourma-ui-background-gradient';
+    var gradientKey = 'tourma-ui-background-gradient-v2';
     var specialColors = 'on';
     try { if (localStorage.getItem(colorsKey) === 'off') specialColors = 'off'; } catch (e) {}
     root.dataset.specialColors = specialColors;
-    root.dataset.backgroundGradient = 'on';
+    root.dataset.backgroundGradient = 'off';
     try {
-        if (localStorage.getItem(gradientKey) === 'off') root.dataset.backgroundGradient = 'off';
+        if (localStorage.getItem(gradientKey) === 'on') root.dataset.backgroundGradient = 'on';
     } catch (e) {}
     try { preference = localStorage.getItem(key); accent = localStorage.getItem(accentKey); } catch (e) {}
     var system = window.matchMedia('(prefers-color-scheme: dark)');

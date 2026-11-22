@@ -113,7 +113,7 @@
     boolean hasTournament = (currentTournament != null);
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=gradient-8">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=20261031-tabs">
 
 <aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">

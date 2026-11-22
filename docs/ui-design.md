@@ -160,5 +160,5 @@ Trong Cài đặt hiển thị, Nền gradient mặc định tắt. Khi bật, m
 làm tông chính cho toàn bộ nền. Chế độ sáng/tối điều chỉnh sắc độ của tông đó.
 Nền có vùng đen hoặc trắng ở giữa, bao quanh bởi ba sắc lấy từ màu nhấn.
 Các lớp ánh sáng cong trôi và đổi góc chậm, với mép chuyển mềm.
-Thẻ, bảng và biểu mẫu vẫn dùng màu bề mặt riêng. Lựa chọn lưu trong
-`tourma-ui-background-gradient`.
+Header, sidebar, canvas, thẻ, bảng và biểu mẫu dùng giao diện mặc định trong cả hai chế độ nền. Lựa chọn lưu trong
+`tourma-ui-background-gradient-v2`.

@@ -112,55 +112,6 @@
 
 .tourma-page-gradient { display: none; }
 
-:root, :root[data-theme="light"], :root[data-theme="light"][data-accent="wine"] {
-    --ui-page-grad-base: #ffffff;
-    --ui-page-grad-soft: #d5aeb7;
-    --ui-page-grad-mid:  #8c2d46;
-    --ui-page-grad-deep: #4a091c;
-}
-:root[data-theme="light"][data-accent="blue"] {
-    --ui-page-grad-base: #ffffff;
-    --ui-page-grad-soft: #a8bbd8;
-    --ui-page-grad-mid:  #2e5088;
-    --ui-page-grad-deep: #0f214f;
-}
-:root[data-theme="light"][data-accent="green"] {
-    --ui-page-grad-base: #ffffff;
-    --ui-page-grad-soft: #9dc5b5;
-    --ui-page-grad-mid:  #1d5e47;
-    --ui-page-grad-deep: #042b20;
-}
-:root[data-theme="light"][data-accent="orange"] {
-    --ui-page-grad-base: #ffffff;
-    --ui-page-grad-soft: #d4b299;
-    --ui-page-grad-mid:  #8f451e;
-    --ui-page-grad-deep: #451605;
-}
-:root[data-theme="dark"], :root[data-theme="dark"][data-accent="wine"] {
-    --ui-page-grad-base: #000000;
-    --ui-page-grad-soft: #7a0c28;
-    --ui-page-grad-mid:  #450617;
-    --ui-page-grad-deep: #1c0209;
-}
-:root[data-theme="dark"][data-accent="blue"] {
-    --ui-page-grad-base: #000000;
-    --ui-page-grad-soft: #163a8f;
-    --ui-page-grad-mid:  #0c1f52;
-    --ui-page-grad-deep: #040b1e;
-}
-:root[data-theme="dark"][data-accent="green"] {
-    --ui-page-grad-base: #000000;
-    --ui-page-grad-soft: #065f46;
-    --ui-page-grad-mid:  #043627;
-    --ui-page-grad-deep: #011710;
-}
-:root[data-theme="dark"][data-accent="orange"] {
-    --ui-page-grad-base: #000000;
-    --ui-page-grad-soft: #7c2d12;
-    --ui-page-grad-mid:  #471706;
-    --ui-page-grad-deep: #1c0802;
-}
-
 :root[data-background-gradient="on"] .ui-page {
     min-height: 100vh;
     isolation: isolate;
@@ -187,6 +138,12 @@
     background-size: 280% 280%;
     animation: tourma-aurora-surge 5.2s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
 }
+
+:root[data-theme="light"] .tourma-page-gradient { filter: brightness(1.035) saturate(1.08); }
+:root[data-theme="light"] .tourma-page-gradient::before,
+:root[data-theme="light"] .tourma-page-gradient::after,
+:root[data-theme="light"] .tourma-page-gradient > span:nth-child(1),
+:root[data-theme="light"] .tourma-page-gradient > span:nth-child(3) { opacity: .58; }
 
 /* Fast sweeping diagonal Aurora curtain 1 */
 .tourma-page-gradient::before {
@@ -328,73 +285,106 @@
     .tourma-page-gradient > span,
     .tourma-page-gradient::after { animation: none; }
 }
-:root[data-background-gradient="on"] .ui-page :is(.tournament-shell, .se-main, .bracket-viewport-frame, .bracket-viewport-container),
-:root[data-background-gradient="on"] .ui-page .app-left-sidebar.tournament-sidebar {
+:root[data-background-gradient="on"] .ui-page :is(.tournament-shell, .se-main) {
     background-color: transparent;
 }
 
-/* Shared components opt into tinted surfaces only in gradient mode. */
-:root[data-background-gradient="on"] .ui-page {
-    --ui-surface: var(--ui-gradient-panel);
-    --ui-surface-alt: var(--ui-gradient-raised);
-    --ui-workspace-card: var(--ui-gradient-panel);
-    --ui-match-surface: var(--ui-gradient-panel);
-    --ui-match-row: var(--ui-gradient-panel);
-    --ui-match-score: var(--ui-gradient-raised);
-    --ui-match-border: var(--ui-gradient-outline);
-    --ui-line: var(--ui-gradient-outline);
-    --ui-line-strong: var(--ui-gradient-outline-strong);
-    --ui-muted: var(--ui-gradient-muted);
-    --ui-accent-soft: var(--ui-gradient-raised);
-    --ui-card-shadow: var(--ui-gradient-panel-shadow);
-}
-:root[data-background-gradient="on"] .ui-page > nav.navbar {
-    background: var(--ui-gradient-panel);
-    box-shadow: var(--ui-gradient-panel-shadow);
-}
-:root[data-background-gradient="on"] .ui-page .app-left-sidebar.tournament-sidebar {
-    background: var(--ui-gradient-panel);
-    padding-inline: 12px;
-    border: 1px solid var(--ui-gradient-outline);
-    border-radius: 8px;
-}
-:root[data-background-gradient="on"] .ui-page :is(.navbar .nav-link.active, .sidebar-menu-link.active, .filter-pill-btn.active) {
-    background: var(--ui-gradient-raised);
-    color: var(--ui-gradient-emphasis);
-}
-:root[data-background-gradient="on"] .ui-page :is(.page-header-row, .tournament-navbar-control-bar, .home-hero .hero-copy, .format-strip) {
-    background: var(--ui-gradient-panel);
-    border: 1px solid var(--ui-gradient-outline);
-    border-radius: 8px;
-    padding: 12px 16px;
-}
-:root[data-background-gradient="on"] .ui-page :is(.tourney-card, .series-card, .workspace-card, .bracket-node-card, .match-card-item) {
-    border-color: var(--ui-gradient-outline);
-    box-shadow: var(--ui-gradient-panel-shadow);
-}
-:root[data-background-gradient="on"] .ui-page :is(.tourney-card, .series-card, .bracket-node-card, .match-card-item):is(:hover, :focus-within) {
-    border-color: var(--ui-gradient-outline-strong);
-}
-:root[data-background-gradient="on"] .ui-page :is(.btn-view-bracket-card, .series-manage-button, .round-header-title, .tourney-progress-status) {
-    color: var(--ui-gradient-emphasis);
-}
-:root[data-background-gradient="on"] .ui-page :is(.bracket-node-card .winner .bracket-team-name, .bracket-node-card .winner .bracket-score-box, .match-card-item .winner, .match-card-item .match-score-single-box) {
-    color: var(--ui-gradient-emphasis);
-}
-:root[data-background-gradient="on"] .ui-page :is(.tourma-modal-card, .add-team-modal-card, .h2h-dialog, .stage-end-modal-container, .display-settings-panel) {
-    background: var(--ui-gradient-panel);
-    border-color: var(--ui-gradient-outline-strong);
-    border-top: 3px solid var(--ui-accent);
-}
-:root[data-background-gradient="on"] .ui-page :is(.form-control, .search-input-box, .tourney-filter-control select, .modal-score-input-box) {
-    background: var(--ui-gradient-panel);
-    border-color: var(--ui-gradient-outline-strong);
+/* Raised finish for stage banners and New #1 in gradient mode. */
+:root[data-background-gradient="on"] .ui-page :is(.stage-end-popup-banner, .final-stage-popup-banner, .stage-finish-alert-card, .new-number-one) {
+    position: relative;
+    isolation: isolate;
+    background: var(--ui-page-grad-base);
+    color: var(--ui-text);
+    border: 1px solid var(--ui-line-strong);
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 32%), 0 5px 14px rgb(0 0 0 / 24%);
+    --banner-grain: color-mix(in srgb, currentColor 15%, transparent);
+    --banner-grain-faint: color-mix(in srgb, currentColor 8%, transparent);
+    --banner-edge: color-mix(in srgb, var(--ui-text) 18%, transparent);
+    --banner-rim-light: color-mix(in srgb, var(--ui-celebration-ink) 70%, transparent);
 }
 
-:root[data-background-gradient="on"] .ui-page :is(.workspace-main, .tournament-shell) :is(table, thead),
-:root[data-background-gradient="on"] .ui-page .bracket-zoom-toolbar {
-    background-color: var(--ui-gradient-panel);
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(.stage-end-popup-banner, .final-stage-popup-banner, .stage-finish-alert-card, .new-number-one) {
+    background: var(--ui-surface);
+    --banner-edge: color-mix(in srgb, var(--ui-celebration-ink) 22%, transparent);
+    --banner-rim-light: color-mix(in srgb, var(--ui-celebration-ink) 36%, transparent);
 }
-:root[data-background-gradient="on"] .ui-page :is(.workspace-main, .tournament-shell) table thead {
-    background-color: var(--ui-gradient-raised);
+
+:root[data-background-gradient="on"] .ui-page :is(.stage-end-popup-banner, .final-stage-popup-banner, .stage-finish-alert-card, .new-number-one)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    border-radius: inherit;
+    background-image:
+        radial-gradient(circle at 7px 13px, var(--banner-grain) .55px, transparent 1px),
+        radial-gradient(circle at 11px 15px, var(--banner-grain-faint) .45px, transparent .85px),
+        radial-gradient(circle at 15px 8px, var(--banner-grain) .4px, transparent .8px),
+        radial-gradient(circle at 4px 7px, var(--banner-grain-faint) .6px, transparent 1.15px),
+        radial-gradient(circle at 17px 21px, var(--banner-grain-faint) .45px, transparent .8px);
+    background-size: 43px 29px, 43px 29px, 31px 37px, 23px 19px, 47px 41px;
+    background-position: left top, left top, 7px 3px, 13px 11px, 5px 17px;
+    box-shadow:
+        inset 0 2px 7px var(--banner-rim-light),
+        inset 0 0 7px 2px var(--banner-edge);
+}
+:root[data-background-gradient="on"] .ui-page :is(.stage-end-popup-banner, .final-stage-popup-banner, .stage-finish-alert-card) > * {
+    position: relative;
+    z-index: 2;
+}
+:root[data-background-gradient="on"] .ui-page .new-number-one { animation: none; }
+:root[data-background-gradient="on"] .ui-page .new-number-one__art { display: none; }
+:root[data-background-gradient="on"] .ui-page .new-number-one__name {
+    border-inline-start-color: var(--ui-line-strong);
+}
+
+:root[data-background-gradient="on"] .ui-page {
+    --gradient-component-surface: color-mix(in srgb, var(--ui-page-grad-soft) 52%, var(--ui-surface));
+    --gradient-component-control: color-mix(in srgb, var(--ui-page-grad-mid) 25%, var(--ui-surface));
+    --gradient-component-border: color-mix(in srgb, var(--ui-accent) 27%, var(--ui-line));
+}
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page {
+    --gradient-component-surface: color-mix(in srgb, var(--ui-page-grad-deep) 84%, var(--ui-bg));
+    --gradient-component-control: color-mix(in srgb, var(--ui-page-grad-mid) 64%, var(--gradient-component-surface));
+    --gradient-component-border: color-mix(in srgb, var(--ui-accent) 34%, var(--gradient-component-surface));
+    --gradient-component-selected-text: color-mix(in srgb, var(--ui-accent) 49%, var(--ui-celebration-ink));
+}
+:root[data-background-gradient="on"] .ui-page :is(
+    nav.navbar, .app-left-sidebar.tournament-sidebar, .tournament-navbar-control-bar,
+    .tourney-card, .series-card, .workspace-card, .team-panel-card, .form-container-box,
+    .tourma-modal-card, .add-team-modal-card, .h2h-dialog, .stage-end-modal-container,
+    .display-settings-panel, .search-input-box, .tourney-filter-control select,
+    .workspace-main table, .tournament-shell table
+) {
+    background-color: var(--gradient-component-surface);
+    border-color: var(--gradient-component-border);
+}
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(
+    .navbar .nav-link.active, .sidebar-menu-link.active, .filter-pill-btn.active
+) {
+    color: var(--gradient-component-selected-text);
+}
+:root[data-background-gradient="on"] .ui-page :is(
+    .navbar .nav-link.active, .sidebar-menu-link.active, .filter-pill-btn.active,
+    .workspace-main table thead, .tournament-shell table thead,
+    .navbar .theme-toggle, .navbar .accent-checkboxes
+) {
+    background-color: var(--gradient-component-control);
+    border-color: var(--gradient-component-border);
+}
+
+/* The control bar and bracket viewport share an opaque surface in Dark + Gradient. */
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page {
+    --gradient-bracket-surface: color-mix(in srgb, var(--ui-page-grad-deep) 38%, var(--ui-bg));
+    --gradient-bracket-line: color-mix(in srgb, var(--ui-page-grad-soft) 30%, var(--ui-line));
+}
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(
+    .tournament-navbar-control-bar,
+    .bracket-viewport-frame,
+    .bracket-viewport-container,
+    .bracket-zoom-toolbar
+) {
+    background-color: var(--gradient-bracket-surface);
+    border-color: var(--gradient-bracket-line);
 }
