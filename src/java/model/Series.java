@@ -13,9 +13,6 @@ public class Series {
     private int currentPhase;
     private int initialPoints;
     private double initialElo;
-    private int totalDivisions = 2;
-    private int promotionSlots = 2;
-    private int relegationSlots = 2;
     private String status; // ACTIVE, COMPLETED
     private Timestamp createdAt;
 
@@ -35,32 +32,7 @@ public class Series {
         this.createdAt = createdAt;
     }
 
-    public Series(String id, String name, String rankingModel, int phaseSize, int currentPhase,
-                  int initialPoints, double initialElo, int totalDivisions, int promotionSlots,
-                  int relegationSlots, String status, Timestamp createdAt) {
-        this.id = id;
-        this.name = name;
-        this.rankingModel = rankingModel;
-        this.phaseSize = phaseSize;
-        this.currentPhase = currentPhase;
-        this.initialPoints = initialPoints;
-        this.initialElo = initialElo;
-        this.totalDivisions = totalDivisions;
-        this.promotionSlots = promotionSlots;
-        this.relegationSlots = relegationSlots;
-        this.status = status;
-        this.createdAt = createdAt;
-    }
-
     // Getters and Setters
-    public int getTotalDivisions() { return totalDivisions; }
-    public void setTotalDivisions(int totalDivisions) { this.totalDivisions = totalDivisions; }
-
-    public int getPromotionSlots() { return promotionSlots; }
-    public void setPromotionSlots(int promotionSlots) { this.promotionSlots = promotionSlots; }
-
-    public int getRelegationSlots() { return relegationSlots; }
-    public void setRelegationSlots(int relegationSlots) { this.relegationSlots = relegationSlots; }
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
