@@ -80,8 +80,8 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css?v=20261110-performance">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css?v=20261117-v13">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css?v=20261110-performance">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261117-v13"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261117-v13">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=20261117-v13">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 </head>

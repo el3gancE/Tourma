@@ -93,10 +93,10 @@
 
         <!-- Design System CSS & Dedicated CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-list.css">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css?v=compact-1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-tournament-list.css?v=compact-1">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
@@ -166,28 +166,27 @@
                         String fmtLabel = isMulti ? (s1Label + " ➔ " + s2Label) : s1Label;
 
                         String championName = t.getChampionName();
+                        pageContext.setAttribute("cardTournamentName", t.getName());
+                        pageContext.setAttribute("cardChampionName", championName);
                         boolean isFinished = "COMPLETED".equalsIgnoreCase(t.getStatus()) || "FINISHED".equalsIgnoreCase(t.getStatus());
                         boolean isOngoing = "ONGOING".equalsIgnoreCase(t.getStatus()) || "IN_PROGRESS".equalsIgnoreCase(t.getStatus());
-                        String statusStr = isFinished ? "completed" : (isOngoing ? "in progress" : "incoming");
-                        String statusClass = isFinished ? "completed" : (isOngoing ? "in-progress" : "incoming");
-                        String stageTypeLabel = isMulti ? "MULTI STAGE" : "SINGLE STAGE";
+                        String statusStr = isFinished ? "Hoàn thành" : (isOngoing ? "Đang diễn ra" : "Chưa bắt đầu");
                 %>
-                    <div class="tourney-card" data-id="<%= t.getId() %>" data-stage-type="<%= isMulti ? "MULTI_STAGE" : "SINGLE_STAGE" %>" data-stage1-format="<%= s1Fmt %>" data-stage2-format="<%= s2Fmt %>" data-status="<%= isFinished ? "COMPLETED" : (isOngoing ? "IN_PROGRESS" : "INCOMING") %>" data-db-status="<%= t.getStatus() != null ? t.getStatus() : "" %>" data-db-champion="<%= championName != null ? championName.replace("\"", "&quot;") : "" %>" data-name="<%= t.getName() %>">
-                        <div class="tourney-card-main tourney-card-info">
-                            <h3 class="tourney-card-title"><%= t.getName() %> <span class="tier-tag tier-<%= tierName.toLowerCase() %>" aria-label="Tier <%= tierName %>">[<%= tierName %>]</span></h3>
+                    <div class="tourney-card" data-id="<%= t.getId() %>" data-stage-type="<%= isMulti ? "MULTI_STAGE" : "SINGLE_STAGE" %>" data-stage1-format="<%= s1Fmt %>" data-stage2-format="<%= s2Fmt %>" data-status="<%= isFinished ? "COMPLETED" : (isOngoing ? "IN_PROGRESS" : "INCOMING") %>" data-db-status="<%= t.getStatus() != null ? t.getStatus() : "" %>" data-db-champion="<c:out value='${cardChampionName}'/>" data-name="<c:out value='${cardTournamentName}'/>">
+                        <div class="tourney-card-info">
+                            <h3 class="tourney-card-title" title="<c:out value='${cardTournamentName}'/>"><c:out value="${cardTournamentName}"/> <span class="tier-tag tier-<%= tierName.toLowerCase() %>" aria-label="Tier <%= tierName %>">[<%= tierName %>]</span></h3>
                             <div class="tourney-info-line">
                                 <span class="team-count-val"><%= nTeams %> đội</span>
                                 <span aria-hidden="true">·</span>
                                 <span class="tourney-format-span"><%= fmtLabel %></span>
-                            </div>
-                            <div class="tourney-series-line"><%= seriesName %></div>
-                            <div id="championMeta_<%= t.getId() %>" class="tourney-champion-meta">
-                                <span class="champion-name-val"><%= isFinished && championName != null ? championName : "" %></span>
+                                <% if (isFinished && championName != null && !championName.trim().isEmpty()) { %>
+                                <span id="championMeta_<%= t.getId() %>" class="tourney-champion-meta"><i class="fa-solid fa-trophy" aria-hidden="true"></i> <span class="champion-name-val"><c:out value="${cardChampionName}"/></span></span>
+                                <% } %>
                             </div>
                         </div>
-                        <div class="tourney-card-footer">
+                        <div class="tourney-card-tools">
                             <div class="tourney-card-actions">
-                                <button type="button" class="btn-delete-tourney" title="Xóa" data-tourney-id="<%= t.getId() %>" data-tourney-name="<%= (t.getName() != null) ? t.getName().replace("\"", "&quot;") : "" %>" onclick="openDeleteTourneyModal(this.dataset.tourneyId, this.dataset.tourneyName)">
+                                <button type="button" class="btn-delete-tourney" title="Xóa" data-tourney-id="<%= t.getId() %>" data-tourney-name="<c:out value='${cardTournamentName}'/>" onclick="openDeleteTourneyModal(this.dataset.tourneyId, this.dataset.tourneyName)">
                                     <i class="fa-solid fa-trash-can" aria-hidden="true"></i><span class="sr-only">Xóa</span>
                                 </button>
                                 <a href="${pageContext.request.contextPath}/rolling/tournament-teams?id=<%= t.getId() %>&seriesId=<%= seriesIdVal %>" class="btn-details-tourney" title="Quản lý đội">
@@ -205,10 +204,11 @@
                             </div>
                             <div class="tourney-progress" title="Số trận đã xong / tổng số trận cả giải, tính trước Stage 2 khi chưa tạo bracket. Không tính BYE; 100% khi xác nhận hoàn thành giải.">
                                 <span class="tourney-progress-status"><%= statusStr %></span>
-                                <div class="tourney-progress-label"><strong><%= t.getProgressPercent() %>%</strong></div>
+
                                 <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= t.getProgressPercent() %>">
                                     <span class="tourney-progress-fill" style="width: <%= t.getProgressPercent() %>%"></span>
                                 </div>
+                                <span class="tourney-progress-percent"><%= t.getProgressPercent() %>%</span>
                             </div>
                         </div>
                     </div>

@@ -7,15 +7,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chuỗi Giải Của Tôi - TOURMA</title>
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-series.css?v=2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-series.css?v=compact-1">
 </head>
 <body class="ui-page workspace-page series-page">
     <jsp:include page="/common/component/header.jsp"><jsp:param name="active" value="my-series"/><jsp:param name="themeToggle" value="true"/></jsp:include>
@@ -32,8 +32,13 @@
                     <article class="series-card" data-model="<c:out value="${s.rankingModel}" />" data-name="<c:out value="${s.name}" />">
                         <div class="series-card-info">
                             <h3 class="series-card-title" title="<c:out value="${s.name}" />"><c:out value="${s.name}" /></h3>
-                            <p class="series-model-line">${s.rankingModel == 'ROLLING_WINDOW' ? 'Rolling Window' : 'FIFA Elo Rating'} <span aria-hidden="true">·</span> Phase ${s.currentPhase}</p>
-                            <c:choose><c:when test="${s.rankingModel == 'ROLLING_WINDOW'}"><p class="series-detail-line"><strong class="series-window-value" title="Số giải gần nhất được tính điểm (window)">${s.phaseSize}</strong> giải</p></c:when><c:otherwise><p class="series-detail-line">Elo khởi đầu: ${s.initialElo} <span aria-hidden="true">·</span> Xếp hạng chung &amp; theo nhóm</p></c:otherwise></c:choose>
+                            <p class="series-model-line">
+                                <span class="series-model-tag">${s.rankingModel == 'ROLLING_WINDOW' ? 'Rolling Window' : 'FIFA Elo Rating'}</span>
+                                <c:choose>
+                                    <c:when test="${s.rankingModel == 'ROLLING_WINDOW'}"><span>Phase ${s.currentPhase}</span><span><strong class="series-window-value">${s.phaseSize}</strong> giải tính điểm</span></c:when>
+                                    <c:otherwise><span>Elo khởi đầu: ${s.initialElo}</span></c:otherwise>
+                                </c:choose>
+                            </p>
                         </div>
                         <div class="series-card-actions">
                             <form action="${pageContext.request.contextPath}/my-series" method="POST" class="series-delete-form" data-series-name="<c:out value="${s.name}" />"><input type="hidden" name="action" value="delete"><input type="hidden" name="seriesId" value="<c:out value="${s.id}" />"><button type="submit" class="series-icon-button" aria-label="Xóa chuỗi giải" title="Xóa chuỗi giải"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></form>

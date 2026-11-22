@@ -5,9 +5,14 @@
     var accentKey = 'tourma-ui-accent';
     var preference, accent;
     var colorsKey = 'tourma-ui-special-colors';
+    var gradientKey = 'tourma-ui-background-gradient-v2';
     var specialColors = 'on';
     try { if (localStorage.getItem(colorsKey) === 'off') specialColors = 'off'; } catch (e) {}
     root.dataset.specialColors = specialColors;
+    root.dataset.backgroundGradient = 'off';
+    try {
+        if (localStorage.getItem(gradientKey) === 'on') root.dataset.backgroundGradient = 'on';
+    } catch (e) {}
     try { preference = localStorage.getItem(key); accent = localStorage.getItem(accentKey); } catch (e) {}
     var system = window.matchMedia('(prefers-color-scheme: dark)');
     var hasPreference = preference === 'dark' || preference === 'light';
@@ -28,6 +33,9 @@
         var dark = root.dataset.theme === 'dark';
         var currAccent = root.dataset.accent || 'wine';
         document.querySelectorAll('[data-special-colors-toggle]').forEach(function (button) { button.setAttribute('aria-checked', String(root.dataset.specialColors !== 'off')); });
+        document.querySelectorAll('[data-background-gradient-toggle]').forEach(function (button) {
+            button.setAttribute('aria-checked', String(root.dataset.backgroundGradient === 'on'));
+        });
         document.querySelectorAll('[data-accent-label]').forEach(function (label) { label.textContent = ACCENT_NAMES[currAccent] || 'Đỏ'; });
         document.querySelectorAll('[data-mode-label]').forEach(function (label) { label.textContent = dark ? 'Tối' : 'Sáng'; });
         document.querySelectorAll('[data-mode-switch]').forEach(function (button) { button.setAttribute('aria-checked', String(dark)); });
@@ -61,6 +69,14 @@
     }
     document.addEventListener('DOMContentLoaded', function () {
         updateControls();
+        document.querySelectorAll('[data-background-gradient-toggle]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var next = root.dataset.backgroundGradient === 'on' ? 'off' : 'on';
+                root.dataset.backgroundGradient = next;
+                try { localStorage.setItem(gradientKey, next); } catch (e) {}
+                updateControls();
+            });
+        });
         document.querySelectorAll('[data-special-colors-toggle]').forEach(function (button) {
             button.addEventListener('click', function () {
                 root.dataset.specialColors = root.dataset.specialColors === 'off' ? 'on' : 'off';

@@ -103,9 +103,315 @@
 .display-settings>summary::-webkit-details-marker { display:none; }
 .display-settings-panel { position:absolute; top:calc(100% + 10px); right:0; width:290px; max-width:calc(100vw - 32px); padding:16px; border:1px solid var(--ui-line); border-radius:9px; background:var(--ui-surface); color:var(--ui-text); box-shadow:var(--ui-shadow); font:12px/1.6 var(--ui-font); }
 .display-settings-panel>strong { display:block; margin-bottom:12px; font-weight:600; }
-.special-colors-toggle { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:10px 0; border:0; background:transparent; color:var(--ui-text); font:500 11px var(--ui-font); cursor:pointer; text-align:left; }
-.special-colors-toggle .theme-switch { display:inline-block; flex-shrink:0; }
-:root .special-colors-toggle .theme-switch::after { transform:none; }
-:root[data-special-colors="on"] .special-colors-toggle .theme-switch::after { transform:translateX(11px); }
+:is(.special-colors-toggle,.display-setting-toggle) { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:10px 0; border:0; background:transparent; color:var(--ui-text); font:500 11px var(--ui-font); cursor:pointer; text-align:left; }
+:is(.special-colors-toggle,.display-setting-toggle) .theme-switch { display:inline-block; flex-shrink:0; }
+:root :is(.special-colors-toggle,.display-setting-toggle) .theme-switch::after { transform:none; }
+:root .display-settings-panel [role="switch"][aria-checked="true"] .theme-switch::after { transform:translateX(11px); }
 .display-settings-panel p { margin:8px 0 0; color:var(--ui-muted); font-size:10px; }
 .display-settings :is(summary,button):focus-visible { outline:2px solid var(--ui-accent); outline-offset:3px; }
+
+.tourma-page-gradient { display: none; }
+
+:root[data-background-gradient="on"] .ui-page {
+    min-height: 100vh;
+    isolation: isolate;
+    background: transparent !important;
+}
+
+:root[data-background-gradient="on"] .ui-page .tourma-page-gradient {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background: linear-gradient(
+        125deg,
+        var(--ui-page-grad-base) 0%,
+        var(--ui-page-grad-deep) 18%,
+        var(--ui-page-grad-mid) 36%,
+        var(--ui-page-grad-soft) 52%,
+        var(--ui-page-grad-base) 68%,
+        var(--ui-page-grad-deep) 84%,
+        var(--ui-page-grad-mid) 100%
+    );
+    background-size: 280% 280%;
+    animation: tourma-aurora-surge 5.2s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+}
+
+:root[data-theme="light"] .tourma-page-gradient { filter: brightness(1.035) saturate(1.08); }
+:root[data-theme="light"] .tourma-page-gradient::before,
+:root[data-theme="light"] .tourma-page-gradient::after,
+:root[data-theme="light"] .tourma-page-gradient > span:nth-child(1),
+:root[data-theme="light"] .tourma-page-gradient > span:nth-child(3) { opacity: .58; }
+
+/* Fast sweeping diagonal Aurora curtain 1 */
+.tourma-page-gradient::before {
+    content: "";
+    position: absolute;
+    inset: -30%;
+    background:
+        repeating-linear-gradient(
+            115deg,
+            transparent 0%,
+            var(--ui-page-grad-deep) 11%,
+            var(--ui-page-grad-mid) 22%,
+            var(--ui-page-grad-soft) 33%,
+            var(--ui-page-grad-base) 44%,
+            transparent 55%
+        );
+    filter: blur(28px);
+    opacity: .88;
+    will-change: transform;
+    animation: tourma-aurora-curtain 4.6s ease-in-out infinite alternate;
+}
+
+.tourma-page-gradient > span {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(26px);
+    will-change: transform;
+}
+
+/* Ribbon 1: Deep Rich Wave slashing diagonally across top-left -> center */
+.tourma-page-gradient > span:nth-child(1) {
+    width: 125vw;
+    height: 26vh;
+    top: 4%;
+    left: -25vw;
+    background: linear-gradient(90deg, transparent 5%, var(--ui-page-grad-deep) 30%, var(--ui-page-grad-mid) 70%, transparent 95%);
+    opacity: .95;
+    animation: tourma-ribbon-slash-1 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+/* Ribbon 2: Luminous Soft Highlight Wave surging across middle */
+.tourma-page-gradient > span:nth-child(2) {
+    width: 130vw;
+    height: 24vh;
+    top: 32%;
+    left: -15vw;
+    background: linear-gradient(90deg, transparent 5%, var(--ui-page-grad-soft) 35%, var(--ui-page-grad-base) 68%, transparent 95%);
+    opacity: .95;
+    animation: tourma-ribbon-slash-2 4.8s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate -1.1s;
+}
+
+/* Ribbon 3: Vivid Mid Accent Wave sweeping bottom-right -> center */
+.tourma-page-gradient > span:nth-child(3) {
+    width: 125vw;
+    height: 26vh;
+    bottom: 8%;
+    right: -25vw;
+    background: linear-gradient(90deg, transparent 5%, var(--ui-page-grad-mid) 30%, var(--ui-page-grad-soft) 70%, transparent 95%);
+    opacity: .94;
+    animation: tourma-ribbon-slash-3 3.9s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate -2.2s;
+}
+
+/* Ribbon 4: Pure Base Anchor (White in Light / Black in Dark) cutting through cleanly */
+.tourma-page-gradient > span:nth-child(4) {
+    width: 135vw;
+    height: 30vh;
+    top: 52%;
+    left: -20vw;
+    background: linear-gradient(90deg, transparent 8%, var(--ui-page-grad-base) 38%, var(--ui-page-grad-base) 62%, transparent 92%);
+    opacity: .98;
+    animation: tourma-ribbon-slash-4 5.4s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate -0.7s;
+}
+
+/* Fast hyper-light streak sweeping across the bands */
+.tourma-page-gradient::after {
+    content: "";
+    position: absolute;
+    inset: -25%;
+    background:
+        linear-gradient(
+            108deg,
+            transparent 20%,
+            var(--ui-page-grad-soft) 36%,
+            var(--ui-page-grad-base) 48%,
+            var(--ui-page-grad-deep) 62%,
+            transparent 78%
+        );
+    filter: blur(22px);
+    opacity: .85;
+    will-change: transform;
+    animation: tourma-aurora-jet 4.4s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate -1.8s;
+}
+
+@keyframes tourma-aurora-surge {
+    0%   { background-position: 0% 10%; }
+    50%  { background-position: 100% 90%; }
+    100% { background-position: 35% 100%; }
+}
+
+@keyframes tourma-aurora-curtain {
+    0%   { transform: translate3d(-14%, -10%, 0) rotate(-8deg) scale(1.05); }
+    50%  { transform: translate3d(12%, 8%, 0) rotate(6deg) scale(1.18); }
+    100% { transform: translate3d(-6%, 14%, 0) rotate(-14deg) scale(1.08); }
+}
+
+@keyframes tourma-ribbon-slash-1 {
+    0%   { transform: translate3d(-12vw, -8vh, 0) rotate(-22deg) scaleY(0.85); }
+    50%  { transform: translate3d(16vw, 14vh, 0) rotate(-12deg) scaleY(1.35); }
+    100% { transform: translate3d(6vw, 26vh, 0) rotate(-28deg) scaleY(0.95); }
+}
+
+@keyframes tourma-ribbon-slash-2 {
+    0%   { transform: translate3d(18vw, -12vh, 0) rotate(-18deg) scaleY(1.25); }
+    50%  { transform: translate3d(-16vw, 10vh, 0) rotate(-28deg) scaleY(0.85); }
+    100% { transform: translate3d(8vw, -20vh, 0) rotate(-10deg) scaleY(1.3); }
+}
+
+@keyframes tourma-ribbon-slash-3 {
+    0%   { transform: translate3d(14vw, 10vh, 0) rotate(-24deg) scaleY(0.9); }
+    50%  { transform: translate3d(-20vw, -18vh, 0) rotate(-12deg) scaleY(1.4); }
+    100% { transform: translate3d(-6vw, -28vh, 0) rotate(-26deg) scaleY(1.05); }
+}
+
+@keyframes tourma-ribbon-slash-4 {
+    0%   { transform: translate3d(-18vw, 12vh, 0) rotate(-16deg) scaleY(1.1); }
+    50%  { transform: translate3d(20vw, -16vh, 0) rotate(-26deg) scaleY(0.85); }
+    100% { transform: translate3d(-8vw, -6vh, 0) rotate(-12deg) scaleY(1.35); }
+}
+
+@keyframes tourma-aurora-jet {
+    0%   { transform: translate3d(-22%, 12%, 0) skewX(-16deg) scaleX(0.9); }
+    50%  { transform: translate3d(18%, -14%, 0) skewX(12deg) scaleX(1.22); }
+    100% { transform: translate3d(8%, 16%, 0) skewX(-10deg) scaleX(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root[data-background-gradient="on"] .ui-page .tourma-page-gradient,
+    .tourma-page-gradient::before,
+    .tourma-page-gradient > span,
+    .tourma-page-gradient::after { animation: none; }
+}
+:root[data-background-gradient="on"] .ui-page :is(.tournament-shell, .se-main) {
+    background-color: transparent;
+}
+
+/* Raised finish for stage banners and New #1 in gradient mode. */
+:root[data-background-gradient="on"] .ui-page :is(.stage-end-popup-banner, .final-stage-popup-banner, .stage-finish-alert-card, .new-number-one) {
+    position: relative;
+    isolation: isolate;
+    background: var(--ui-page-grad-base);
+    color: var(--ui-text);
+    border: 1px solid var(--ui-line-strong);
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 32%), 0 5px 14px rgb(0 0 0 / 24%);
+    --banner-grain: color-mix(in srgb, currentColor 15%, transparent);
+    --banner-grain-faint: color-mix(in srgb, currentColor 8%, transparent);
+    --banner-edge: color-mix(in srgb, var(--ui-text) 18%, transparent);
+    --banner-rim-light: color-mix(in srgb, var(--ui-celebration-ink) 70%, transparent);
+}
+
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(.stage-end-popup-banner, .final-stage-popup-banner, .stage-finish-alert-card, .new-number-one) {
+    background: var(--ui-surface);
+    --banner-edge: color-mix(in srgb, var(--ui-celebration-ink) 22%, transparent);
+    --banner-rim-light: color-mix(in srgb, var(--ui-celebration-ink) 36%, transparent);
+}
+
+:root[data-background-gradient="on"] .ui-page :is(.stage-end-popup-banner, .final-stage-popup-banner, .stage-finish-alert-card, .new-number-one)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    border-radius: inherit;
+    background-image:
+        radial-gradient(circle at 7px 13px, var(--banner-grain) .55px, transparent 1px),
+        radial-gradient(circle at 11px 15px, var(--banner-grain-faint) .45px, transparent .85px),
+        radial-gradient(circle at 15px 8px, var(--banner-grain) .4px, transparent .8px),
+        radial-gradient(circle at 4px 7px, var(--banner-grain-faint) .6px, transparent 1.15px),
+        radial-gradient(circle at 17px 21px, var(--banner-grain-faint) .45px, transparent .8px);
+    background-size: 43px 29px, 43px 29px, 31px 37px, 23px 19px, 47px 41px;
+    background-position: left top, left top, 7px 3px, 13px 11px, 5px 17px;
+    box-shadow:
+        inset 0 2px 7px var(--banner-rim-light),
+        inset 0 0 7px 2px var(--banner-edge);
+}
+:root[data-background-gradient="on"] .ui-page :is(.stage-end-popup-banner, .final-stage-popup-banner, .stage-finish-alert-card) > * {
+    position: relative;
+    z-index: 2;
+}
+:root[data-background-gradient="on"] .ui-page .new-number-one { animation: none; }
+:root[data-background-gradient="on"] .ui-page .new-number-one__art { display: none; }
+:root[data-background-gradient="on"] .ui-page .new-number-one__name {
+    border-inline-start-color: var(--ui-line-strong);
+}
+
+:root[data-background-gradient="on"] .ui-page {
+    --gradient-component-surface: color-mix(in srgb, var(--ui-page-grad-soft) 52%, var(--ui-surface));
+    --gradient-component-control: color-mix(in srgb, var(--ui-page-grad-mid) 25%, var(--ui-surface));
+    --gradient-component-border: color-mix(in srgb, var(--ui-accent) 27%, var(--ui-line));
+}
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page {
+    --gradient-component-surface: color-mix(in srgb, var(--ui-page-grad-deep) 84%, var(--ui-bg));
+    --gradient-component-control: color-mix(in srgb, var(--ui-page-grad-mid) 64%, var(--gradient-component-surface));
+    --gradient-component-border: color-mix(in srgb, var(--ui-accent) 34%, var(--gradient-component-surface));
+    --gradient-component-selected-text: color-mix(in srgb, var(--ui-accent) 49%, var(--ui-celebration-ink));
+}
+:root[data-background-gradient="on"] .ui-page :is(
+    nav.navbar, .app-left-sidebar.tournament-sidebar, .tournament-navbar-control-bar,
+    .tourney-card, .series-card, .workspace-card, .team-panel-card, .form-container-box,
+    .tourma-modal-card, .add-team-modal-card, .h2h-dialog, .stage-end-modal-container,
+    .display-settings-panel, .search-input-box, .tourney-filter-control select,
+    .workspace-main table, .tournament-shell table
+) {
+    background-color: var(--gradient-component-surface);
+    border-color: var(--gradient-component-border);
+}
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(
+    .navbar .nav-link.active, .sidebar-menu-link.active, .filter-pill-btn.active
+) {
+    color: var(--gradient-component-selected-text);
+}
+:root[data-background-gradient="on"] .ui-page :is(
+    .navbar .nav-link.active, .sidebar-menu-link.active, .filter-pill-btn.active,
+    .workspace-main table thead, .tournament-shell table thead,
+    .navbar .theme-toggle, .navbar .accent-checkboxes
+) {
+    background-color: var(--gradient-component-control);
+    border-color: var(--gradient-component-border);
+}
+
+/* The control bar and bracket viewport share an opaque surface in Dark + Gradient. */
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page {
+    --gradient-bracket-surface: color-mix(in srgb, var(--ui-page-grad-deep) 38%, var(--ui-bg));
+    --gradient-bracket-line: color-mix(in srgb, var(--ui-page-grad-soft) 30%, var(--ui-line));
+}
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(
+    .tournament-navbar-control-bar,
+    .bracket-viewport-frame,
+    .bracket-viewport-container,
+    .bracket-zoom-toolbar,
+    .de-section-header,
+    .rr-control-bar,
+    .swiss-bracket-col-header
+) {
+    background-color: var(--gradient-bracket-surface);
+    border-color: var(--gradient-bracket-line);
+}
+
+/* Match the other workspaces without changing the surfaces inside match cards. */
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(
+    .create-form-panel, .create-series-page .radio-card,
+    .create-series-page #rollingOptionsPanel, .create-series-page #eloOptionsPanel,
+    .subtournament-create-page form, .standalone-format-panel,
+    .format-page #wdlPointsPanel, .format-page #stage1ConfigContainer, .format-page #stage2ConfigContainer,
+    .team-panel-card .manage-toolbar, .mg-group-column, .mg-dropdown-menu,
+    .dashboard-metric, .dashboard-panel, .hof-metric, .hof-card-panel,
+    .team-stat-box, .team-performance-card, .summary-incomplete-alert,
+    .rr-standings-card, .gst-group-card, .gst-group-block
+) {
+    background-color: var(--gradient-component-surface);
+    border-color: var(--gradient-component-border);
+}
+:root[data-theme="dark"][data-background-gradient="on"] .ui-page :is(
+    .team-panel-card table thead, .team-performance-table thead th,
+    .rr-table thead th, .hof-table thead th, .hof-leader-table thead,
+    .rr-standings-header-bar, .gst-group-header, .profile-match-group-header,
+    .dashboard-panel .dashboard-button, .stage-toggle-bar
+) {
+    background-color: var(--gradient-component-control);
+    border-color: var(--gradient-component-border);
+}

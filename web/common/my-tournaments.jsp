@@ -18,13 +18,13 @@
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261101-settings">
+        <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
         <!-- Main Design System CSS & Dedicated My Tournaments CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css?v=20261107-combined-filters">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/my-tournaments.css?v=compact-1">
     </head>
     <body class="ui-page workspace-page tournaments-page">
         <!-- Include Shared Navigation Header Component -->
@@ -98,15 +98,16 @@
                 <c:when test="${not empty tournamentList}">
                     <div class="tourney-cards-grid" id="tourneyGrid">
                         <c:forEach var="t" items="${tournamentList}">
+                            <c:set var="cardStatus" value="${t.status == 'COMPLETED' || t.status == 'FINISHED' ? 'COMPLETED' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'IN_PROGRESS' : 'INCOMING')}"/>
                             <article class="tourney-card"
                                  data-id="${t.id}"
                                  data-db-status="${t.status}"
-                                 data-db-champion="${t.championName}"
+                                 data-db-champion="<c:out value='${t.championName}'/>"
                                  data-stage-type="${t.tournamentType}"
                                  data-context="${empty t.seriesId ? 'STANDALONE' : 'SERIES'}"
                                  data-team-count="${t.teamCount}"
-                                 data-status="${t.status == 'COMPLETED' ? 'COMPLETED' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'IN_PROGRESS' : 'INCOMING')}"
-                                 data-name="${t.name}">
+                                 data-status="${cardStatus}"
+                                 data-name="<c:out value='${t.name}'/>">
 
                                 <div class="tourney-card-info">
                                     <h3 class="tourney-card-title" title="<c:out value="${t.name}" />"><c:out value="${t.name}" /></h3>
@@ -114,13 +115,12 @@
                                         <span id="teamMeta_${t.id}" class="team-count-val">${t.teamCount > 0 ? t.teamCount : 0} đội</span>
                                         <span aria-hidden="true">·</span>
                                         <span class="tourney-format-span"><c:out value="${t.formatSummary}" /></span>
-                                    </p>
-                                    <p class="tourney-series-line"><c:if test="${not empty t.seriesId}"><c:out value="${seriesNames[t.seriesId]}" /></c:if></p>
-                                    <p id="championMeta_${t.id}" class="tourney-champion-meta"><c:if test="${not empty t.championName}"><span class="champion-name-val"><c:out value="${t.championName}" /></span></c:if></p>
-                                </div>
+                                        <c:if test="${not empty seriesNames[t.seriesId]}"><span class="tourney-series-line"><c:out value="${seriesNames[t.seriesId]}"/></span></c:if>
+                                        <c:if test="${not empty t.championName}"><span id="championMeta_${t.id}" class="tourney-champion-meta"><i class="fa-solid fa-trophy" aria-hidden="true"></i> <span class="champion-name-val"><c:out value="${t.championName}"/></span></span></c:if>
+                                    </p>                                </div>
                                 <div class="tourney-card-tools">
                                     <div class="tourney-progress" aria-label="Tiến độ giải đấu">
-                                        <span class="tourney-progress-status">${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'in progress' : 'incoming')}</span>
+                                        <span class="tourney-progress-status">${cardStatus == 'COMPLETED' ? 'Hoàn thành' : (cardStatus == 'IN_PROGRESS' ? 'Đang diễn ra' : 'Chưa bắt đầu')}</span>
                                         <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${t.progressPercent}">
                                             <span class="tourney-progress-fill" style="width: ${t.progressPercent}%"></span>
                                         </div>
