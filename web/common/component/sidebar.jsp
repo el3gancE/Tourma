@@ -6,7 +6,7 @@
     if (sidebarRoute == null) sidebarRoute = request.getRequestURI();
     sidebarRoute = sidebarRoute.substring(request.getContextPath().length());
     String activeStep = "";
-    if ("/rolling/dashboard".equals(sidebarRoute) || "/common/rolling/rolling-dashboard.jsp".equals(sidebarRoute)) activeStep = "dashboard";
+    if ("/rolling/dashboard".equals(sidebarRoute) || "/common/rolling/rolling-dashboard.jsp".equals(sidebarRoute) || "/league/dashboard".equals(sidebarRoute) || "/common/league/league-dashboard.jsp".equals(sidebarRoute)) activeStep = "dashboard";
     else if ("/rolling/standings".equals(sidebarRoute) || "/common/rolling/rolling-standings.jsp".equals(sidebarRoute)) activeStep = "standings";
     else if ("/rolling-hof".equals(sidebarRoute) || "/common/rolling/rolling-hof.jsp".equals(sidebarRoute)) activeStep = "hof";
     else if ("/rolling/team-list".equals(sidebarRoute) || "/common/rolling/rolling-team-list.jsp".equals(sidebarRoute)) activeStep = "team-list";
@@ -133,12 +133,18 @@
         <span><%= currentSeries.getName() %></span>
     </div>
 
+    <%
+        boolean isLeagueSystem = currentSeries != null && "LEAGUE_SYSTEM".equalsIgnoreCase(currentSeries.getRankingModel());
+        String seriesDashUrl = isLeagueSystem
+            ? request.getContextPath() + "/league/dashboard?id=" + currentSeries.getId()
+            : request.getContextPath() + "/rolling/dashboard?id=" + currentSeries.getId();
+    %>
     <ul class="sidebar-menu-list" data-ui-style="sidebar-jsp-003">
         <li class="sidebar-menu-item">
-            <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= currentSeries.getId() %>"
+            <a href="<%= seriesDashUrl %>"
                class="sidebar-menu-link <%= "dashboard".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-chart-line menu-icon text-gold"></i>
-                <span>Dashboard Series</span>
+                <i class="fa-solid <%= isLeagueSystem ? "fa-shield-halved" : "fa-chart-line" %> menu-icon text-gold"></i>
+                <span><%= isLeagueSystem ? "Dashboard League" : "Dashboard Series" %></span>
             </a>
         </li>
 
