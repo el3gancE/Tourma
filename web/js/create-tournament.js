@@ -18,7 +18,7 @@
     });
     window.addEventListener('pageshow', function () {
         submit.disabled = false;
-        submit.innerHTML = 'Tạo &amp; tiếp tục <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>';
+        submit.innerHTML = 'Tạo &amp; tiếp tục <span aria-hidden="true">→</span>';
         updateFields();
     });
     updateFields();

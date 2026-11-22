@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css?v=mono-1">
 <%-- 
     Document   : bracket-card.jsp (Match Card Component - Bracket View Node)
     Description: Compact high-density dark node component for rendering match cards inside bracket trees.

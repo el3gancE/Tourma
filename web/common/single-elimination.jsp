@@ -134,7 +134,11 @@
 ">
 ">
 ">
-    </head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/bracket-card.css?v=mono-1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css?v=mono-1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/single-elimination.css?v=mono-1">
+        </head>
     <body class="ui-page tournament-workspace se-page">
         <!-- Empty Team Alert Component -->
         <jsp:include page="/common/component/empty-team-alert.jsp" />

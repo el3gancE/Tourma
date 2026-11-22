@@ -15,6 +15,7 @@
         <!-- FontAwesome Icons -->
 
         <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/list-workspace.css?v=1">
         <!-- Main Design System CSS & Dedicated My Tournaments CSS -->
     </head>
     <body class="ui-page workspace-page tournaments-page">
@@ -25,7 +26,7 @@
         </jsp:include>
 
         <main class="container workspace-main">
-            <div class="workspace-utility"><span>KHÔNG GIAN QUẢN LÝ / GIẢI ĐẤU</span></div>
+
 
             <!-- Page Header Row -->
             <div class="page-header-row">
@@ -33,13 +34,10 @@
                     <h1 class="page-title">
                         <i class="fa-solid fa-sitemap text-mint"></i> Giải Đấu Của Tôi
                     </h1>
-                    <p class="text-muted">
-                        Tất cả cuộc đấu của bạn, trong cùng một không gian.
-                    </p>
                 </div>
                 <div>
                     <a href="${pageContext.request.contextPath}/common/create-tournament.jsp" class="btn btn-mint">
-                        <i class="fa-solid fa-plus"></i> Tạo Giải Đấu Mới
+                        <span aria-hidden="true">＋</span> Tạo Giải Đấu Mới
                     </a>
                 </div>
             </div>
@@ -92,12 +90,12 @@
                             <article class="tourney-card"
                                  data-id="${t.id}"
                                  data-db-status="${t.status}"
-                                 data-db-champion="${t.championName}"
+                                 data-db-champion="<c:out value='${t.championName}'/>"
                                  data-stage-type="${t.tournamentType}"
                                  data-context="${empty t.seriesId ? 'STANDALONE' : 'SERIES'}"
                                  data-team-count="${t.teamCount}"
-                                 data-status="${t.status == 'COMPLETED' ? 'COMPLETED' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'IN_PROGRESS' : 'INCOMING')}"
-                                 data-name="${t.name}">
+                                 data-status="${(t.status == 'COMPLETED' || t.status == 'FINISHED') ? 'COMPLETED' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'IN_PROGRESS' : 'INCOMING')}"
+                                 data-name="<c:out value='${t.name}'/>">
 
                                 <div class="tourney-card-info">
                                     <h3 class="tourney-card-title" title="<c:out value="${t.name}" />"><c:out value="${t.name}" /></h3>
@@ -105,25 +103,23 @@
                                         <span id="teamMeta_${t.id}" class="team-count-val">${t.teamCount > 0 ? t.teamCount : 0} đội</span>
                                         <span aria-hidden="true">·</span>
                                         <span class="tourney-format-span"><c:out value="${t.formatSummary}" /></span>
+                                        <c:if test="${not empty t.seriesId and not empty seriesNames[t.seriesId]}"><span aria-hidden="true">·</span> <c:out value="${seriesNames[t.seriesId]}"/></c:if>
+                                        <c:if test="${not empty t.championName}"><span aria-hidden="true">·</span> <span id="championMeta_${t.id}" class="tourney-champion-meta">Vô địch: <span class="champion-name-val"><c:out value="${t.championName}"/></span></span></c:if>
                                     </p>
-                                    <p class="tourney-series-line"><c:if test="${not empty t.seriesId}"><c:out value="${seriesNames[t.seriesId]}" /></c:if></p>
-                                    <p id="championMeta_${t.id}" class="tourney-champion-meta"><c:if test="${not empty t.championName}"><span class="champion-name-val"><c:out value="${t.championName}" /></span></c:if></p>
                                 </div>
                                 <div class="tourney-card-tools">
                                     <div class="tourney-progress" aria-label="Tiến độ giải đấu">
-                                        <span class="tourney-progress-status">${t.status == 'COMPLETED' ? 'completed' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'in progress' : 'incoming')}</span>
-                                        <div class="tourney-progress-track" role="progressbar" aria-label="Tiến độ giải đấu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${t.progressPercent}">
-                                            <span class="tourney-progress-fill"></span>
-                                        </div>
+                                        <span class="tourney-progress-status">${(t.status == 'COMPLETED' || t.status == 'FINISHED') ? 'Hoàn thành' : (t.status == 'ONGOING' || t.status == 'IN_PROGRESS' ? 'Đang diễn ra' : 'Chưa bắt đầu')}</span>
+                                        <progress class="tourney-progress-track" max="100" value="${t.progressPercent}" aria-label="Tiến độ giải đấu"></progress>
                                         <span class="tourney-progress-percent">${t.progressPercent}%</span>
                                     </div>
                                     <button type="button" class="btn-delete-tourney"
                                             data-tourney-id="<c:out value="${t.id}" />" data-tourney-name="<c:out value="${t.name}" />"
                                             onclick="openDeleteTourneyModal(this.dataset.tourneyId, this.dataset.tourneyName)"
                                             title="Xóa giải đấu" aria-label="Xóa giải đấu">
-                                        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                                        Xóa
                                     </button>
-                                    <a href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=${t.id}" class="btn-view-bracket-card">Trận đấu <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                                    <a href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=${t.id}" class="btn-view-bracket-card">Trận đấu <span aria-hidden="true">→</span></a>
                                 </div>
                             </article>
                         </c:forEach>
@@ -141,7 +137,7 @@
                             ${not empty pageInfo.query || (pageInfo.kind != 'ALL' || pageInfo.status != 'ALL' || not empty pageInfo.seriesId) ? 'Thử đổi từ khóa hoặc chọn bộ lọc khác.' : 'Hãy bắt đầu khởi tạo giải đấu đầu tiên.'}
                         </p>
                         <a href="${pageContext.request.contextPath}/common/create-tournament.jsp" class="btn btn-mint">
-                            <i class="fa-solid fa-plus"></i> Tạo Giải Đấu Mới
+                            <span aria-hidden="true">＋</span> Tạo Giải Đấu Mới
                         </a>
                     </div>
                 </c:otherwise>
@@ -187,7 +183,7 @@
                             <span>Xác Nhận Xóa Giải Đấu</span>
                         </div>
                         <button type="button" class="modal-close-btn" onclick="closeDeleteTourneyModal()" title="Đóng">
-                            <i class="fa-solid fa-xmark"></i>
+                            <span aria-hidden="true">×</span>
                         </button>
                     </div>
 
@@ -219,7 +215,7 @@
                             <span>Sao Chép Cấu Hình Giải Đấu</span>
                         </div>
                         <button type="button" class="modal-close-btn" onclick="closeCloneTourneyModal()" title="Đóng">
-                            <i class="fa-solid fa-xmark"></i>
+                            <span aria-hidden="true">×</span>
                         </button>
                     </div>
 

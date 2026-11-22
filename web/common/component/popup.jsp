@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<jsp:include page="/common/component/popup-styles.jsp" />
 <%--
     Document   : popup.jsp (Score Edit Popup Modal Component - Wireframe Layout)
     Description: Reusable modal dialog for editing match scores and declaring winners.

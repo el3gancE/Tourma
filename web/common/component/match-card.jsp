@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/match-card.css?v=mono-1">
 <%-- 
     Document   : match-card.jsp (Match Card Component - List View Row)
     Description: High-density horizontal list component for displaying matches in round lists or fixtures.

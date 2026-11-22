@@ -1,0 +1,79 @@
+.create-flow {
+    max-width: var(--ui-content-width);
+    margin-inline: auto;
+    padding: clamp(1.5rem, 5vw, 3.75rem) var(--ui-gutter);
+}
+.create-flow *, .create-flow *::before, .create-flow *::after { box-sizing: border-box; }
+.create-flow :is(h1, h2, p, ol) { margin: 0; }
+.create-flow a { color: inherit; text-decoration: none; }
+.create-flow a:hover { text-decoration: underline; text-underline-offset: .22em; }
+.create-flow :focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
+.create-flow-back { display: inline-flex; align-items: center; gap: .45rem; font-size: .78rem; }
+.create-flow-heading { margin: .7rem 0 1.35rem; }
+.create-flow-heading h1 { font-size: clamp(2.05rem, 5.5vw, 4.15rem); line-height: 1.07; letter-spacing: -.075em; }
+.create-flow-heading p { margin-top: .55rem; color: var(--ui-muted); }
+.create-flow-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2.2fr) minmax(13rem, 1fr);
+    align-items: start;
+    gap: 1rem clamp(1rem, 3vw, 2rem);
+}
+.create-flow-panel { min-width: 0; margin: 0; border: 1px solid var(--ui-line-strong); background: var(--ui-surface); }
+.create-flow-panel-heading, .create-flow-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .55rem .9rem;
+    padding: .75rem clamp(.8rem, 2.5vw, 1.35rem);
+}
+.create-flow-panel-heading { border-bottom: 1px solid var(--ui-line); }
+.create-flow-panel-heading h2, .create-flow-aside h2 { font-size: 1rem; }
+.create-flow small { color: var(--ui-muted); font-size: .74rem; font-weight: 400; }
+.create-flow-body { display: grid; gap: 1.1rem; padding: clamp(.8rem, 2.5vw, 1.35rem); }
+.create-flow-field { display: grid; gap: .35rem; min-width: 0; }
+.create-flow-field label, .create-flow legend { font-weight: 600; }
+.create-flow-field label small { margin-inline-start: .35rem; }
+.create-flow-field :is(input, textarea) {
+    width: 100%;
+    border: 1px solid var(--ui-line-strong);
+    border-radius: 0;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    padding: .62rem .7rem;
+    font: inherit;
+}
+.create-flow-field textarea { resize: vertical; }
+.create-flow-field input[readonly] { background: var(--ui-surface-alt); color: var(--ui-muted); }
+.create-flow-count { text-align: end; }
+.create-flow-model, .create-flow-options { min-width: 0; margin: 0; border: 0; padding: 0; }
+.create-flow legend { margin-bottom: .45rem; padding: 0; }
+.create-flow-model-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.create-flow-model-options label {
+    display: flex;
+    align-items: start;
+    gap: .42rem;
+    padding: .65rem .55rem;
+    border: 1px solid var(--ui-line);
+    cursor: pointer;
+}
+.create-flow-model-options label:has(input:checked) { border-color: var(--ui-text); background: var(--ui-surface-alt); }
+.create-flow-model-options input { margin: .22rem 0 0; accent-color: var(--ui-text); }
+.create-flow-model-options small { display: block; margin-top: .2rem; }
+.create-flow-options .create-flow-field + .create-flow-field { margin-top: .7rem; }
+.create-flow-error { border: 1px solid var(--ui-line-strong); border-inline-start: 3px solid var(--ui-text); padding: .65rem .75rem; background: var(--ui-surface-alt); }
+.create-flow-actions { justify-content: end; border-top: 1px solid var(--ui-line); }
+.create-flow-actions a, .create-flow-actions button { padding: .5rem .7rem; font: inherit; font-weight: 600; }
+.create-flow-actions button { border: 1px solid var(--ui-chrome); border-radius: 0; background: var(--ui-chrome); color: var(--ui-chrome-text); cursor: pointer; }
+.create-flow-actions button:hover { background: var(--ui-chrome-hover); }
+.create-flow-actions button:disabled { opacity: .65; cursor: wait; }
+.create-flow-aside { color: var(--ui-chrome-text); background: var(--ui-chrome); padding: .9rem 1rem; }
+.create-flow-aside ol { margin-top: .65rem; padding-inline-start: 1.2rem; }
+.create-flow-aside li { padding: .33rem 0; color: var(--ui-chrome-muted); font-size: .82rem; }
+.create-flow-aside li[aria-current] { color: var(--ui-chrome-text); font-weight: 700; }
+@media (max-width: 46rem) {
+    .create-flow-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 29rem) {
+    .create-flow-model-options { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<jsp:include page="/common/component/popup-styles.jsp" />
 <%@page import="model.Series"%>
 <%
     Series seriesObj = (Series) request.getAttribute("series");

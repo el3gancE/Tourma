@@ -6,16 +6,16 @@
     headerRoute = headerRoute.substring(request.getContextPath().length());
     String headerActive = "";
     if ("/".equals(headerRoute) || "/index.jsp".equals(headerRoute)) headerActive = "home";
-    else if ("/common/create-tournament.jsp".equals(headerRoute)) headerActive = "create-tournament";
-    else if ("/common/create-series.jsp".equals(headerRoute)) headerActive = "create-series";
+    else if (("/common/create-tournament.jsp".equals(headerRoute) || "/create-tournament".equals(headerRoute) || "/create-tournament.jsp".equals(headerRoute))) headerActive = "create-tournament";
+    else if (("/common/create-series.jsp".equals(headerRoute) || "/create-series".equals(headerRoute) || "/create-series.jsp".equals(headerRoute))) headerActive = "create-series";
     else if ("/my-tournaments".equals(headerRoute) && !"matches".equals(request.getParameter("action"))) headerActive = "my-tournaments";
     else if ("/my-series".equals(headerRoute)) headerActive = "my-series";
     pageContext.setAttribute("headerActive", headerActive);
 %>
 <jsp:include page="/common/component/tournament-config-state.jsp" />
 <% if (!"home".equals(headerActive)) { %>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=mono-1">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tourma-shell.css?v=landing-1">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=mono-2">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tourma-shell.css?v=chrome-1">
 <% } %>
 <div class="tourma-silk" aria-hidden="true"></div>
 <nav class="navbar" aria-label="Điều hướng Tourma">
@@ -66,20 +66,7 @@
     </ul>
     <% if ("true".equals(request.getParameter("themeToggle"))) { %>
     <div class="appearance-switches" role="group" aria-label="Giao diện">
-        <button type="button" data-silk-toggle aria-pressed="true">Nền động</button>
         <button type="button" class="theme-toggle" data-theme-toggle><span data-theme-label>Đổi giao diện</span></button>
-        <% if (!"home".equals(headerActive)) { %>
-        <details class="display-settings">
-            <summary class="theme-toggle">Hiển thị</summary>
-            <div class="display-settings-panel" role="group" aria-label="Cài đặt hiển thị">
-                <strong>Cài đặt hiển thị</strong>
-                <button type="button" class="special-colors-toggle" role="switch" aria-checked="true" data-special-colors-toggle>
-                    <span>Màu phân biệt nhánh/nhóm</span><span class="theme-switch" aria-hidden="true"></span>
-                </button>
-                <p>Áp dụng cho nhánh đấu, final, các nhóm Swiss và bảng GSL.</p>
-            </div>
-        </details>
-        <% } %>
     </div>
     <% } %>
 </nav>

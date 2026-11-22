@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="dao.TournamentDAO, dao.SeriesDAO"%>
 <%@page import="model.Tournament, model.Series, java.util.List"%>
 <%
@@ -111,31 +112,30 @@
     boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType);
     boolean hasSeries = (currentSeries != null);
     boolean hasTournament = (currentTournament != null);
+    String sidebarFormat = isMultiStage ? stage1Format : format;
+    boolean sidebarHasGroups = "GROUP_STAGE".equalsIgnoreCase(sidebarFormat);
+    boolean sidebarCanManageGroups = sidebarHasGroups || "GSL".equalsIgnoreCase(sidebarFormat);
+    pageContext.setAttribute("sidebarSeriesName", hasSeries ? currentSeries.getName() : "");
+    pageContext.setAttribute("sidebarTournamentName", tournamentName);
 %>
 
 
 <aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">
-    <div class="sidebar-workspace-heading"><span class="sidebar-workspace-mark" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span><span>Không gian giải đấu</span></div>
 
     <% if (hasSeries) { %>
     <nav class="sidebar-section" aria-label="Chuỗi giải">
     <!-- ========================================================= -->
     <!-- MỤC 1: QUẢN LÝ CHUỖI GIẢI (SERIES SECTION)                -->
     <!-- ========================================================= -->
-    <div class="sidebar-section-header">
-        <i class="fa-solid fa-layer-group"></i> CHUỖI GIẢI (SERIES)
-    </div>
-
-    <div class="sidebar-subtourney-badge">
-        <i class="fa-solid fa-chart-line text-gold"></i>
-        <span><%= currentSeries.getName() %></span>
-    </div>
+    <header class="sidebar-group-heading">
+        <span>Chuỗi giải</span>
+        <h2><c:out value="${sidebarSeriesName}"/></h2>
+    </header>
 
     <ul class="sidebar-menu-list">
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/dashboard?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "dashboard".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-chart-line menu-icon text-gold"></i>
                 <span>Dashboard Series</span>
             </a>
         </li>
@@ -143,7 +143,6 @@
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/standings?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "standings".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-list-ol menu-icon text-gold"></i>
                 <span>Bảng Xếp Hạng Series</span>
             </a>
         </li>
@@ -151,7 +150,6 @@
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling-hof?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "hof".equals(activeStep) || "rolling-hof".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-crown menu-icon text-gold"></i>
                 <span>Bảng Vàng</span>
             </a>
         </li>
@@ -159,7 +157,6 @@
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/team-list?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "team-list".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-users menu-icon text-mint"></i>
                 <span>Danh Sách Đội Partner</span>
             </a>
         </li>
@@ -167,7 +164,6 @@
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/tournament-list?id=<%= currentSeries.getId() %>"
                class="sidebar-menu-link <%= "tournament-list".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-trophy menu-icon text-gold"></i>
                 <span>Danh Sách Giải Con (<%= subTourneyCount %>)</span>
             </a>
         </li>
@@ -180,36 +176,30 @@
     <!-- ========================================================= -->
     <!-- MỤC 2: QUẢN LÝ GIẢI ĐẤU (GIẢI ĐƠN HOẶC GIẢI CON)           -->
     <!-- ========================================================= -->
-    <div class="sidebar-section-header">
-        <i class="fa-solid fa-bolt"></i> <%= hasSeries ? ("GIẢI CON #" + (currentTournament != null ? currentTournament.getTournamentIndexInSeries() : "")) : "CHI TIẾT GIẢI ĐẤU" %>
-    </div>
-
-    <div class="sidebar-subtourney-badge">
-        <i class="fa-solid fa-trophy text-mint"></i>
-        <span><%= tournamentName %></span>
+    <header class="sidebar-group-heading">
+        <span><%= hasSeries ? "Giải con " + currentTournament.getTournamentIndexInSeries() : "Giải đấu" %></span>
+        <h2><c:out value="${sidebarTournamentName}"/></h2>
         <% if (hasSeries) {
              String tTier = (currentTournament != null && currentTournament.getTierName() != null && !currentTournament.getTierName().trim().isEmpty())
                  ? currentTournament.getTierName().toUpperCase() : "S";
         %>
             <span class="tier-tag tier-<%= tTier.toLowerCase() %>">[<%= tTier %>]</span>
         <% } %>
-    </div>
+    </header>
 
     <ul class="sidebar-menu-list">
         <!-- BƯỚC 2: QUẢN LÝ ĐỘI -->
         <li class="sidebar-menu-item">
             <a href="<%= hasSeries ? (request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + seriesId) : (request.getContextPath() + "/common/configure-tournament-teams.jsp?id=" + tournamentId) %>"
                class="sidebar-menu-link <%= "teams".equals(activeStep) || "step2".equals(activeStep) || "tournament-teams".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-user-plus menu-icon"></i>
                 <span>Thêm Đội & Quản Lý</span>
             </a>
         </li>
 
         <!-- MỤC RIÊNG CHO GROUP STAGE & GSL: QUẢN LÝ BẢNG ĐẤU -->
-        <li class="sidebar-menu-item" id="sidebarMenuManageGroup">
+        <li class="sidebar-menu-item" id="sidebarMenuManageGroup" <%= (sidebarCanManageGroups) ? "" : "hidden" %>>
             <a href="${pageContext.request.contextPath}/common/manage-group.jsp?id=<%= tournamentId %>&seriesId=<%= seriesId %>&format=<%= format %>"
                class="sidebar-menu-link <%= "manage-group".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-pen-to-square menu-icon text-mint"></i>
                 <span>Quản Lý Bảng Đấu</span>
             </a>
         </li>
@@ -219,71 +209,63 @@
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/point-config?id=<%= tournamentId %>&seriesId=<%= seriesId %>"
                class="sidebar-menu-link <%= "point-config".equals(activeStep) || "points".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-star menu-icon text-gold"></i>
                 <span>Set Điểm Thưởng</span>
             </a>
         </li>
         <% } %>
 
         <!-- MỤC RIÊNG CHO ROUND ROBIN: BẢNG XẾP HẠNG (Single Stage) -->
-        <li class="sidebar-menu-item" id="sidebarMenuRRStandings">
+        <li class="sidebar-menu-item" id="sidebarMenuRRStandings" <%= (!isMultiStage && "ROUND_ROBIN".equalsIgnoreCase(format)) ? "" : "hidden" %>>
             <a id="sidebarLinkRRStandings" href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=<%= format %>"
                class="sidebar-menu-link <%= ("standings".equals(activeStep) || "standings1".equals(activeStep)) && !isMultiStage ? "active" : "" %>">
-                <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
                 <span id="sidebarTextRRStandings">Bảng Xếp Hạng</span>
             </a>
         </li>
 
         <!-- MULTI-STAGE: BXH VÒNG 1 (Khi Vòng 1 là Round Robin) -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings1">
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings1" <%= (isMultiStage && "ROUND_ROBIN".equalsIgnoreCase(stage1Format)) ? "" : "hidden" %>>
             <a id="sidebarLinkRRStandings1" href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=ROUND_ROBIN&stage=1"
                class="sidebar-menu-link <%= "standings1".equals(activeStep) || ("standings".equals(activeStep) && !"2".equals(request.getParameter("stage"))) ? "active" : "" %>">
-                <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
                 <span>BXH Vòng 1</span>
             </a>
         </li>
 
         <!-- MULTI-STAGE: BXH VÒNG 2 (Khi Vòng 2 là Round Robin) -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings2">
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuRRStandings2" <%= (isMultiStage && "ROUND_ROBIN".equalsIgnoreCase(stage2Format)) ? "" : "hidden" %>>
             <a id="sidebarLinkRRStandings2" href="${pageContext.request.contextPath}/common/round-robin-standings.jsp?id=<%= tournamentId %>&format=ROUND_ROBIN&stage=2"
                class="sidebar-menu-link <%= "standings2".equals(activeStep) || ("standings".equals(activeStep) && "2".equals(request.getParameter("stage"))) ? "active" : "" %>">
-                <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
                 <span>BXH Vòng 2</span>
             </a>
         </li>
 
         <!-- MỤC RIÊNG CHO GROUP STAGE: BẢNG XẾP HẠNG VÒNG BẢNG -->
-        <li class="sidebar-menu-item" id="sidebarMenuGroupStandings">
+        <li class="sidebar-menu-item" id="sidebarMenuGroupStandings" <%= (sidebarHasGroups) ? "" : "hidden" %>>
             <a href="${pageContext.request.contextPath}/common/group-standing.jsp?id=<%= tournamentId %>&format=GROUP_STAGE"
                class="sidebar-menu-link <%= "group-standing".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-ranking-star menu-icon text-gold"></i>
                 <span>BXH Vòng Bảng</span>
             </a>
         </li>
 
         <!-- MULTI-STAGE: VÒNG 1 (Stage 1 - SƠ ĐỒ / LỊCH ĐẤU & TỈ SỐ) -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1">
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage1" <%= (isMultiStage) ? "" : "hidden" %>>
             <a id="sidebarLinkStage1" href="${pageContext.request.contextPath}/common/<%= targetBracketUrlStage1 %>?id=<%= tournamentId %>&stage=1<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
                class="sidebar-menu-link <%= "stage1".equals(activeStep) || ("bracket".equals(activeStep) && "1".equals(request.getParameter("stage"))) || ("bracket".equals(activeStep) && request.getParameter("stage") == null && isMultiStage) ? "active" : "" %>">
-                <i class="fa-solid fa-diagram-project menu-icon text-mint"></i>
                 <span id="sidebarTextStage1">Trận Đấu Vòng 1</span>
             </a>
         </li>
 
         <!-- MULTI-STAGE: VÒNG 2 (Stage 2 - SƠ ĐỒ / LỊCH ĐẤU & TỈ SỐ) -->
-        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2">
+        <li class="sidebar-menu-item sidebar-multistage-item" id="sidebarMenuStage2" <%= (isMultiStage) ? "" : "hidden" %>>
             <a id="sidebarLinkStage2" href="${pageContext.request.contextPath}/common/<%= targetBracketUrlStage2 %>?id=<%= tournamentId %>&stage=2<%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
                class="sidebar-menu-link <%= "stage2".equals(activeStep) || ("bracket".equals(activeStep) && "2".equals(request.getParameter("stage"))) ? "active" : "" %>">
-                <i class="fa-solid fa-trophy menu-icon text-gold"></i>
                 <span id="sidebarTextStage2">Trận Đấu Vòng 2</span>
             </a>
         </li>
 
         <!-- SINGLE-STAGE: SƠ ĐỒ NHÁNH / LỊCH ĐẤU & TỈ SỐ -->
-        <li class="sidebar-menu-item" id="sidebarMenuSingleStage">
+        <li class="sidebar-menu-item" id="sidebarMenuSingleStage" <%= (!isMultiStage) ? "" : "hidden" %>>
             <a href="${pageContext.request.contextPath}/common/<%= targetBracketUrl %>?id=<%= tournamentId %>&format=<%= format %><%= (seriesId != null && !seriesId.isEmpty()) ? ("&seriesId=" + seriesId) : "" %>"
                class="sidebar-menu-link <%= ("bracket".equals(activeStep) || "step3".equals(activeStep) || "gsl".equals(activeStep)) && !isMultiStage ? "active" : "" %>">
-                <i class="fa-solid <%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "fa-calendar-days" : (("GROUP_STAGE".equalsIgnoreCase(format) || "GSL".equalsIgnoreCase(format)) ? "fa-layer-group" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "fa-diagram-project" : "fa-diagram-project")) %> menu-icon"></i>
                 <span><%= "ROUND_ROBIN".equalsIgnoreCase(format) ? "Lịch Thi Đấu & Tỉ Số" : ("GROUP_STAGE".equalsIgnoreCase(format) ? "Vòng Bảng & Tỉ Số" : ("GSL".equalsIgnoreCase(format) ? "Bảng Đấu GSL & Tỉ Số" : ("SWISS_LITE".equalsIgnoreCase(format) || "SWISS".equalsIgnoreCase(format) ? "Vòng Swiss & Tỉ Số" : "Sơ Đồ Nhánh & Tỉ Số"))) %></span>
             </a>
         </li>
@@ -293,7 +275,6 @@
         <li class="sidebar-menu-item" id="sidebarMenuSummary">
             <a href="${pageContext.request.contextPath}/rolling/tournament-summary?id=<%= tournamentId %>&seriesId=<%= seriesId %>"
                class="sidebar-menu-link <%= "summary".equals(activeStep) ? "active" : "" %>">
-                <i class="fa-solid fa-medal menu-icon text-gold"></i>
                 <span>Tổng Kết Giải Đấu</span>
             </a>
         </li>
@@ -332,10 +313,10 @@
         var menuGS = document.getElementById('sidebarMenuGroupStandings');
 
         if (isMulti) {
-            if (m1) m1.style.display = '';
-            if (m2) m2.style.display = '';
-            if (sSingle) sSingle.style.display = 'none';
-            if (menuRR) menuRR.style.display = 'none';
+            if (m1) m1.hidden = false;
+            if (m2) m2.hidden = false;
+            if (sSingle) sSingle.hidden = true;
+            if (menuRR) menuRR.hidden = true;
 
             var s1Format = dbS1Format || 'SINGLE_ELIMINATION';
             var s2Format = dbS2Format || 'SINGLE_ELIMINATION';
@@ -365,23 +346,21 @@
 
                 // Display BXH Vong 1 if Stage 1 is Round Robin
                 if (s1Format === 'ROUND_ROBIN' && menuRR1) {
-                    menuRR1.style.display = '';
+                    menuRR1.hidden = false;
                 } else if (menuRR1) {
-                    menuRR1.style.display = 'none';
+                    menuRR1.hidden = true;
                 }
 
                 // Display BXH Vong 2 if Stage 2 is Round Robin
                 if (s2Format === 'ROUND_ROBIN' && menuRR2) {
-                    menuRR2.style.display = '';
+                    menuRR2.hidden = false;
                 } else if (menuRR2) {
-                    menuRR2.style.display = 'none';
+                    menuRR2.hidden = true;
                 }
 
                 // Display Group Stage / GSL items if Stage 1 is Group Stage or GSL
-                if (s1Format === 'GROUP_STAGE' || s1Format === 'GSL') {
-                    if (menuMG) menuMG.style.display = '';
-                    if (menuGS) menuGS.style.display = (s1Format === 'GROUP_STAGE') ? '' : 'none';
-                }
+                if (menuMG) menuMG.hidden = s1Format !== 'GROUP_STAGE' && s1Format !== 'GSL';
+                if (menuGS) menuGS.hidden = s1Format !== 'GROUP_STAGE';
             }
 
         var localFmt = localStorage.getItem('tourma_format_' + tid);
@@ -400,8 +379,10 @@
                 aLink.href = '${pageContext.request.contextPath}/common/' + page + '?id=' + tid + '&format=' + localFmt + (seriesId ? ('&seriesId=' + seriesId) : '');
             }
             if (menuMG) {
-                menuMG.style.display = (localFmt === 'GROUP_STAGE' || localFmt === 'GSL') ? '' : 'none';
+                menuMG.hidden = localFmt !== 'GROUP_STAGE' && localFmt !== 'GSL';
             }
+            if (menuGS) menuGS.hidden = localFmt !== 'GROUP_STAGE';
+            if (menuRR) menuRR.hidden = localFmt !== 'ROUND_ROBIN';
         }
     } catch (e) {}
 })();

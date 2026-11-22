@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<jsp:include page="/common/component/popup-styles.jsp" />
 <%-- ============================================================================
      TOURMA - STAGE END POPUP COMPONENT (stage-end-popup.jsp)
      Banner HTML is injected dynamically by stage-end-popup.js

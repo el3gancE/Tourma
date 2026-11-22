@@ -12,28 +12,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tạo giải đấu — TOURMA</title>
+    <title>Tạo giải đấu | Tourma</title>
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261101-settings"></script>
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=silk-1"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-flow.css?v=1">
 </head>
-<body class="ui-page workspace-page create-page">
-    <jsp:include page="/common/component/header.jsp"><jsp:param name="active" value="create-tournament"/><jsp:param name="themeToggle" value="true"/></jsp:include>
-    <main class="workspace-main create-main">
-        <nav class="create-breadcrumb" aria-label="Đường dẫn"><a href="${pageContext.request.contextPath}/my-tournaments">Giải đấu của tôi</a><span aria-hidden="true">/</span><span>Tạo giải đấu</span></nav>
-        <div class="create-layout">
-            <section class="create-form-panel" aria-labelledby="form-title">
-                <div class="create-panel-heading"><h1 id="form-title">Tạo giải đấu</h1><span class="create-required-note">* Bắt buộc</span></div>
-                <form id="createTournamentForm" action="${pageContext.request.contextPath}/create-tournament" method="POST">
-                    <c:if test="${not empty errorMessage}"><div class="create-error" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><c:out value="${errorMessage}" /></div></c:if>
-                    <div class="create-fields">
-                        <div class="create-field"><div class="create-label"><label for="tournamentName">Tên giải đấu <span class="required-mark" aria-hidden="true">*</span></label></div><div class="create-control"><input type="text" id="tournamentName" name="name" class="form-control" placeholder="Ví dụ: Hanoi Open 2026" value="<c:out value="${param.name}" />" required autocomplete="off"></div></div>
-                        <div class="create-field"><div class="create-label"><label for="tournamentDescription">Mô tả</label><span>Không bắt buộc</span></div><div class="create-control"><textarea id="tournamentDescription" name="description" class="form-control" rows="5" placeholder="Nhập mô tả…"><c:out value="${param.description}" /></textarea><div class="create-description-footer"><span id="descriptionCount" aria-hidden="true">0 ký tự</span></div></div></div>
+<body class="ui-page create-flow-page">
+    <jsp:include page="/common/component/header.jsp">
+        <jsp:param name="active" value="create-tournament"/>
+        <jsp:param name="themeToggle" value="true"/>
+    </jsp:include>
+    <main class="create-flow">
+        <a class="create-flow-back" href="${pageContext.request.contextPath}/my-tournaments"><span aria-hidden="true">←</span> Giải Đấu Của Tôi</a>
+        <header class="create-flow-heading"><h1>Tạo giải đấu</h1><p>Đặt tên giải để bắt đầu thiết lập.</p></header>
+        <div class="create-flow-grid">
+            <form class="create-flow-panel" id="createTournamentForm" action="${pageContext.request.contextPath}/create-tournament" method="POST">
+                <header class="create-flow-panel-heading"><h2>Thông tin giải</h2><small>* Bắt buộc</small></header>
+                <div class="create-flow-body">
+                    <c:if test="${not empty errorMessage}"><p class="create-flow-error" role="alert"><c:out value="${errorMessage}"/></p></c:if>
+                    <div class="create-flow-field">
+                        <label for="tournamentName">Tên giải đấu <span aria-hidden="true">*</span></label>
+                        <input type="text" id="tournamentName" name="name" placeholder="Ví dụ: Hanoi Open 2026" value="<c:out value='${param.name}'/>" required autocomplete="off">
                     </div>
-                    <footer class="create-form-footer"><a class="create-cancel" href="${pageContext.request.contextPath}/my-tournaments">Hủy</a><button class="btn btn-mint" id="createSubmit" type="submit">Tạo &amp; tiếp tục <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button></footer>
-                </form>
-            </section>
+                    <div class="create-flow-field">
+                        <label for="tournamentDescription">Mô tả <small>Không bắt buộc</small></label>
+                        <textarea id="tournamentDescription" name="description" rows="4" placeholder="Nhập mô tả…"><c:out value="${param.description}"/></textarea>
+                        <small class="create-flow-count" id="descriptionCount" aria-hidden="true"></small>
+                    </div>
+                </div>
+                <footer class="create-flow-actions">
+                    <a href="${pageContext.request.contextPath}/my-tournaments">Hủy</a>
+                    <button id="createSubmit" type="submit">Tạo &amp; tiếp tục <span aria-hidden="true">→</span></button>
+                </footer>
+            </form>
+            <aside class="create-flow-aside" aria-labelledby="tournament-steps">
+                <h2 id="tournament-steps">Các bước thiết lập</h2>
+                <ol>
+                    <li aria-current="step">Thông tin giải</li>
+                    <li>Thể thức và đội tham gia</li>
+                    <li>Chia bảng nếu cần</li>
+                    <li>Thi đấu</li>
+                </ol>
+            </aside>
         </div>
     </main>
-    <script src="${pageContext.request.contextPath}/js/create-tournament.js?v=2"></script>
+    <script src="${pageContext.request.contextPath}/js/create-tournament.js?v=3"></script>
 </body>
 </html>

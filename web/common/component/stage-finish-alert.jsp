@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<jsp:include page="/common/component/popup-styles.jsp" />
 <!-- TOURMA - Reusable Stage Finish Alert Component (Locked Stage 2) -->
 <div id="stageFinishAlertContainer" class="stage-finish-alert-wrapper">
     <div class="stage-finish-alert-card">

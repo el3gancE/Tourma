@@ -1,0 +1,103 @@
+:is(.tournaments-page, .series-page) .workspace-main {
+    max-width: var(--ui-content-width);
+    margin-inline: auto;
+    padding: clamp(1.15rem, 3vw, 2.75rem) var(--ui-gutter);
+}
+:is(.tournaments-page, .series-page) .workspace-main * { box-sizing: border-box; }
+:is(.tournaments-page, .series-page) .workspace-main :is(h1, h3, p, form) { margin: 0; }
+:is(.tournaments-page, .series-page) .workspace-main a { color: inherit; text-decoration: none; }
+:is(.tournaments-page, .series-page) :is(.workspace-main, #modalEditSeriesPopup) :focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
+:is(.tournaments-page, .series-page) .page-header-row,
+:is(.tournaments-page, .series-page) .toolbar-bar,
+.tourney-pagination, .tourney-page-buttons {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .45rem .8rem;
+}
+:is(.tournaments-page, .series-page) .page-header-row { justify-content: space-between; padding-bottom: .65rem; border-bottom: 1px solid var(--ui-line-strong); }
+:is(.tournaments-page, .series-page) .page-title { font-size: clamp(1.7rem, 4.3vw, 3.15rem); line-height: 1.1; letter-spacing: -.06em; }
+:is(.tournaments-page, .series-page) .toolbar-bar { padding-block: .65rem; }
+:is(.tournaments-page, .series-page) .search-input-box { display: flex; gap: .3rem; flex: 1 1 11rem; }
+:is(.tournaments-page, .series-page) .search-input-box input { flex: 1; min-width: 0; }
+.tourney-filter-control { display: flex; gap: .35rem; align-items: center; font-size: .76rem; }
+.tourney-filter-control[hidden] { display: none; }
+:is(.tournaments-page, .series-page) .workspace-main :is(input:not([type="hidden"]), select),
+.series-page #editSeriesForm :is(input:not([type="hidden"]), select) {
+    border: 1px solid var(--ui-line-strong);
+    border-radius: 0;
+    color: var(--ui-text);
+    background: var(--ui-surface);
+    padding: .38rem .48rem;
+    font: inherit;
+}
+:is(.tournaments-page, .series-page) .workspace-main :is(.btn, button, .tourney-page-btn, .series-manage-button, .btn-view-bracket-card),
+.series-page #modalEditSeriesPopup button {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .36rem .55rem;
+    border: 1px solid var(--ui-line);
+    border-radius: 0;
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    font: inherit;
+    font-size: .76rem;
+    white-space: nowrap;
+}
+:is(.tournaments-page, .series-page) .workspace-main :is(button, .btn, .tourney-page-btn[href], .series-manage-button, .btn-view-bracket-card):hover,
+.series-page #modalEditSeriesPopup button:hover { background: var(--ui-surface-alt); }
+:is(.tournaments-page, .series-page) .workspace-main button,
+.series-page #modalEditSeriesPopup button { cursor: pointer; }
+:is(.tournaments-page, .series-page) .workspace-main :is(.page-header-row .btn, .filter-pill-btn.active, .series-manage-button, .btn-view-bracket-card, .tourney-page-btn.is-current) {
+    background: var(--ui-chrome); color: var(--ui-chrome-text); border-color: var(--ui-chrome);
+}
+:is(.tournaments-page, .series-page) .workspace-main :is(.page-header-row .btn, .series-manage-button, .btn-view-bracket-card):hover { background: var(--ui-chrome-hover); }
+.series-page .filter-pills-group { display: flex; flex-wrap: wrap; gap: .3rem; }
+.tourney-clear-filters { text-decoration: underline !important; text-underline-offset: .2em; }
+.tourney-filter-count, .tourney-clear-filters, .tourney-page-summary, .tourney-page-total, .series-result-count { color: var(--ui-muted); font-size: .74rem; }
+
+.tourney-cards-grid, .series-cards-grid { border: 1px solid var(--ui-line-strong); background: var(--ui-surface); }
+.tourney-card, .series-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .35rem .9rem;
+    padding: .38rem .65rem;
+}
+.tourney-card:not(:first-child), .series-card:not(:first-child) { border-top: 1px solid var(--ui-line); }
+.series-page .series-card[hidden], .series-page #seriesNoResults[hidden] { display: none; }
+.tourney-card-info, .series-card-info { min-width: 0; overflow-wrap: anywhere; }
+:is(.tournaments-page, .series-page) .workspace-main :is(.tourney-card-title, .series-card-title) { font-size: .9rem; line-height: 1.3; }
+.tourney-info-line, .series-model-line { color: var(--ui-muted); font-size: .72rem; line-height: 1.4; }
+.tourney-card-tools, .series-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
+.tourney-card-tools, .series-card-actions { justify-content: end; }
+.tourney-progress { display: flex; align-items: center; gap: .28rem; color: var(--ui-muted); font-size: .7rem; margin-inline-end: .3rem; }
+.tourney-progress-track { width: clamp(2rem, 5vw, 3.3rem); height: .38rem; accent-color: var(--ui-text); }
+.tourney-progress-percent { min-width: 2.5em; text-align: end; font-variant-numeric: tabular-nums; }
+
+.tourney-pagination { justify-content: space-between; margin-top: .65rem; }
+.tourney-page-btn.is-disabled { opacity: .55; }
+:is(.tournaments-page, .series-page) .workspace-main .series-result-count { margin-top: .4rem; }
+:is(.tournaments-page, .series-page) .empty-state-box { border: 1px solid var(--ui-line); background: var(--ui-surface); padding: .8rem; }
+:is(.tournaments-page, .series-page) .empty-state-box p { color: var(--ui-muted); margin-block: .3rem; }
+
+.tournaments-page .tourma-modal-backdrop, .series-page #modalEditSeriesPopup {
+    position: fixed; inset: 0; z-index: 45;
+    display: none; align-items: center; justify-content: center;
+    overflow: auto; padding: 1rem;
+    background: color-mix(in srgb, var(--ui-chrome) 65%, transparent);
+}
+.tournaments-page .tourma-modal-card, .series-page #modalEditSeriesPopup .add-team-modal-card {
+    width: min(100%, 32rem); max-height: calc(100dvh - 2rem); overflow: auto;
+    background: var(--ui-surface); color: var(--ui-text); border: 1px solid var(--ui-line-strong);
+    padding: .9rem;
+}
+.tournaments-page :is(.modal-header-bar, .modal-footer-bar), .series-page #modalEditSeriesPopup .add-team-modal-header {
+    display: flex; justify-content: space-between; align-items: center; gap: .4rem;
+}
+.tournaments-page .modal-body-content { display: grid; gap: .65rem; padding-block: .65rem; }
+.series-page #editSeriesForm > div + div { margin-top: .55rem; }
+.series-page #editSeriesForm label { display: block; }
+.series-page #editSeriesForm input { max-width: 100%; }
+@media (max-width: 40rem) {
+    .tourney-card, .series-card { grid-template-columns: minmax(0, 1fr); }
+    .tourney-card-tools, .series-card-actions { justify-content: start; }
+}

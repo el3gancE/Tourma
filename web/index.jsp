@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tourma | Trang chủ</title>
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=silk-1"></script>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=mono-1">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tourma-shell.css?v=landing-1">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=mono-1"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=mono-2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tourma-shell.css?v=chrome-1">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/home.css?v=promo-1">
 </head>
 <body class="ui-page home-page">

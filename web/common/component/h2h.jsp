@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<jsp:include page="/common/component/popup-styles.jsp" />
 <dialog id="tourmaH2h" class="h2h-dialog" aria-labelledby="h2hTitle"
         data-endpoint="${pageContext.request.contextPath}/api/h2h">
     <header class="h2h-header">
