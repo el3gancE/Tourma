@@ -153,3 +153,12 @@ Ba bảng nhà vô địch, các giải và lịch sử #1 nằm trên một hà
 `web/common/component/new-number-one.jsp` nhận hai request attribute `newNumberOneEligible` và `newNumberOneName`. Màn BXH chỉ include component; giao diện và hành vi nằm ở `web/css/components/new-number-one.css` và `web/js/components/new-number-one.js`. Màu nền công bố dùng token `--ui-celebration-*` gồm 4 màu gradient động có độ tương phản cao, chuyển động rõ nét (chu kỳ 8-11s, biên độ lớn), điểm xuyết các đường vệt sáng trắng mảnh (white light streaks) lướt chéo qua banner, không dùng màu vàng, bỏ chữ phụ "BẢNG XẾP HẠNG SERIES". Phối 4 màu theo theme: Bộ Đỏ 100% thuần sắc đỏ, triệt tiêu toàn bộ xanh/tím (`#BE123C` Crimson Velvet, `#DC2626` Scarlet Red, `#991B1B` Deep Blood Red, `#4C0519` Deep Wine Maroon); Bộ Xanh (`#2563EB` Royal Blue, `#06B6D4` Aqua Cyan, `#A855F7` Electric Violet, `#0F172A` Deep Navy). Không có icon vương miện.
 
 Popup hiện mỗi lần mở BXH sau khi đổi người giữ #1, đến khi giải tiếp theo hoàn tất. Giữ nguyên #1 ở giải tiếp theo thì hết popup; đổi chủ thì hiện tên mới. Người dẫn đầu đầu tiên khi chưa từng đổi ngôi không tạo popup. Không lưu trạng thái đã xem trong browser storage; chuyển mốc lịch sử không kích hoạt popup. Quay lại BXH qua back/forward cache tải lại điều kiện từ server. Component hiển thị như banner stage trong luồng nội dung, ngay trên bảng BXH; không có dialog, backdrop, khóa cuộn hay tự chiếm focus. Khi chọn mốc lịch sử, banner ẩn; quay về mốc mới nhất sẽ hiện lại nếu còn đủ điều kiện. Hỗ trợ giảm chuyển động.
+
+## Nền gradient
+
+Trong Cài đặt hiển thị, Nền gradient mặc định tắt. Khi bật, màu nhấn đang chọn
+làm tông chính cho toàn bộ nền. Chế độ sáng/tối điều chỉnh sắc độ của tông đó.
+Nền có vùng đen hoặc trắng ở giữa, bao quanh bởi ba sắc lấy từ màu nhấn.
+Các lớp ánh sáng cong trôi và đổi góc chậm, với mép chuyển mềm.
+Thẻ, bảng và biểu mẫu vẫn dùng màu bề mặt riêng. Lựa chọn lưu trong
+`tourma-ui-background-gradient`.

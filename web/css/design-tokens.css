@@ -308,3 +308,70 @@
  --ui-gsl-30:var(--ui-default-accent);
  --ui-gsl-31:var(--ui-default-accent);
 }
+
+/* Full-page 4-color monochromatic animated gradient backdrop (NO complementary opposite color):
+   Light mode = Pure White (#ffffff) + 3 deep smoky/muted shades of the main accent color.
+   Dark mode  = Pure Black (#000000) + 3 ultra-deep obsidian/velvet shades of the main accent color. */
+:root, :root[data-theme="light"], :root[data-theme="light"][data-accent="wine"] {
+    --ui-page-grad-base: #ffffff;
+    --ui-page-grad-soft: #d5aeb7;
+    --ui-page-grad-mid:  #8c2d46;
+    --ui-page-grad-deep: #4a091c;
+}
+:root[data-theme="light"][data-accent="blue"] {
+    --ui-page-grad-base: #ffffff;
+    --ui-page-grad-soft: #a8bbd8;
+    --ui-page-grad-mid:  #2e5088;
+    --ui-page-grad-deep: #0f214f;
+}
+:root[data-theme="light"][data-accent="green"] {
+    --ui-page-grad-base: #ffffff;
+    --ui-page-grad-soft: #9dc5b5;
+    --ui-page-grad-mid:  #1d5e47;
+    --ui-page-grad-deep: #042b20;
+}
+:root[data-theme="light"][data-accent="orange"] {
+    --ui-page-grad-base: #ffffff;
+    --ui-page-grad-soft: #d4b299;
+    --ui-page-grad-mid:  #8f451e;
+    --ui-page-grad-deep: #451605;
+}
+:root[data-theme="dark"], :root[data-theme="dark"][data-accent="wine"] {
+    --ui-page-grad-base: #000000;
+    --ui-page-grad-soft: #7a0c28;
+    --ui-page-grad-mid:  #450617;
+    --ui-page-grad-deep: #1c0209;
+}
+:root[data-theme="dark"][data-accent="blue"] {
+    --ui-page-grad-base: #000000;
+    --ui-page-grad-soft: #163a8f;
+    --ui-page-grad-mid:  #0c1f52;
+    --ui-page-grad-deep: #040b1e;
+}
+:root[data-theme="dark"][data-accent="green"] {
+    --ui-page-grad-base: #000000;
+    --ui-page-grad-soft: #065f46;
+    --ui-page-grad-mid:  #043627;
+    --ui-page-grad-deep: #011710;
+}
+:root[data-theme="dark"][data-accent="orange"] {
+    --ui-page-grad-base: #000000;
+    --ui-page-grad-soft: #7c2d12;
+    --ui-page-grad-mid:  #471706;
+    --ui-page-grad-deep: #1c0802;
+}
+
+/* Stable component surfaces over the moving backdrop. */
+:root {
+    --ui-gradient-panel: color-mix(in srgb, var(--ui-accent) 5%, var(--ui-bg));
+    --ui-gradient-raised: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-bg));
+    --ui-gradient-outline: color-mix(in srgb, var(--ui-accent) 24%, var(--ui-bg));
+    --ui-gradient-outline-strong: color-mix(in srgb, var(--ui-accent) 46%, var(--ui-bg));
+    --ui-gradient-emphasis: color-mix(in srgb, var(--ui-accent) 72%, black);
+    --ui-gradient-muted: color-mix(in srgb, var(--ui-text) 73%, var(--ui-accent));
+    --ui-gradient-panel-shadow: 0 8px 24px rgb(0 0 0 / 10%);
+}
+:root[data-theme="dark"] {
+    --ui-gradient-emphasis: color-mix(in srgb, var(--ui-accent) 49%, white);
+    --ui-gradient-panel-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+}
