@@ -1,0 +1,39 @@
+.league-dashboard-page .league-dashboard { min-width: 0; }
+.league-dashboard-page .league-heading { padding-block: 4px 24px; }
+.league-dashboard-page .league-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ui-muted);
+    font-size: .875rem;
+}
+.league-dashboard-page .league-back:hover { color: var(--ui-accent); }
+.league-dashboard-page .league-heading h1 {
+    margin: 12px 0 4px;
+    font-size: clamp(1.65rem, 4vw, 2.5rem);
+    overflow-wrap: anywhere;
+}
+.league-dashboard-page .league-heading p,
+.league-dashboard-page .league-season-empty p { margin: 0; color: var(--ui-muted); }
+.league-dashboard-page .league-season-panel {
+    border: 1px solid var(--ui-line);
+    border-radius: 8px;
+    background: var(--ui-surface);
+    scroll-margin-top: 80px;
+}
+.league-dashboard-page .league-season-panel h2 {
+    margin: 0;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--ui-line);
+    font-size: 1rem;
+}
+.league-dashboard-page .league-season-empty {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    padding: 48px 20px;
+    text-align: center;
+}
+.league-dashboard-page .league-season-empty i { color: var(--ui-muted); font-size: 1.5rem; }
+.league-dashboard-page .league-season-empty h3 { margin: 0; font-size: 1rem; }
+.league-dashboard-page .league-season-empty p { font-size: .875rem; }

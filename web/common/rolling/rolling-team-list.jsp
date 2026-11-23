@@ -25,7 +25,7 @@
 
         <!-- Design System CSS & Dedicated Rolling Team List CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css?v=2">
     <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">

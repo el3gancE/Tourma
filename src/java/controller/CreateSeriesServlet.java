@@ -92,6 +92,8 @@ public class CreateSeriesServlet extends HttpServlet {
             // 4. Redirect to Dashboard based on model type
             if ("ROLLING_WINDOW".equalsIgnoreCase(rankingModel)) {
                 response.sendRedirect(request.getContextPath() + "/rolling/dashboard?id=" + seriesId);
+            } else if ("LEAGUE_SYSTEM".equals(rankingModel)) {
+                response.sendRedirect(request.getContextPath() + "/league/dashboard?id=" + seriesId);
             } else {
                 response.sendRedirect(request.getContextPath() + "/my-series");
             }
