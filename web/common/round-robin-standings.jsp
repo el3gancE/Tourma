@@ -20,12 +20,23 @@
     String dbTournamentStatus = "DRAFT";
     String dbStage2Teams = null;
     String dbMultiStageConfig = null;
+    dao.LeagueSeasonDAO.StandingZones leagueZones = null;
 
     if (tourneyId != null && !tourneyId.trim().isEmpty()) {
         try {
             TournamentDAO tDao = new TournamentDAO();
             Tournament t = tDao.getTournamentById(tourneyId, false);
             if (t != null) {
+                if (currentStage == 1 && t.getSeriesId() != null) {
+                    model.Series series = new dao.SeriesDAO().getSeriesById(t.getSeriesId());
+                    if (series != null && "LEAGUE_SYSTEM".equals(series.getRankingModel())) {
+                        try {
+                            leagueZones = new dao.LeagueSeasonDAO().getStandingZones(t.getId());
+                        } catch (Exception e) {
+                            application.log("Không thể tải vùng chuyển hạng League.", e);
+                        }
+                    }
+                }
                 if (t.getName() != null && !t.getName().trim().isEmpty()) {
                     tourneyName = t.getName();
                 }
@@ -87,12 +98,12 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=5">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin-standings.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/round-robin-standings.css?v=league-form-2">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
     <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=league-form-3">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-screen.css?v=4">
@@ -222,7 +233,8 @@
                                 <th class="th-form" title="Phong độ 5 trận gần nhất">Phong Độ</th>
                             </tr>
                         </thead>
-                        <tbody id="rrStandingsTableBody">
+                        <tbody id="rrStandingsTableBody" <%= leagueZones == null ? "" :
+                            ("data-league-promotion=\"" + leagueZones.promotion() + "\" data-league-relegation=\"" + leagueZones.relegation() + "\"") %>>
                             <!-- Dynamic Rows Rendered by JS -->
                         </tbody>
                     </table>
@@ -238,7 +250,7 @@
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=db-edit-lock"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
-        <script src="${pageContext.request.contextPath}/js/round-robin-standings.js"></script>
+        <script src="${pageContext.request.contextPath}/js/round-robin-standings.js?v=league-zones-2"></script>
 
         <script>
             window.TourmaContextPath = '${pageContext.request.contextPath}';

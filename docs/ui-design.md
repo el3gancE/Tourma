@@ -105,6 +105,7 @@ Font Readex Pro dùng weight 500 cho nội dung, 600 cho tên đội/menu và 70
 ## Popup dùng chung
 
 `web/css/popup.css` cung cấp lớp nền, khung, header/footer và control cho popup tỉ số, xác nhận, thêm đội, sửa Series và stage. CSS từng popup nhập stylesheet này; không đặt style popup riêng trong CSS của màn SE.
+Lớp phủ sau popup dùng token `--ui-modal-backdrop`, kể cả với `dialog::backdrop`.
 
 ## Bộ màu mở rộng
 
@@ -141,6 +142,9 @@ Màn Thể thức & đội tham gia của giải đơn và giải con Series dù
 ## Màn Bảng xếp hạng Series (Rolling Standings)
 
 Ở màn Bảng Xếp Hạng Series: Hạng 1 nhận màu Vàng Tier S (`--ui-tier-s`). Tên của toàn bộ các đội trong Top 10 (Rank 1–10) và số thứ tự Hạng 2–10 mang màu accent (`--ui-accent`) để làm nổi bật nhóm tinh anh dẫn đầu; các đội từ Rank 11 trở đi dùng màu chữ chuẩn (`--ui-text`). Điểm cộng và tăng hạng luôn giữ màu Xanh lá (`--ui-success`).
+
+BXH của từng hạng League dùng vàng Tier S cho đội dẫn đầu, xanh lá (`--ui-success`) cho vùng lên hạng và `--ui-league-relegation` cho vùng xuống hạng. Vùng xuống hạng dùng cam ở bộ nhấn xanh lá và cam, dùng đỏ ở bộ nhấn đỏ và xanh dương. Số vị trí mỗi vùng lấy từ cấu hình mùa. Tên và số hạng của đội dẫn đầu ưu tiên màu vàng. Thông tin vùng chuyển hạng được cung cấp cho trình đọc màn hình, không có nhãn chữ trên từng dòng.
+Ô phong độ League có nền đen ở cả hai theme. Chữ L dùng đỏ ở bộ nhấn đỏ và xanh dương, cam ở bộ nhấn xanh lá và cam. Chữ D dùng vàng. Chữ W dùng xanh dương ở bộ nhấn đỏ và xanh dương, xanh lá ở bộ nhấn xanh lá và cam.
 
 ## Bảng vàng dạng dashboard
 

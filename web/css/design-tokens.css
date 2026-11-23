@@ -96,6 +96,7 @@
     --ui-on-accent: #ffffff;
     --ui-line-strong: #b8c1cc;
     --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
+    --ui-modal-backdrop: rgb(0 0 0 / 55%);
     --ui-bracket-final-accent: #d49500;
     --ui-success: #16a34a;
     --ui-bracket-width: 240px;
@@ -182,6 +183,11 @@
     --ui-tier-c: #0284c7;
     --ui-tier-d: #64748b;
     --ui-danger: #be123c;
+    --ui-league-relegation: var(--ui-danger);
+    --ui-league-form-bg: #000000;
+    --ui-league-form-win: #38bdf8;
+    --ui-league-form-draw: #facc15;
+    --ui-league-form-loss: #f87171;
 }
 
 :root[data-theme="dark"] {
@@ -249,6 +255,9 @@
 
 :root[data-accent="green"] {
     --ui-accent: #059669;
+    --ui-league-relegation: #ea580c;
+    --ui-league-form-win: #4ade80;
+    --ui-league-form-loss: #fb923c;
     --ui-on-accent: #ffffff;
     --ui-accent-fill: #059669;
     --ui-bracket-lower-accent: #ea580c;
@@ -289,6 +298,9 @@
 
 :root[data-accent="orange"] {
     --ui-accent: #ea580c;
+    --ui-league-relegation: #ea580c;
+    --ui-league-form-win: #4ade80;
+    --ui-league-form-loss: #fb923c;
     --ui-on-accent: #ffffff;
     --ui-accent-fill: #ea580c;
     --ui-bracket-lower-accent: #059669;

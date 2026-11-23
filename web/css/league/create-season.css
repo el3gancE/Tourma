@@ -44,10 +44,18 @@
     padding: 0; border: 1px solid var(--ui-line); border-radius: 12px;
     background: var(--ui-surface); color: var(--ui-text);
 }
-.league-create-season-page .league-team-picker::backdrop { background: rgb(0 0 0 / 55%); }
+.league-create-season-page .league-team-picker::backdrop { background: var(--ui-modal-backdrop); }
 .league-create-season-page .league-team-picker h2 { margin: 0; font-size: 1rem; }
-.league-create-season-page #league-team-picker-options { display: grid; gap: 10px; max-height: 45dvh; overflow: auto; }
-.league-create-season-page #league-team-picker-options label { display: flex; align-items: start; gap: 8px; overflow-wrap: anywhere; }
+.league-create-season-page #league-team-picker-options { display: grid; gap: 10px; max-height: 36dvh; overflow: auto; }
+.league-create-season-page #league-team-picker-options label {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 8px; overflow-wrap: anywhere;
+}
+.league-create-season-page #league-team-picker-options small { color: var(--ui-muted); }
+.league-create-season-page .league-picker-order {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+}
+.league-create-season-page .league-picker-order select { width: auto; flex: 1 1 150px; }
+.league-create-season-page #league-picker-summary { margin: 10px 0; font-size: .875rem; }
 .league-create-season-page #league-setup-error { color: var(--ui-danger); }
 .league-create-season-page #save-league-season { justify-self: end; }
 .league-create-season-page input[type="checkbox"] { accent-color: var(--ui-accent); }

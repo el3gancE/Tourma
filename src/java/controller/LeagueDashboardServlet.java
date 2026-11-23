@@ -2,6 +2,7 @@ package controller;
 
 import dao.LeagueSeasonDAO;
 import dao.LeagueSeasonResultDAO;
+import dao.LeagueSeriesTeamDAO;
 import dao.SeriesDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -51,9 +52,26 @@ public class LeagueDashboardServlet extends HttpServlet {
                         .findFirst().orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mùa thuộc chuỗi giải này."));
                 request.setAttribute("leagueSeasonDashboard", selected);
                 request.setAttribute("leagueCurrentSeasonId", selectedId);
-                request.setAttribute("leagueCurrentDivisions", seasons.listDivisions(series.getId()).get(selectedId));
+                var stats = results.dashboard(selectedId, "COMPLETED".equals(selected.get("status")));
+                request.setAttribute("leagueCompetitionStats", stats.competitions());
+                request.setAttribute("leagueSeasonTeamCount", stats.teams());
+                request.setAttribute("leagueSeasonFinishedEvents", stats.complete());
+                request.setAttribute("leagueSeasonExpectedMatches", stats.expected());
+                request.setAttribute("leagueSeasonFinishedMatches", stats.finished());
                 if ("ACTIVE".equals(selected.get("status"))) {
-                    request.setAttribute("leagueCurrentPending", results.pending(selectedId));
+                    request.setAttribute("leagueCurrentPending", stats.pending());
+                }
+            } else {
+                request.setAttribute("leagueRegisteredTeamCount", new LeagueSeriesTeamDAO().count(series.getId()));
+                request.setAttribute("leagueClosedSeasonCount", seasonList.stream()
+                        .filter(season -> "COMPLETED".equals(season.get("status"))).count());
+                if (!seasonList.isEmpty()) {
+                    var latest = seasonList.get(0);
+                    var stats = results.dashboard((String) latest.get("id"), false);
+                    request.setAttribute("leagueLatestFinishedMatches", stats.finished());
+                    request.setAttribute("leagueLatestExpectedMatches", stats.expected());
+                    request.setAttribute("leagueLatestFinishedEvents", stats.complete());
+                    request.setAttribute("leagueLatestEventCount", stats.competitions().size());
                 }
             }
         } catch (IllegalArgumentException e) {

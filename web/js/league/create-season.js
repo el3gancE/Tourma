@@ -10,6 +10,8 @@ if (seasonForm) {
     const picker = document.getElementById('league-team-picker');
     const pickerOptions = document.getElementById('league-team-picker-options');
     const pickerAdd = document.getElementById('league-team-picker-add');
+    const pickerOrder = document.getElementById('league-picker-order');
+    const pickerSummary = document.getElementById('league-picker-summary');
     let pickedLevel = '';
     const maxDivisions = Math.floor(assignments.length / 2);
 
@@ -93,6 +95,25 @@ if (seasonForm) {
     applyDivisionCount();
     refreshDivisions();
     divisionCount.addEventListener('change', applyDivisionCount);
+
+    function updatePickerSummary() {
+        const selected = pickerOptions.querySelectorAll(':checked').length;
+        pickerAdd.disabled = selected === 0;
+        pickerSummary.textContent = pickerOptions.children.length + ' đội chưa phân hạng · ' + selected + ' đội đã chọn';
+    }
+
+    function sortPicker() {
+        const direction = pickerOrder.value === 'oldest' ? 1 : -1;
+        const options = Array.from(pickerOptions.children);
+        options.sort((a, b) => {
+            const unknownOrder = Number(!a.dataset.registered) - Number(!b.dataset.registered);
+            return unknownOrder || direction * (Number(a.dataset.order) - Number(b.dataset.order));
+        });
+        options.forEach(option => pickerOptions.append(option));
+        pickerOptions.scrollTop = 0;
+    }
+
+    pickerOrder.addEventListener('change', sortPicker);
     rows.addEventListener('click', event => {
         const add = event.target.closest('[data-add-teams]');
         if (!add) return;
@@ -102,17 +123,22 @@ if (seasonForm) {
             if (input.value) return [];
             const label = document.createElement('label');
             const checkbox = document.createElement('input');
+            const name = document.createElement('span');
+            const date = document.createElement('small');
+            label.dataset.registered = input.dataset.registrationTime || '';
+            label.dataset.order = String(index);
             checkbox.type = 'checkbox';
             checkbox.value = String(index);
-            label.append(checkbox, document.createTextNode(input.dataset.team));
+            name.textContent = input.dataset.team;
+            date.textContent = label.dataset.registered;
+            label.append(checkbox, name, date);
             return [label];
         }));
-        pickerAdd.disabled = true;
+        sortPicker();
+        updatePickerSummary();
         picker.showModal();
     });
-    pickerOptions.addEventListener('change', () => {
-        pickerAdd.disabled = !pickerOptions.querySelector(':checked');
-    });
+    pickerOptions.addEventListener('change', updatePickerSummary);
     picker.querySelector('form').addEventListener('submit', event => {
         if (event.submitter?.value !== 'add') return;
         pickerOptions.querySelectorAll(':checked').forEach(checkbox => {

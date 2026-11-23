@@ -11,13 +11,33 @@ import java.util.Locale;
 import java.util.Map;
 
 public class LeagueSeriesTeamDAO {
+    public int count(String seriesId) throws Exception {
+        try (Connection conn = new DBContext().getConnection();
+             PreparedStatement statement = conn.prepareStatement(
+                     "SELECT COUNT(*) FROM dbo.league_series_teams WHERE series_id = ?")) {
+            statement.setString(1, seriesId);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? rows.getInt(1) : 0;
+            }
+        }
+    }
+
 
     public static String teamKey(String name) {
         return name.toLowerCase(Locale.ROOT);
     }
 
     public Map<String, Date> list(String seriesId) throws Exception {
-        String sql = "SELECT team_name, registered_at FROM dbo.league_series_teams WHERE series_id = ? ORDER BY team_name";
+        return list(seriesId, false);
+    }
+
+    public Map<String, Date> listInRegistrationOrder(String seriesId) throws Exception {
+        return list(seriesId, true);
+    }
+
+    private Map<String, Date> list(String seriesId, boolean orderByRegistration) throws Exception {
+        String order = orderByRegistration ? "registered_at, registration_order" : "team_name";
+        String sql = "SELECT team_name, registered_at FROM dbo.league_series_teams WHERE series_id = ? ORDER BY " + order;
         Map<String, Date> teams = new LinkedHashMap<>();
         try (Connection conn = new DBContext().getConnection();
              PreparedStatement statement = conn.prepareStatement(sql)) {

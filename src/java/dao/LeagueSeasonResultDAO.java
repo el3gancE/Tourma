@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 
 public class LeagueSeasonResultDAO {
     public static boolean isClosedTournament(Connection conn, String tournamentId) throws Exception {
@@ -25,9 +26,12 @@ public class LeagueSeasonResultDAO {
     }
 
     private record Season(String name, String status) {}
-    private record Event(int level, int legs, int slots, String tournamentId, int teams, boolean complete) {
+    private record Event(int level, int legs, int slots, String tournamentId, int teams, boolean complete,
+                         long expected, long finished, String champion) {
         String label() { return level == 0 ? "Cúp SE" : "Hạng " + level; }
     }
+    public record DashboardStats(List<Map<String, Object>> competitions, List<String> pending, int teams,
+                                 int complete, long expected, long finished) {}
     public record Result(String key, String name, int level, int next, int rank, int points,
                          int played, int wins, int draws, int losses, int goalsFor, int goalsAgainst) {
         public String getName() { return name; }
@@ -41,6 +45,35 @@ public class LeagueSeasonResultDAO {
     public List<String> pending(String seasonId) throws Exception {
         try (Connection conn = new DBContext().getConnection()) {
             return pending(events(conn, seasonId, false));
+        }
+    }
+
+    public DashboardStats dashboard(String seasonId, boolean closed) throws Exception {
+        try (Connection conn = new DBContext().getConnection()) {
+            var events = events(conn, seasonId, false);
+            var champions = new java.util.HashMap<Integer, String>();
+            if (closed) {
+                for (var result : savedResults(conn, seasonId)) {
+                    if (result.rank() == 1) champions.put(result.level(), result.name());
+                }
+            }
+            List<Map<String, Object>> competitions = new ArrayList<>();
+            int teams = 0;
+            int complete = 0;
+            long expected = 0;
+            long finished = 0;
+            for (var event : events) {
+                if (event.level() > 0) teams += event.teams();
+                if (event.complete()) complete++;
+                expected += event.expected();
+                finished += event.finished();
+                competitions.add(Map.of(
+                        "label", event.label(), "level", event.level(), "legs", event.legs(),
+                        "teamCount", event.teams(), "tournamentId", java.util.Objects.toString(event.tournamentId(), ""),
+                        "complete", event.complete(), "expected", event.expected(), "finished", event.finished(),
+                        "champion", champions.getOrDefault(event.level(), java.util.Objects.toString(event.champion(), ""))));
+            }
+            return new DashboardStats(competitions, pending(events), teams, complete, expected, finished);
         }
     }
 
@@ -155,7 +188,7 @@ public class LeagueSeasonResultDAO {
                            (SELECT COUNT(*) FROM dbo.league_season_entries e WHERE e.season_id=s.id)
                     FROM dbo.seasons s WHERE s.id=? AND s.has_special_cup=1
                 )
-                SELECT c.*, t.status, games.total,
+                SELECT c.*, t.status, t.champion_name, games.total,
                     CASE WHEN c.level=0 THEN games.with_winner ELSE games.finished END AS finished
                 FROM competitions c LEFT JOIN dbo.tournaments t
                 """ + hints + """
@@ -176,11 +209,13 @@ public class LeagueSeasonResultDAO {
             try (ResultSet rows = query.executeQuery()) {
                 while (rows.next()) {
                     int n = rows.getInt("teams"), legs = rows.getInt("legs"), level = rows.getInt("level");
-                    long expected = level == 0 ? n - 1L : (long) n * (n - 1) * legs / 2;
+                    long expected = n < 2 ? 0 : (level == 0 ? n - 1L : (long) n * (n - 1) * legs / 2);
+                    long finished = rows.getLong("finished");
                     String status = rows.getString("status");
-                    boolean complete = n >= 2 && rows.getLong("total") == expected && rows.getLong("finished") == expected
+                    boolean complete = n >= 2 && rows.getLong("total") == expected && finished == expected
                             && ("COMPLETED".equals(status) || "FINISHED".equals(status));
-                    events.add(new Event(level, legs, rows.getInt("slots"), rows.getString("tournament_id"), n, complete));
+                    events.add(new Event(level, legs, rows.getInt("slots"), rows.getString("tournament_id"), n,
+                            complete, expected, finished, rows.getNString("champion_name")));
                 }
             }
         }

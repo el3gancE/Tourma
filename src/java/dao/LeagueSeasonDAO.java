@@ -12,6 +12,25 @@ import java.util.HashSet;
 import java.util.UUID;
 
 public class LeagueSeasonDAO {
+    public record StandingZones(int promotion, int relegation) {}
+
+    public StandingZones getStandingZones(String tournamentId) throws Exception {
+        String sql = """
+                SELECT COALESCE(above.exchange_slots_below, 0), current_division.exchange_slots_below
+                FROM dbo.league_season_divisions current_division
+                LEFT JOIN dbo.league_season_divisions above ON above.season_id = current_division.season_id
+                    AND above.division_level = current_division.division_level - 1
+                WHERE current_division.tournament_id = ?
+                """;
+        try (Connection conn = new DBContext().getConnection();
+             PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setString(1, tournamentId);
+            try (ResultSet rows = query.executeQuery()) {
+                return rows.next() ? new StandingZones(rows.getInt(1), rows.getInt(2)) : null;
+            }
+        }
+    }
+
     public record Setup(String name, boolean cup, List<Integer> legs, List<Integer> slots,
             Map<String, Integer> assignments) {}
     private record Entry(String name, String key) {}

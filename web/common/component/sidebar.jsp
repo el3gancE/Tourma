@@ -135,11 +135,27 @@
                 : "/league/season/dashboard?id=" + leagueSeriesQuery + "&amp;seasonId="
                     + java.net.URLEncoder.encode(seasonCompetitions.get(0).seasonId(), "UTF-8");
     %>
-    <nav class="sidebar-section" aria-label="League">
+    <nav class="sidebar-section" aria-label="Chuỗi giải League">
+        <ul class="sidebar-menu-list">
+            <li class="sidebar-menu-item">
+                <a class="sidebar-menu-link" href="${pageContext.request.contextPath}/league/dashboard?id=<%= leagueSeriesQuery %>">
+                    <i class="fa-solid fa-table-columns" aria-hidden="true"></i> <span>Tổng quan League</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-menu-link" href="${pageContext.request.contextPath}/league/season/teams?id=<%= leagueSeriesQuery %>">
+                    <i class="fa-solid fa-users" aria-hidden="true"></i> <span>Đội tham gia</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <% if (!seasonCompetitions.isEmpty()) { %>
+    <nav class="sidebar-section" aria-label="Mùa giải">
+        <div class="sidebar-section-header">Mùa giải</div>
         <ul class="sidebar-menu-list">
             <li class="sidebar-menu-item">
                 <a class="sidebar-menu-link" href="${pageContext.request.contextPath}<%= leagueSeasonPath %>">
-                    <i class="fa-regular fa-calendar" aria-hidden="true"></i> <%= seasonCompetitions.isEmpty() ? "Tổng quan League" : "Tổng quan mùa" %>
+                    <i class="fa-regular fa-calendar" aria-hidden="true"></i> <span>Tổng quan mùa</span>
                 </a>
             </li>
             <% for (dao.LeagueSeasonDAO.Competition competition : seasonCompetitions) {
@@ -156,6 +172,7 @@
             <% } %>
         </ul>
     </nav>
+    <% } %>
     <% } else if (hasSeries) { %>
     <nav class="sidebar-section" aria-label="Chuỗi giải">
     <!-- ========================================================= -->

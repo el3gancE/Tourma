@@ -26,7 +26,7 @@
     color: var(--ui-text);
     box-shadow: var(--ui-shadow);
 }
-.league-teams-page .league-bulk-dialog::backdrop { background: rgb(0 0 0 / 55%); }
+.league-teams-page .league-bulk-dialog::backdrop { background: var(--ui-modal-backdrop); }
 .league-teams-page .league-bulk-dialog textarea {
     box-sizing: border-box;
     display: block;

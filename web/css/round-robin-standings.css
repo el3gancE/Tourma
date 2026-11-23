@@ -1,0 +1,29 @@
+.league-page .rr-league-promotion { --rr-zone-color: var(--ui-success); }
+.league-page .rr-league-relegation { --rr-zone-color: var(--ui-league-relegation); }
+.league-page .rr-league-leader { --rr-standing-color: var(--ui-tier-s); }
+.league-page .rr-table :is(.rr-league-promotion, .rr-league-relegation) > td {
+    background: color-mix(in srgb, var(--rr-zone-color) 8%, var(--ui-surface));
+}
+.league-page .rr-table .rr-league-leader > td {
+    background: color-mix(in srgb, var(--ui-tier-s) 8%, var(--ui-surface));
+}
+.league-page :is(.rr-league-leader, .rr-league-promotion, .rr-league-relegation)
+    :is(.rr-rank-badge, .rr-standing-team-name) {
+    color: var(--rr-standing-color, var(--rr-zone-color));
+    font-weight: 700;
+}
+.league-page .rr-league-zone {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+.league-page [data-league-promotion] .rr-form-w { --rr-form-color: var(--ui-league-form-win); }
+.league-page [data-league-promotion] .rr-form-d { --rr-form-color: var(--ui-league-form-draw); }
+.league-page [data-league-promotion] .rr-form-l { --rr-form-color: var(--ui-league-form-loss); }
+.league-page [data-league-promotion] .rr-form-badge {
+    background: var(--ui-league-form-bg);
+    color: var(--rr-form-color);
+    font-weight: 700;
+}

@@ -69,7 +69,8 @@ public class LeagueCreateSeasonServlet extends HttpServlet {
                 request.getRequestDispatcher("/WEB-INF/views/league/create-season.jsp").forward(request, response);
                 return;
             }
-            List<String> teams = List.copyOf(new LeagueSeriesTeamDAO().list(series.getId()).keySet());
+            var teamDates = new LeagueSeriesTeamDAO().listInRegistrationOrder(series.getId());
+            List<String> teams = List.copyOf(teamDates.keySet());
             if (submit) {
                 String name = request.getParameter("seasonName");
                 String[] legValues = request.getParameterValues("legs");
@@ -139,6 +140,7 @@ public class LeagueCreateSeasonServlet extends HttpServlet {
                 return;
             }
             request.setAttribute("leagueTeams", teams);
+            request.setAttribute("leagueTeamDates", teamDates);
             if (setup != null) {
                 Map<String, Integer> savedLevels = new LinkedHashMap<>();
                 for (String team : teams) {

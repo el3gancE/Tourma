@@ -199,6 +199,9 @@
 
             var isStage1WithCut = (this.currentStage === 1 && this.cutTarget && this.cutTarget > 1);
             var isFinalStage = !isStage1WithCut; // Single Stage RR or Stage 2 RR
+            var leagueDivision = tbody.hasAttribute('data-league-promotion');
+            var promotion = Number(tbody.dataset.leaguePromotion || 0);
+            var relegation = Number(tbody.dataset.leagueRelegation || 0);
 
             for (var i = 0; i < standings.length; i++) {
                 var row = standings[i];
@@ -212,8 +215,19 @@
                     isAdvancingRow = true;
                 }
 
-                if (isAdvancingRow) {
+                if (isAdvancingRow && !leagueDivision) {
                     tr.className = 'rr-row-advancing-mint';
+                }
+                var zoneLabel = '';
+                if (leagueDivision) {
+                    if (row.rank <= promotion) {
+                        tr.classList.add('rr-league-promotion');
+                        zoneLabel = '<span class="rr-league-zone">Vùng lên hạng</span>';
+                    } else if (row.rank > standings.length - relegation) {
+                        tr.classList.add('rr-league-relegation');
+                        zoneLabel = '<span class="rr-league-zone">Vùng xuống hạng</span>';
+                    }
+                    if (row.rank === 1) tr.classList.add('rr-league-leader');
                 }
 
                 // Recent Form Badges HTML
@@ -237,7 +251,7 @@
                     '</td>' +
                     '<td>' +
                         '<div class="rr-team-cell">' +
-                            '<span>' + row.team + '</span>' +
+                            '<span class="rr-standing-team-name"></span>' + zoneLabel +
                         '</div>' +
                     '</td>' +
                     '<td data-ui-style="round-robin-standings-js-003" class="rr-stat-cell">' + row.played + '</td>' +
@@ -250,6 +264,7 @@
                     '<td data-ui-style="round-robin-standings-js-010" class="rr-points-cell">' + row.points + '</td>' +
                     '<td>' + formHtml + '</td>';
 
+                tr.querySelector('.rr-standing-team-name').textContent = row.team;
                 tbody.appendChild(tr);
             }
         },
