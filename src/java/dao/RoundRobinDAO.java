@@ -284,13 +284,20 @@ public class RoundRobinDAO extends DBContext {
     }
 
     public List<RRStandingRow> getRoundRobinStandings(String tournamentId, int stageOrder) {
+        try (Connection conn = getConnection()) {
+            return getRoundRobinStandings(conn, tournamentId, stageOrder);
+        } catch (Exception e) {
+            throw new IllegalStateException("Không đọc được bảng xếp hạng vòng tròn.", e);
+        }
+    }
+
+    public List<RRStandingRow> getRoundRobinStandings(Connection conn, String tournamentId, int stageOrder)
+            throws java.sql.SQLException {
         List<RRStandingRow> standings = new ArrayList<>();
         Map<String,Map<String,Integer>> headToHead = new HashMap<>();
         if (tournamentId == null || tournamentId.trim().isEmpty()) return standings;
 
-        int[] scoring;
-        try(Connection conn=getConnection()){scoring=TournamentDAO.getLeagueRules(conn,tournamentId,stageOrder);}
-        catch(Exception e){throw new IllegalStateException("Không đọc được luật vòng tròn.",e);}
+        int[] scoring = TournamentDAO.getLeagueRules(conn, tournamentId, stageOrder);
         String sql = "SELECT t.id AS team_id, t.raw_name AS team_name, t.original_seed, "
                 + "ISNULL(stats.mp, 0) AS matches_played, "
                 + "ISNULL(stats.w, 0) AS wins, "
@@ -333,8 +340,7 @@ public class RoundRobinDAO extends DBContext {
                 + "WHERE t.tournament_id = ? "
                 + "ORDER BY points DESC, goal_difference DESC, goals_scored DESC, CASE WHEN t.original_seed>0 THEN t.original_seed ELSE 2147483647 END, t.id";
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tournamentId);
             ps.setInt(2, stageOrder);
             ps.setInt(3, stageOrder);
@@ -377,8 +383,6 @@ public class RoundRobinDAO extends DBContext {
                     }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         service.LeagueRanking.sort(standings,r->r.teamId,r->r.teamName,
                 r->r.points,r->r.goalDifference,r->r.goalsScored,headToHead);

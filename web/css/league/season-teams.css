@@ -56,3 +56,4 @@
     flex: 0 0 auto;
     white-space: nowrap;
 }
+.league-teams-page .rolling-series-name > i { color: var(--ui-accent); }

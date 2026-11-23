@@ -95,6 +95,9 @@ public class LeagueSeasonTeamsServlet extends HttpServlet {
             Map<String, Date> teams = roster.list(series.getId());
             request.setAttribute("leagueSeries", series);
             request.setAttribute("leagueSection", "teams");
+            var seasons = new dao.LeagueSeasonDAO().list(series.getId());
+            request.setAttribute("leagueSeasons", seasons);
+            if (!seasons.isEmpty()) request.setAttribute("leagueLatestSeason", seasons.get(0));
             request.setAttribute("leagueTeams", List.copyOf(teams.keySet()));
             request.setAttribute("leagueTeamDates", teams);
         } catch (Exception e) {

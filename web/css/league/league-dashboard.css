@@ -34,6 +34,65 @@
     padding: 48px 20px;
     text-align: center;
 }
-.league-dashboard-page .league-season-empty i { color: var(--ui-muted); font-size: 1.5rem; }
+.league-dashboard-page .league-season-panel h2 > i { color: var(--ui-accent); margin-inline-end: 4px; }
 .league-dashboard-page .league-season-empty h3 { margin: 0; font-size: 1rem; }
-.league-dashboard-page .league-season-empty p { font-size: .875rem; }
+.league-dashboard-page .league-season-list { list-style: none; margin: 0; padding: 0 20px; }
+.league-dashboard-page .league-season-index-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px;
+    padding-block: 14px;
+    color: var(--ui-text);
+    overflow-wrap: anywhere;
+}
+.league-dashboard-page .league-season-index-row:hover strong,
+.league-dashboard-page .league-season-index-row > i { color: var(--ui-accent); }
+.league-dashboard-page .league-season-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.league-dashboard-page .league-season-status {
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--ui-surface-alt);
+    color: var(--ui-text);
+    font-size: .875rem;
+}
+.league-dashboard-page .league-competitions-title { margin: 0 0 12px; font-size: 1.1rem; }
+.league-dashboard-page .league-pending { margin: 0 0 12px; color: var(--ui-muted); }
+.league-dashboard-page .league-competition-card {
+    padding: 16px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-line);
+    border-radius: 8px;
+}
+.league-dashboard-page .league-competition-card h3 { margin: 0; font-size: 1rem; }
+.league-dashboard-page .league-competition-card h3 > i { color: var(--ui-accent); margin-inline-end: 4px; }
+.league-dashboard-page .league-competition-card p { margin: 6px 0 12px; color: var(--ui-muted); }
+.league-dashboard-page .league-season-list li + li { border-top: 1px solid var(--ui-line); }
+.league-dashboard-page .league-season-list span { color: var(--ui-muted); }
+.league-dashboard-page .league-result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+    gap: 12px;
+    align-items: start;
+}
+.league-dashboard-page .league-result-card {
+    border: 1px solid var(--ui-line);
+    border-radius: 8px;
+    background: var(--ui-surface);
+    overflow-wrap: anywhere;
+}
+.league-dashboard-page .league-result-card h2 {
+    margin: 0;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--ui-line);
+    font-size: 1rem;
+}
+.league-dashboard-page .league-result-card h2 > i { margin-inline-end: 5px; }
+.league-dashboard-page #league-champions > i { color: var(--ui-tier-s); }
+.league-dashboard-page .league-result-card ul { list-style: none; margin: 0; padding: 0 14px; }
+.league-dashboard-page .league-result-card li { display: grid; gap: 2px; padding: 10px 0; }
+.league-dashboard-page .league-result-card li + li { border-top: 1px solid var(--ui-line); }
+.league-dashboard-page .league-result-card li span { color: var(--ui-muted); font-size: .875rem; }
+.league-dashboard-page .league-promotion { color: var(--ui-success); }
+.league-dashboard-page .league-relegation { color: var(--ui-danger); }
+.league-dashboard-page .league-close-form { display: flex; justify-content: flex-end; margin-top: 16px; }

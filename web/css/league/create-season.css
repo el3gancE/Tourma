@@ -1,0 +1,63 @@
+.league-create-season-page main { min-width: 0; }
+.league-create-season-page main > p { margin: 0 0 6px; }
+.league-create-season-page h1 { margin: 0 0 20px; }
+.league-create-season-page h1 > i,
+.league-create-season-page .league-division legend { color: var(--ui-accent); }
+.league-create-season-page .league-division legend { padding-inline: 6px; font-weight: 700; }
+.league-create-season-page main form,
+.league-create-season-page .league-setup-panel { display: grid; gap: 12px; }
+.league-create-season-page .league-setup-panel {
+    padding: 16px;
+    border: 1px solid var(--ui-line);
+    border-radius: 8px;
+    background: var(--ui-surface);
+}
+.league-create-season-page .league-setup-panel h2 { margin: 0; font-size: 1rem; }
+.league-create-season-page .league-setup-toolbar,
+.league-create-season-page .league-cup-option { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.league-create-season-page .league-setup-panel > .league-setup-toolbar { justify-content: space-between; }
+.league-create-season-page #league-division-rows { display: grid; gap: 8px; }
+.league-create-season-page .league-division {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+    align-items: end;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    border: 1px solid var(--ui-line);
+    border-radius: 6px;
+}
+.league-create-season-page .league-division input { margin-top: 4px; }
+.league-create-season-page .league-division-roster { grid-column: 1 / -1; }
+.league-create-season-page .league-unassigned { margin: 0; }
+.league-create-season-page .league-division-teams { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; list-style: none; }
+.league-create-season-page .league-division-teams:empty { display: none; }
+.league-create-season-page .league-division-teams li {
+    display: flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere;
+    padding: 2px 8px; border: 1px solid var(--ui-line); border-radius: 6px;
+}
+.league-create-season-page .league-division-teams button {
+    border: 0; background: transparent; color: var(--ui-text); cursor: pointer;
+}
+.league-create-season-page .league-team-picker {
+    width: min(480px, calc(100% - 32px)); max-height: calc(100dvh - 32px);
+    padding: 0; border: 1px solid var(--ui-line); border-radius: 12px;
+    background: var(--ui-surface); color: var(--ui-text);
+}
+.league-create-season-page .league-team-picker::backdrop { background: rgb(0 0 0 / 55%); }
+.league-create-season-page .league-team-picker h2 { margin: 0; font-size: 1rem; }
+.league-create-season-page #league-team-picker-options { display: grid; gap: 10px; max-height: 45dvh; overflow: auto; }
+.league-create-season-page #league-team-picker-options label { display: flex; align-items: start; gap: 8px; overflow-wrap: anywhere; }
+.league-create-season-page #league-setup-error { color: var(--ui-danger); }
+.league-create-season-page #save-league-season { justify-self: end; }
+.league-create-season-page input[type="checkbox"] { accent-color: var(--ui-accent); }
+.league-create-season-page .league-withdrawals { display: block; }
+.league-create-season-page .league-withdrawals summary { cursor: pointer; font-weight: 700; }
+.league-create-season-page .league-withdrawal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(min(100%,180px),1fr));
+    gap: 8px;
+    margin-block: 12px;
+}
+.league-create-season-page .league-division-teams small { color: var(--ui-muted); }
+.league-create-season-page .league-setup-panel > p { margin: 0; }

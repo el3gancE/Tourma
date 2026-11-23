@@ -110,7 +110,16 @@
 
     boolean isMultiStage = "MULTI_STAGE".equalsIgnoreCase(tournamentType);
     boolean hasSeries = (currentSeries != null);
+    boolean leagueSeries = hasSeries && "LEAGUE_SYSTEM".equals(currentSeries.getRankingModel());
     boolean hasTournament = (currentTournament != null);
+    List<dao.LeagueSeasonDAO.Competition> seasonCompetitions = java.util.Collections.emptyList();
+    if (leagueSeries && hasTournament) {
+        try {
+            seasonCompetitions = new dao.LeagueSeasonDAO().listSiblingCompetitions(currentSeries.getId(), currentTournament.getId());
+        } catch (Exception e) {
+            application.log("Không thể tải danh sách giải cùng mùa League.", e);
+        }
+    }
 %>
 
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
@@ -119,7 +128,35 @@
 <aside class="app-left-sidebar tournament-sidebar" aria-label="Điều hướng giải đấu">
     <div class="sidebar-workspace-heading"><span class="sidebar-workspace-mark" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span><span>Không gian giải đấu</span></div>
 
-    <% if (hasSeries) { %>
+    <% if (leagueSeries) { %>
+    <% String leagueSeriesQuery = java.net.URLEncoder.encode(currentSeries.getId(), "UTF-8");
+       String leagueSeasonPath = seasonCompetitions.isEmpty()
+                ? "/league/dashboard?id=" + leagueSeriesQuery
+                : "/league/season/dashboard?id=" + leagueSeriesQuery + "&amp;seasonId="
+                    + java.net.URLEncoder.encode(seasonCompetitions.get(0).seasonId(), "UTF-8");
+    %>
+    <nav class="sidebar-section" aria-label="League">
+        <ul class="sidebar-menu-list">
+            <li class="sidebar-menu-item">
+                <a class="sidebar-menu-link" href="${pageContext.request.contextPath}<%= leagueSeasonPath %>">
+                    <i class="fa-regular fa-calendar" aria-hidden="true"></i> <%= seasonCompetitions.isEmpty() ? "Tổng quan League" : "Tổng quan mùa" %>
+                </a>
+            </li>
+            <% for (dao.LeagueSeasonDAO.Competition competition : seasonCompetitions) {
+                boolean selected = competition.tournamentId().equals(currentTournament.getId());
+                String matchId = java.net.URLEncoder.encode(competition.tournamentId(), "UTF-8");
+            %>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-menu-link <%= selected ? "active" : "" %>" aria-current="<%= selected ? "true" : "false" %>"
+                   href="${pageContext.request.contextPath}/my-tournaments?action=matches&amp;id=<%= matchId %>">
+                    <i class="fa-solid <%= "Cúp SE".equals(competition.label()) ? "fa-trophy" : "fa-layer-group" %>" aria-hidden="true"></i>
+                    <span><%= competition.label() %></span>
+                </a>
+            </li>
+            <% } %>
+        </ul>
+    </nav>
+    <% } else if (hasSeries) { %>
     <nav class="sidebar-section" aria-label="Chuỗi giải">
     <!-- ========================================================= -->
     <!-- MỤC 1: QUẢN LÝ CHUỖI GIẢI (SERIES SECTION)                -->
@@ -183,13 +220,13 @@
     <!-- MỤC 2: QUẢN LÝ GIẢI ĐẤU (GIẢI ĐƠN HOẶC GIẢI CON)           -->
     <!-- ========================================================= -->
     <div class="sidebar-section-header">
-        <i class="fa-solid fa-bolt"></i> <%= hasSeries ? ("GIẢI CON #" + (currentTournament != null ? currentTournament.getTournamentIndexInSeries() : "")) : "CHI TIẾT GIẢI ĐẤU" %>
+        <i class="fa-solid fa-bolt"></i> <%= hasSeries && !leagueSeries ? ("GIẢI CON #" + currentTournament.getTournamentIndexInSeries()) : "CHI TIẾT GIẢI ĐẤU" %>
     </div>
 
     <div class="sidebar-subtourney-badge">
         <i class="fa-solid fa-trophy text-mint"></i>
         <span><%= tournamentName %></span>
-        <% if (hasSeries) {
+        <% if (hasSeries && !leagueSeries) {
              String tTier = (currentTournament != null && currentTournament.getTierName() != null && !currentTournament.getTierName().trim().isEmpty())
                  ? currentTournament.getTierName().toUpperCase() : "S";
         %>
@@ -199,6 +236,7 @@
 
     <ul class="sidebar-menu-list">
         <!-- BƯỚC 2: QUẢN LÝ ĐỘI -->
+        <% if (!leagueSeries) { %>
         <li class="sidebar-menu-item">
             <a href="<%= hasSeries ? (request.getContextPath() + "/rolling/tournament-teams?id=" + tournamentId + "&seriesId=" + seriesId) : (request.getContextPath() + "/common/configure-tournament-teams.jsp?id=" + tournamentId) %>"
                class="sidebar-menu-link <%= "teams".equals(activeStep) || "step2".equals(activeStep) || "tournament-teams".equals(activeStep) ? "active" : "" %>">
@@ -206,6 +244,7 @@
                 <span>Thêm Đội & Quản Lý</span>
             </a>
         </li>
+        <% } %>
 
         <!-- MỤC RIÊNG CHO GROUP STAGE & GSL: QUẢN LÝ BẢNG ĐẤU -->
         <li class="sidebar-menu-item" id="sidebarMenuManageGroup" style="<%= ("GROUP_STAGE".equalsIgnoreCase(format) || "GSL".equalsIgnoreCase(format)) ? "" : "display: none;" %>">
@@ -216,7 +255,7 @@
             </a>
         </li>
 
-        <% if (hasSeries) { %>
+        <% if (hasSeries && !leagueSeries) { %>
         <!-- BƯỚC 3: SET ĐIỂM THƯỞNG GIẢI CON -->
         <li class="sidebar-menu-item">
             <a href="${pageContext.request.contextPath}/rolling/point-config?id=<%= tournamentId %>&seriesId=<%= seriesId %>"
@@ -290,7 +329,7 @@
             </a>
         </li>
 
-        <% if (hasSeries) { %>
+        <% if (hasSeries && !leagueSeries) { %>
         <!-- TỔNG KẾT GIẢI ĐẤU -->
         <li class="sidebar-menu-item" id="sidebarMenuSummary">
             <a href="${pageContext.request.contextPath}/rolling/tournament-summary?id=<%= tournamentId %>&seriesId=<%= seriesId %>"
