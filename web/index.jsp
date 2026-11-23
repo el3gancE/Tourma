@@ -1,10 +1,11 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOURMA — Sân chơi của bạn. Dấu ấn của bạn.</title>
+    <tourma:page-title label="Trang chủ" />
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
     <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">

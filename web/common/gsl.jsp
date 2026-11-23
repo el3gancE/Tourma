@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="dao.TournamentDAO"%>
 <%@page import="dao.ParticipantDAO"%>
@@ -115,7 +116,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title><%= tourneyName %> | GSL Format - Tourma</title>
+        <tourma:page-title label="Vòng bảng GSL" contextName="<%= tourneyName %>" />
 
         <!-- Favicon -->
         <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">

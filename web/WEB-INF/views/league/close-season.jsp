@@ -1,11 +1,12 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>${leagueReviewClosed ? 'Kết quả chuyển hạng' : 'Chốt mùa'} · Tourma</title>
+    <tourma:page-title label="${leagueReviewClosed ? 'Kết quả chuyển hạng' : 'Chốt mùa'}" contextName="${leagueReviewName}" />
     <link rel="icon" type="image/svg+xml" href="<c:url value='/images/trophy-gradient-icon.svg' />">
     <script src="<c:url value='/js/theme.js' />"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap">

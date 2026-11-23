@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="model.Series, model.Tournament, java.util.List, java.util.Locale"%>
 <%@page import="controller.RollingTournamentSummaryServlet.RoundGroupDTO, controller.RollingTournamentSummaryServlet.TeamSummaryDTO, controller.RollingTournamentSummaryServlet.PathMatchDTO"%>
 <%!
@@ -60,7 +61,7 @@
         <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title><%= esc(tourneyName) %> - Tổng Kết Giải Đấu - TOURMA</title>
+        <tourma:page-title label="Tổng kết giải đấu" contextName="<%= tourneyName %>" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

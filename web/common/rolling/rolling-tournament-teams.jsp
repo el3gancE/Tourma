@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="model.Series, model.Tournament, model.Team, java.util.List"%>
 <%
     Tournament tournament = (Tournament) request.getAttribute("tournament");
@@ -37,7 +38,7 @@
         <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title><%= tourneyName %> - Quản Lý Danh Sách Đội - TOURMA</title>
+        <tourma:page-title label="Quản lý danh sách đội" contextName="<%= tourneyName %>" />
 
         <!-- Google Fonts & FontAwesome -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

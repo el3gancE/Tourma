@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="dao.ParticipantDAO"%>
 <%@page import="model.Team"%>
 <%@page import="java.util.List"%>
@@ -80,7 +81,7 @@
         <link rel="alternate icon" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Quản Lý Danh Sách Đội - TOURMA</title>
+        <tourma:page-title label="Quản lý danh sách đội" />
 
         <!-- Google Font Readex Pro -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

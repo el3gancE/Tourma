@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="vi">
@@ -8,7 +9,7 @@
         <link rel="alternate icon" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Tạo Chuỗi Giải Mới - TOURMA</title>
+        <tourma:page-title label="Tạo chuỗi giải" />
 
         <!-- Google Font Readex Pro -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

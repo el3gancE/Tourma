@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 <!DOCTYPE html>
@@ -6,7 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><c:out value="${empty leagueSeasonDashboard ? leagueSeries.name : leagueSeasonDashboard.name}" /> · League · Tourma</title>
+    <tourma:page-title label="${empty leagueSeasonDashboard ? 'Tổng quan League' : 'Tổng quan mùa'}" contextName="${empty leagueSeasonDashboard ? leagueSeries.name : leagueSeasonDashboard.name}" />
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
     <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap">

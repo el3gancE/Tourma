@@ -1,6 +1,7 @@
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="service.NumberOneHistory.Leader, service.NumberOneHistory.Reign"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="model.Series, model.Tournament, controller.RollingHofServlet.TournamentChampionDTO, controller.RollingHofServlet.TeamChampionStatsDTO, controller.RollingHofServlet.MatrixTourneyColDTO, controller.RollingHofServlet.MatrixRowDTO, controller.RollingHofServlet.MatrixCellDTO, java.util.List"%>
 <%
     String seriesIdVal = request.getParameter("id");
@@ -56,7 +57,7 @@
     <link rel="alternate icon" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng Vàng (Hall of Fame) - <%= seriesName %> - TOURMA</title>
+    <tourma:page-title label="Bảng vàng" contextName="<%= seriesName %>" />
 
     <!-- Google Font Readex Pro -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -91,6 +91,10 @@ component JSP tồn tại không có nghĩa hình thức của component đó đ
 4. Khi người dùng chốt một quy ước mới, cập nhật nguồn dùng chung và tài liệu này.
 5. Duy trì component/style ngay trong nguồn dùng chung; không cần trang Template UI riêng.
 
+## Tiêu đề tab trình duyệt
+
+Dùng thẻ JSP `tourma:page-title` cho các trang. Tiêu đề theo mẫu **Tên màn hình · Tourma** hoặc **Tên màn hình · Tên giải, Series, đội hoặc mùa · Tourma** khi cần phân biệt ngữ cảnh.
+
 ## Vị trí chuyển theme
 
 Nút chuyển sáng/tối nằm trong header dùng chung, không lặp trong nội dung trang.
