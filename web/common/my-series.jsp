@@ -23,7 +23,7 @@
         <div class="workspace-utility"><span>KHÔNG GIAN QUẢN LÝ / CHUỖI GIẢI</span></div>
         <div class="page-header-row"><div><h1 class="page-title"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Chuỗi Giải Của Tôi</h1><p>Quản lý mùa giải, điểm tích lũy và hành trình của các đội.</p></div><a class="btn btn-mint" href="${pageContext.request.contextPath}/common/create-series.jsp"><i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo chuỗi giải mới</a></div>
         <div class="toolbar-bar">
-            <div class="filter-pills-group" aria-label="Lọc theo mô hình xếp hạng"><button type="button" class="filter-pill-btn active" data-model-filter="ALL" aria-pressed="true">Tất cả</button><button type="button" class="filter-pill-btn" data-model-filter="ROLLING_WINDOW" aria-pressed="false">Rolling Window</button><button type="button" class="filter-pill-btn" data-model-filter="FIFA_ELO" aria-pressed="false">FIFA Elo Rating</button></div>
+            <div class="filter-pills-group" aria-label="Lọc theo mô hình xếp hạng"><button type="button" class="filter-pill-btn active" data-model-filter="ALL" aria-pressed="true">Tất cả</button><button type="button" class="filter-pill-btn" data-model-filter="ROLLING_WINDOW" aria-pressed="false">Rolling Window</button><button type="button" class="filter-pill-btn" data-model-filter="LEAGUE_SYSTEM" aria-pressed="false">League System</button><button type="button" class="filter-pill-btn" data-model-filter="FIFA_ELO" aria-pressed="false">FIFA Elo Rating</button></div>
             <div class="search-input-box"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" id="searchInput" class="form-control" placeholder="Tìm theo tên chuỗi giải…" aria-label="Tìm kiếm chuỗi giải"></div>
         </div>
         <c:choose><c:when test="${not empty seriesList}">
@@ -33,17 +33,18 @@
                         <div class="series-card-info">
                             <h3 class="series-card-title" title="<c:out value="${s.name}" />"><c:out value="${s.name}" /></h3>
                             <p class="series-model-line">
-                                <span class="series-model-tag">${s.rankingModel == 'ROLLING_WINDOW' ? 'Rolling Window' : 'FIFA Elo Rating'}</span>
+                                <span class="series-model-tag">${s.rankingModel == 'ROLLING_WINDOW' ? 'Rolling Window' : (s.rankingModel == 'LEAGUE_SYSTEM' ? 'League System' : 'FIFA Elo Rating')}</span>
                                 <c:choose>
                                     <c:when test="${s.rankingModel == 'ROLLING_WINDOW'}"><span>Phase ${s.currentPhase}</span><span><strong class="series-window-value">${s.phaseSize}</strong> giải tính điểm</span></c:when>
+                                    <c:when test="${s.rankingModel == 'LEAGUE_SYSTEM'}"><span>Theo mùa</span></c:when>
                                     <c:otherwise><span>Elo khởi đầu: ${s.initialElo}</span></c:otherwise>
                                 </c:choose>
                             </p>
                         </div>
                         <div class="series-card-actions">
                             <form action="${pageContext.request.contextPath}/my-series" method="POST" class="series-delete-form" data-series-name="<c:out value="${s.name}" />"><input type="hidden" name="action" value="delete"><input type="hidden" name="seriesId" value="<c:out value="${s.id}" />"><button type="submit" class="series-icon-button" aria-label="Xóa chuỗi giải" title="Xóa chuỗi giải"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></form>
-                            <button type="button" class="series-icon-button series-edit-button" aria-label="Chỉnh sửa chuỗi giải" title="Chỉnh sửa chuỗi giải" data-series-id="<c:out value="${s.id}" />" data-series-name="<c:out value="${s.name}" />" data-phase-size="${s.phaseSize > 0 ? s.phaseSize : 10}" data-status="<c:out value="${s.status}" />" data-action-url="${pageContext.request.contextPath}/my-series"><i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
-                            <c:choose><c:when test="${s.rankingModel == 'ROLLING_WINDOW'}"><a class="series-manage-button" href="${pageContext.request.contextPath}/rolling/dashboard?id=${s.id}">Quản lý <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></c:when><c:otherwise><a class="series-manage-button" href="${pageContext.request.contextPath}/leaderboard.jsp?seriesId=${s.id}">Xem BXH <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></c:otherwise></c:choose>
+                            <c:if test="${s.rankingModel != 'LEAGUE_SYSTEM'}"><button type="button" class="series-icon-button series-edit-button" aria-label="Chỉnh sửa chuỗi giải" title="Chỉnh sửa chuỗi giải" data-series-id="<c:out value="${s.id}" />" data-series-name="<c:out value="${s.name}" />" data-phase-size="${s.phaseSize > 0 ? s.phaseSize : 10}" data-status="<c:out value="${s.status}" />" data-action-url="${pageContext.request.contextPath}/my-series"><i class="fa-solid fa-sliders" aria-hidden="true"></i></button></c:if>
+                            <c:choose><c:when test="${s.rankingModel == 'ROLLING_WINDOW'}"><a class="series-manage-button" href="${pageContext.request.contextPath}/rolling/dashboard?id=${s.id}">Quản lý <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></c:when><c:when test="${s.rankingModel == 'FIFA_ELO'}"><a class="series-manage-button" href="${pageContext.request.contextPath}/leaderboard.jsp?seriesId=${s.id}">Xem BXH <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></c:when></c:choose>
                         </div>
                     </article>
                 </c:forEach>
