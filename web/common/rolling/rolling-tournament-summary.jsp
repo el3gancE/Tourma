@@ -309,21 +309,16 @@
                         var dbTopSeeds = <%= topSeedCount != null ? topSeedCount : -1 %>;
                         var maxVisible = dbTopSeeds >= 0 ? dbTopSeeds : Infinity;
                         if (tid) {
-                            try {
-                                var raw = localStorage.getItem('tourma_hide_seed_config_' + tid);
-                                if (raw) {
-                                    var cfg = JSON.parse(raw);
-                                    if (cfg) {
-                                        var v = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? String(cfg.visibleCount).trim() : '';
-                                        var parsed = parseInt(v, 10);
-                                        if (cfg.isEnabled) {
-                                            maxVisible = (!v || isNaN(parsed) || parsed <= 0) ? 0 : Math.min(maxVisible, parsed);
-                                        } else if (!isNaN(parsed) && parsed >= 0 && dbTopSeeds < 0) {
-                                            maxVisible = parsed;
-                                        }
-                                    }
+                            var cfg = window.TourmaSeedDisplay && window.TourmaSeedDisplay.read(tid);
+                            if (cfg) {
+                                var v = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? String(cfg.visibleCount).trim() : '';
+                                var parsed = parseInt(v, 10);
+                                if (cfg.isEnabled) {
+                                    maxVisible = (!v || isNaN(parsed) || parsed <= 0) ? 0 : Math.min(maxVisible, parsed);
+                                } else if (!isNaN(parsed) && parsed >= 0 && dbTopSeeds < 0) {
+                                    maxVisible = parsed;
                                 }
-                            } catch (e) {}
+                            }
                         }
                         if (maxVisible !== Infinity) {
                             document.querySelectorAll('.summary-team-seed[data-seed]').forEach(function (el) {

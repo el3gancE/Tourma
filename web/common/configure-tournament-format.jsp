@@ -160,10 +160,20 @@
                                     data-ui-style="configure-tournament-format-jsp-003" style="display: inline-flex;">
                                     <i class="fa-solid fa-copy"></i> <%= isRollingSubTournament ? "Sao chép điểm &amp; cấu hình" : "Sao chép cấu hình" %>
                                 </button>
+                                <c:if test="${setupTemplatesAvailable}">
+                                    <button type="button" class="btn btn-secondary" id="setup-template-open" aria-haspopup="dialog">
+                                        <i class="fa-solid fa-bookmark" aria-hidden="true"></i> Mẫu cấu hình
+                                    </button>
+                                </c:if>
                             </div>
 
                             <!-- Main Config Card Box -->
                             <div class="form-container-box" data-ui-style="configure-tournament-format-jsp-004">
+                                <c:if test="${not empty setupAppliedTemplate}">
+                                    <p id="setup-applied-template" class="setup-template-status" data-team-count="${setupAppliedTemplate.teamCount}">
+                                        Mẫu <strong><c:out value="${setupAppliedTemplate.name}" /></strong> · Yêu cầu ${setupAppliedTemplate.teamCount} đội
+                                    </p>
+                                </c:if>
 
                                 <!-- Active Copied Config Banner (Shown when a config is cloned / copied) -->
                                 <div id="copiedConfigBanner"
@@ -784,6 +794,31 @@
                         </div>
 
                         <!-- COPY CONFIGURATION FROM EXISTING TOURNAMENT MODAL -->
+                        <c:if test="${setupTemplatesAvailable}">
+                            <c:url var="templateEndpoint" value="/rolling/config-templates">
+                                <c:param name="id" value="${setupTournament.id}" />
+                            </c:url>
+                            <dialog id="setup-template-dialog" class="tourma-modal-card setup-template-dialog"
+                                    aria-labelledby="setup-template-title" data-endpoint="<c:out value='${templateEndpoint}' />">
+                                <header class="modal-header-bar">
+                                    <h2 id="setup-template-title">Mẫu cấu hình</h2>
+                                    <form method="dialog"><button type="submit" class="modal-close-btn" aria-label="Đóng">×</button></form>
+                                </header>
+                                <div class="modal-body-content">
+                                    <form id="setup-template-save" class="setup-template-form">
+                                        <label>Tên mẫu <input class="form-control" name="templateName" required maxlength="120"></label>
+                                        <label>Số đội <input class="form-control" name="teamCount" type="number" min="2" required
+                                            value="${not empty setupAppliedTemplate ? setupAppliedTemplate.teamCount : (setupTemplateTeamDefault ge 2 ? setupTemplateTeamDefault : '')}"></label>
+                                        <button type="submit" class="btn-modal-save">Lưu làm mẫu</button>
+                                    </form>
+                                    <p id="setup-template-status" role="status"></p>
+                                    <ul id="setup-template-list" class="setup-template-list" aria-label="Mẫu đã lưu"></ul>
+                                    <c:if test="${not empty setupAppliedTemplate}">
+                                        <button type="button" id="setup-template-clear">Bỏ yêu cầu số đội của mẫu</button>
+                                    </c:if>
+                                </div>
+                            </dialog>
+                        </c:if>
                         <div id="copyConfigModalBackdrop" class="tourma-modal-backdrop" style="display: none;"
                             onclick="if(event.target === this) closeCopyConfigModal();">
                             <div class="tourma-modal-card"
@@ -855,6 +890,29 @@
                             var formatBypassWarning = false;
                             var initialLegsCount = 1;
 
+                            function storeSetupItem(key, value) {
+                                try {
+                                    localStorage.setItem(key, value);
+                                } catch (error) {
+                                    try { sessionStorage.setItem(key, value); } catch (ignored) {}
+                                    return;
+                                }
+                                try { sessionStorage.removeItem(key); } catch (ignored) {}
+                            }
+
+                            function readSetupItem(key) {
+                                try {
+                                    var override = sessionStorage.getItem(key);
+                                    if (override !== null) return override;
+                                } catch (ignored) {}
+                                try { return localStorage.getItem(key); } catch (ignored) { return null; }
+                            }
+
+                            function removeSetupItem(key) {
+                                try { sessionStorage.removeItem(key); } catch (ignored) {}
+                                try { localStorage.removeItem(key); } catch (ignored) {}
+                            }
+
                             function loadCopySources() {
                                 if (copySourcesRequest) return;
                                 var list = document.getElementById('copyTourneyListContainer');
@@ -881,6 +939,10 @@
                                         button.addEventListener('click', function () { applyTournamentConfig(id); });
                                     });
                                     window.availableTournamentsToCopy = sources;
+                                    var copiedFrom = document.getElementById('copiedFrom').value;
+                                    if (isRollingSubTournament && copiedFrom && !sources.some(function (source) {
+                                        return source.id === copiedFrom;
+                                    })) clearCopiedConfig();
                                     list.replaceChildren(fragment.content);
                                     filterCopyTournaments(document.getElementById('copyTourneySearchInput').value);
                                 }).catch(function () {
@@ -998,9 +1060,9 @@
                                     var advHidden = document.getElementById('advancingSeatsCount');
                                     if (advHidden && advVal > 0) advHidden.value = advVal;
                                     if (tournamentId && advVal > 0) {
-                                        localStorage.setItem('tourma_advance_count_' + tournamentId, String(advVal));
-                                        localStorage.setItem('tourma_cut_target_' + tournamentId, String(advVal));
-                                        if (s1F === 'GSL') localStorage.setItem('tourma_gsl_advance_count_' + tournamentId, String(advVal));
+                                        storeSetupItem('tourma_advance_count_' + tournamentId, String(advVal));
+                                        storeSetupItem('tourma_cut_target_' + tournamentId, String(advVal));
+                                        if (s1F === 'GSL') storeSetupItem('tourma_gsl_advance_count_' + tournamentId, String(advVal));
                                     }
                                     if (mCfg.stage2Config && s2F === 'ROUND_ROBIN') {
                                         var s2C = mCfg.stage2Config;
@@ -1041,8 +1103,8 @@
                                     var ptsStr = (typeof tourney.pointsConfig === 'string') ? tourney.pointsConfig : JSON.stringify(tourney.pointsConfig);
                                     if (tournamentId) {
                                         try {
-                                            localStorage.setItem('tourma_points_config_' + tournamentId, ptsStr);
-                                            localStorage.setItem('tourma_series_points_' + tournamentId, ptsStr);
+                                            storeSetupItem('tourma_points_config_' + tournamentId, ptsStr);
+                                            storeSetupItem('tourma_series_points_' + tournamentId, ptsStr);
                                         } catch (e) { }
                                     }
                                 }
@@ -1062,11 +1124,16 @@
                                     if (!copyResponse.ok || copyResult.status !== 'success') {
                                         throw new Error(copyResult.message || 'Không lưu được điểm và cấu hình.');
                                     }
+                                    var appliedTemplate = document.getElementById('setup-applied-template');
+                                    if (appliedTemplate) appliedTemplate.remove();
+                                    var clearTemplate = document.getElementById('setup-template-clear');
+                                    if (clearTemplate) clearTemplate.remove();
                                     if (tourney.tierName) changeTournamentTier(tourney.tierName);
                                 }
 
                                 // 4. Capture Target Team Count & Source Name constraint
                                 var requiredTeams = tourney.teamCount || 0;
+                                window.targetTeamCount = requiredTeams;
                                 var inpTarget = document.getElementById('targetTeamCount');
                                 if (inpTarget) inpTarget.value = requiredTeams;
                                 var inpCopiedName = document.getElementById('copiedSourceTourneyName');
@@ -1075,9 +1142,9 @@
                                 if (inpCopiedFrom) inpCopiedFrom.value = tourney.id;
 
                                 if (tournamentId) {
-                                    localStorage.setItem('tourma_target_team_count_' + tournamentId, requiredTeams);
-                                    localStorage.setItem('tourma_copied_source_name_' + tournamentId, tourney.name);
-                                    localStorage.setItem('tourma_copied_from_' + tournamentId, tourney.id);
+                                    storeSetupItem('tourma_target_team_count_' + tournamentId, requiredTeams);
+                                    storeSetupItem('tourma_copied_source_name_' + tournamentId, tourney.name);
+                                    storeSetupItem('tourma_copied_from_' + tournamentId, tourney.id);
                                 }
 
                                 // 5. Update UI Banner
@@ -1113,11 +1180,12 @@
                                 if (inpCopiedName) inpCopiedName.value = '';
                                 var inpCopiedFrom = document.getElementById('copiedFrom');
                                 if (inpCopiedFrom) inpCopiedFrom.value = '';
+                                window.targetTeamCount = 0;
 
                                 if (tournamentId) {
-                                    localStorage.removeItem('tourma_target_team_count_' + tournamentId);
-                                    localStorage.removeItem('tourma_copied_source_name_' + tournamentId);
-                                    localStorage.removeItem('tourma_copied_from_' + tournamentId);
+                                    removeSetupItem('tourma_target_team_count_' + tournamentId);
+                                    removeSetupItem('tourma_copied_source_name_' + tournamentId);
+                                    removeSetupItem('tourma_copied_from_' + tournamentId);
                                 }
                             }
 
@@ -1154,7 +1222,7 @@
 
                                 // Save to localStorage & AJAX persist to database
                                 if (tournamentId) {
-                                    localStorage.setItem('tourma_tier_' + tournamentId, tier);
+                                    storeSetupItem('tourma_tier_' + tournamentId, tier);
 
                                     var ctx = "${pageContext.request.contextPath}";
                                     fetch(ctx + "/rolling/update-tier?tournamentId=" + encodeURIComponent(tournamentId) + "&tierName=" + encodeURIComponent(tier), {
@@ -1198,10 +1266,10 @@
                             // Check if bracket already has completed / scored matches for Stage 1 vs Stage 2
                             if (tournamentId) {
                                 try {
-                                    var gObj = JSON.parse(localStorage.getItem("tourma_group_matches_" + tournamentId));
-                                    var rrObj = JSON.parse(localStorage.getItem("tourma_rr_matches_" + tournamentId));
-                                    var uObj = JSON.parse(localStorage.getItem("tourma_matches_" + tournamentId));
-                                    var deObj = JSON.parse(localStorage.getItem("tourma_de_matches_" + tournamentId));
+                                    var gObj = JSON.parse(readSetupItem("tourma_group_matches_" + tournamentId));
+                                    var rrObj = JSON.parse(readSetupItem("tourma_rr_matches_" + tournamentId));
+                                    var uObj = JSON.parse(readSetupItem("tourma_matches_" + tournamentId));
+                                    var deObj = JSON.parse(readSetupItem("tourma_de_matches_" + tournamentId));
 
                                     function checkMatchesPlayed(mObj) {
                                         if (!mObj) return false;
@@ -1224,7 +1292,7 @@
                                     }
 
                                     if (checkMatchesPlayed(uObj) || checkMatchesPlayed(deObj)) {
-                                        var mCfgRaw = localStorage.getItem("tourma_multi_config_" + tournamentId);
+                                        var mCfgRaw = readSetupItem("tourma_multi_config_" + tournamentId);
                                         if (mCfgRaw) {
                                             try {
                                                 var mCfg = JSON.parse(mCfgRaw);
@@ -1396,8 +1464,8 @@
                                 }
 
                                 if (tournamentId) {
-                                    localStorage.setItem("tourma_type_" + tournamentId, selectedType);
-                                    localStorage.setItem(storageKeyFormat, selectedVal);
+                                    storeSetupItem("tourma_type_" + tournamentId, selectedType);
+                                    storeSetupItem(storageKeyFormat, selectedVal);
 
                                     var advanceCountToSave = 0;
                                     var detailConfig;
@@ -1415,7 +1483,7 @@
                                         };
                                         multiConfig.tournamentType = selectedType;
                                         detailConfig = multiConfig;
-                                        localStorage.setItem('tourma_multi_config_' + tournamentId, JSON.stringify(multiConfig));
+                                        storeSetupItem('tourma_multi_config_' + tournamentId, JSON.stringify(multiConfig));
                                         if (s1Cfg) advanceCountToSave = s1Cfg.totalAdvanceCount || s1Cfg.advanceCount || 0;
                                     } else {
                                         var sSingleCfg = getStageConfigValues(1, selectedVal);
@@ -1434,14 +1502,14 @@
                                                 legsCount: legsInp ? (readConfigNumber(legsInp, 1)) : 1
                                             };
                                             detailConfig.stage1Config = rrConfig;
-                                            localStorage.setItem('tourma_rr_config_' + tournamentId, JSON.stringify(rrConfig));
+                                            storeSetupItem('tourma_rr_config_' + tournamentId, JSON.stringify(rrConfig));
                                         }
                                     }
 
                                     document.getElementById("detailConfig").value = JSON.stringify(detailConfig);
                                     if (advanceCountToSave > 0) {
-                                        localStorage.setItem('tourma_advance_count_' + tournamentId, advanceCountToSave);
-                                        localStorage.setItem('tourma_cut_target_' + tournamentId, advanceCountToSave);
+                                        storeSetupItem('tourma_advance_count_' + tournamentId, advanceCountToSave);
+                                        storeSetupItem('tourma_cut_target_' + tournamentId, advanceCountToSave);
                                         // Also write to hidden form field so it gets saved to DB on next page
                                         var hiddenAdv = document.getElementById('advancingSeatsCount');
                                         if (hiddenAdv) hiddenAdv.value = advanceCountToSave;
@@ -1532,9 +1600,9 @@
                             function confirmLegsChangeAndSubmit() {
                                 if (tournamentId) {
                                     try {
-                                        localStorage.removeItem('tourma_rr_matches_' + tournamentId);
-                                        localStorage.removeItem('tourma_rr_round_inputs_' + tournamentId);
-                                        localStorage.removeItem('tourma_matches_' + tournamentId);
+                                        removeSetupItem('tourma_rr_matches_' + tournamentId);
+                                        removeSetupItem('tourma_rr_round_inputs_' + tournamentId);
+                                        removeSetupItem('tourma_matches_' + tournamentId);
                                     } catch (e) { }
                                 }
                                 persistFormatSelection();
@@ -1550,14 +1618,14 @@
 
                             function getTotalTeamsCount() {
                                 if (tournamentId) {
-                                    var rawTeams = localStorage.getItem('tourma_teams_' + tournamentId);
+                                    var rawTeams = readSetupItem('tourma_teams_' + tournamentId);
                                     if (rawTeams) {
                                         try {
                                             var parsed = JSON.parse(rawTeams);
                                             if (Array.isArray(parsed) && parsed.length > 0) return parsed.length;
                                         } catch (e) { }
                                     }
-                                    var gRaw = localStorage.getItem('tourma_group_assignments_' + tournamentId);
+                                    var gRaw = readSetupItem('tourma_group_assignments_' + tournamentId);
                                     if (gRaw) {
                                         try {
                                             var gObj = JSON.parse(gRaw);
@@ -1705,7 +1773,7 @@
 
                                 // If Round Robin and existing schedule exists, check if legsCount changed
                                 if (currentType === 'SINGLE_STAGE' && currentSelected === 'ROUND_ROBIN' && tournamentId) {
-                                    var hasPriorRRSchedule = !!localStorage.getItem('tourma_rr_matches_' + tournamentId);
+                                    var hasPriorRRSchedule = !!readSetupItem('tourma_rr_matches_' + tournamentId);
                                     var legsInp = document.querySelector('input[name="legsCount"]');
                                     var newLegsCount = legsInp ? (parseInt(legsInp.value) || 1) : 1;
 
@@ -1724,12 +1792,13 @@
                             window.addEventListener('DOMContentLoaded', function () {
                                 var savedType = "<%= currentType %>";
                                 var savedFormat = "<%= currentFormat %>";
-                                if (tournamentId) {
-                                    if (localStorage.getItem("tourma_type_" + tournamentId)) {
-                                        savedType = localStorage.getItem("tourma_type_" + tournamentId);
+                                var appliedTemplate = document.getElementById('setup-applied-template');
+                                if (tournamentId && !appliedTemplate) {
+                                    if (readSetupItem("tourma_type_" + tournamentId)) {
+                                        savedType = readSetupItem("tourma_type_" + tournamentId);
                                     }
-                                    if (localStorage.getItem(storageKeyFormat)) {
-                                        savedFormat = localStorage.getItem(storageKeyFormat);
+                                    if (readSetupItem(storageKeyFormat)) {
+                                        savedFormat = readSetupItem(storageKeyFormat);
                                     }
                                 }
                                 originalType = savedType || 'SINGLE_STAGE';
@@ -1739,9 +1808,11 @@
                                 selectFormat(originalFormat);
 
                                 // Restore Multi Stage config if exists
-                                if (originalType === 'MULTI_STAGE' && tournamentId && localStorage.getItem('tourma_multi_config_' + tournamentId)) {
+                                var cachedMultiConfig = appliedTemplate ? null : readSetupItem('tourma_multi_config_' + tournamentId);
+                                if (originalType === 'MULTI_STAGE' && tournamentId && (window.TourmaMultiStageConfig || cachedMultiConfig)) {
                                     try {
-                                        var mCfg = JSON.parse(localStorage.getItem('tourma_multi_config_' + tournamentId));
+                                        var mCfg = appliedTemplate ? window.TourmaMultiStageConfig
+                                            : (cachedMultiConfig ? JSON.parse(cachedMultiConfig) : window.TourmaMultiStageConfig);
                                         if (mCfg) {
                                             if (mCfg.stage1Format) selectStage1Format(mCfg.stage1Format);
                                             if (mCfg.stage2Format) selectStage2Format(mCfg.stage2Format);
@@ -1749,7 +1820,7 @@
                                             var restoreStage = function (stageNum, sFormat, cfg) {
                                                 var prefix = 'stage' + stageNum;
                                                 cfg = cfg || {};
-                                                var fallbackAdv = stageNum === 1 ? parseInt(localStorage.getItem('tourma_advance_count_' + tournamentId) || '0', 10) : 0;
+                                                var fallbackAdv = stageNum === 1 ? parseInt(readSetupItem('tourma_advance_count_' + tournamentId) || '0', 10) : 0;
                                                 if (sFormat === 'ROUND_ROBIN') {
                                                     var el = document.getElementById(prefix + 'AdvanceRR');
                                                     var win = document.getElementById(prefix + 'WinPointsRR');
@@ -1784,7 +1855,7 @@
                                                     if (el && cnt > 0) el.value = cnt;
                                                 } else if (sFormat === 'GSL') {
                                                     var el = document.getElementById(prefix + 'AdvanceGSL');
-                                                    var cnt = cfg.advanceCount || parseInt(localStorage.getItem('tourma_gsl_advance_count_' + tournamentId) || '0', 10) || fallbackAdv;
+                                                    var cnt = cfg.advanceCount || parseInt(readSetupItem('tourma_gsl_advance_count_' + tournamentId) || '0', 10) || fallbackAdv;
                                                     if (el && cnt > 0) el.value = cnt;
                                                 }
                                             };
@@ -1838,38 +1909,38 @@
                                 }
 
                                 // Restore Tier if saved in localStorage (only for Rolling Sub-tournaments)
-                                if (isRollingSubTournament && tournamentId) {
-                                    var savedTier = localStorage.getItem('tourma_tier_' + tournamentId);
+                                if (isRollingSubTournament && tournamentId && !appliedTemplate) {
+                                    var savedTier = readSetupItem('tourma_tier_' + tournamentId);
                                     if (savedTier && savedTier !== currentTier) {
                                         changeTournamentTier(savedTier);
                                     }
                                 }
 
                                 // Restore Copied Config state if present from URL params or localStorage
+                                if (appliedTemplate) {
+                                    var teamCount = appliedTemplate.dataset.teamCount;
+                                    window.targetTeamCount = Number(teamCount);
+                                    document.getElementById('targetTeamCount').value = teamCount;
+                                    document.getElementById('copiedFrom').value = '';
+                                    document.getElementById('copiedSourceTourneyName').value = '';
+                                    return;
+                                }
                                 var paramTargetTeams = "<%= (targetTeamCountParam != null) ? targetTeamCountParam : "" %>";
-                                var paramCopiedName = "<%= (copiedSourceTourneyNameParam != null) ? copiedSourceTourneyNameParam.replace("\"", "\\\"") : "" %> ";
+                                var paramCopiedName = "<%= (copiedSourceTourneyNameParam != null) ? copiedSourceTourneyNameParam.replace("\"", "\\\"") : "" %>";
                             var paramCopiedFrom = "<%= (copiedFromParam != null) ? copiedFromParam : "" %>";
 
                             if (!paramTargetTeams && tournamentId) {
-                                paramTargetTeams = localStorage.getItem('tourma_target_team_count_' + tournamentId) || '';
+                                paramTargetTeams = readSetupItem('tourma_target_team_count_' + tournamentId) || '';
                             }
                             if (!paramCopiedName && tournamentId) {
-                                paramCopiedName = localStorage.getItem('tourma_copied_source_name_' + tournamentId) || '';
+                                paramCopiedName = readSetupItem('tourma_copied_source_name_' + tournamentId) || '';
                             }
                             if (!paramCopiedFrom && tournamentId) {
-                                paramCopiedFrom = localStorage.getItem('tourma_copied_from_' + tournamentId) || '';
+                                paramCopiedFrom = readSetupItem('tourma_copied_from_' + tournamentId) || '';
                             }
 
-                            if (isRollingSubTournament && paramCopiedFrom) {
-                                var allowedCopy = Array.from(document.querySelectorAll('.copy-tourney-item-card')).some(function (card) {
-                                    return card.getAttribute('data-tourney-id') === paramCopiedFrom;
-                                });
-                                if (!allowedCopy) {
-                                    clearCopiedConfig();
-                                    paramCopiedFrom = ''; paramCopiedName = ''; paramTargetTeams = '';
-                                }
-                            }
                             if (paramTargetTeams && Number(paramTargetTeams) > 0) {
+                                window.targetTeamCount = Number(paramTargetTeams);
                                 var inpT = document.getElementById('targetTeamCount');
                                 if (inpT) inpT.value = paramTargetTeams;
                                 var inpN = document.getElementById('copiedSourceTourneyName');
@@ -1881,6 +1952,9 @@
                     });
                         </script>
                         <script src="${pageContext.request.contextPath}/js/format-presentation.js?v=2"></script>
+                        <c:if test="${setupTemplatesAvailable}">
+                            <script src="${pageContext.request.contextPath}/js/rolling/config-templates.js?v=1"></script>
+                        </c:if>
                         <% if (embeddedFormat) { %></section><% } else { %>
                     </body>
 

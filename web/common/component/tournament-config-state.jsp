@@ -50,15 +50,14 @@
     window.TourmaTournamentType = type;
     window.TourmaTopSeedCount = <%= new dao.TournamentDAO().getTopSeedCount(configTournamentId.trim()) %>;
     if (config) window.TourmaMultiStageConfig = config;
+    if (window.TourmaSeedDisplay && window.TourmaTopSeedCount !== null) {
+        var seedSettings = window.TourmaSeedDisplay.read(id) || {};
+        seedSettings.visibleCount = String(window.TourmaTopSeedCount);
+        window.TourmaSeedDisplay.save(id, seedSettings);
+    }
     try {
         localStorage.setItem('tourma_type_' + id, type);
         localStorage.setItem('tourma_format_' + id, format);
-        if (window.TourmaTopSeedCount !== null) {
-            var seedSettings = {};
-            try { seedSettings = JSON.parse(localStorage.getItem('tourma_hide_seed_config_' + id)) || {}; } catch (e) {}
-            seedSettings.visibleCount = String(window.TourmaTopSeedCount);
-            localStorage.setItem('tourma_hide_seed_config_' + id, JSON.stringify(seedSettings));
-        }
         if (!config) return; // Legacy local-only settings can still be saved from the configuration page.
         localStorage.setItem('tourma_multi_config_' + id, JSON.stringify(config));
         var rules = config.stage1Config || {};

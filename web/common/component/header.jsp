@@ -8,6 +8,7 @@
         ("/my-tournaments".equals(headerRoute) && !"matches".equals(request.getParameter("action")))
         headerActive="my-tournaments" ; else if ("/my-series".equals(headerRoute)) headerActive="my-series" ;
         pageContext.setAttribute("headerActive", headerActive); %>
+        <script src="${pageContext.request.contextPath}/js/seed-display.js?v=1"></script>
         <jsp:include page="/common/component/tournament-config-state.jsp" />
         <!-- Dedicated Header Component Stylesheet -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=gradient-workspaces-1">

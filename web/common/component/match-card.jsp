@@ -75,4 +75,4 @@
 
 </div>
 
-<script src="${pageContext.request.contextPath}/js/match-card.js"></script>
+<script src="${pageContext.request.contextPath}/js/match-card.js?v=seed-storage-1"></script>

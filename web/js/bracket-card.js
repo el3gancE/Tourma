@@ -108,35 +108,11 @@
 
                 if (isNaN(sNum)) return '';
 
-                var cfgRaw = null;
-                if (tid) {
-                    try {
-                        cfgRaw = localStorage.getItem('tourma_hide_seed_config_' + tid);
-                    } catch (e) { }
-                }
-                if (!cfgRaw) {
-                    try {
-                        cfgRaw = localStorage.getItem('tourma_hide_seed_config_demo');
-                    } catch (e) { }
-                }
-
-                if (cfgRaw) {
-                    try {
-                        var cfg = (typeof cfgRaw === 'string') ? JSON.parse(cfgRaw) : cfgRaw;
-                        if (cfg && cfg.isEnabled) {
-                            var rawVisible = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? String(cfg.visibleCount).trim() : '';
-                            if (rawVisible === '' || rawVisible === '0') {
-                                return ''; // Hide all seeds if input is empty or 0
-                            }
-                            var maxVisible = parseInt(rawVisible, 10);
-                            if (isNaN(maxVisible) || maxVisible <= 0) {
-                                return ''; // Hide all seeds
-                            }
-                            if (sNum > maxVisible) {
-                                return ''; // Hide seeds with number > maxVisible
-                            }
-                        }
-                    } catch (e) { }
+                var display = window.TourmaSeedDisplay;
+                var cfg = display && ((tid && display.read(tid)) || display.read('demo'));
+                if (cfg && cfg.isEnabled) {
+                    var maxVisible = Number(cfg.visibleCount);
+                    if (!Number.isFinite(maxVisible) || maxVisible <= 0 || sNum > maxVisible) return '';
                 }
                 return String(sNum);
             };

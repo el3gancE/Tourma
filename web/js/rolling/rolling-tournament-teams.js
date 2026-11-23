@@ -727,15 +727,10 @@
 
     var isEnabled = false;
     var visibleCount = '';
-    if (tid) {
-      try {
-        var raw = localStorage.getItem('tourma_hide_seed_config_' + tid);
-        if (raw) {
-          var cfg = JSON.parse(raw);
-          isEnabled = !!cfg.isEnabled;
-          visibleCount = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? cfg.visibleCount : '';
-        }
-      } catch (e) {}
+    var cfg = tid ? window.TourmaSeedDisplay.read(tid) : null;
+    if (cfg) {
+      isEnabled = !!cfg.isEnabled;
+      visibleCount = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? cfg.visibleCount : '';
     }
 
     if (input) {
@@ -748,6 +743,7 @@
   window.applyHideSeedUI = function (isEnabled) {
     var btn = document.getElementById('btnToggleHideSeed');
     if (!btn) return;
+    btn.setAttribute('aria-pressed', String(isEnabled));
 
     if (isEnabled) {
       btn.dataset.active = 'true';
@@ -796,11 +792,7 @@
       isEnabled: isEnabled,
       visibleCount: visibleCount
     };
-    if (tid) {
-      try {
-        localStorage.setItem('tourma_hide_seed_config_' + tid, JSON.stringify(cfg));
-      } catch (e) {}
-    }
+    if (tid) window.TourmaSeedDisplay.save(tid, cfg);
   };
 
   window.proceedToNextStep = function (e) {

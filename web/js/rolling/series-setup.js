@@ -18,7 +18,11 @@
     window.prepareSeriesSetup = function (event) {
         var teams = Array.from(document.querySelectorAll('#subtourneyTeamsTable tbody tr.team-table-row'))
             .map(function (row) { return row.querySelector('td:nth-child(2) span').textContent.trim(); });
-        localStorage.setItem('tourma_teams_' + window.currentSubTourneyId, JSON.stringify(teams));
+        try {
+            localStorage.setItem('tourma_teams_' + window.currentSubTourneyId, JSON.stringify(teams));
+        } catch (ignored) {
+            // The ordered roster is submitted to the server even when the browser cache is full.
+        }
         window.targetTeamCount = Number(document.getElementById('targetTeamCount').value) || 0;
         window.tourneyFormat = document.getElementById('selectedFormat').value;
         if (teams.length < 2) { alert('Cần ít nhất 2 đội để tiếp tục.'); return false; }

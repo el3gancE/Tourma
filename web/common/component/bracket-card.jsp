@@ -80,4 +80,4 @@
     </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/js/bracket-card.js"></script>
+<script src="${pageContext.request.contextPath}/js/bracket-card.js?v=seed-storage-1"></script>

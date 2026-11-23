@@ -54,7 +54,7 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-setup.css?v=20261110-roster-v3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-setup.css?v=configuration-templates">
 </head>
     <body class="ui-page workspace-page tournament-workspace series-page series-form-page subteams-page teams-page standalone-setup">
         <!-- Shared Navigation Header Component -->
@@ -286,9 +286,9 @@
             window.tourneyFormat = "<%= tourneyFormat %>";
         </script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=20261110-setup-perf1"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=20261113-lazy-partner"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=seed-storage-1"></script>
         <script src="${pageContext.request.contextPath}/js/standalone-format-layout.js?v=3"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/series-setup.js?v=2-form-action"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/series-setup.js?v=3-storage-quota"></script>
         <script src="${pageContext.request.contextPath}/js/setup-presentation.js?v=6-batched"></script>
     </body>
 </html>

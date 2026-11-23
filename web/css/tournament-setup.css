@@ -458,3 +458,41 @@ body.standalone-setup #teamTextarea { box-sizing:border-box; width:100%; height:
     .standalone-setup .manage-toolbar { padding:12px 16px; }
     .standalone-setup .manage-toolbar-left > label:has(input[type=checkbox]) { margin-left:0; }
 }
+.setup-template-dialog {
+    width: min(560px, calc(100% - 32px));
+    max-height: calc(100dvh - 32px);
+    padding: 0;
+    border: 1px solid var(--ui-line);
+    border-radius: 12px;
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    box-shadow: var(--ui-shadow);
+}
+.setup-template-dialog::backdrop { background: var(--ui-modal-backdrop); }
+.setup-template-dialog h2 { margin: 0; font-size: 1.1rem; }
+.setup-template-form {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(80px,100px) auto;
+    align-items: end;
+    gap: 8px;
+}
+.setup-template-form label { display: grid; gap: 4px; }
+.setup-template-form input { width: 100%; }
+.setup-template-list { margin: 12px 0; padding: 0; list-style: none; }
+.setup-template-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-block: 10px;
+    border-bottom: 1px solid var(--ui-line);
+    overflow-wrap: anywhere;
+}
+.setup-template-list small { display: block; color: var(--ui-muted); }
+.setup-template-list button { flex-shrink: 0; }
+.setup-template-status, #setup-template-status { color: var(--ui-muted); }
+#setup-template-status:not(:empty) { margin-top: 10px; }
+@media (max-width: 500px) {
+    .setup-template-form { grid-template-columns: minmax(0, 1fr) 90px; }
+    .setup-template-form > button { grid-column: 1 / -1; justify-self: end; }
+}

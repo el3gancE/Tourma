@@ -193,7 +193,7 @@
     </script>
     <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
     <script src="${pageContext.request.contextPath}/js/random-service.js"></script>
-    <script src="${pageContext.request.contextPath}/js/match-card.js?v=20261114-h2h"></script>
+    <script src="${pageContext.request.contextPath}/js/match-card.js?v=seed-storage-1"></script>
     <script src="${pageContext.request.contextPath}/js/popup.js"></script>
     <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
     <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>

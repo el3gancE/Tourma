@@ -998,15 +998,10 @@
 
                 var isEnabled = false;
                 var visibleCount = '';
-                if (tournamentId) {
-                    try {
-                        var raw = localStorage.getItem('tourma_hide_seed_config_' + tournamentId);
-                        if (raw) {
-                            var cfg = JSON.parse(raw);
-                            isEnabled = !!cfg.isEnabled;
-                            visibleCount = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? cfg.visibleCount : '';
-                        }
-                    } catch(e) {}
+                var cfg = tournamentId ? window.TourmaSeedDisplay.read(tournamentId) : null;
+                if (cfg) {
+                    isEnabled = !!cfg.isEnabled;
+                    visibleCount = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? cfg.visibleCount : '';
                 }
 
                 if (input) {
@@ -1019,6 +1014,7 @@
             window.applyHideSeedUI = function(isEnabled) {
                 var btn = document.getElementById('btnToggleHideSeed');
                 if (!btn) return;
+                btn.setAttribute('aria-pressed', String(isEnabled));
 
                 if (isEnabled) {
                     btn.dataset.active = 'true';
@@ -1066,11 +1062,7 @@
                     isEnabled: isEnabled,
                     visibleCount: visibleCount
                 };
-                if (tournamentId) {
-                    try {
-                        localStorage.setItem('tourma_hide_seed_config_' + tournamentId, JSON.stringify(cfg));
-                    } catch(e) {}
-                }
+                if (tournamentId) window.TourmaSeedDisplay.save(tournamentId, cfg);
             };
 
             // Initial render on page load

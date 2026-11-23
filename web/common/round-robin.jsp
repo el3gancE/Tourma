@@ -242,7 +242,7 @@
         <script src="${pageContext.request.contextPath}/js/bracket-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/double-elimination-algorithm.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js"></script>
-        <script src="${pageContext.request.contextPath}/js/match-card.js?v=20261114-h2h"></script>
+        <script src="${pageContext.request.contextPath}/js/match-card.js?v=seed-storage-1"></script>
         <script src="${pageContext.request.contextPath}/js/popup.js"></script>
         <script src="${pageContext.request.contextPath}/js/final-stage-popup.js?v=db-edit-lock"></script>
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
