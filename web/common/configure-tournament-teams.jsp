@@ -443,6 +443,8 @@
 
             var currentTeamsList = [];
             var initialTeamsSnapshot = null;
+            var hasDbSchedule = <%= setupTournament != null && (new dao.TournamentDAO().hasStageMatches(tournamentId, 1)
+                    || new dao.TournamentDAO().hasStageMatches(tournamentId, 2)) %>;
 
             // Restore state logic: Prioritize latest localStorage state over initial dbTeams so Back button navigation preserves new edits!
             var localSavedTeams = null;
@@ -479,6 +481,10 @@
                 } catch(e) {
                     initialTeamsSnapshot = null;
                 }
+            }
+
+            if (!initialTeamsSnapshot && hasDbSchedule && dbTeams.length) {
+                initialTeamsSnapshot = dbTeams.slice();
             }
 
             // If snapshot not saved yet but bracket exists, initialize snapshot
@@ -918,7 +924,7 @@
                 var isRR = checkIsRoundRobin();
 
                 // Check if bracket was previously generated
-                var hasPriorBracket = (initialTeamsSnapshot && initialTeamsSnapshot.length > 0);
+                var hasPriorBracket = hasDbSchedule || (initialTeamsSnapshot && initialTeamsSnapshot.length > 0);
                 if (!hasPriorBracket && tournamentId && (localStorage.getItem('tourma_matches_' + tournamentId) || localStorage.getItem('tourma_de_matches_' + tournamentId) || localStorage.getItem('tourma_rr_matches_' + tournamentId))) {
                     hasPriorBracket = true;
                 }

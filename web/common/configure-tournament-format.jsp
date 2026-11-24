@@ -1260,7 +1260,8 @@
                                 return !isErr;
                             }
 
-                            var hasStage1Matches = <%= tDao.hasStageMatches(tournamentId, 1) %>;
+                            var hasDbStage1Matches = <%= tDao.hasStageMatches(tournamentId, 1) %>;
+                            var hasStage1Matches = hasDbStage1Matches;
                             var hasStage2Matches = <%= tDao.hasStageMatches(tournamentId, 2) %>;
 
                             // Check if bracket already has completed / scored matches for Stage 1 vs Stage 2
@@ -1773,7 +1774,8 @@
 
                                 // If Round Robin and existing schedule exists, check if legsCount changed
                                 if (currentType === 'SINGLE_STAGE' && currentSelected === 'ROUND_ROBIN' && tournamentId) {
-                                    var hasPriorRRSchedule = !!readSetupItem('tourma_rr_matches_' + tournamentId);
+                                    var hasPriorRRSchedule = (originalFormat === 'ROUND_ROBIN' && hasDbStage1Matches)
+                                            || !!readSetupItem('tourma_rr_matches_' + tournamentId);
                                     var legsInp = document.querySelector('input[name="legsCount"]');
                                     var newLegsCount = legsInp ? (parseInt(legsInp.value) || 1) : 1;
 

@@ -248,7 +248,7 @@
         <script src="${pageContext.request.contextPath}/js/empty-team-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/stage-finish-alert.js"></script>
         <script src="${pageContext.request.contextPath}/js/round-control-helper.js"></script>
-        <script src="${pageContext.request.contextPath}/js/round-robin.js?v=db-edit-lock"></script>
+        <script src="${pageContext.request.contextPath}/js/round-robin.js?v=db-match-storage"></script>
 
         <script>
             window.TourmaContextPath = '${pageContext.request.contextPath}';

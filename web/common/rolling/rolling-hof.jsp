@@ -496,7 +496,6 @@
             } %>
         ];
     </script>
-    <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
-    <script src="${pageContext.request.contextPath}/js/rolling/rolling-hof.js?v=20261120-matrix4"></script>
+    <script src="${pageContext.request.contextPath}/js/rolling/rolling-hof.js?v=db-round-robin-champions"></script>
 </body>
 </html>

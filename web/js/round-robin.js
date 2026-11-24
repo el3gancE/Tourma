@@ -188,8 +188,7 @@
                 }
             }
 
-            // Sync matches to LocalStorage
-            this.persistLocalState();
+            this.clearSavedMatchCopies();
         },
 
         /**
@@ -220,32 +219,29 @@
                     m.status = (rawM.status === 'FINISHED' || rawM.status === 'COMPLETED' || hasScores) ? 'COMPLETED' : 'SCHEDULED';
                 }
             }
-
-            this.persistLocalState();
         },
 
-        /**
-         * Persist in-memory state to LocalStorage
-         */
-        persistLocalState: function () {
-            var storageKeyRR = (this.currentStage === 2) ? ('tourma_rr_matches_stage2_' + this.tournamentId) : ('tourma_rr_matches_' + this.tournamentId);
-            var storageKeyUniversal = (this.currentStage === 2) ? ('tourma_matches_stage2_' + this.tournamentId) : ('tourma_matches_' + this.tournamentId);
-
-            var payload = {
-                tournamentId: this.tournamentId,
-                stage: this.currentStage,
-                teamsList: this.teamsList,
-                rounds: this.rounds,
-                matchesMap: this.matchesMap,
-                config: this.config
-            };
-
+        clearSavedMatchCopies: function () {
+            if (!this.tournamentId || this.tournamentId === 'demo' || !this.rounds.length) return;
+            var stageSuffix = this.currentStage === 2 ? 'stage2_' : '';
+            var rrKey = 'tourma_rr_matches_' + stageSuffix + this.tournamentId;
+            var sharedKey = 'tourma_matches_' + stageSuffix + this.tournamentId;
+            // A shared key may belong to another format. Verify it against the DB-loaded matches.
+            var savedMap = JSON.stringify(this.matchesMap);
             try {
-                localStorage.setItem(storageKeyRR, JSON.stringify(payload));
-                localStorage.setItem(storageKeyUniversal, JSON.stringify(this.matchesMap));
-                localStorage.setItem('tourma_format_' + this.tournamentId, 'ROUND_ROBIN');
+                var rrCache = JSON.parse(localStorage.getItem(rrKey));
+                if (rrCache && rrCache.tournamentId === this.tournamentId && rrCache.stage === this.currentStage
+                        && JSON.stringify(rrCache.matchesMap) === savedMap) {
+                    localStorage.removeItem(rrKey);
+                }
+            } catch (e) {}
+            try {
+                if (localStorage.getItem(sharedKey) === savedMap) {
+                    localStorage.removeItem(sharedKey);
+                }
             } catch (e) {}
         },
+
 
         /**
          * Find Match by String/Numeric ID
@@ -480,7 +476,6 @@
                         m.winnerId = (finalWinner !== '') ? finalWinner : null;
                         m.status = 'COMPLETED';
 
-                        self.persistLocalState();
                         self.renderFixtures();
                         self.checkTournamentCompletion();
                     } else {

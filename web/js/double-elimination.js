@@ -301,6 +301,39 @@
          * Fill placeholder labels (W #1, L #2) on unplayed matches without touching DB scores
          */
         fillMissingPlaceholders: function () {
+            // Index feeders once. Placeholder lookups used to scan the entire
+            // bracket (including match-number aliases) for each empty slot.
+            var winners = new Map(), losers = new Map();
+            var matches = Array.from(new Set(Object.values(this.matchesMap).filter(Boolean)));
+            function indexFeeder(index, id, slot, match, order) {
+                if (!id) return;
+                var key = String(id).trim() + ':' + slot;
+                var previous = index.get(key);
+                if (!previous) index.set(key, [{ match: match, order: order }]);
+                else previous.push({ match: match, order: order });
+            }
+            function secondSlot(slot) {
+                return slot === 2 || slot === '2' || slot === 'SLOT_2';
+            }
+            matches.forEach(function (match, order) {
+                indexFeeder(winners, match.nextMatchId, secondSlot(match.nextMatchSlot) ? 2 : 1, match, order);
+                indexFeeder(losers, match.dropToMatchId || match.loserNextMatchId,
+                    secondSlot(match.dropToMatchSlot) || secondSlot(match.loserNextSlot) ? 2 : 1, match, order);
+            });
+            function findFeeder(index, target, slot) {
+                var best = null;
+                [target.id, target.matchId, target.rawId].forEach(function (id) {
+                    if (!id) return;
+                    var candidates = index.get(String(id).trim() + ':' + slot) || [];
+                    candidates.forEach(function (entry) {
+                        var match = entry.match;
+                        if (match === target || match.id === target.id || match.matchId === target.matchId
+                                || match.rawId === target.rawId) return;
+                        if (!best || entry.order < best.order) best = entry;
+                    });
+                });
+                return best ? best.match : null;
+            }
             for (var k in this.matchesMap) {
                 var m = this.matchesMap[k];
                 if (!m) continue;
@@ -323,7 +356,7 @@
                 // Case 2: Upper Bracket Round 2+
                 if (isUb && rNum > 1) {
                     if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
-                        var p1 = this.findParentMatch(m.matchId, 1);
+                        var p1 = findFeeder(winners, m, 1);
                         var w1 = this.getMatchWinner(p1);
                         if (w1 && w1.name && w1.name !== 'BYE' && !this.isPlaceholder(w1.name)) {
                             m.team1 = Object.assign({}, w1, { score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' });
@@ -333,7 +366,7 @@
                         }
                     }
                     if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
-                        var p2 = this.findParentMatch(m.matchId, 2);
+                        var p2 = findFeeder(winners, m, 2);
                         var w2 = this.getMatchWinner(p2);
                         if (w2 && w2.name && w2.name !== 'BYE' && !this.isPlaceholder(w2.name)) {
                             m.team2 = Object.assign({}, w2, { score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' });
@@ -348,7 +381,7 @@
                 // Case 3: Lower Bracket Round 1 (Fed ONLY by Upper Bracket drops, NEVER by parent winners!)
                 if (isLb && rNum === 1) {
                     if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
-                        var drop1 = this.findDropFeederMatch(m.matchId, 1);
+                        var drop1 = findFeeder(losers, m, 1);
                         if (!drop1 || drop1.isBye) {
                             m.team1 = { name: 'BYE', seed: '', score: '' };
                         } else {
@@ -362,7 +395,7 @@
                         }
                     }
                     if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
-                        var drop2 = this.findDropFeederMatch(m.matchId, 2);
+                        var drop2 = findFeeder(losers, m, 2);
                         if (!drop2 || drop2.isBye) {
                             m.team2 = { name: 'BYE', seed: '', score: '' };
                         } else {
@@ -386,7 +419,7 @@
                 // Slot 1 = Previous LB Winner; Slot 2 = UB Loser Drop
                 if (isLb && (rNum % 2 === 0)) {
                     if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
-                        var lbParent = this.findParentMatch(m.matchId, 1);
+                        var lbParent = findFeeder(winners, m, 1);
                         var lbW = this.getMatchWinner(lbParent);
                         if (lbW && lbW.name && lbW.name !== 'BYE' && !this.isPlaceholder(lbW.name)) {
                             m.team1 = Object.assign({}, lbW, { score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' });
@@ -399,7 +432,7 @@
                         }
                     }
                     if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
-                        var ubDrop = this.findDropFeederMatch(m.matchId, 2);
+                        var ubDrop = findFeeder(losers, m, 2);
                         if (!ubDrop || ubDrop.isBye) {
                             m.team2 = { name: 'BYE', seed: '', score: '' };
                         } else {
@@ -419,7 +452,7 @@
                 // Both Slot 1 and Slot 2 come from previous LB winners
                 if (isLb && (rNum % 2 !== 0) && rNum > 1) {
                     if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
-                        var lbP1 = this.findParentMatch(m.matchId, 1);
+                        var lbP1 = findFeeder(winners, m, 1);
                         var lbW1 = this.getMatchWinner(lbP1);
                         if (lbW1 && lbW1.name && lbW1.name !== 'BYE' && !this.isPlaceholder(lbW1.name)) {
                             m.team1 = Object.assign({}, lbW1, { score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' });
@@ -432,7 +465,7 @@
                         }
                     }
                     if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
-                        var lbP2 = this.findParentMatch(m.matchId, 2);
+                        var lbP2 = findFeeder(winners, m, 2);
                         var lbW2 = this.getMatchWinner(lbP2);
                         if (lbW2 && lbW2.name && lbW2.name !== 'BYE' && !this.isPlaceholder(lbW2.name)) {
                             m.team2 = Object.assign({}, lbW2, { score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' });
@@ -450,7 +483,7 @@
                 // Case 6: Grand Finals
                 if (isGf) {
                     if (!m.team1 || !m.team1.name || this.isPlaceholder(m.team1.name)) {
-                        var gfUb = this.findParentMatch(m.matchId, 1);
+                        var gfUb = findFeeder(winners, m, 1);
                         var gfUbW = this.getMatchWinner(gfUb);
                         if (gfUbW && gfUbW.name && gfUbW.name !== 'BYE' && !this.isPlaceholder(gfUbW.name)) {
                             m.team1 = Object.assign({}, gfUbW, { score: (m.team1 && m.team1.score !== undefined) ? m.team1.score : '' });
@@ -459,7 +492,7 @@
                         }
                     }
                     if (!m.team2 || !m.team2.name || this.isPlaceholder(m.team2.name)) {
-                        var gfLb = this.findParentMatch(m.matchId, 2);
+                        var gfLb = findFeeder(winners, m, 2);
                         var gfLbW = this.getMatchWinner(gfLb);
                         if (gfLbW && gfLbW.name && gfLbW.name !== 'BYE' && !this.isPlaceholder(gfLbW.name)) {
                             m.team2 = Object.assign({}, gfLbW, { score: (m.team2 && m.team2.score !== undefined) ? m.team2.score : '' });
@@ -534,69 +567,6 @@
                 if (m.id && String(m.id) === strId) return m;
                 if (m.rawId && String(m.rawId) === strId) return m;
                 if (m.matchNumber && String(m.matchNumber) === strId) return m;
-            }
-            return null;
-        },
-
-        findParentMatch: function (targetMatchId, slot) {
-            if (!targetMatchId) return null;
-            var targetM = this.findMatch(targetMatchId);
-            var targetIds = [];
-            if (targetM) {
-                if (targetM.id) targetIds.push(String(targetM.id).trim());
-                if (targetM.matchId) targetIds.push(String(targetM.matchId).trim());
-                if (targetM.rawId) targetIds.push(String(targetM.rawId).trim());
-            } else {
-                targetIds.push(String(targetMatchId).trim());
-            }
-
-            for (var k in this.matchesMap) {
-                var m = this.matchesMap[k];
-                if (!m) continue;
-                // Never match self!
-                if (targetM && (m === targetM || m.id === targetM.id || m.matchId === targetM.matchId || m.rawId === targetM.rawId)) {
-                    continue;
-                }
-                if (m.nextMatchId) {
-                    var nId = String(m.nextMatchId).trim();
-                    var isMatch = targetIds.indexOf(nId) !== -1;
-                    if (isMatch) {
-                        var s = (m.nextMatchSlot === 2 || m.nextMatchSlot === '2' || m.nextMatchSlot === 'SLOT_2') ? 2 : 1;
-                        if (slot === undefined || s === slot) return m;
-                    }
-                }
-            }
-            return null;
-        },
-
-        findDropFeederMatch: function (targetMatchId, slot) {
-            if (!targetMatchId) return null;
-            var targetM = this.findMatch(targetMatchId);
-            var targetIds = [];
-            if (targetM) {
-                if (targetM.id) targetIds.push(String(targetM.id).trim());
-                if (targetM.matchId) targetIds.push(String(targetM.matchId).trim());
-                if (targetM.rawId) targetIds.push(String(targetM.rawId).trim());
-            } else {
-                targetIds.push(String(targetMatchId).trim());
-            }
-
-            for (var k in this.matchesMap) {
-                var m = this.matchesMap[k];
-                if (!m) continue;
-                // Never match self!
-                if (targetM && (m === targetM || m.id === targetM.id || m.matchId === targetM.matchId || m.rawId === targetM.rawId)) {
-                    continue;
-                }
-                var dId = m.dropToMatchId || m.loserNextMatchId;
-                if (dId) {
-                    var dropStr = String(dId).trim();
-                    var isMatch = targetIds.indexOf(dropStr) !== -1;
-                    if (isMatch) {
-                        var s = (m.dropToMatchSlot === 2 || m.dropToMatchSlot === '2' || m.dropToMatchSlot === 'SLOT_2' || m.loserNextSlot === 2 || m.loserNextSlot === '2' || m.loserNextSlot === 'SLOT_2') ? 2 : 1;
-                        if (slot === undefined || s === slot) return m;
-                    }
-                }
             }
             return null;
         },
@@ -1038,6 +1008,7 @@
         attachCardClickListener: function (cardElement, matchData) {
             var self = this;
             if (!cardElement || !matchData) return;
+            var matchId = matchData.matchId || matchData.id;
 
             cardElement.addEventListener('click', function (e) {
                 // If Quick Mode is active, NEVER open modal on card click!
@@ -1047,6 +1018,8 @@
                     if (window.TourmaQuickMode || self.isQuickMode) return;
                 }
 
+                var matchData = self.findMatch(matchId);
+                if (!matchData) return;
                 if (matchData.isBye || matchData.status === 'BYE') return;
 
                 var isPlayable = (matchData.team1 && matchData.team1.name && !self.isPlaceholder(matchData.team1.name) &&
@@ -1110,6 +1083,94 @@
             this.saveMatchScore(m.matchId || matchId, scoreRes.score1, scoreRes.score2, null, null, scoreRes.winner);
         },
 
+        captureMatchState: function () {
+            var state = new Map();
+            Object.values(this.matchesMap).forEach(function (match) {
+                if (match && !state.has(String(match.matchId))) {
+                    state.set(String(match.matchId), {
+                        ...match,
+                        team1: match.team1 && { ...match.team1 },
+                        team2: match.team2 && { ...match.team2 }
+                    });
+                }
+            });
+            return state;
+        },
+
+        refreshChangedMatches: function (previous) {
+            var self = this;
+            var listView = this.currentViewMode === 'LIST';
+            var changed = new Set();
+            var current = new Map();
+            Object.values(this.matchesMap).forEach(function (match) {
+                if (match) current.set(String(match.matchId), match);
+            });
+            var structureChanged = current.size !== previous.size;
+            current.forEach(function (match, id) {
+                var old = previous.get(id);
+                if (!old || old.roundNumber !== match.roundNumber || old.bracketType !== match.bracketType
+                        || old.nextMatchId !== match.nextMatchId || old.nextMatchSlot !== match.nextMatchSlot
+                        || old.dropToMatchId !== match.dropToMatchId || old.dropToMatchSlot !== match.dropToMatchSlot
+                        || (listView && isBye(old) !== isBye(match))) {
+                    structureChanged = true;
+                } else if (cardState(old) !== cardState(match)) {
+                    changed.add(id);
+                }
+            });
+            if (structureChanged) {
+                if (listView) this.renderListView();
+                else {
+                    this.renderUpperBracket();
+                    this.renderLowerBracket();
+                }
+            } else if (changed.size) {
+                var selector = listView
+                    ? '#deListViewContainer .match-card-item[data-match-id]'
+                    : '#deDualViewportWorkspace .bracket-node-card[data-match-id]';
+                var redrawUpper = false, redrawLower = false;
+                document.querySelectorAll(selector).forEach(function (node) {
+                    if (!changed.has(node.dataset.matchId)) return;
+                    var match = current.get(node.dataset.matchId);
+                    var updated = listView
+                        ? window.TourmaMatchCard?.createCardElement(match)
+                        : window.TourmaBracketCard?.createNodeElement(match);
+                    if (!updated) return;
+                    var lower = node.classList.contains('lower-bracket-card');
+                    if (lower) updated.classList.add('lower-bracket-card');
+                    if (!listView && node.classList.contains('bye-empty-slot') !== updated.classList.contains('bye-empty-slot')) {
+                        if (lower) redrawLower = true;
+                        else redrawUpper = true;
+                    }
+                    self.attachCardClickListener(updated, match);
+                    var wasFocused = node === document.activeElement;
+                    node.replaceWith(updated);
+                    if (wasFocused) updated.focus({ preventScroll: true });
+                });
+                if (redrawUpper) this.drawUpperSvgConnectors();
+                if (redrawLower) this.drawLowerSvgConnectors();
+            }
+            var search = document.getElementById('bracketSearchInput');
+            if ((structureChanged || changed.size) && search && search.value.trim()) {
+                this.filterMatches(search.value.trim().toLowerCase());
+            }
+
+            function isBye(match) {
+                return !!(match.isBye || match.team1?.isBye || match.team2?.isBye
+                    || match.team1?.name === 'BYE' || match.team2?.name === 'BYE');
+            }
+            function cardState(match) {
+                var status = String(match.status || '').toUpperCase();
+                if (['FINISHED', 'COMPLETED', 'DONE'].includes(status)) status = 'DONE';
+                else if (['LIVE', 'IN_PROGRESS', 'PLAYING'].includes(status)) status = 'LIVE';
+                else status = 'PENDING';
+                function teamState(team) {
+                    return team && [team.name, team.rawName, String(team.seed ?? ''), String(team.score ?? ''), team.isBye];
+                }
+                return JSON.stringify([teamState(match.team1), teamState(match.team2), status,
+                    match.matchNumber, match.winnerId, isBye(match), match.isResetMatch, match.isUnlocked]);
+            }
+        },
+
         /**
          * Save Match Score via AJAX to match-update servlet
          */
@@ -1145,7 +1206,31 @@
 
             var t1Name = (m.team1 && m.team1.name) ? m.team1.name : '';
             var t2Name = (m.team2 && m.team2.name) ? m.team2.name : '';
+            var quick = this.isQuickMode || window.TourmaQuickMode === true;
+            var save = function () {
+                if (window.TourmaScoreModal && window.TourmaScoreModal.isLocked(self.tournamentId)) return;
+                var current = self.findMatch(matchId);
+                if (!current || current.isBye || (current.isResetMatch && !current.isUnlocked)
+                        || (current.team1?.name || '') !== t1Name || (current.team2?.name || '') !== t2Name) {
+                    alert('Cặp đấu đã thay đổi. Hãy kiểm tra lại trước khi nhập tỷ số.');
+                    return;
+                }
+                return self.persistMatchScore(current, s1, s2, penalty1, penalty2, winnerId, quick);
+            };
+            var pending = (this.scoreSaveQueue || Promise.resolve()).then(save, save);
+            this.scoreSaveQueue = pending;
+            var clear = function () {
+                if (self.scoreSaveQueue === pending) self.scoreSaveQueue = null;
+            };
+            pending.then(clear, clear);
+            return pending;
+        },
 
+        persistMatchScore: function (m, s1, s2, penalty1, penalty2, winnerId, quick) {
+            var self = this;
+            var previous = quick ? this.captureMatchState() : null;
+            var t1Name = m.team1?.name || '';
+            var t2Name = m.team2?.name || '';
             // Instant optimistic UI update so Quick Mode responds immediately
             m.team1 = m.team1 || { name: t1Name };
             m.team2 = m.team2 || { name: t2Name };
@@ -1156,13 +1241,11 @@
 
             var isT1 = (winnerId === 'team1');
             if (window.TourmaDoubleElimAlgorithm && typeof window.TourmaDoubleElimAlgorithm.propagateMatchResult === 'function') {
-                window.TourmaDoubleElimAlgorithm.propagateMatchResult(this.matchesMap, m.matchId || matchId, winnerId, isT1);
+                window.TourmaDoubleElimAlgorithm.propagateMatchResult(this.matchesMap, m.matchId, winnerId, isT1);
             }
             this.fillMissingPlaceholders();
-            this.render();
-
-            this._saveSeq = (this._saveSeq || 0) + 1;
-            var reqSeq = this._saveSeq;
+            if (quick) this.refreshChangedMatches(previous);
+            else this.render();
 
             var payload = {
                 action: 'updateMatch',
@@ -1178,28 +1261,43 @@
                 team2Name: t2Name
             };
 
-            fetch((this.contextPath || '') + '/api/match-update', {
+            return fetch((this.contextPath || '') + '/api/match-update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                 body: new URLSearchParams(payload).toString()
             })
-                .then(function (res) { return res.json(); })
-                .then(function (data) {
-                    if (data && data.status === 'success') {
-                        if (reqSeq === self._saveSeq) {
-                            if (Array.isArray(data.matchesData) && data.matchesData.length > 0) {
-                                self.hydrateBracketModel(data.matchesData);
-                                self.render();
-                            }
-                            self.checkTournamentCompletion();
-                        }
-                    } else {
-                        console.error('[DoubleEliminationEngine] Error response:', data);
-                        alert('Lỗi lưu kết quả: ' + (data && data.message ? data.message : 'Không rõ nguyên nhân'));
+                .then(async function (res) {
+                    var data = await res.json();
+                    if (!res.ok || data?.status !== 'success') {
+                        throw new Error(data?.message || 'Không rõ nguyên nhân');
                     }
+                    return data;
                 })
-                .catch(function (err) {
+                .then(function (data) {
+                    if (Array.isArray(data.matchesData) && data.matchesData.length > 0) {
+                        var displayed = quick ? self.captureMatchState() : null;
+                        self.hydrateBracketModel(data.matchesData);
+                        if (quick) self.refreshChangedMatches(displayed);
+                        else self.render();
+                    }
+                    if (quick) {
+                        if (window.TourmaNavbar && typeof window.TourmaNavbar.refreshLiveStatus === 'function') {
+                            window.TourmaNavbar.refreshLiveStatus();
+                        }
+                        self.updateRoundRandomButtons();
+                    }
+                    self.checkTournamentCompletion();
+                }, function (err) {
                     console.error('[DoubleEliminationEngine] Error saving match score:', err);
+                    if (quick) {
+                        var displayed = self.captureMatchState();
+                        previous.forEach(function (match, id) {
+                            var current = self.matchesMap[id];
+                            if (current) Object.assign(current, match);
+                        });
+                        self.refreshChangedMatches(displayed);
+                    }
+                    alert('Lỗi lưu kết quả: ' + (err.message || 'Không rõ nguyên nhân'));
                 });
         },
 
