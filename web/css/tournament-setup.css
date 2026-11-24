@@ -469,6 +469,8 @@ body.standalone-setup #teamTextarea { box-sizing:border-box; width:100%; height:
     box-shadow: var(--ui-shadow);
 }
 .setup-template-dialog::backdrop { background: var(--ui-modal-backdrop); }
+dialog.setup-template-dialog:not([open]) { display: none; }
+dialog.setup-template-dialog[open] { overflow: auto; }
 .setup-template-dialog h2 { margin: 0; font-size: 1.1rem; }
 .setup-template-form {
     display: grid;

@@ -802,7 +802,7 @@
                                     aria-labelledby="setup-template-title" data-endpoint="<c:out value='${templateEndpoint}' />">
                                 <header class="modal-header-bar">
                                     <h2 id="setup-template-title">Mẫu cấu hình</h2>
-                                    <form method="dialog"><button type="submit" class="modal-close-btn" aria-label="Đóng">×</button></form>
+                                    <button type="button" id="setup-template-close" class="modal-close-btn" aria-label="Đóng">×</button>
                                 </header>
                                 <div class="modal-body-content">
                                     <form id="setup-template-save" class="setup-template-form">
@@ -1953,7 +1953,7 @@
                         </script>
                         <script src="${pageContext.request.contextPath}/js/format-presentation.js?v=2"></script>
                         <c:if test="${setupTemplatesAvailable}">
-                            <script src="${pageContext.request.contextPath}/js/rolling/config-templates.js?v=1"></script>
+                            <script src="${pageContext.request.contextPath}/js/rolling/config-templates.js?v=2"></script>
                         </c:if>
                         <% if (embeddedFormat) { %></section><% } else { %>
                     </body>

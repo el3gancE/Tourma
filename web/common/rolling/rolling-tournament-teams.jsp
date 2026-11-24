@@ -54,7 +54,7 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-setup.css?v=configuration-templates">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-setup.css?v=configuration-templates-2">
 </head>
     <body class="ui-page workspace-page tournament-workspace series-page series-form-page subteams-page teams-page standalone-setup">
         <!-- Shared Navigation Header Component -->

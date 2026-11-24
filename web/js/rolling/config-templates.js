@@ -6,6 +6,7 @@
     const list = document.getElementById('setup-template-list');
     const status = document.getElementById('setup-template-status');
     const field = id => document.getElementById(id)?.value || '';
+    document.getElementById('setup-template-close').addEventListener('click', () => dialog.close());
 
     async function request(values) {
         const response = await fetch(endpoint, {
