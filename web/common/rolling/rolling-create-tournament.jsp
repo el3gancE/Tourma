@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
     <%@page import="model.Series, model.Tournament, java.util.List" %>
         <% List<Series> allSeries = (List<Series>) request.getAttribute("allSeries");
                 Series selectedSeries = (Series) request.getAttribute("selectedSeries");
@@ -21,7 +22,7 @@
                         href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Tạo giải con · TOURMA</title>
+                    <tourma:page-title label="Tạo giải con" />
 
                     <!-- Google Font Readex Pro -->
                     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,8 +39,8 @@
                     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
                     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
                     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-create-tournament.css">
-<script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+<script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">

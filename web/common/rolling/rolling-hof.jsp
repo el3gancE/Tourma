@@ -1,6 +1,7 @@
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@page import="service.NumberOneHistory.Leader, service.NumberOneHistory.Reign"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="model.Series, model.Tournament, controller.RollingHofServlet.TournamentChampionDTO, controller.RollingHofServlet.TeamChampionStatsDTO, controller.RollingHofServlet.MatrixTourneyColDTO, controller.RollingHofServlet.MatrixRowDTO, controller.RollingHofServlet.MatrixCellDTO, java.util.List"%>
 <%
     String seriesIdVal = request.getParameter("id");
@@ -56,7 +57,7 @@
     <link rel="alternate icon" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng Vàng (Hall of Fame) - <%= seriesName %> - TOURMA</title>
+    <tourma:page-title label="Bảng vàng" contextName="<%= seriesName %>" />
 
     <!-- Google Font Readex Pro -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -70,8 +71,8 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sidebar.css?v=18">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-hof.css?v=20261120-matrix4">
-<script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+<script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
@@ -495,7 +496,6 @@
             } %>
         ];
     </script>
-    <script src="${pageContext.request.contextPath}/js/round-robin-algorithm.js?v=<%= System.currentTimeMillis() %>"></script>
-    <script src="${pageContext.request.contextPath}/js/rolling/rolling-hof.js?v=20261120-matrix4"></script>
+    <script src="${pageContext.request.contextPath}/js/rolling/rolling-hof.js?v=db-round-robin-champions"></script>
 </body>
 </html>

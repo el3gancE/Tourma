@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="model.Series, model.Tournament, java.util.List, java.util.Locale"%>
 <%@page import="controller.RollingTournamentSummaryServlet.RoundGroupDTO, controller.RollingTournamentSummaryServlet.TeamSummaryDTO, controller.RollingTournamentSummaryServlet.PathMatchDTO"%>
 <%!
@@ -60,15 +61,15 @@
         <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title><%= esc(tourneyName) %> - Tổng Kết Giải Đấu - TOURMA</title>
+        <tourma:page-title label="Tổng kết giải đấu" contextName="<%= tourneyName %>" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
@@ -308,21 +309,16 @@
                         var dbTopSeeds = <%= topSeedCount != null ? topSeedCount : -1 %>;
                         var maxVisible = dbTopSeeds >= 0 ? dbTopSeeds : Infinity;
                         if (tid) {
-                            try {
-                                var raw = localStorage.getItem('tourma_hide_seed_config_' + tid);
-                                if (raw) {
-                                    var cfg = JSON.parse(raw);
-                                    if (cfg) {
-                                        var v = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? String(cfg.visibleCount).trim() : '';
-                                        var parsed = parseInt(v, 10);
-                                        if (cfg.isEnabled) {
-                                            maxVisible = (!v || isNaN(parsed) || parsed <= 0) ? 0 : Math.min(maxVisible, parsed);
-                                        } else if (!isNaN(parsed) && parsed >= 0 && dbTopSeeds < 0) {
-                                            maxVisible = parsed;
-                                        }
-                                    }
+                            var cfg = window.TourmaSeedDisplay && window.TourmaSeedDisplay.read(tid);
+                            if (cfg) {
+                                var v = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? String(cfg.visibleCount).trim() : '';
+                                var parsed = parseInt(v, 10);
+                                if (cfg.isEnabled) {
+                                    maxVisible = (!v || isNaN(parsed) || parsed <= 0) ? 0 : Math.min(maxVisible, parsed);
+                                } else if (!isNaN(parsed) && parsed >= 0 && dbTopSeeds < 0) {
+                                    maxVisible = parsed;
                                 }
-                            } catch (e) {}
+                            }
                         }
                         if (maxVisible !== Infinity) {
                             document.querySelectorAll('.summary-team-seed[data-seed]').forEach(function (el) {

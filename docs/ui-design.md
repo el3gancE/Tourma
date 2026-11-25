@@ -91,6 +91,10 @@ component JSP tồn tại không có nghĩa hình thức của component đó đ
 4. Khi người dùng chốt một quy ước mới, cập nhật nguồn dùng chung và tài liệu này.
 5. Duy trì component/style ngay trong nguồn dùng chung; không cần trang Template UI riêng.
 
+## Tiêu đề tab trình duyệt
+
+Dùng thẻ JSP `tourma:page-title` cho các trang. Tiêu đề theo mẫu **Tên màn hình · Tourma** hoặc **Tên màn hình · Tên giải, Series, đội hoặc mùa · Tourma** khi cần phân biệt ngữ cảnh.
+
 ## Vị trí chuyển theme
 
 Nút chuyển sáng/tối nằm trong header dùng chung, không lặp trong nội dung trang.
@@ -105,6 +109,7 @@ Font Readex Pro dùng weight 500 cho nội dung, 600 cho tên đội/menu và 70
 ## Popup dùng chung
 
 `web/css/popup.css` cung cấp lớp nền, khung, header/footer và control cho popup tỉ số, xác nhận, thêm đội, sửa Series và stage. CSS từng popup nhập stylesheet này; không đặt style popup riêng trong CSS của màn SE.
+Lớp phủ sau popup dùng token `--ui-modal-backdrop`, kể cả với `dialog::backdrop`.
 
 ## Bộ màu mở rộng
 
@@ -142,6 +147,9 @@ Màn Thể thức & đội tham gia của giải đơn và giải con Series dù
 
 Ở màn Bảng Xếp Hạng Series: Hạng 1 nhận màu Vàng Tier S (`--ui-tier-s`). Tên của toàn bộ các đội trong Top 10 (Rank 1–10) và số thứ tự Hạng 2–10 mang màu accent (`--ui-accent`) để làm nổi bật nhóm tinh anh dẫn đầu; các đội từ Rank 11 trở đi dùng màu chữ chuẩn (`--ui-text`). Điểm cộng và tăng hạng luôn giữ màu Xanh lá (`--ui-success`).
 
+BXH của từng hạng League dùng vàng Tier S cho đội dẫn đầu, xanh lá (`--ui-success`) cho vùng lên hạng và `--ui-league-relegation` cho vùng xuống hạng. Vùng xuống hạng dùng cam ở bộ nhấn xanh lá và cam, dùng đỏ ở bộ nhấn đỏ và xanh dương. Số vị trí mỗi vùng lấy từ cấu hình mùa. Tên và số hạng của đội dẫn đầu ưu tiên màu vàng. Thông tin vùng chuyển hạng được cung cấp cho trình đọc màn hình, không có nhãn chữ trên từng dòng.
+Ô phong độ League có nền đen ở cả hai theme. Chữ L dùng đỏ ở bộ nhấn đỏ và xanh dương, cam ở bộ nhấn xanh lá và cam. Chữ D dùng vàng. Chữ W dùng xanh dương ở bộ nhấn đỏ và xanh dương, xanh lá ở bộ nhấn xanh lá và cam.
+
 ## Bảng vàng dạng dashboard
 
 Bảng vàng đặt số liệu tổng quan, biểu đồ số mốc giữ #1 và các kỷ lục ở đầu trang; bảng danh hiệu, bộ lọc Tier và lịch sử chi tiết nằm phía dưới. Dùng `web/css/rolling/rolling-hof.css` và token/theme chung. Một mốc #1 là BXH tích lũy sau một giải đã hoàn tất.
@@ -153,12 +161,3 @@ Ba bảng nhà vô địch, các giải và lịch sử #1 nằm trên một hà
 `web/common/component/new-number-one.jsp` nhận hai request attribute `newNumberOneEligible` và `newNumberOneName`. Màn BXH chỉ include component; giao diện và hành vi nằm ở `web/css/components/new-number-one.css` và `web/js/components/new-number-one.js`. Màu nền công bố dùng token `--ui-celebration-*` gồm 4 màu gradient động có độ tương phản cao, chuyển động rõ nét (chu kỳ 8-11s, biên độ lớn), điểm xuyết các đường vệt sáng trắng mảnh (white light streaks) lướt chéo qua banner, không dùng màu vàng, bỏ chữ phụ "BẢNG XẾP HẠNG SERIES". Phối 4 màu theo theme: Bộ Đỏ 100% thuần sắc đỏ, triệt tiêu toàn bộ xanh/tím (`#BE123C` Crimson Velvet, `#DC2626` Scarlet Red, `#991B1B` Deep Blood Red, `#4C0519` Deep Wine Maroon); Bộ Xanh (`#2563EB` Royal Blue, `#06B6D4` Aqua Cyan, `#A855F7` Electric Violet, `#0F172A` Deep Navy). Không có icon vương miện.
 
 Popup hiện mỗi lần mở BXH sau khi đổi người giữ #1, đến khi giải tiếp theo hoàn tất. Giữ nguyên #1 ở giải tiếp theo thì hết popup; đổi chủ thì hiện tên mới. Người dẫn đầu đầu tiên khi chưa từng đổi ngôi không tạo popup. Không lưu trạng thái đã xem trong browser storage; chuyển mốc lịch sử không kích hoạt popup. Quay lại BXH qua back/forward cache tải lại điều kiện từ server. Component hiển thị như banner stage trong luồng nội dung, ngay trên bảng BXH; không có dialog, backdrop, khóa cuộn hay tự chiếm focus. Khi chọn mốc lịch sử, banner ẩn; quay về mốc mới nhất sẽ hiện lại nếu còn đủ điều kiện. Hỗ trợ giảm chuyển động.
-
-## Nền gradient
-
-Trong Cài đặt hiển thị, Nền gradient mặc định tắt. Khi bật, màu nhấn đang chọn
-làm tông chính cho toàn bộ nền. Chế độ sáng/tối điều chỉnh sắc độ của tông đó.
-Nền có vùng đen hoặc trắng ở giữa, bao quanh bởi ba sắc lấy từ màu nhấn.
-Các lớp ánh sáng cong trôi và đổi góc chậm, với mép chuyển mềm.
-Header, sidebar, canvas, thẻ, bảng và biểu mẫu dùng giao diện mặc định trong cả hai chế độ nền. Lựa chọn lưu trong
-`tourma-ui-background-gradient-v2`.

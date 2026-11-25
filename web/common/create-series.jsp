@@ -1,4 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -7,7 +9,7 @@
         <link rel="alternate icon" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Tạo Chuỗi Giải Mới - TOURMA</title>
+        <tourma:page-title label="Tạo chuỗi giải" />
 
         <!-- Google Font Readex Pro -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,9 +22,9 @@
         <!-- Main Design System CSS & Dedicated Creation CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-tournament.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-series.css">
-<script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/create-series.css?v=league-option-2">
+<script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
@@ -47,13 +49,13 @@
                     <i class="fa-solid fa-folder-plus text-gold"></i> Tạo chuỗi giải
                 </h1>
                 <p class="text-muted" data-ui-style="create-series-jsp-004">
-                    Đặt tên chuỗi giải và chọn cách tính điểm xếp hạng.
+                    Đặt tên chuỗi giải và chọn mô hình tổ chức.
                 </p>
 
                 <!-- Error Alert Message -->
                 <% if (request.getAttribute("errorMessage") != null) { %>
                     <div data-ui-style="create-series-jsp-005">
-                        <i class="fa-solid fa-triangle-exclamation"></i> <%= request.getAttribute("errorMessage") %>
+                        <i class="fa-solid fa-triangle-exclamation"></i> <c:out value="${errorMessage}" />
                     </div>
                 <% } %>
 
@@ -63,6 +65,7 @@
                     <div class="form-group">
                         <label class="form-label" for="seriesName">Tên Chuỗi Giải (*)</label>
                         <input type="text" id="seriesName" name="name" class="form-control"
+                               value="<c:out value="${param.name}" />"
                                placeholder="Ví dụ: VBA Pro League 2026 Circuit" required autofocus>
                     </div>
 
@@ -71,33 +74,43 @@
                         <label class="form-label" for="seriesDescription">Mô Tả Chuỗi Giải</label>
                         <textarea id="seriesDescription" name="description" class="form-control"
                                   data-ui-style="create-series-jsp-006"
-                                  placeholder="Mô tả về quy mô chuỗi giải đấu, giải thưởng tích lũy..."></textarea>
+                                  placeholder="Mô tả về quy mô chuỗi giải đấu, giải thưởng tích lũy..."><c:out value="${param.description}" /></textarea>
                     </div>
 
                     <!-- 3. MÔ HÌNH BẢNG XẾP HẠNG -->
                     <div class="form-group">
-                        <label class="form-label">Mô Hình Bảng Xếp Hạng Series (*)</label>
-                        <div class="radio-card-grid">
-                            <label class="radio-card active" id="cardRolling">
-                                <input type="radio" name="rankingModel" value="ROLLING_WINDOW" checked onchange="toggleModelOptions()">
+                        <span class="form-label" id="seriesModelLabel">Mô hình Series (*)</span>
+                        <c:set var="isElo" value="${param.rankingModel == 'FIFA_ELO'}" />
+                        <c:set var="isLeague" value="${param.rankingModel == 'LEAGUE_SYSTEM'}" />
+                        <div class="radio-card-grid" role="radiogroup" aria-labelledby="seriesModelLabel">
+                            <label class="radio-card">
+                                <input type="radio" name="rankingModel" value="ROLLING_WINDOW" ${not isElo and not isLeague ? 'checked' : ''}>
                                 <div class="radio-card-content">
-                                    <h5 class="text-gold"><i class="fa-solid fa-chart-line"></i> Rolling Window</h5>
+                                    <h5><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Rolling Window</h5>
                                     <p>Tích lũy điểm theo Phase (ví dụ: 10 giải = 1 Phase).</p>
                                 </div>
                             </label>
 
-                            <label class="radio-card" id="cardElo">
-                                <input type="radio" name="rankingModel" value="FIFA_ELO" onchange="toggleModelOptions()">
+                            <label class="radio-card">
+                                <input type="radio" name="rankingModel" value="FIFA_ELO" ${isElo ? 'checked' : ''}>
                                 <div class="radio-card-content">
-                                    <h5 class="text-mint"><i class="fa-solid fa-ranking-star"></i> FIFA Elo Rating</h5>
+                                    <h5><i class="fa-solid fa-ranking-star" aria-hidden="true"></i> FIFA Elo Rating</h5>
                                     <p>Tính điểm biến thiên Elo sau từng trận đấu.</p>
+                                </div>
+                            </label>
+
+                            <label class="radio-card">
+                                <input type="radio" name="rankingModel" value="LEAGUE_SYSTEM" ${isLeague ? 'checked' : ''}>
+                                <div class="radio-card-content">
+                                    <h5><i class="fa-solid fa-layer-group" aria-hidden="true"></i> League System</h5>
+                                    <p>Thi đấu theo mùa, chia hạng và lên/xuống hạng.</p>
                                 </div>
                             </label>
                         </div>
                     </div>
 
                     <!-- ROLLING OPTIONS PANEL -->
-                    <div id="rollingOptionsPanel" data-ui-style="create-series-jsp-007">
+                    <div id="rollingOptionsPanel" data-ui-style="create-series-jsp-007" ${isElo or isLeague ? 'hidden' : ''}>
                         <div class="form-group" data-ui-style="create-series-jsp-008">
                             <label class="form-label" for="phaseSize">Số Giải Tích Lũy Trong 1 Phase (*)</label>
                             <input type="number" id="phaseSize" name="phaseSize" class="form-control" value="10" min="1" max="100">
@@ -110,7 +123,7 @@
                     </div>
 
                     <!-- ELO OPTIONS PANEL -->
-                    <div id="eloOptionsPanel" data-ui-style="create-series-jsp-012" style="display: none;">
+                    <div id="eloOptionsPanel" data-ui-style="create-series-jsp-012" ${isElo ? '' : 'hidden'}>
                         <div class="form-group" data-ui-style="create-series-jsp-013">
                             <label class="form-label" for="initialElo">Điểm Elo Khởi Điểm (Initial Elo Rating)</label>
                             <input type="number" id="initialElo" name="initialElo" class="form-control" value="1000" step="10">
@@ -130,13 +143,26 @@
         </main>
 
         <script>
+            const seriesForm = document.getElementById('createSeriesForm');
+            const modelPanels = {
+                ROLLING_WINDOW: document.getElementById('rollingOptionsPanel'),
+                FIFA_ELO: document.getElementById('eloOptionsPanel')
+            };
+
             function toggleModelOptions() {
-                const isRolling = document.querySelector('input[name="rankingModel"]:checked').value === 'ROLLING_WINDOW';
-                document.getElementById('rollingOptionsPanel').style.display = isRolling ? 'block' : 'none';
-                document.getElementById('eloOptionsPanel').style.display = isRolling ? 'none' : 'block';
-                document.getElementById('cardRolling').classList.toggle('active', isRolling);
-                document.getElementById('cardElo').classList.toggle('active', !isRolling);
+                const selectedModel = seriesForm.elements.rankingModel.value;
+                for (const [model, panel] of Object.entries(modelPanels)) {
+                    panel.hidden = model !== selectedModel;
+                    panel.querySelectorAll('input').forEach(input => {
+                        input.disabled = panel.hidden;
+                    });
+                }
             }
+
+            seriesForm.elements.rankingModel.forEach(radio => {
+                radio.addEventListener('change', toggleModelOptions);
+            });
+            toggleModelOptions();
         </script>
     </body>
 </html>

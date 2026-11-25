@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@ page import="dao.TournamentDAO" %>
 <%@ page import="dao.ParticipantDAO" %>
 <%@ page import="model.Tournament" %>
@@ -50,13 +51,13 @@
         <link rel="alternate icon" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Chia Bảng - <%= tourneyName %></title>
+    <tourma:page-title label="Chia bảng" contextName="<%= tourneyName %>" />
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manage-group.css?v=<%= System.currentTimeMillis() %>">
-<script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+<script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">

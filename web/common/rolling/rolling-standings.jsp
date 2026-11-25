@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="model.Series, model.Tournament, model.SeriesStanding, model.PartnerParticipant, service.RollingWindowPointService, service.RollingWindowPointService.RollingStandingDTO, dao.SeriesDAO, dao.TournamentDAO, java.util.List, java.util.Map"%>
 <%
     String seriesIdVal = request.getParameter("id");
@@ -67,7 +68,7 @@
         <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bảng Xếp Hạng Series - <%= seriesName %></title>
+        <tourma:page-title label="BXH Series" contextName="<%= seriesName %>" />
 
         <!-- Google Fonts & FontAwesome -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -80,8 +81,8 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-team-list.css?v=20261110-performance">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/rolling/rolling-standings.css?v=20261117-v13">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/add-team-popup.css?v=20261110-performance">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=20261117-v13">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 </head>

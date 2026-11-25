@@ -81,7 +81,7 @@
     if (view2Label == null || view2Label.trim().isEmpty()) view2Label = "Danh Sách Trận";
 %>
 
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css?v=frame-2">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-navbar.css?v=20261125">
 
 <!-- Top Control Bar (Tournament Title, Format Badge, Team Count Badge & View Mode Toggle) -->
 <div class="tournament-navbar-control-bar single-elimination-control-bar <%= showLiveStatus ? "has-live-status" : "" %>">
@@ -205,8 +205,7 @@
                 try {
                     // Import a legacy browser setting only if the database has no saved value.
                     if (window.TourmaTopSeedCount == null) {
-                        var legacy;
-                        try { legacy=JSON.parse(localStorage.getItem('tourma_hide_seed_config_'+id)); } catch(e) {}
+                        var legacy = window.TourmaSeedDisplay && window.TourmaSeedDisplay.read(id);
                         if (legacy && legacy.visibleCount !== undefined) {
                             var count=Number(legacy.visibleCount || 0);
                             if (Number.isInteger(count) && count>=0 && count<=999) {

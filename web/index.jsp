@@ -1,17 +1,18 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOURMA — Sân chơi của bạn. Dấu ấn của bạn.</title>
+    <tourma:page-title label="Trang chủ" />
     <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/index.css?v=20261028-11">
 </head>

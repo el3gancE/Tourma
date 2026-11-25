@@ -12,7 +12,7 @@
 .rolling-team-list-page [data-ui-style="rolling-team-list-jsp-036"] { font-size:17px; }
 .rolling-team-list-page :is([data-ui-style="rolling-team-list-jsp-037"],[data-ui-style="rolling-team-list-jsp-039"]) { font-size:11px; color:var(--ui-muted); }
 .rolling-team-list-page [data-ui-style="rolling-team-list-jsp-039"] { padding:0 18px 12px; justify-content:space-between; gap:12px; }
-.rolling-team-list-page textarea { display:block; width:calc(100% - 36px); min-height:260px; margin:0 18px; resize:vertical; padding:12px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-bg); color:var(--ui-text); font:12px/1.8 var(--ui-font); }
+.rolling-team-list-page .team-modal-card #bulkPartnerTextarea { display:block; width:calc(100% - 36px); min-height:260px; margin:0 18px; resize:vertical; padding:12px; border:1px solid var(--ui-line); border-radius:6px; background:var(--ui-bg); color:var(--ui-text); font:12px/1.8 var(--ui-font); }
 .rolling-team-list-page #bulkCopyToast { opacity:0; color:var(--ui-accent); }
 .rolling-team-list-page [data-ui-style="rolling-team-list-jsp-046"] { gap:8px; }
 .rolling-team-list-page #bulkPartnerTextarea { width:calc(100% - 36px); max-width:calc(100% - 36px); min-height:260px; }

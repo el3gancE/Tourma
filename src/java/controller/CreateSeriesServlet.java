@@ -11,7 +11,7 @@ import java.util.UUID;
 import model.Series;
 
 /**
- * Controller Servlet for Series Creation (Rolling Window & FIFA Elo Rating)
+ * Controller Servlet for Series Creation
  * Immediately inserts the new Series record into SQL Server database.
  * Uses Jakarta EE 10 (jakarta.servlet.*) for Apache Tomcat 10+ compatibility.
  */
@@ -35,7 +35,7 @@ public class CreateSeriesServlet extends HttpServlet {
             // 1. Retrieve Form Parameters
             String name = request.getParameter("name");
             String description = request.getParameter("description");
-            String rankingModel = request.getParameter("rankingModel"); // ROLLING_WINDOW or FIFA_ELO
+            String rankingModel = request.getParameter("rankingModel");
             String phaseSizeStr = request.getParameter("phaseSize");
             String initialEloStr = request.getParameter("initialElo");
 
@@ -48,6 +48,12 @@ public class CreateSeriesServlet extends HttpServlet {
 
             if (rankingModel == null || rankingModel.trim().isEmpty()) {
                 rankingModel = "ROLLING_WINDOW";
+            }
+            if (!"ROLLING_WINDOW".equals(rankingModel) && !"FIFA_ELO".equals(rankingModel)
+                    && !"LEAGUE_SYSTEM".equals(rankingModel)) {
+                request.setAttribute("errorMessage", "Mô hình chuỗi giải không hợp lệ.");
+                request.getRequestDispatcher("/common/create-series.jsp").forward(request, response);
+                return;
             }
 
             int phaseSize = 10;
@@ -77,17 +83,17 @@ public class CreateSeriesServlet extends HttpServlet {
             SeriesDAO dao = new SeriesDAO();
             boolean inserted = dao.insertSeries(s);
 
-            if (inserted) {
-                System.out.println("=== SERIES SAVED TO DB ===");
-                System.out.println("ID: " + seriesId);
-                System.out.println("Name: " + name);
-            } else {
-                System.err.println("Failed to insert series into database: " + seriesId);
+            if (!inserted) {
+                request.setAttribute("errorMessage", "Không thể lưu chuỗi giải. Vui lòng thử lại.");
+                request.getRequestDispatcher("/common/create-series.jsp").forward(request, response);
+                return;
             }
 
             // 4. Redirect to Dashboard based on model type
             if ("ROLLING_WINDOW".equalsIgnoreCase(rankingModel)) {
                 response.sendRedirect(request.getContextPath() + "/rolling/dashboard?id=" + seriesId);
+            } else if ("LEAGUE_SYSTEM".equals(rankingModel)) {
+                response.sendRedirect(request.getContextPath() + "/league/dashboard?id=" + seriesId);
             } else {
                 response.sendRedirect(request.getContextPath() + "/my-series");
             }

@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="model.Series, model.Tournament, model.Team, java.util.List"%>
 <%
     Tournament tournament = (Tournament) request.getAttribute("tournament");
@@ -37,7 +38,7 @@
         <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title><%= tourneyName %> - Quản Lý Danh Sách Đội - TOURMA</title>
+        <tourma:page-title label="Quản lý danh sách đội" contextName="<%= tourneyName %>" />
 
         <!-- Google Fonts & FontAwesome -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,13 +48,13 @@
 
         <!-- Design System CSS, Standalone Configure Teams CSS & Dedicated Teams CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=21">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=6">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-setup.css?v=20261110-roster-v3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-setup.css?v=configuration-templates-2">
 </head>
     <body class="ui-page workspace-page tournament-workspace series-page series-form-page subteams-page teams-page standalone-setup">
         <!-- Shared Navigation Header Component -->
@@ -285,9 +286,9 @@
             window.tourneyFormat = "<%= tourneyFormat %>";
         </script>
         <script src="${pageContext.request.contextPath}/js/rolling/rolling-standings-engine.js?v=20261110-setup-perf1"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=20261113-lazy-partner"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/rolling-tournament-teams.js?v=seed-storage-1"></script>
         <script src="${pageContext.request.contextPath}/js/standalone-format-layout.js?v=3"></script>
-        <script src="${pageContext.request.contextPath}/js/rolling/series-setup.js?v=2-form-action"></script>
+        <script src="${pageContext.request.contextPath}/js/rolling/series-setup.js?v=3-storage-quota"></script>
         <script src="${pageContext.request.contextPath}/js/setup-presentation.js?v=6-batched"></script>
     </body>
 </html>

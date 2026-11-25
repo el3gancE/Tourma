@@ -1055,10 +1055,16 @@ public class MatchUpdateServlet extends HttpServlet {
         if (tournamentId == null || tournamentId.trim().isEmpty()) return false;
         try (Connection conn = new DBContext().getConnection()) {
             conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement("SELECT id FROM tournaments WITH (UPDLOCK,HOLDLOCK) WHERE id=?")) {
+            boolean league;
+            try (PreparedStatement ps = conn.prepareStatement("SELECT s.ranking_model FROM tournaments t WITH (UPDLOCK,HOLDLOCK) "
+                    + "LEFT JOIN series s ON s.id=t.series_id WHERE t.id=?")) {
                 ps.setString(1, tournamentId.trim());
-                try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) return false; }
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) return false;
+                    league = "LEAGUE_SYSTEM".equals(rs.getString(1));
+                }
             }
+            if (league && dao.LeagueSeasonResultDAO.isClosedTournament(conn, tournamentId.trim())) return false;
             if (!RollingWindowPointService.getInstance().refreshForTournamentTransition(conn, tournamentId.trim(), "ONGOING")) return false;
             try (PreparedStatement ps = conn.prepareStatement("UPDATE tournaments SET status='ONGOING',champion_name=NULL WHERE id=?")) {
                 ps.setString(1, tournamentId.trim()); ps.executeUpdate();

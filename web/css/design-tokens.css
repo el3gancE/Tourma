@@ -96,6 +96,7 @@
     --ui-on-accent: #ffffff;
     --ui-line-strong: #b8c1cc;
     --ui-shadow: 0 16px 50px rgb(0 0 0 / 4%);
+    --ui-modal-backdrop: rgb(0 0 0 / 55%);
     --ui-bracket-final-accent: #d49500;
     --ui-success: #16a34a;
     --ui-bracket-width: 240px;
@@ -182,6 +183,11 @@
     --ui-tier-c: #0284c7;
     --ui-tier-d: #64748b;
     --ui-danger: #be123c;
+    --ui-league-relegation: var(--ui-danger);
+    --ui-league-form-bg: #000000;
+    --ui-league-form-win: #38bdf8;
+    --ui-league-form-draw: #facc15;
+    --ui-league-form-loss: #f87171;
 }
 
 :root[data-theme="dark"] {
@@ -249,6 +255,9 @@
 
 :root[data-accent="green"] {
     --ui-accent: #059669;
+    --ui-league-relegation: #ea580c;
+    --ui-league-form-win: #4ade80;
+    --ui-league-form-loss: #fb923c;
     --ui-on-accent: #ffffff;
     --ui-accent-fill: #059669;
     --ui-bracket-lower-accent: #ea580c;
@@ -289,6 +298,9 @@
 
 :root[data-accent="orange"] {
     --ui-accent: #ea580c;
+    --ui-league-relegation: #ea580c;
+    --ui-league-form-win: #4ade80;
+    --ui-league-form-loss: #fb923c;
     --ui-on-accent: #ffffff;
     --ui-accent-fill: #ea580c;
     --ui-bracket-lower-accent: #059669;
@@ -390,41 +402,4 @@
     --ui-gsl-29: var(--ui-default-accent);
     --ui-gsl-30: var(--ui-default-accent);
     --ui-gsl-31: var(--ui-default-accent);
-}
-
-/* Light uses white and three clear tints of the selected accent. */
-:root {
-    --ui-page-grad-base: #fff;
-    --ui-page-grad-soft: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-page-grad-base));
-    --ui-page-grad-mid: color-mix(in srgb, var(--ui-accent) 17%, var(--ui-page-grad-base));
-    --ui-page-grad-deep: color-mix(in srgb, var(--ui-accent) 30%, var(--ui-page-grad-base));
-}
-
-:root[data-theme="dark"],
-:root[data-theme="dark"][data-accent="wine"] {
-    --ui-page-grad-base: #000000;
-    --ui-page-grad-soft: #7a0c28;
-    --ui-page-grad-mid: #450617;
-    --ui-page-grad-deep: #1c0209;
-}
-
-:root[data-theme="dark"][data-accent="blue"] {
-    --ui-page-grad-base: #000000;
-    --ui-page-grad-soft: #163a8f;
-    --ui-page-grad-mid: #0c1f52;
-    --ui-page-grad-deep: #040b1e;
-}
-
-:root[data-theme="dark"][data-accent="green"] {
-    --ui-page-grad-base: #000000;
-    --ui-page-grad-soft: #065f46;
-    --ui-page-grad-mid: #043627;
-    --ui-page-grad-deep: #011710;
-}
-
-:root[data-theme="dark"][data-accent="orange"] {
-    --ui-page-grad-base: #000000;
-    --ui-page-grad-soft: #7c2d12;
-    --ui-page-grad-mid: #471706;
-    --ui-page-grad-deep: #1c0802;
 }

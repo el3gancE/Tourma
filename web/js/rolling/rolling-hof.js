@@ -540,21 +540,6 @@
               }
             } catch (e) {}
           }
-        } else if (s2Format === 'ROUND_ROBIN') {
-          var rawS2RR = getStorageData(['tourma_rr_matches_stage2_'], t.id);
-          var s2Teams = [];
-          try { s2Teams = JSON.parse(getStorageData(['tourma_stage2_teams_'], t.id)) || []; } catch (e) {}
-          if (rawS2RR && s2Teams.length > 0 && window.TourmaRoundRobinAlgorithm) {
-            try {
-              var rrData = JSON.parse(rawS2RR);
-              var s2Standings = window.TourmaRoundRobinAlgorithm.calculateStandings(s2Teams, rrData.matchesMap || rrData, (multiConfig && multiConfig.stage2Config) || {});
-              if (s2Standings && s2Standings.length > 0) {
-                var topTeam = s2Standings[0];
-                var topN = extractName(topTeam) || (topTeam.team ? extractName(topTeam.team) : null);
-                if (topN) champName = topN;
-              }
-            } catch (e) {}
-          }
         }
       }
 
@@ -598,25 +583,10 @@
               }
             } catch (e) {}
           }
-        } else if (s1Format === 'ROUND_ROBIN') {
-          var rawRR = getStorageData(['tourma_rr_matches_'], t.id);
-          var s1Teams = [];
-          try { s1Teams = JSON.parse(getStorageData(['tourma_teams_'], t.id)) || []; } catch (e) {}
-          if (rawRR && s1Teams.length > 0 && window.TourmaRoundRobinAlgorithm) {
-            try {
-              var rrData = JSON.parse(rawRR);
-              var rrStandings = window.TourmaRoundRobinAlgorithm.calculateStandings(s1Teams, rrData.matchesMap || rrData, rrData.config || {});
-              if (rrStandings && rrStandings.length > 0) {
-                var topTeam = rrStandings[0];
-                var topN = extractName(topTeam) || (topTeam.team ? extractName(topTeam.team) : null);
-                if (topN) champName = topN;
-              }
-            } catch (e) {}
-          }
         }
       }
 
-      // Check Server-rendered DOM row fallback if not found in localStorage
+      // Round Robin champions are resolved by the server.
       var tourneyRow = document.querySelector('#hofTourneyTable tbody tr[data-tourney-id="' + t.id + '"]');
       if (!champName && tourneyRow) {
         var existingLink = tourneyRow.querySelector('.hof-champ-name-link');

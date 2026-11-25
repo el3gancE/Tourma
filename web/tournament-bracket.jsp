@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="dao.TournamentDAO"%>
 <%@page import="model.Tournament"%>
 <%@page import="java.util.List"%>
@@ -71,7 +72,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Chuyển hướng sơ đồ thi đấu...</title>
+    <tourma:page-title label="Sơ đồ thi đấu" />
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-bracket.css">
 </head>
 <body data-ui-style="tournament-bracket-jsp-001" style="display: flex;">

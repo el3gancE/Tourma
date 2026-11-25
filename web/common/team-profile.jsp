@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="model.Series, model.Tournament, model.PartnerParticipant, controller.TeamProfileServlet.TourneyPerformanceDTO, controller.TeamProfileServlet.ChampionTournamentDTO, service.TeamMatchHistoryService, service.TeamMatchHistoryService.MatchRecordDTO, java.util.List, java.util.Map, java.text.SimpleDateFormat"%>
 <%
     Series series = (Series) request.getAttribute("series");
@@ -45,7 +46,7 @@
         <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title><%= teamName %> - Hồ Sơ Đội Bóng - TOURMA</title>
+        <tourma:page-title label="Hồ sơ đội" contextName="<%= teamName %>" />
 
         <!-- Google Fonts & FontAwesome -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -62,8 +63,8 @@
 
         <!-- Chart.js for Rank Progression Chart -->
         <script id="profile-chart-library" async src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=20">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">

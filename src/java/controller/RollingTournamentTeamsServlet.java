@@ -2,6 +2,7 @@ package controller;
 
 import dao.ParticipantDAO;
 import dao.SeriesDAO;
+import dao.SeriesConfigurationTemplateDAO;
 import dao.TournamentDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -120,6 +121,15 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
         request.setAttribute("series", series);
         request.setAttribute("setupSeries", series);
         request.setAttribute("currentTeams", currentTeams);
+        if (series != null && "ROLLING_WINDOW".equals(series.getRankingModel())) {
+            request.setAttribute("setupTemplatesAvailable", true);
+            request.setAttribute("setupTemplateTeamDefault", currentTeams.size());
+            try {
+                request.setAttribute("setupAppliedTemplate", new SeriesConfigurationTemplateDAO().getApplied(tournament.getId()));
+            } catch (Exception e) {
+                throw new ServletException("Cannot read applied setup template", e);
+            }
+        }
         request.getRequestDispatcher("/common/rolling/rolling-tournament-teams.jsp").forward(request, response);
     }
 
@@ -200,6 +210,7 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
                             source.getTournamentType(), first, second, advSeats, config)
                             && configDAO.copyPointsConfigFromTournament(sourceId, tournamentId, false)
                             && configDAO.updateTournamentTier(tournamentId, source.getTierName());
+                    if (copied) new SeriesConfigurationTemplateDAO().clearApplied(seriesId, tournamentId);
                 }
             } catch (Exception error) {
                 getServletContext().log("Cannot copy Series tournament configuration", error);
@@ -220,8 +231,18 @@ public class RollingTournamentTeamsServlet extends HttpServlet {
             String names = request.getParameter("orderedTeamNames");
             int count = names == null || names.trim().isEmpty() ? 0 : names.trim().split("\\r?\\n").length;
             Tournament source = copySource == null || copySource.trim().isEmpty() ? null : setupDAO.getTournamentById(copySource, false);
-            if (count < 2 || (source != null && source.getTeamCount() > 0 && count != source.getTeamCount())) {
-                response.sendError(400, "Số đội tham gia không hợp lệ hoặc chưa khớp giải nguồn.");
+            Series series = new SeriesDAO().getSeriesById(seriesId);
+            int required = source == null ? 0 : source.getTeamCount();
+            if (series != null && "ROLLING_WINDOW".equals(series.getRankingModel())) {
+                try {
+                    var applied = new SeriesConfigurationTemplateDAO().getApplied(tournamentId);
+                    if (applied != null) required = applied.teamCount();
+                } catch (Exception e) {
+                    throw new ServletException("Cannot read required team count", e);
+                }
+            }
+            if (count < 2 || (required > 0 && count != required)) {
+                response.sendError(400, "Số đội tham gia chưa khớp yêu cầu của cấu hình.");
                 return;
             }
         }

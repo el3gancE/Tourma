@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="tourma" tagdir="/WEB-INF/tags"%>
 <%@page import="dao.ParticipantDAO"%>
 <%@page import="model.Team"%>
 <%@page import="java.util.List"%>
@@ -80,7 +81,7 @@
         <link rel="alternate icon" href="${pageContext.request.contextPath}/images/trophy-gradient-icon.svg">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Quản Lý Danh Sách Đội - TOURMA</title>
+        <tourma:page-title label="Quản lý danh sách đội" />
 
         <!-- Google Font Readex Pro -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -90,8 +91,8 @@
         <!-- FontAwesome Icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/workspace.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
@@ -442,6 +443,8 @@
 
             var currentTeamsList = [];
             var initialTeamsSnapshot = null;
+            var hasDbSchedule = <%= setupTournament != null && (new dao.TournamentDAO().hasStageMatches(tournamentId, 1)
+                    || new dao.TournamentDAO().hasStageMatches(tournamentId, 2)) %>;
 
             // Restore state logic: Prioritize latest localStorage state over initial dbTeams so Back button navigation preserves new edits!
             var localSavedTeams = null;
@@ -478,6 +481,10 @@
                 } catch(e) {
                     initialTeamsSnapshot = null;
                 }
+            }
+
+            if (!initialTeamsSnapshot && hasDbSchedule && dbTeams.length) {
+                initialTeamsSnapshot = dbTeams.slice();
             }
 
             // If snapshot not saved yet but bracket exists, initialize snapshot
@@ -917,7 +924,7 @@
                 var isRR = checkIsRoundRobin();
 
                 // Check if bracket was previously generated
-                var hasPriorBracket = (initialTeamsSnapshot && initialTeamsSnapshot.length > 0);
+                var hasPriorBracket = hasDbSchedule || (initialTeamsSnapshot && initialTeamsSnapshot.length > 0);
                 if (!hasPriorBracket && tournamentId && (localStorage.getItem('tourma_matches_' + tournamentId) || localStorage.getItem('tourma_de_matches_' + tournamentId) || localStorage.getItem('tourma_rr_matches_' + tournamentId))) {
                     hasPriorBracket = true;
                 }
@@ -997,15 +1004,10 @@
 
                 var isEnabled = false;
                 var visibleCount = '';
-                if (tournamentId) {
-                    try {
-                        var raw = localStorage.getItem('tourma_hide_seed_config_' + tournamentId);
-                        if (raw) {
-                            var cfg = JSON.parse(raw);
-                            isEnabled = !!cfg.isEnabled;
-                            visibleCount = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? cfg.visibleCount : '';
-                        }
-                    } catch(e) {}
+                var cfg = tournamentId ? window.TourmaSeedDisplay.read(tournamentId) : null;
+                if (cfg) {
+                    isEnabled = !!cfg.isEnabled;
+                    visibleCount = (cfg.visibleCount !== undefined && cfg.visibleCount !== null) ? cfg.visibleCount : '';
                 }
 
                 if (input) {
@@ -1018,6 +1020,7 @@
             window.applyHideSeedUI = function(isEnabled) {
                 var btn = document.getElementById('btnToggleHideSeed');
                 if (!btn) return;
+                btn.setAttribute('aria-pressed', String(isEnabled));
 
                 if (isEnabled) {
                     btn.dataset.active = 'true';
@@ -1065,11 +1068,7 @@
                     isEnabled: isEnabled,
                     visibleCount: visibleCount
                 };
-                if (tournamentId) {
-                    try {
-                        localStorage.setItem('tourma_hide_seed_config_' + tournamentId, JSON.stringify(cfg));
-                    } catch(e) {}
-                }
+                if (tournamentId) window.TourmaSeedDisplay.save(tournamentId, cfg);
             };
 
             // Initial render on page load
