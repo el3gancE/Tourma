@@ -103,7 +103,7 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/final-stage-popup.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/stage-finish-alert.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css">
-    <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
+    <script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=league-form-3">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">

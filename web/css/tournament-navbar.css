@@ -8,16 +8,7 @@
 .view-mode-toggle-group > .btn-view-toggle:focus-visible { outline:2px solid var(--ui-accent); outline-offset:1px; }
 @media(prefers-reduced-motion:reduce) { .view-mode-toggle-group > .btn-view-toggle { transition:none; } }
 /* Follow the document scroll; stay below modal layers. */
-.tournament-navbar-control-bar {
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    box-sizing: border-box;
-    min-width: 0;
-    padding-inline: clamp(.65rem, 2vw, 1rem);
-    background: var(--ui-bg);
-}
-.tournament-navbar-control-bar .tournament-name-title { min-width: 0; }
+.tournament-navbar-control-bar { position:sticky; top:0; z-index:40; background:var(--ui-bg); }
 :is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .se-main .tournament-navbar-control-bar { padding-top:12px; padding-bottom:12px; }
 /* Keep the joined view selector intact under per-screen button defaults. */
 :is(.se-page,.de-page,.swiss-page,.gsl-page,.league-page) .view-mode-toggle-group { display:inline-flex; flex-wrap:nowrap; gap:0; }
@@ -30,27 +21,3 @@
  padding:0; border:0; border-radius:0; background:transparent; box-shadow:none;
 }
 .tournament-navbar-control-bar .advancing-count-badge>i { display:none; }
-
-/* Use the same frame edge as the bracket canvas in gradient mode. */
-:root[data-background-gradient="on"] .ui-page .tournament-navbar-control-bar {
-    width: 100%;
-    border: 1px solid var(--gradient-component-border, var(--ui-line));
-    border-radius: 8px;
-}
-:root[data-background-gradient="on"] .ui-page .tournament-navbar-control-bar .control-actions-right-group {
-    margin-inline-start: auto;
-    justify-content: flex-end;
-}
-@media (min-width: 90rem) {
-    :root[data-background-gradient="on"] .ui-page .tournament-navbar-control-bar.has-live-status {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    }
-    :root[data-background-gradient="on"] .tournament-navbar-control-bar.has-live-status .tournament-live-status {
-        grid-column: 2;
-        justify-self: center;
-    }
-    :root[data-background-gradient="on"] .tournament-navbar-control-bar.has-live-status .control-actions-right-group {
-        grid-column: 3;
-    }
-}

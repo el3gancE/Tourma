@@ -145,8 +145,8 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/empty-team-alert.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/popup.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/gsl.css?v=<%= System.currentTimeMillis() %>">
-        <script src="${pageContext.request.contextPath}/js/theme.js?v=default-layout-1"></script>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=default-layout-1">
+        <script src="${pageContext.request.contextPath}/js/theme.js?v=20261125"></script>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/design-tokens.css?v=20261125">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ui-base.css?v=18">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/tournament-workspace.css?v=18">
     </head>

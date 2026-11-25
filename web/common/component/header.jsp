@@ -11,10 +11,9 @@
         <script src="${pageContext.request.contextPath}/js/seed-display.js?v=1"></script>
         <jsp:include page="/common/component/tournament-config-state.jsp" />
         <!-- Dedicated Header Component Stylesheet -->
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=gradient-workspaces-1">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css?v=20261125">
 
         <!-- Header / Navigation Bar Component -->
-        <div class="tourma-page-gradient" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
         <nav class="navbar">
             <a href="${pageContext.request.contextPath}/index.jsp" class="brand-logo">
                 <div class="brand-icon">
@@ -95,10 +94,6 @@
                                 class="fa-solid fa-gear" aria-hidden="true"></i></summary>
                         <div class="display-settings-panel" role="group" aria-label="Cài đặt hiển thị">
                             <strong>Cài đặt hiển thị</strong>
-                            <button type="button" class="display-setting-toggle" role="switch" aria-checked="false"
-                                data-background-gradient-toggle>
-                                <span>Nền gradient</span><span class="theme-switch" aria-hidden="true"></span>
-                            </button>
                             <button type="button" class="special-colors-toggle" role="switch" aria-checked="true"
                                 data-special-colors-toggle>
                                 <span>Màu phân biệt nhánh/nhóm</span><span class="theme-switch"
